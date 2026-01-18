@@ -7,6 +7,9 @@ import { SprintBoardView } from '@/components/views/SprintBoardView';
 import { MeetingsView } from '@/components/views/MeetingsView';
 import { RisksDecisionsView } from '@/components/views/RisksDecisionsView';
 import { FinancialsView } from '@/components/views/FinancialsView';
+import { NotesView } from '@/components/views/NotesView';
+import { ResourcesView } from '@/components/views/ResourcesView';
+import { PresentationsView } from '@/components/views/PresentationsView';
 
 const Index = () => {
   const [activeView, setActiveView] = useState('dashboard');
@@ -29,6 +32,12 @@ const Index = () => {
         return <RisksDecisionsView />;
       case 'financials':
         return <FinancialsView />;
+      case 'notes':
+        return <NotesView />;
+      case 'resources':
+        return <ResourcesView />;
+      case 'presentations':
+        return <PresentationsView />;
       default:
         return <DashboardView />;
     }

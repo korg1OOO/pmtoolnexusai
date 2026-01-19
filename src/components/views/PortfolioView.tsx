@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Briefcase, 
   DollarSign,
   Calendar,
   Users,
   ChevronRight,
+  ChevronLeft,
   Layers,
   Target,
   AlertTriangle,
@@ -14,16 +15,27 @@ import {
   MoreHorizontal,
   Filter,
   Download,
-  RefreshCw
+  RefreshCw,
+  X,
+  TrendingUp,
+  Activity
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
-import { mockProject } from '@/data/mockData';
 import { KPICard } from '@/components/enterprise/KPICard';
 import { StatusIndicator } from '@/components/enterprise/StatusIndicator';
 import { ProgressRing } from '@/components/enterprise/ProgressRing';
+import { 
+  AreaChart, 
+  Area, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer 
+} from 'recharts';
 
 // Mock portfolio data
 const portfolios = [
@@ -37,20 +49,40 @@ const programs = [
   { id: 'prog-3', name: 'Cloud Migration', code: 'CLM', health: 'red' as const, manager: 'James Wilson', projectCount: 3, budget: 9300000, spent: 3615000, progress: 34 },
 ];
 
-const projects = [
-  { id: 'proj-1', name: 'Mobile App Redesign', code: 'MAR', programCode: 'CXP', status: 'active' as const, health: 'green' as const, progress: 68, budget: 2500000, spent: 1650000, manager: 'Emily Johnson', endDate: '2024-08-30' },
-  { id: 'proj-2', name: 'Web Portal Enhancement', code: 'WPE', programCode: 'CXP', status: 'active' as const, health: 'amber' as const, progress: 82, budget: 1800000, spent: 1580000, manager: 'Robert Kim', endDate: '2024-07-15' },
-  { id: 'proj-3', name: 'CRM Integration', code: 'CRI', programCode: 'CXP', status: 'active' as const, health: 'green' as const, progress: 25, budget: 1200000, spent: 280000, manager: 'Anna Martinez', endDate: '2024-10-30' },
-  { id: 'proj-4', name: 'Data Warehouse Modernization', code: 'DWM', programCode: 'DAI', status: 'active' as const, health: 'amber' as const, progress: 45, budget: 3500000, spent: 1575000, manager: 'Chris Lee', endDate: '2024-12-15' },
-  { id: 'proj-5', name: 'BI Dashboard Platform', code: 'BDP', programCode: 'DAI', status: 'active' as const, health: 'green' as const, progress: 35, budget: 2200000, spent: 770000, manager: 'Sophie Turner', endDate: '2024-11-30' },
-  { id: 'proj-6', name: 'Legacy System Migration', code: 'LSM', programCode: 'CLM', status: 'active' as const, health: 'red' as const, progress: 32, budget: 5000000, spent: 1850000, manager: 'Mark Thompson', endDate: '2025-03-31' },
-  { id: 'proj-7', name: 'Network Infrastructure', code: 'NIF', programCode: 'CLM', status: 'active' as const, health: 'green' as const, progress: 55, budget: 2800000, spent: 1540000, manager: 'Jennifer Brown', endDate: '2024-09-30' },
-  { id: 'proj-8', name: 'Security Compliance', code: 'SEC', programCode: 'CLM', status: 'on-hold' as const, health: 'amber' as const, progress: 15, budget: 1500000, spent: 225000, manager: 'Alex Rivera', endDate: '2024-11-30' },
+interface Project {
+  id: string;
+  name: string;
+  code: string;
+  programCode: string;
+  status: 'active' | 'on-hold' | 'completed';
+  health: 'green' | 'amber' | 'red';
+  progress: number;
+  budget: number;
+  spent: number;
+  manager: string;
+  endDate: string;
+  description?: string;
+  team?: string[];
+  risks?: { name: string; severity: 'high' | 'medium' | 'low' }[];
+  milestones?: { name: string; date: string; status: 'completed' | 'upcoming' | 'overdue' }[];
+  burndownData?: { week: string; planned: number; actual: number }[];
+}
+
+const projects: Project[] = [
+  { id: 'proj-1', name: 'Mobile App Redesign', code: 'MAR', programCode: 'CXP', status: 'active', health: 'green', progress: 68, budget: 2500000, spent: 1650000, manager: 'Emily Johnson', endDate: '2024-08-30', description: 'Complete redesign of the mobile application with focus on user experience and performance improvements.', team: ['Emily Johnson', 'Mike Chen', 'Sarah Lee', 'Tom Davis'], risks: [{ name: 'Resource constraints', severity: 'medium' }], milestones: [{ name: 'Design Complete', date: '2024-04-15', status: 'completed' }, { name: 'Beta Release', date: '2024-06-30', status: 'upcoming' }, { name: 'Go Live', date: '2024-08-30', status: 'upcoming' }], burndownData: [{ week: 'W1', planned: 100, actual: 100 }, { week: 'W2', planned: 85, actual: 88 }, { week: 'W3', planned: 70, actual: 72 }, { week: 'W4', planned: 55, actual: 58 }, { week: 'W5', planned: 40, actual: 42 }, { week: 'W6', planned: 25, actual: 32 }] },
+  { id: 'proj-2', name: 'Web Portal Enhancement', code: 'WPE', programCode: 'CXP', status: 'active', health: 'amber', progress: 82, budget: 1800000, spent: 1580000, manager: 'Robert Kim', endDate: '2024-07-15', description: 'Enhancing the web portal with new features and improved security.', team: ['Robert Kim', 'Lisa Wang'], risks: [{ name: 'Budget overrun risk', severity: 'high' }, { name: 'Timeline pressure', severity: 'medium' }], milestones: [{ name: 'Phase 1 Complete', date: '2024-03-01', status: 'completed' }, { name: 'Security Audit', date: '2024-05-15', status: 'completed' }, { name: 'Final Release', date: '2024-07-15', status: 'upcoming' }], burndownData: [{ week: 'W1', planned: 100, actual: 100 }, { week: 'W2', planned: 80, actual: 82 }, { week: 'W3', planned: 60, actual: 65 }, { week: 'W4', planned: 40, actual: 48 }, { week: 'W5', planned: 20, actual: 28 }, { week: 'W6', planned: 0, actual: 18 }] },
+  { id: 'proj-3', name: 'CRM Integration', code: 'CRI', programCode: 'CXP', status: 'active', health: 'green', progress: 25, budget: 1200000, spent: 280000, manager: 'Anna Martinez', endDate: '2024-10-30', description: 'Integration of CRM system with existing platforms.', team: ['Anna Martinez', 'James Wilson', 'David Park'], risks: [], milestones: [{ name: 'Requirements Finalized', date: '2024-04-01', status: 'completed' }, { name: 'Integration Complete', date: '2024-08-15', status: 'upcoming' }], burndownData: [{ week: 'W1', planned: 100, actual: 100 }, { week: 'W2', planned: 90, actual: 92 }, { week: 'W3', planned: 80, actual: 82 }, { week: 'W4', planned: 70, actual: 75 }] },
+  { id: 'proj-4', name: 'Data Warehouse Modernization', code: 'DWM', programCode: 'DAI', status: 'active', health: 'amber', progress: 45, budget: 3500000, spent: 1575000, manager: 'Chris Lee', endDate: '2024-12-15', description: 'Modernizing the data warehouse infrastructure.', team: ['Chris Lee', 'Sophie Turner'], risks: [{ name: 'Data migration complexity', severity: 'high' }], milestones: [{ name: 'Architecture Design', date: '2024-03-15', status: 'completed' }, { name: 'Migration Start', date: '2024-07-01', status: 'upcoming' }], burndownData: [{ week: 'W1', planned: 100, actual: 100 }, { week: 'W2', planned: 88, actual: 90 }, { week: 'W3', planned: 76, actual: 80 }, { week: 'W4', planned: 64, actual: 70 }, { week: 'W5', planned: 52, actual: 55 }] },
+  { id: 'proj-5', name: 'BI Dashboard Platform', code: 'BDP', programCode: 'DAI', status: 'active', health: 'green', progress: 35, budget: 2200000, spent: 770000, manager: 'Sophie Turner', endDate: '2024-11-30', description: 'Building a comprehensive BI dashboard platform.', team: ['Sophie Turner', 'Alex Rivera'], risks: [], milestones: [{ name: 'MVP Release', date: '2024-06-15', status: 'upcoming' }], burndownData: [{ week: 'W1', planned: 100, actual: 100 }, { week: 'W2', planned: 85, actual: 85 }, { week: 'W3', planned: 70, actual: 68 }, { week: 'W4', planned: 55, actual: 65 }] },
+  { id: 'proj-6', name: 'Legacy System Migration', code: 'LSM', programCode: 'CLM', status: 'active', health: 'red', progress: 32, budget: 5000000, spent: 1850000, manager: 'Mark Thompson', endDate: '2025-03-31', description: 'Migration of legacy systems to modern cloud infrastructure.', team: ['Mark Thompson', 'Jennifer Brown', 'Alex Rivera'], risks: [{ name: 'System downtime risk', severity: 'high' }, { name: 'Data integrity concerns', severity: 'high' }, { name: 'Skills gap', severity: 'medium' }], milestones: [{ name: 'Assessment Complete', date: '2024-02-28', status: 'completed' }, { name: 'Phase 1 Migration', date: '2024-06-30', status: 'overdue' }], burndownData: [{ week: 'W1', planned: 100, actual: 100 }, { week: 'W2', planned: 90, actual: 95 }, { week: 'W3', planned: 80, actual: 88 }, { week: 'W4', planned: 70, actual: 82 }, { week: 'W5', planned: 60, actual: 78 }, { week: 'W6', planned: 50, actual: 68 }] },
+  { id: 'proj-7', name: 'Network Infrastructure', code: 'NIF', programCode: 'CLM', status: 'active', health: 'green', progress: 55, budget: 2800000, spent: 1540000, manager: 'Jennifer Brown', endDate: '2024-09-30', description: 'Network infrastructure upgrade and optimization.', team: ['Jennifer Brown', 'Tom Davis'], risks: [{ name: 'Vendor dependency', severity: 'low' }], milestones: [{ name: 'Hardware Procurement', date: '2024-04-01', status: 'completed' }, { name: 'Installation Complete', date: '2024-07-31', status: 'upcoming' }], burndownData: [{ week: 'W1', planned: 100, actual: 100 }, { week: 'W2', planned: 85, actual: 85 }, { week: 'W3', planned: 70, actual: 68 }, { week: 'W4', planned: 55, actual: 52 }, { week: 'W5', planned: 40, actual: 45 }] },
+  { id: 'proj-8', name: 'Security Compliance', code: 'SEC', programCode: 'CLM', status: 'on-hold', health: 'amber', progress: 15, budget: 1500000, spent: 225000, manager: 'Alex Rivera', endDate: '2024-11-30', description: 'Ensuring security compliance across all systems.', team: ['Alex Rivera'], risks: [{ name: 'Regulatory changes', severity: 'medium' }], milestones: [{ name: 'Audit Preparation', date: '2024-05-15', status: 'upcoming' }], burndownData: [{ week: 'W1', planned: 100, actual: 100 }, { week: 'W2', planned: 92, actual: 95 }, { week: 'W3', planned: 84, actual: 88 }, { week: 'W4', planned: 76, actual: 85 }] },
 ];
 
 export function PortfolioView() {
   const [selectedPortfolio, setSelectedPortfolio] = useState(portfolios[0]);
   const [viewMode, setViewMode] = useState<'overview' | 'programs' | 'projects'>('overview');
+  const [selectedProject, setSelectedProject] = useState<Project | null>(null);
 
   const totalBudget = projects.reduce((sum, p) => sum + p.budget, 0);
   const totalSpent = projects.reduce((sum, p) => sum + p.spent, 0);
@@ -66,6 +98,24 @@ export function PortfolioView() {
     if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
     if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
     return `$${value}`;
+  };
+
+  const getMilestoneStatusColor = (status: string) => {
+    switch (status) {
+      case 'completed': return 'completed';
+      case 'upcoming': return 'active';
+      case 'overdue': return 'critical';
+      default: return 'outline';
+    }
+  };
+
+  const getRiskSeverityColor = (severity: string) => {
+    switch (severity) {
+      case 'high': return 'critical';
+      case 'medium': return 'warning';
+      case 'low': return 'outline';
+      default: return 'outline';
+    }
   };
 
   return (
@@ -278,7 +328,11 @@ export function PortfolioView() {
               </thead>
               <tbody>
                 {projects.map((project) => (
-                  <tr key={project.id} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
+                  <tr 
+                    key={project.id} 
+                    className="border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer"
+                    onClick={() => setSelectedProject(project)}
+                  >
                     <td className="p-4"><div><p className="font-medium">{project.name}</p><p className="text-xs text-muted-foreground">{project.code}</p></div></td>
                     <td className="p-4"><Badge variant="outline">{project.programCode}</Badge></td>
                     <td className="p-4"><Badge variant={project.status === 'active' ? 'active' : 'pending'}>{project.status}</Badge></td>
@@ -287,7 +341,7 @@ export function PortfolioView() {
                     <td className="p-4"><div><p className="text-sm font-medium">{formatCurrency(project.budget)}</p><p className="text-xs text-muted-foreground">{formatCurrency(project.spent)} spent</p></div></td>
                     <td className="p-4 text-sm">{project.manager}</td>
                     <td className="p-4 text-sm text-muted-foreground">{new Date(project.endDate).toLocaleDateString()}</td>
-                    <td className="p-4"><Button variant="ghost" size="icon"><MoreHorizontal className="h-4 w-4" /></Button></td>
+                    <td className="p-4"><Button variant="ghost" size="icon"><ChevronRight className="h-4 w-4" /></Button></td>
                   </tr>
                 ))}
               </tbody>
@@ -295,6 +349,162 @@ export function PortfolioView() {
           </CardContent>
         </Card>
       )}
+
+      {/* Project Detail Slide-out Panel */}
+      <AnimatePresence>
+        {selectedProject && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black z-40"
+              onClick={() => setSelectedProject(null)}
+            />
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed right-0 top-0 bottom-0 w-[600px] bg-background border-l border-border z-50 overflow-y-auto"
+            >
+              <div className="p-6 space-y-6">
+                {/* Header */}
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="flex items-center gap-3 mb-2">
+                      <StatusIndicator status={selectedProject.health} pulse size="lg" />
+                      <Badge variant={selectedProject.status === 'active' ? 'active' : 'pending'}>{selectedProject.status}</Badge>
+                    </div>
+                    <h2 className="text-2xl font-semibold">{selectedProject.name}</h2>
+                    <p className="text-muted-foreground">{selectedProject.code} · {selectedProject.programCode}</p>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => setSelectedProject(null)}>
+                    <X className="h-5 w-5" />
+                  </Button>
+                </div>
+
+                {/* Description */}
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2">Description</h3>
+                  <p className="text-sm">{selectedProject.description}</p>
+                </div>
+
+                {/* KPIs */}
+                <div className="grid grid-cols-2 gap-4">
+                  <Card className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-primary/10"><TrendingUp className="h-4 w-4 text-primary" /></div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Progress</p>
+                        <p className="text-lg font-semibold">{selectedProject.progress}%</p>
+                      </div>
+                    </div>
+                    <Progress value={selectedProject.progress} className="h-2 mt-3" />
+                  </Card>
+                  <Card className="p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-success/10"><DollarSign className="h-4 w-4 text-success" /></div>
+                      <div>
+                        <p className="text-xs text-muted-foreground">Budget</p>
+                        <p className="text-lg font-semibold">{formatCurrency(selectedProject.budget)}</p>
+                        <p className="text-xs text-muted-foreground">{formatCurrency(selectedProject.spent)} spent</p>
+                      </div>
+                    </div>
+                  </Card>
+                </div>
+
+                {/* Burndown Chart */}
+                {selectedProject.burndownData && (
+                  <Card>
+                    <CardHeader className="pb-2"><CardTitle className="text-sm">Burndown Chart</CardTitle></CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={150}>
+                        <AreaChart data={selectedProject.burndownData}>
+                          <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                          <XAxis dataKey="week" tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                          <YAxis tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }} />
+                          <Tooltip contentStyle={{ backgroundColor: 'hsl(var(--card))', border: '1px solid hsl(var(--border))', borderRadius: '8px' }} />
+                          <Area type="monotone" dataKey="planned" stroke="hsl(var(--muted-foreground))" fill="hsl(var(--muted))" name="Planned" />
+                          <Area type="monotone" dataKey="actual" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.3} name="Actual" />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Team */}
+                {selectedProject.team && (
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-3">Team ({selectedProject.team.length})</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedProject.team.map((member, i) => (
+                        <Badge key={i} variant="outline" className="py-1.5"><Users className="h-3 w-3 mr-1" />{member}</Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Milestones */}
+                {selectedProject.milestones && (
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-3">Milestones</h3>
+                    <div className="space-y-2">
+                      {selectedProject.milestones.map((milestone, i) => (
+                        <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                          <div className="flex items-center gap-3">
+                            <Target className="h-4 w-4 text-primary" />
+                            <span className="text-sm font-medium">{milestone.name}</span>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-muted-foreground">{milestone.date}</span>
+                            <Badge variant={getMilestoneStatusColor(milestone.status) as any}>{milestone.status}</Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Risks */}
+                {selectedProject.risks && selectedProject.risks.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-medium text-muted-foreground mb-3">Active Risks</h3>
+                    <div className="space-y-2">
+                      {selectedProject.risks.map((risk, i) => (
+                        <div key={i} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                          <div className="flex items-center gap-3">
+                            <AlertTriangle className="h-4 w-4 text-warning" />
+                            <span className="text-sm">{risk.name}</span>
+                          </div>
+                          <Badge variant={getRiskSeverityColor(risk.severity) as any}>{risk.severity}</Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Project Manager */}
+                <div className="flex items-center justify-between p-4 rounded-lg border border-border">
+                  <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <Users className="h-5 w-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{selectedProject.manager}</p>
+                      <p className="text-xs text-muted-foreground">Project Manager</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-xs text-muted-foreground">End Date</p>
+                    <p className="text-sm font-medium">{new Date(selectedProject.endDate).toLocaleDateString()}</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

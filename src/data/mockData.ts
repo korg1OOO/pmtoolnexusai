@@ -1,6 +1,6 @@
 import type { 
   Project, Task, Sprint, SprintItem, Meeting, Risk, Decision, 
-  Resource, BudgetItem, Note 
+  Resource, BudgetItem, Note, Program, Portfolio, PortfolioProject 
 } from '@/types/project';
 
 export const mockProject: Project = {
@@ -676,3 +676,143 @@ export const kpiData = {
   teamUtilization: 87,
   upcomingMilestones: 3,
 };
+
+// Portfolio & Program Management Mock Data
+export const mockProjects: PortfolioProject[] = [
+  {
+    id: 'PRJ-001',
+    name: 'Enterprise Cloud Migration',
+    code: 'ECM-2024',
+    status: 'active',
+    health: 'amber',
+    progress: 45,
+    startDate: '2024-01-15',
+    endDate: '2024-12-31',
+    budget: { approved: 2500000, forecast: 2650000, actual: 1125000 },
+    manager: 'Sarah Mitchell',
+  },
+  {
+    id: 'PRJ-002',
+    name: 'Platform Modernization',
+    code: 'PLM-2024',
+    status: 'active',
+    health: 'green',
+    progress: 68,
+    startDate: '2024-02-01',
+    endDate: '2024-10-31',
+    budget: { approved: 1800000, forecast: 1750000, actual: 1190000 },
+    manager: 'John Doe',
+  },
+  {
+    id: 'PRJ-003',
+    name: 'Security Compliance Upgrade',
+    code: 'SCU-2024',
+    status: 'active',
+    health: 'green',
+    progress: 82,
+    startDate: '2024-03-01',
+    endDate: '2024-08-31',
+    budget: { approved: 950000, forecast: 920000, actual: 780000 },
+    manager: 'Emily Brown',
+  },
+  {
+    id: 'PRJ-004',
+    name: 'Data Analytics Platform',
+    code: 'DAP-2024',
+    status: 'active',
+    health: 'red',
+    progress: 28,
+    startDate: '2024-04-01',
+    endDate: '2024-11-30',
+    budget: { approved: 1200000, forecast: 1450000, actual: 520000 },
+    manager: 'Mike Johnson',
+  },
+  {
+    id: 'PRJ-005',
+    name: 'Customer Portal Redesign',
+    code: 'CPR-2024',
+    status: 'active',
+    health: 'amber',
+    progress: 55,
+    startDate: '2024-02-15',
+    endDate: '2024-09-30',
+    budget: { approved: 750000, forecast: 780000, actual: 425000 },
+    manager: 'Jane Smith',
+  },
+  {
+    id: 'PRJ-006',
+    name: 'API Gateway Implementation',
+    code: 'AGI-2024',
+    status: 'active',
+    health: 'green',
+    progress: 91,
+    startDate: '2024-01-01',
+    endDate: '2024-06-30',
+    budget: { approved: 450000, forecast: 440000, actual: 405000 },
+    manager: 'David Wilson',
+  },
+];
+
+export const mockPrograms: Program[] = [
+  {
+    id: 'PGM-001',
+    name: 'Digital Transformation Initiative',
+    description: 'Enterprise-wide digital transformation program',
+    manager: 'Sarah Mitchell',
+    status: 'active',
+    health: 'amber',
+    startDate: '2024-01-01',
+    endDate: '2024-12-31',
+    projectIds: ['PRJ-001', 'PRJ-002', 'PRJ-006'],
+    budget: { approved: 4750000, forecast: 4840000, actual: 2720000 },
+  },
+  {
+    id: 'PGM-002',
+    name: 'Customer Experience Program',
+    description: 'Improving customer-facing systems and experiences',
+    manager: 'Jane Smith',
+    status: 'active',
+    health: 'green',
+    startDate: '2024-02-01',
+    endDate: '2024-10-31',
+    projectIds: ['PRJ-005'],
+    budget: { approved: 750000, forecast: 780000, actual: 425000 },
+  },
+  {
+    id: 'PGM-003',
+    name: 'Data & Analytics Program',
+    description: 'Building enterprise data capabilities',
+    manager: 'Mike Johnson',
+    status: 'active',
+    health: 'red',
+    startDate: '2024-03-01',
+    endDate: '2024-11-30',
+    projectIds: ['PRJ-004'],
+    budget: { approved: 1200000, forecast: 1450000, actual: 520000 },
+  },
+  {
+    id: 'PGM-004',
+    name: 'Security & Compliance Program',
+    description: 'Enterprise security improvements',
+    manager: 'Emily Brown',
+    status: 'active',
+    health: 'green',
+    startDate: '2024-03-01',
+    endDate: '2024-08-31',
+    projectIds: ['PRJ-003'],
+    budget: { approved: 950000, forecast: 920000, actual: 780000 },
+  },
+];
+
+export const mockPortfolios: Portfolio[] = [
+  {
+    id: 'PORT-001',
+    name: 'Technology Portfolio 2024',
+    description: 'All technology initiatives for fiscal year 2024',
+    owner: 'CTO Office',
+    programs: ['PGM-001', 'PGM-002', 'PGM-003', 'PGM-004'],
+    projects: ['PRJ-001', 'PRJ-002', 'PRJ-003', 'PRJ-004', 'PRJ-005', 'PRJ-006'],
+    totalBudget: 7650000,
+    utilization: 78,
+  },
+];

@@ -35,6 +35,8 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'executive-dashboard', label: 'Executive Dashboard', icon: Sparkles },
+  { id: 'portfolio', label: 'Portfolio', icon: FolderKanban },
   { id: 'projects', label: 'Projects', icon: FolderKanban, badge: 3 },
   { 
     id: 'planning', 
@@ -44,6 +46,7 @@ const navItems: NavItem[] = [
       { id: 'project-plan', label: 'Project Plan', icon: ListTodo },
       { id: 'gantt', label: 'Gantt Chart', icon: GitBranch },
       { id: 'milestones', label: 'Milestones', icon: Target },
+      { id: 'program-timeline', label: 'Program Timeline', icon: Clock },
     ]
   },
   {

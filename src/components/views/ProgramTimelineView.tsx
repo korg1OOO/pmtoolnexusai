@@ -284,7 +284,7 @@ export function ProgramTimelineView() {
                       >
                         <ChevronRight className="h-4 w-4 text-muted-foreground" />
                       </motion.div>
-                      <StatusIndicator health={program.health} size="sm" />
+                      <StatusIndicator status={program.health} size="sm" />
                       <span className="text-sm font-medium truncate">{program.name}</span>
                       <Badge variant="outline" className="ml-auto text-xs">
                         {programProjects.length}
@@ -297,7 +297,7 @@ export function ProgramTimelineView() {
                         key={project.id}
                         className="h-12 border-b border-border/30 px-4 pl-10 flex items-center gap-2 hover:bg-muted/30 transition-colors"
                       >
-                        <StatusIndicator health={project.health} size="sm" />
+                        <StatusIndicator status={project.health} size="sm" />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm truncate">{project.name}</p>
                           <p className="text-xs text-muted-foreground">{project.code}</p>

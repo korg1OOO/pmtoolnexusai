@@ -260,7 +260,7 @@ export function ExecutiveDashboardView() {
             <div className="flex items-center justify-center py-4">
               <div className="relative">
                 <ProgressRing 
-                  progress={Math.round((healthCounts.green / mockProjects.length) * 100)} 
+                  value={Math.round((healthCounts.green / mockProjects.length) * 100)} 
                   size={150}
                   strokeWidth={12}
                 />
@@ -373,7 +373,7 @@ export function ExecutiveDashboardView() {
                   >
                     <div className="flex items-center justify-between mb-3">
                       <div className="flex items-center gap-3">
-                        <StatusIndicator health={program.health} />
+                        <StatusIndicator status={program.health} />
                         <div>
                           <p className="font-medium">{program.name}</p>
                           <p className="text-xs text-muted-foreground">{program.manager}</p>

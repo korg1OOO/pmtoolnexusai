@@ -265,3 +265,48 @@ export interface PresentationTheme {
   fontFamily: string;
   logoUrl?: string;
 }
+
+export interface PortfolioProject {
+  id: string;
+  name: string;
+  code: string;
+  status: 'active' | 'on-hold' | 'completed' | 'cancelled';
+  health: 'green' | 'amber' | 'red';
+  progress: number;
+  startDate: string;
+  endDate: string;
+  budget: {
+    approved: number;
+    forecast: number;
+    actual: number;
+  };
+  manager: string;
+}
+
+export interface Program {
+  id: string;
+  name: string;
+  description: string;
+  manager: string;
+  status: 'active' | 'on-hold' | 'completed';
+  health: 'green' | 'amber' | 'red';
+  startDate: string;
+  endDate: string;
+  projectIds: string[];
+  budget: {
+    approved: number;
+    forecast: number;
+    actual: number;
+  };
+}
+
+export interface Portfolio {
+  id: string;
+  name: string;
+  description: string;
+  owner: string;
+  programs: string[];
+  projects: string[];
+  totalBudget: number;
+  utilization: number;
+}

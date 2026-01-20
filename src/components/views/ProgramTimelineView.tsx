@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Calendar,
   ChevronLeft,
@@ -12,13 +12,30 @@ import {
   Milestone,
   Flag,
   AlertTriangle,
-  CheckCircle2
+  CheckCircle2,
+  X,
+  Users,
+  DollarSign,
+  TrendingUp,
+  Clock,
+  Target
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Progress } from '@/components/ui/progress';
 import { mockPrograms, mockProjects } from '@/data/mockData';
 import { StatusIndicator } from '@/components/enterprise/StatusIndicator';
+import { ProgressRing } from '@/components/enterprise/ProgressRing';
+import { 
+  AreaChart, 
+  Area, 
+  XAxis, 
+  YAxis, 
+  CartesianGrid, 
+  Tooltip, 
+  ResponsiveContainer 
+} from 'recharts';
 
 type TimeScale = 'month' | 'quarter' | 'year';
 
@@ -35,15 +52,32 @@ interface TimelineProject {
   milestones: { date: Date; name: string; status: 'completed' | 'upcoming' | 'at-risk' }[];
 }
 
+// Extended project type with more details
+interface ExtendedProject extends TimelineProject {
+  budget: number;
+  spent: number;
+  manager: string;
+  description: string;
+  team: string[];
+  risks: { name: string; severity: 'high' | 'medium' | 'low' }[];
+  burndownData: { week: string; planned: number; actual: number }[];
+}
+
 export function ProgramTimelineView() {
   const [timeScale, setTimeScale] = useState<TimeScale>('quarter');
   const [viewDate, setViewDate] = useState(new Date(2024, 0, 1));
   const [expandedPrograms, setExpandedPrograms] = useState<string[]>(mockPrograms.map(p => p.id));
+  const [selectedProject, setSelectedProject] = useState<ExtendedProject | null>(null);
 
-  // Generate timeline data
+  // Generate timeline data with extended info
   const timelineData = useMemo(() => {
-    return mockProjects.map(project => {
+    return mockProjects.map((project, index) => {
       const program = mockPrograms.find(p => p.projectIds.includes(project.id));
+      
+      // Generate realistic mock data for drill-down
+      const burndownWeeks = ['W1', 'W2', 'W3', 'W4', 'W5', 'W6'];
+      const variance = project.health === 'red' ? 15 : project.health === 'amber' ? 8 : 3;
+      
       return {
         id: project.id,
         name: project.name,
@@ -54,6 +88,19 @@ export function ProgramTimelineView() {
         endDate: new Date(project.endDate),
         progress: project.progress,
         health: project.health,
+        budget: project.budget.approved,
+        spent: project.budget.actual,
+        manager: project.manager,
+        description: `${project.name} - Strategic initiative focused on delivering key capabilities and business value.`,
+        team: ['Lead PM', 'Tech Lead', 'Designer', 'Developer 1', 'Developer 2'].slice(0, 3 + (index % 3)),
+        risks: project.health === 'green' ? [] : 
+               project.health === 'amber' ? [{ name: 'Timeline pressure', severity: 'medium' as const }] :
+               [{ name: 'Critical blockers', severity: 'high' as const }, { name: 'Resource constraints', severity: 'medium' as const }],
+        burndownData: burndownWeeks.map((week, i) => ({
+          week,
+          planned: 100 - (i * 15),
+          actual: 100 - (i * 15) + (Math.random() * variance * (project.health === 'green' ? -1 : 1))
+        })),
         milestones: [
           { date: new Date(project.startDate), name: 'Kickoff', status: 'completed' as const },
           { 
@@ -70,6 +117,12 @@ export function ProgramTimelineView() {
       };
     });
   }, []);
+
+  const formatCurrency = (value: number) => {
+    if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
+    if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
+    return `$${value}`;
+  };
 
   // Calculate timeline range
   const getTimelineRange = () => {
@@ -295,13 +348,15 @@ export function ProgramTimelineView() {
                     {isExpanded && programProjects.map((project) => (
                       <div
                         key={project.id}
-                        className="h-12 border-b border-border/30 px-4 pl-10 flex items-center gap-2 hover:bg-muted/30 transition-colors"
+                        className="h-12 border-b border-border/30 px-4 pl-10 flex items-center gap-2 hover:bg-primary/5 transition-colors cursor-pointer group"
+                        onClick={() => setSelectedProject(project as ExtendedProject)}
                       >
                         <StatusIndicator status={project.health} size="sm" />
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm truncate">{project.name}</p>
+                          <p className="text-sm truncate group-hover:text-primary transition-colors">{project.name}</p>
                           <p className="text-xs text-muted-foreground">{project.code}</p>
                         </div>
+                        <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
                       </div>
                     ))}
                   </div>
@@ -386,7 +441,8 @@ export function ProgramTimelineView() {
                             initial={{ scaleX: 0 }}
                             animate={{ scaleX: 1 }}
                             transition={{ duration: 0.3, delay: 0.1 }}
-                            whileHover={{ scale: 1.02 }}
+                            whileHover={{ scale: 1.05 }}
+                            onClick={() => setSelectedProject(project as ExtendedProject)}
                           >
                             {/* Progress overlay */}
                             <div 
@@ -396,7 +452,7 @@ export function ProgramTimelineView() {
 
                             {/* Project name tooltip */}
                             <div className="absolute -top-8 left-1/2 -translate-x-1/2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap z-20">
-                              {project.name} ({project.progress}%)
+                              {project.name} ({project.progress}%) - Click for details
                             </div>
                           </motion.div>
 
@@ -487,6 +543,264 @@ export function ProgramTimelineView() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Project Drill-Down Panel */}
+      <AnimatePresence>
+        {selectedProject && (
+          <>
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-background/80 backdrop-blur-sm z-40"
+              onClick={() => setSelectedProject(null)}
+            />
+
+            {/* Slide-out Panel */}
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="fixed right-0 top-0 h-full w-full max-w-2xl bg-card border-l border-border shadow-2xl z-50 overflow-y-auto"
+            >
+              {/* Panel Header */}
+              <div className="sticky top-0 bg-card/95 backdrop-blur-sm border-b border-border p-6 z-10">
+                <div className="flex items-start justify-between">
+                  <div className="flex items-center gap-3">
+                    <StatusIndicator status={selectedProject.health} size="lg" />
+                    <div>
+                      <h2 className="text-xl font-semibold">{selectedProject.name}</h2>
+                      <p className="text-sm text-muted-foreground">{selectedProject.code} • {selectedProject.programName}</p>
+                    </div>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => setSelectedProject(null)}>
+                    <X className="h-5 w-5" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Panel Content */}
+              <div className="p-6 space-y-6">
+                {/* Description */}
+                <div>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2">Description</h3>
+                  <p className="text-sm">{selectedProject.description}</p>
+                </div>
+
+                {/* Key Metrics */}
+                <div className="grid grid-cols-2 gap-4">
+                  <Card variant="glass">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-primary/10">
+                          <Target className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-2xl font-semibold">{selectedProject.progress}%</p>
+                          <p className="text-xs text-muted-foreground">Progress</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card variant="glass">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-success/10">
+                          <DollarSign className="h-5 w-5 text-success" />
+                        </div>
+                        <div>
+                          <p className="text-2xl font-semibold">{formatCurrency(selectedProject.budget)}</p>
+                          <p className="text-xs text-muted-foreground">Budget</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card variant="glass">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-warning/10">
+                          <TrendingUp className="h-5 w-5 text-warning" />
+                        </div>
+                        <div>
+                          <p className="text-2xl font-semibold">{formatCurrency(selectedProject.spent)}</p>
+                          <p className="text-xs text-muted-foreground">Spent ({Math.round(selectedProject.spent / selectedProject.budget * 100)}%)</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                  <Card variant="glass">
+                    <CardContent className="p-4">
+                      <div className="flex items-center gap-3">
+                        <div className="p-2 rounded-lg bg-muted">
+                          <Clock className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold">{selectedProject.endDate.toLocaleDateString()}</p>
+                          <p className="text-xs text-muted-foreground">Target End Date</p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Progress Ring and Burndown */}
+                <div className="grid grid-cols-2 gap-4">
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">Overall Progress</CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex justify-center py-4">
+                      <ProgressRing value={selectedProject.progress} size={120} strokeWidth={10} />
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm">Burndown Chart</CardTitle>
+                    </CardHeader>
+                    <CardContent className="h-40">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <AreaChart data={selectedProject.burndownData}>
+                          <defs>
+                            <linearGradient id="colorPlanned" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0.3}/>
+                              <stop offset="95%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0}/>
+                            </linearGradient>
+                            <linearGradient id="colorActual" x1="0" y1="0" x2="0" y2="1">
+                              <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
+                              <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                          <XAxis dataKey="week" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                          <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
+                          <Tooltip 
+                            contentStyle={{ 
+                              backgroundColor: 'hsl(var(--popover))', 
+                              border: '1px solid hsl(var(--border))',
+                              borderRadius: '8px',
+                              fontSize: '12px'
+                            }} 
+                          />
+                          <Area type="monotone" dataKey="planned" stroke="hsl(var(--muted-foreground))" fillOpacity={1} fill="url(#colorPlanned)" strokeDasharray="5 5" />
+                          <Area type="monotone" dataKey="actual" stroke="hsl(var(--primary))" fillOpacity={1} fill="url(#colorActual)" />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Timeline Milestones */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Project Milestones</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-3">
+                      {selectedProject.milestones.map((milestone, idx) => (
+                        <div key={idx} className="flex items-center gap-3">
+                          <div className={`p-1.5 rounded-full ${
+                            milestone.status === 'completed' ? 'bg-success/10' :
+                            milestone.status === 'at-risk' ? 'bg-destructive/10' : 'bg-primary/10'
+                          }`}>
+                            {milestone.status === 'completed' ? (
+                              <CheckCircle2 className="h-4 w-4 text-success" />
+                            ) : milestone.status === 'at-risk' ? (
+                              <AlertTriangle className="h-4 w-4 text-destructive" />
+                            ) : (
+                              <Flag className="h-4 w-4 text-primary" />
+                            )}
+                          </div>
+                          <div className="flex-1">
+                            <p className="text-sm font-medium">{milestone.name}</p>
+                            <p className="text-xs text-muted-foreground">{milestone.date.toLocaleDateString()}</p>
+                          </div>
+                          <Badge variant={
+                            milestone.status === 'completed' ? 'default' :
+                            milestone.status === 'at-risk' ? 'destructive' : 'outline'
+                          } className="text-xs capitalize">
+                            {milestone.status}
+                          </Badge>
+                        </div>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Team */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Users className="h-4 w-4" />
+                      Project Team
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                      <Badge variant="secondary" className="text-xs">
+                        {selectedProject.manager} (PM)
+                      </Badge>
+                      {selectedProject.team.map((member, idx) => (
+                        <Badge key={idx} variant="outline" className="text-xs">
+                          {member}
+                        </Badge>
+                      ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Risks */}
+                {selectedProject.risks.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <AlertTriangle className="h-4 w-4 text-warning" />
+                        Active Risks
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        {selectedProject.risks.map((risk, idx) => (
+                          <div key={idx} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
+                            <span className="text-sm">{risk.name}</span>
+                            <Badge variant={
+                              risk.severity === 'high' ? 'destructive' :
+                              risk.severity === 'medium' ? 'secondary' : 'outline'
+                            } className="text-xs capitalize">
+                              {risk.severity}
+                            </Badge>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Budget Progress */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm">Budget Utilization</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      <div className="flex justify-between text-sm">
+                        <span>Spent: {formatCurrency(selectedProject.spent)}</span>
+                        <span>Budget: {formatCurrency(selectedProject.budget)}</span>
+                      </div>
+                      <Progress value={(selectedProject.spent / selectedProject.budget) * 100} className="h-2" />
+                      <p className="text-xs text-muted-foreground">
+                        {formatCurrency(selectedProject.budget - selectedProject.spent)} remaining
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

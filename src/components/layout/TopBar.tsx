@@ -1,6 +1,5 @@
 import React from 'react';
 import { cn } from '@/lib/utils';
-import { motion } from 'framer-motion';
 import {
   Search,
   Bell,
@@ -9,11 +8,10 @@ import {
   User,
   ChevronDown,
   Command,
-  Sun,
-  Moon,
   Maximize2,
   LayoutGrid,
 } from 'lucide-react';
+import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -76,6 +74,8 @@ export function TopBar({ projectName, projectCode, className }: TopBarProps) {
           <LayoutGrid className="h-4 w-4" />
         </Button>
         
+        <ThemeToggle />
+        
         <Button variant="ghost" size="iconSm" className="relative">
           <Bell className="h-4 w-4" />
           <span className="absolute -top-0.5 -right-0.5 flex h-4 w-4 items-center justify-center rounded-full bg-destructive text-[10px] text-destructive-foreground font-medium">
@@ -120,8 +120,8 @@ export function TopBar({ projectName, projectCode, className }: TopBarProps) {
               Profile
             </DropdownMenuItem>
             <DropdownMenuItem>
-              <Sun className="mr-2 h-4 w-4" />
-              Light Mode
+              <Maximize2 className="mr-2 h-4 w-4" />
+              Fullscreen
             </DropdownMenuItem>
             <DropdownMenuItem>
               <Maximize2 className="mr-2 h-4 w-4" />

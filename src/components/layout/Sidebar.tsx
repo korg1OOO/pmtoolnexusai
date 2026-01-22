@@ -36,6 +36,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { id: 'executive-dashboard', label: 'Executive Dashboard', icon: Sparkles },
+  { id: 'strategic', label: 'Strategic Dashboard', icon: Target },
   { id: 'portfolio', label: 'Portfolio', icon: FolderKanban },
   { id: 'projects', label: 'Projects', icon: FolderKanban, badge: 3 },
   { 
@@ -58,7 +59,8 @@ const navItems: NavItem[] = [
       { id: 'backlog', label: 'Backlog', icon: ListTodo },
     ]
   },
-  { id: 'meetings', label: 'Meetings', icon: Users, badge: 2 },
+  { id: 'meetings', label: 'AI Meetings', icon: Users, badge: 2 },
+  { id: 'communications', label: 'Communications', icon: BarChart3 },
   { id: 'resources', label: 'Resources', icon: Users },
   { id: 'risks', label: 'Risks & Issues', icon: AlertTriangle, badge: 5 },
   { id: 'decisions', label: 'Decisions', icon: Target },

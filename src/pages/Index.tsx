@@ -41,7 +41,11 @@ const Index = () => {
       case 'backlog':
         return <BacklogView />;
       case 'meetings':
-        return <MeetingsView />;
+        return <EnhancedMeetingsView />;
+      case 'strategic':
+        return <StrategicDashboardView />;
+      case 'communications':
+        return <CommunicationIntelligenceView />;
       case 'risks':
       case 'decisions':
         return <RisksDecisionsView />;

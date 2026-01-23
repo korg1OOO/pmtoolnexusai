@@ -28,12 +28,14 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
 import { mockCommunicationIngests, mockExecutiveStatus } from '@/data/aiMockData';
+import { CommunicationAISidebar } from '@/components/ai/CommunicationAISidebar';
 import type { CommunicationIngest, ExecutiveStatus } from '@/types/ai-pm';
 
 export function CommunicationIntelligenceView() {
   const [selectedComm, setSelectedComm] = useState<CommunicationIngest | null>(mockCommunicationIngests[0]);
   const [statusAudience, setStatusAudience] = useState<string>('steering-committee');
   const [emailContent, setEmailContent] = useState('');
+  const [showAISidebar, setShowAISidebar] = useState(true);
 
   const executiveStatus = mockExecutiveStatus;
 
@@ -77,7 +79,9 @@ export function CommunicationIntelligenceView() {
   };
 
   return (
-    <div className="p-6 space-y-6 overflow-y-auto h-full">
+    <>
+      <CommunicationAISidebar isOpen={showAISidebar} onToggle={() => setShowAISidebar(!showAISidebar)} />
+      <div className={cn("p-6 space-y-6 overflow-y-auto h-full transition-all duration-300", showAISidebar && "mr-80")}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -605,6 +609,7 @@ export function CommunicationIntelligenceView() {
           </div>
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </>
   );
 }

@@ -44,6 +44,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { mockAIMeetings, mockMoMTemplates } from '@/data/aiMockData';
+import { MeetingAISidebar } from '@/components/ai/MeetingAISidebar';
 import type { AIEnhancedMeeting } from '@/types/ai-pm';
 
 export function EnhancedMeetingsView() {
@@ -51,6 +52,7 @@ export function EnhancedMeetingsView() {
   const [notes, setNotes] = useState('');
   const [showMoM, setShowMoM] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(mockMoMTemplates[0]);
+  const [showAISidebar, setShowAISidebar] = useState(true);
 
   const getCaptureIcon = (mode: string) => {
     switch (mode) {
@@ -90,7 +92,13 @@ export function EnhancedMeetingsView() {
   };
 
   return (
-    <div className="flex h-full">
+    <>
+      <MeetingAISidebar 
+        isOpen={showAISidebar} 
+        onToggle={() => setShowAISidebar(!showAISidebar)} 
+        meeting={selectedMeeting}
+      />
+      <div className={cn("flex h-full transition-all duration-300", showAISidebar && "mr-80")}>
       {/* Meeting List */}
       <div className="w-80 border-r flex flex-col">
         <div className="p-4 border-b">
@@ -914,6 +922,7 @@ export function EnhancedMeetingsView() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }

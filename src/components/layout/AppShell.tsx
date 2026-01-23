@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { TooltipProvider } from '@/components/ui/tooltip';
+import { PMCoachSidebar } from '@/components/ai/PMCoachSidebar';
 import { mockProject } from '@/data/mockData';
 
 interface AppShellProps {
@@ -12,6 +13,12 @@ interface AppShellProps {
 }
 
 export function AppShell({ children, activeView, onViewChange }: AppShellProps) {
+  const [showPMCoach, setShowPMCoach] = useState(false);
+
+  // Only show PM Coach on non-AI views (AI views have their own sidebars)
+  const aiViews = ['meetings', 'strategic', 'communications'];
+  const showPMCoachToggle = !aiViews.includes(activeView);
+
   return (
     <TooltipProvider delayDuration={0}>
       <div className="flex h-screen w-full overflow-hidden bg-background">
@@ -19,7 +26,10 @@ export function AppShell({ children, activeView, onViewChange }: AppShellProps) 
           activeItem={activeView}
           onItemClick={onViewChange}
         />
-        <div className="flex flex-1 flex-col min-w-0">
+        <div className={cn(
+          "flex flex-1 flex-col min-w-0 transition-all duration-300",
+          showPMCoach && showPMCoachToggle && "mr-96"
+        )}>
           <TopBar
             projectName={mockProject.name}
             projectCode={mockProject.code}
@@ -28,6 +38,13 @@ export function AppShell({ children, activeView, onViewChange }: AppShellProps) 
             {children}
           </main>
         </div>
+        {showPMCoachToggle && (
+          <PMCoachSidebar 
+            isOpen={showPMCoach} 
+            onToggle={() => setShowPMCoach(!showPMCoach)} 
+            currentView={activeView}
+          />
+        )}
       </div>
     </TooltipProvider>
   );

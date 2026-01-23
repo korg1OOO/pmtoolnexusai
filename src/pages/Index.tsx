@@ -16,6 +16,9 @@ import { ExecutiveDashboardView } from '@/components/views/ExecutiveDashboardVie
 import { MilestonesView } from '@/components/views/MilestonesView';
 import { BacklogView } from '@/components/views/BacklogView';
 import { ReportsView } from '@/components/views/ReportsView';
+import { EnhancedMeetingsView } from '@/components/views/EnhancedMeetingsView';
+import { StrategicDashboardView } from '@/components/views/StrategicDashboardView';
+import { CommunicationIntelligenceView } from '@/components/views/CommunicationIntelligenceView';
 
 const Index = () => {
   const [activeView, setActiveView] = useState('dashboard');

@@ -28,9 +28,11 @@ import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { mockProjectContext, mockAIRiskDiscovery, mockValueEngineering } from '@/data/aiMockData';
+import { StrategicAISidebar } from '@/components/ai/StrategicAISidebar';
 
 export function StrategicDashboardView() {
   const [selectedOption, setSelectedOption] = useState<string | null>('OPT-001');
+  const [showAISidebar, setShowAISidebar] = useState(true);
   
   const context = mockProjectContext;
   const riskDiscovery = mockAIRiskDiscovery;
@@ -70,7 +72,9 @@ export function StrategicDashboardView() {
   };
 
   return (
-    <div className="p-6 space-y-6 overflow-y-auto h-full">
+    <>
+      <StrategicAISidebar isOpen={showAISidebar} onToggle={() => setShowAISidebar(!showAISidebar)} />
+      <div className={cn("p-6 space-y-6 overflow-y-auto h-full transition-all duration-300", showAISidebar && "mr-80")}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
@@ -664,6 +668,7 @@ export function StrategicDashboardView() {
           </div>
         </TabsContent>
       </Tabs>
-    </div>
+      </div>
+    </>
   );
 }

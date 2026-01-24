@@ -57,6 +57,8 @@ const navItems: NavItem[] = [
     children: [
       { id: 'sprints', label: 'Sprints', icon: Clock },
       { id: 'backlog', label: 'Backlog', icon: ListTodo },
+      { id: 'actions', label: 'Actions', icon: Target, badge: 6 },
+      { id: 'issues', label: 'Issues', icon: AlertTriangle, badge: 3 },
     ]
   },
   { id: 'meetings', label: 'AI Meetings', icon: Users, badge: 2 },

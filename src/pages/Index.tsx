@@ -19,6 +19,8 @@ import { ReportsView } from '@/components/views/ReportsView';
 import { EnhancedMeetingsView } from '@/components/views/EnhancedMeetingsView';
 import { StrategicDashboardView } from '@/components/views/StrategicDashboardView';
 import { CommunicationIntelligenceView } from '@/components/views/CommunicationIntelligenceView';
+import { IssuesRegisterView } from '@/components/views/IssuesRegisterView';
+import { ActionsView } from '@/components/views/ActionsView';
 
 const Index = () => {
   const [activeView, setActiveView] = useState('dashboard');
@@ -43,6 +45,10 @@ const Index = () => {
         return <SprintBoardView />;
       case 'backlog':
         return <BacklogView />;
+      case 'actions':
+        return <ActionsView />;
+      case 'issues':
+        return <IssuesRegisterView />;
       case 'meetings':
         return <EnhancedMeetingsView />;
       case 'strategic':

@@ -38,6 +38,7 @@ const navItems: NavItem[] = [
   { id: 'executive-dashboard', label: 'Executive Dashboard', icon: Sparkles },
   { id: 'strategic', label: 'Strategic Dashboard', icon: Target },
   { id: 'portfolio', label: 'Portfolio', icon: FolderKanban },
+  { id: 'traceability', label: 'Traceability Matrix', icon: GitBranch },
   { id: 'projects', label: 'Projects', icon: FolderKanban, badge: 3 },
   { 
     id: 'planning', 
@@ -45,7 +46,9 @@ const navItems: NavItem[] = [
     icon: CalendarDays,
     children: [
       { id: 'project-plan', label: 'Project Plan', icon: ListTodo },
+      { id: 'child-plans', label: 'Child Plans', icon: ListTodo },
       { id: 'gantt', label: 'Gantt Chart', icon: GitBranch },
+      { id: 'child-gantt', label: 'Child Gantt', icon: GitBranch },
       { id: 'milestones', label: 'Milestones', icon: Target },
       { id: 'program-timeline', label: 'Program Timeline', icon: Clock },
     ]

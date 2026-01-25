@@ -21,6 +21,9 @@ import { StrategicDashboardView } from '@/components/views/StrategicDashboardVie
 import { CommunicationIntelligenceView } from '@/components/views/CommunicationIntelligenceView';
 import { IssuesRegisterView } from '@/components/views/IssuesRegisterView';
 import { ActionsView } from '@/components/views/ActionsView';
+import { TraceabilityMatrixView } from '@/components/views/TraceabilityMatrixView';
+import { ChildPlansView } from '@/components/views/ChildPlansView';
+import { ChildGanttView } from '@/components/views/ChildGanttView';
 
 const Index = () => {
   const [activeView, setActiveView] = useState('dashboard');
@@ -33,10 +36,16 @@ const Index = () => {
         return <ExecutiveDashboardView />;
       case 'portfolio':
         return <PortfolioView />;
+      case 'traceability':
+        return <TraceabilityMatrixView />;
       case 'project-plan':
         return <ProjectPlanView />;
+      case 'child-plans':
+        return <ChildPlansView />;
       case 'gantt':
         return <GanttView />;
+      case 'child-gantt':
+        return <ChildGanttView />;
       case 'milestones':
         return <MilestonesView />;
       case 'program-timeline':

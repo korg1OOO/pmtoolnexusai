@@ -4,7 +4,6 @@ import { DashboardView } from '@/components/views/DashboardView';
 import { ProjectPlanView } from '@/components/views/ProjectPlanView';
 import { GanttView } from '@/components/views/GanttView';
 import { SprintBoardView } from '@/components/views/SprintBoardView';
-import { MeetingsView } from '@/components/views/MeetingsView';
 import { RisksDecisionsView } from '@/components/views/RisksDecisionsView';
 import { FinancialsView } from '@/components/views/FinancialsView';
 import { NotesView } from '@/components/views/NotesView';
@@ -24,6 +23,11 @@ import { ActionsView } from '@/components/views/ActionsView';
 import { TraceabilityMatrixView } from '@/components/views/TraceabilityMatrixView';
 import { ChildPlansView } from '@/components/views/ChildPlansView';
 import { ChildGanttView } from '@/components/views/ChildGanttView';
+import { PlatformAdminView } from '@/components/views/PlatformAdminView';
+import { UserSettingsView } from '@/components/views/UserSettingsView';
+import { ProjectAdminView } from '@/components/views/ProjectAdminView';
+import { PlanningView } from '@/components/views/PlanningView';
+import { ProjectProvider } from '@/contexts/ProjectContext';
 
 const Index = () => {
   const [activeView, setActiveView] = useState('dashboard');
@@ -39,7 +43,7 @@ const Index = () => {
       case 'traceability':
         return <TraceabilityMatrixView />;
       case 'project-plan':
-        return <ProjectPlanView />;
+        return <PlanningView />;
       case 'child-plans':
         return <ChildPlansView />;
       case 'gantt':
@@ -77,15 +81,23 @@ const Index = () => {
         return <PresentationsView />;
       case 'reports':
         return <ReportsView />;
+      case 'admin-platform':
+        return <PlatformAdminView />;
+      case 'admin-project':
+        return <ProjectAdminView />;
+      case 'settings':
+        return <UserSettingsView />;
       default:
         return <DashboardView />;
     }
   };
 
   return (
-    <AppShell activeView={activeView} onViewChange={setActiveView}>
-      {renderView()}
-    </AppShell>
+    <ProjectProvider>
+      <AppShell activeView={activeView} onViewChange={setActiveView}>
+        {renderView()}
+      </AppShell>
+    </ProjectProvider>
   );
 };
 

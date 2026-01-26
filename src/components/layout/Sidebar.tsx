@@ -7,7 +7,6 @@ import {
   CalendarDays,
   ListTodo,
   Users,
-  FileText,
   BarChart3,
   Target,
   AlertTriangle,
@@ -21,9 +20,13 @@ import {
   GitBranch,
   Clock,
   Sparkles,
+  Shield,
+  Building2,
+  User,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useProjectContext, ModuleVisibility } from '@/contexts/ProjectContext';
 
 interface NavItem {
   id: string;
@@ -31,26 +34,27 @@ interface NavItem {
   icon: React.ElementType;
   badge?: string | number;
   children?: NavItem[];
+  moduleKey?: keyof ModuleVisibility;
+  alwaysShow?: boolean;
 }
 
 const navItems: NavItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { id: 'executive-dashboard', label: 'Executive Dashboard', icon: Sparkles },
-  { id: 'strategic', label: 'Strategic Dashboard', icon: Target },
-  { id: 'portfolio', label: 'Portfolio', icon: FolderKanban },
-  { id: 'traceability', label: 'Traceability Matrix', icon: GitBranch },
-  { id: 'projects', label: 'Projects', icon: FolderKanban, badge: 3 },
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, moduleKey: 'dashboard' },
+  { id: 'executive-dashboard', label: 'Executive Dashboard', icon: Sparkles, moduleKey: 'executiveDashboard' },
+  { id: 'strategic', label: 'Strategic Dashboard', icon: Target, moduleKey: 'strategic' },
+  { id: 'portfolio', label: 'Portfolio', icon: FolderKanban, moduleKey: 'portfolio' },
+  { id: 'traceability', label: 'Traceability Matrix', icon: GitBranch, moduleKey: 'traceability' },
   { 
     id: 'planning', 
     label: 'Planning', 
     icon: CalendarDays,
     children: [
-      { id: 'project-plan', label: 'Project Plan', icon: ListTodo },
-      { id: 'child-plans', label: 'Child Plans', icon: ListTodo },
-      { id: 'gantt', label: 'Gantt Chart', icon: GitBranch },
-      { id: 'child-gantt', label: 'Child Gantt', icon: GitBranch },
-      { id: 'milestones', label: 'Milestones', icon: Target },
-      { id: 'program-timeline', label: 'Program Timeline', icon: Clock },
+      { id: 'project-plan', label: 'Project Plan', icon: ListTodo, moduleKey: 'projectPlan' },
+      { id: 'child-plans', label: 'Child Plans', icon: ListTodo, moduleKey: 'childPlans' },
+      { id: 'gantt', label: 'Gantt Chart', icon: GitBranch, moduleKey: 'gantt' },
+      { id: 'child-gantt', label: 'Child Gantt', icon: GitBranch, moduleKey: 'childGantt' },
+      { id: 'milestones', label: 'Milestones', icon: Target, moduleKey: 'milestones' },
+      { id: 'program-timeline', label: 'Program Timeline', icon: Clock, moduleKey: 'programTimeline' },
     ]
   },
   {
@@ -58,21 +62,34 @@ const navItems: NavItem[] = [
     label: 'Execution',
     icon: Briefcase,
     children: [
-      { id: 'sprints', label: 'Sprints', icon: Clock },
-      { id: 'backlog', label: 'Backlog', icon: ListTodo },
-      { id: 'actions', label: 'Actions', icon: Target, badge: 6 },
-      { id: 'issues', label: 'Issues', icon: AlertTriangle, badge: 3 },
+      { id: 'sprints', label: 'Sprints', icon: Clock, moduleKey: 'sprints' },
+      { id: 'backlog', label: 'Backlog', icon: ListTodo, moduleKey: 'backlog' },
+      { id: 'actions', label: 'Actions', icon: Target, badge: 6, moduleKey: 'actions' },
+      { id: 'issues', label: 'Issues', icon: AlertTriangle, badge: 3, moduleKey: 'issues' },
     ]
   },
-  { id: 'meetings', label: 'AI Meetings', icon: Users, badge: 2 },
-  { id: 'communications', label: 'Communications', icon: BarChart3 },
-  { id: 'resources', label: 'Resources', icon: Users },
-  { id: 'risks', label: 'Risks & Issues', icon: AlertTriangle, badge: 5 },
-  { id: 'decisions', label: 'Decisions', icon: Target },
-  { id: 'financials', label: 'Financials', icon: DollarSign },
-  { id: 'notes', label: 'Notes', icon: BookOpen },
-  { id: 'reports', label: 'Reports', icon: BarChart3 },
-  { id: 'presentations', label: 'Presentations', icon: Presentation },
+  { id: 'meetings', label: 'AI Meetings', icon: Users, badge: 2, moduleKey: 'meetings' },
+  { id: 'communications', label: 'Communications', icon: BarChart3, moduleKey: 'communications' },
+  { id: 'resources', label: 'Resources', icon: Users, moduleKey: 'resources' },
+  { id: 'risks', label: 'Risks & Issues', icon: AlertTriangle, badge: 5, moduleKey: 'risks' },
+  { id: 'decisions', label: 'Decisions', icon: Target, moduleKey: 'decisions' },
+  { id: 'financials', label: 'Financials', icon: DollarSign, moduleKey: 'financials' },
+  { id: 'notes', label: 'Notes', icon: BookOpen, moduleKey: 'notes' },
+  { id: 'reports', label: 'Reports', icon: BarChart3, moduleKey: 'reports' },
+  { id: 'presentations', label: 'Presentations', icon: Presentation, moduleKey: 'presentations' },
+];
+
+const adminItems: NavItem[] = [
+  {
+    id: 'administration',
+    label: 'Administration',
+    icon: Shield,
+    children: [
+      { id: 'admin-platform', label: 'Platform Admin', icon: Building2, alwaysShow: true },
+      { id: 'admin-project', label: 'Project Admin', icon: Settings, alwaysShow: true },
+    ]
+  },
+  { id: 'settings', label: 'Settings', icon: User, alwaysShow: true },
 ];
 
 interface SidebarProps {
@@ -84,6 +101,7 @@ interface SidebarProps {
 export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<string[]>(['planning', 'execution']);
+  const { isModuleVisible } = useProjectContext();
 
   const toggleGroup = (id: string) => {
     setExpandedGroups((prev) =>
@@ -91,10 +109,28 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
     );
   };
 
+  const isItemVisible = (item: NavItem): boolean => {
+    if (item.alwaysShow) return true;
+    if (!item.moduleKey) return true;
+    return isModuleVisible(item.moduleKey);
+  };
+
+  const filterVisibleChildren = (children?: NavItem[]): NavItem[] | undefined => {
+    if (!children) return undefined;
+    return children.filter(isItemVisible);
+  };
+
   const renderNavItem = (item: NavItem, depth = 0) => {
+    if (!isItemVisible(item)) return null;
+
+    const visibleChildren = filterVisibleChildren(item.children);
+    const hasVisibleChildren = visibleChildren && visibleChildren.length > 0;
+
+    // If this is a group and no children are visible, hide the group
+    if (item.children && !hasVisibleChildren) return null;
+
     const isActive = activeItem === item.id;
     const isExpanded = expandedGroups.includes(item.id);
-    const hasChildren = item.children && item.children.length > 0;
     const Icon = item.icon;
 
     const itemContent = (
@@ -102,7 +138,7 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
         whileHover={{ x: 2 }}
         whileTap={{ scale: 0.98 }}
         onClick={() => {
-          if (hasChildren) {
+          if (hasVisibleChildren) {
             toggleGroup(item.id);
           } else {
             onItemClick(item.id);
@@ -126,7 +162,7 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
                 {item.badge}
               </span>
             )}
-            {hasChildren && (
+            {hasVisibleChildren && (
               <ChevronRight
                 className={cn(
                   'h-4 w-4 transition-transform duration-200',
@@ -158,14 +194,14 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
     return (
       <div key={item.id}>
         {itemContent}
-        {hasChildren && isExpanded && !collapsed && (
+        {hasVisibleChildren && isExpanded && !collapsed && (
           <motion.div
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             className="mt-1 space-y-1"
           >
-            {item.children!.map((child) => renderNavItem(child, depth + 1))}
+            {visibleChildren!.map((child) => renderNavItem(child, depth + 1))}
           </motion.div>
         )}
       </div>
@@ -213,28 +249,13 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto p-3 space-y-1">
         {navItems.map((item) => renderNavItem(item))}
-      </nav>
 
-      {/* Footer */}
-      <div className="border-t border-sidebar-border p-3">
-        <Tooltip delayDuration={0}>
-          <TooltipTrigger asChild>
-            <Button
-              variant="ghost"
-              className={cn(
-                'w-full justify-start gap-3',
-                collapsed && 'justify-center px-2'
-              )}
-            >
-              <Settings className="h-4 w-4" />
-              {!collapsed && <span>Settings</span>}
-            </Button>
-          </TooltipTrigger>
-          {collapsed && (
-            <TooltipContent side="right">Settings</TooltipContent>
-          )}
-        </Tooltip>
-      </div>
+        {/* Separator */}
+        <div className="my-4 border-t border-sidebar-border" />
+
+        {/* Admin Items */}
+        {adminItems.map((item) => renderNavItem(item))}
+      </nav>
     </motion.aside>
   );
 }

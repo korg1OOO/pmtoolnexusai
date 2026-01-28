@@ -110,6 +110,7 @@ const navItems: NavItem[] = [
     children: [
       { id: 'financials', label: 'Budget & Billing', icon: DollarSign, moduleKey: 'financials' },
       { id: 'evm', label: 'Earned Value (EVM)', icon: BarChart3, alwaysShow: true },
+      { id: 'tracking', label: 'Baseline & Tracking', icon: Target, alwaysShow: true },
     ]
   },
   {

@@ -34,6 +34,7 @@ import {
   Wifi,
   WifiOff,
   Volume2,
+  Link2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -45,6 +46,7 @@ import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { mockAIMeetings, mockMoMTemplates } from '@/data/aiMockData';
 import { MeetingAISidebar } from '@/components/ai/MeetingAISidebar';
+import { LinkDialog, LinkableItem } from '@/components/linking/LinkDialog';
 import type { AIEnhancedMeeting } from '@/types/ai-pm';
 
 export function EnhancedMeetingsView() {
@@ -53,6 +55,18 @@ export function EnhancedMeetingsView() {
   const [showMoM, setShowMoM] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState(mockMoMTemplates[0]);
   const [showAISidebar, setShowAISidebar] = useState(true);
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [linkingAction, setLinkingAction] = useState<{ id: string; title: string } | null>(null);
+
+  const handleOpenLinkDialog = (actionId: string, actionTitle: string) => {
+    setLinkingAction({ id: actionId, title: actionTitle });
+    setLinkDialogOpen(true);
+  };
+
+  const handleLinkItems = (items: LinkableItem[]) => {
+    console.log('Linked items to action:', items);
+    // In real app, save the links
+  };
 
   const getCaptureIcon = (mode: string) => {
     switch (mode) {
@@ -538,7 +552,7 @@ export function EnhancedMeetingsView() {
                 <TabsContent value="actions" className="mt-4">
                   <div className="space-y-3">
                     {selectedMeeting.aiIntelligence.actionItems.map((action) => (
-                      <Card key={action.id}>
+                      <Card key={action.id} className="group">
                         <CardContent className="pt-4">
                           <div className="flex items-start gap-3">
                             <CheckCircle2 className="h-5 w-5 text-muted-foreground mt-0.5" />
@@ -560,7 +574,17 @@ export function EnhancedMeetingsView() {
                                 </div>
                               )}
                             </div>
-                            <Badge variant={action.priority as any}>{action.priority}</Badge>
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="ghost"
+                                size="iconXs"
+                                className="opacity-0 group-hover:opacity-100 transition-opacity"
+                                onClick={() => handleOpenLinkDialog(action.id, action.title)}
+                              >
+                                <Link2 className="h-3 w-3" />
+                              </Button>
+                              <Badge variant={action.priority as any}>{action.priority}</Badge>
+                            </div>
                           </div>
                         </CardContent>
                       </Card>
@@ -923,6 +947,17 @@ export function EnhancedMeetingsView() {
         </div>
       )}
       </div>
+
+      {/* Link Dialog for Actions */}
+      {linkingAction && (
+        <LinkDialog
+          open={linkDialogOpen}
+          onOpenChange={setLinkDialogOpen}
+          sourceItem={{ id: linkingAction.id, title: linkingAction.title, type: 'action' }}
+          onLink={handleLinkItems}
+          allowedTypes={['task', 'decision', 'risk', 'meeting']}
+        />
+      )}
     </>
   );
 }

@@ -38,6 +38,7 @@ import {
   ResourceAssignment,
 } from '@/hooks/useResources';
 import { useCreateDependency, useDeleteDependency } from '@/hooks/useTasks';
+import { useScheduleTrigger } from '@/hooks/useScheduleTrigger';
 import {
   Dialog,
   DialogContent,
@@ -84,6 +85,7 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
   const { data: dependencies = [] } = useDependencies(projectId);
   const updateTask = useUpdateTask();
   const saveBaseline = useSaveProjectBaseline();
+  const { triggerSchedule } = useScheduleTrigger(projectId);
   
   // Resource hooks for task info dialog
   const { data: resources = [] } = useResources(projectId);
@@ -366,6 +368,8 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
       start_date: startDate,
       end_date: endDate,
     });
+    // Trigger auto-scheduling for dependent tasks
+    triggerSchedule(taskId);
   };
 
   // Handle save baseline

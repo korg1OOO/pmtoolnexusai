@@ -13,6 +13,7 @@ import {
   CalendarDays,
   Users,
   BarChart3,
+  RefreshCw,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,6 +29,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useProjects, useCreateProject, Project } from '@/hooks/useProjects';
 import { useTasks, useCreateTask } from '@/hooks/useTasks';
 import { useCalculateCriticalPath } from '@/hooks/useCriticalPath';
+import { useScheduleTrigger } from '@/hooks/useScheduleTrigger';
 import { 
   useProjectCalendars,
   useDefaultCalendar, 
@@ -85,7 +87,7 @@ export function PlanningView() {
   const createProject = useCreateProject();
   const createTask = useCreateTask();
   const calculateCriticalPath = useCalculateCriticalPath();
-  
+  const { triggerSchedule, recalculateAll, isScheduling } = useScheduleTrigger(selectedProjectId);
   // Calendar hooks
   const { data: calendars = [] } = useProjectCalendars(selectedProjectId);
   const { data: defaultCalendar } = useDefaultCalendar(selectedProjectId);
@@ -190,6 +192,14 @@ export function PlanningView() {
       return;
     }
     await calculateCriticalPath.mutateAsync(selectedProjectId);
+  };
+
+  const handleAutoSchedule = () => {
+    if (!selectedProjectId) {
+      toast.error('Please select a project first');
+      return;
+    }
+    recalculateAll();
   };
 
   // Show auth prompt if not authenticated
@@ -350,6 +360,19 @@ export function PlanningView() {
           >
             <CalendarDays className="h-4 w-4 mr-1" />
             Calendar
+          </Button>
+          <Button 
+            variant="default" 
+            size="sm"
+            onClick={handleAutoSchedule}
+            disabled={!selectedProjectId || isScheduling}
+          >
+            {isScheduling ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-1" />
+            )}
+            Auto-Schedule
           </Button>
           <Button 
             variant="secondary" 

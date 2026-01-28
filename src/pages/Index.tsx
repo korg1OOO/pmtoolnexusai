@@ -42,6 +42,7 @@ import { LessonsLearnedView } from '@/components/views/LessonsLearnedView';
 import { RisksView } from '@/components/views/RisksView';
 import { DecisionsView } from '@/components/views/DecisionsView';
 import { TeamChatView } from '@/components/views/TeamChatView';
+import { TeamManagementView } from '@/components/views/TeamManagementView';
 import { ProjectProvider } from '@/contexts/ProjectContext';
 
 const Index = () => {
@@ -81,6 +82,7 @@ const Index = () => {
       case 'notes': return <NotesView />;
       case 'documents': return <DocumentCenterView />;
       case 'resources': return <ResourcesView />;
+      case 'team-management': return <TeamManagementView />;
       case 'presentations': return <PresentationsView />;
       case 'final-report': return <FinalReportView />;
       case 'lessons-learned': return <LessonsLearnedView />;

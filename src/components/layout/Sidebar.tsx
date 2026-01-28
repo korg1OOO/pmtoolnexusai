@@ -123,6 +123,7 @@ const navItems: NavItem[] = [
       { id: 'notes', label: 'Notes', icon: BookOpen, moduleKey: 'notes' },
       { id: 'documents', label: 'Document Center', icon: BookOpen, alwaysShow: true },
       { id: 'resources', label: 'Resources', icon: Users, moduleKey: 'resources' },
+      { id: 'team-management', label: 'Team Management', icon: Users, alwaysShow: true },
       { id: 'presentations', label: 'Presentations', icon: Presentation, moduleKey: 'presentations' },
     ]
   },

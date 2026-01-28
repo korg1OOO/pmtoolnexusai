@@ -76,6 +76,16 @@ interface DraggingState {
   originalEnd: Date;
 }
 
+interface LinkDraggingState {
+  fromTaskId: string;
+  fromTaskIndex: number;
+  fromSide: 'start' | 'end';
+  startX: number;
+  startY: number;
+  currentX: number;
+  currentY: number;
+}
+
 interface DatabaseGanttProps {
   projectId: string;
 }
@@ -98,12 +108,17 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
   const [showSlack, setShowSlack] = useState(false);
   const [showNonWorkingTime, setShowNonWorkingTime] = useState(true);
   const [dragging, setDragging] = useState<DraggingState | null>(null);
+  const [linkDragging, setLinkDragging] = useState<LinkDraggingState | null>(null);
   const [hoveredTask, setHoveredTask] = useState<string | null>(null);
+  const [linkTargetTask, setLinkTargetTask] = useState<string | null>(null);
   const [baselineDialogOpen, setBaselineDialogOpen] = useState(false);
   const [baselineName, setBaselineName] = useState('');
   const [selectedTask, setSelectedTask] = useState<DbTask | null>(null);
   const [taskInfoOpen, setTaskInfoOpen] = useState(false);
   const ganttRef = useRef<HTMLDivElement>(null);
+  
+  // Dependency creation mutation
+  const createDependency = useCreateDependency();
 
   // Build hierarchical structure
   const visibleTasks = useMemo(() => {
@@ -360,17 +375,102 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
     }
   }, [dragging, handleMouseMove, handleMouseUp]);
 
-  // Handle task reschedule
-  const handleTaskReschedule = async (taskId: string, startDate: string, endDate: string) => {
-    await updateTask.mutateAsync({
-      id: taskId,
-      project_id: projectId,
-      start_date: startDate,
-      end_date: endDate,
+  // Link drag handlers
+  const handleLinkDragStart = (e: React.MouseEvent, taskId: string, taskIndex: number, side: 'start' | 'end') => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const rect = ganttRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    
+    setLinkDragging({
+      fromTaskId: taskId,
+      fromTaskIndex: taskIndex,
+      fromSide: side,
+      startX: e.clientX - rect.left,
+      startY: e.clientY - rect.top,
+      currentX: e.clientX - rect.left,
+      currentY: e.clientY - rect.top,
     });
-    // Trigger auto-scheduling for dependent tasks
-    triggerSchedule(taskId);
   };
+
+  const handleLinkDragMove = useCallback((e: MouseEvent) => {
+    if (!linkDragging || !ganttRef.current) return;
+    
+    const rect = ganttRef.current.getBoundingClientRect();
+    setLinkDragging(prev => prev ? {
+      ...prev,
+      currentX: e.clientX - rect.left,
+      currentY: e.clientY - rect.top,
+    } : null);
+  }, [linkDragging]);
+
+  const handleLinkDragEnd = useCallback(async () => {
+    if (!linkDragging || !linkTargetTask) {
+      setLinkDragging(null);
+      setLinkTargetTask(null);
+      return;
+    }
+
+    // Prevent self-linking
+    if (linkDragging.fromTaskId === linkTargetTask) {
+      setLinkDragging(null);
+      setLinkTargetTask(null);
+      return;
+    }
+
+    // Determine dependency type based on which sides were connected
+    // End-to-Start (FS) is the default and most common
+    let depType: 'FS' | 'SS' | 'FF' | 'SF' = 'FS';
+    if (linkDragging.fromSide === 'start') {
+      depType = 'SF'; // Start-to-Finish if dragging from start
+    }
+
+    // Check if dependency already exists
+    const existingDep = dependencies.find(
+      d => d.predecessor_id === linkDragging.fromTaskId && d.task_id === linkTargetTask
+    );
+
+    if (existingDep) {
+      toast.info('Dependency already exists between these tasks');
+      setLinkDragging(null);
+      setLinkTargetTask(null);
+      return;
+    }
+
+    try {
+      await createDependency.mutateAsync({
+        dependency: {
+          task_id: linkTargetTask,
+          predecessor_id: linkDragging.fromTaskId,
+          type: depType,
+          lag: 0,
+        },
+        projectId,
+      });
+      toast.success(`Created ${depType} dependency`);
+      // Trigger auto-scheduling
+      triggerSchedule(linkTargetTask);
+      // Trigger auto-scheduling
+      triggerSchedule(linkTargetTask);
+    } catch (error) {
+      toast.error('Failed to create dependency');
+    }
+
+    setLinkDragging(null);
+    setLinkTargetTask(null);
+  }, [linkDragging, linkTargetTask, dependencies, createDependency, triggerSchedule]);
+
+  useEffect(() => {
+    if (linkDragging) {
+      document.addEventListener('mousemove', handleLinkDragMove);
+      document.addEventListener('mouseup', handleLinkDragEnd);
+      return () => {
+        document.removeEventListener('mousemove', handleLinkDragMove);
+        document.removeEventListener('mouseup', handleLinkDragEnd);
+      };
+    }
+  }, [linkDragging, handleLinkDragMove, handleLinkDragEnd]);
 
   // Handle save baseline
   const handleSaveBaseline = async () => {
@@ -636,6 +736,33 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                       </g>
                     );
                   })}
+                  
+                  {/* Link dragging line */}
+                  {linkDragging && (
+                    <g>
+                      <line
+                        x1={linkDragging.startX}
+                        y1={linkDragging.startY}
+                        x2={linkDragging.currentX}
+                        y2={linkDragging.currentY}
+                        stroke="hsl(var(--primary))"
+                        strokeWidth="2"
+                        strokeDasharray="4 2"
+                      />
+                      <circle
+                        cx={linkDragging.startX}
+                        cy={linkDragging.startY}
+                        r="4"
+                        fill="hsl(var(--primary))"
+                      />
+                      <circle
+                        cx={linkDragging.currentX}
+                        cy={linkDragging.currentY}
+                        r="4"
+                        fill={linkTargetTask ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))"}
+                      />
+                    </g>
+                  )}
                 </svg>
 
                 {/* Task Bars */}
@@ -647,16 +774,28 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                     const isDragging = dragging?.taskId === task.id;
                     const hasDeadline = task.deadline;
                     const isOverdue = hasDeadline && new Date(task.end_date) > new Date(task.deadline);
+                    const isCurrentLinkTarget = linkTargetTask === task.id;
                     
                     return (
                       <div
                         key={task.id}
                         className={cn(
                           'h-10 border-b relative',
-                          hoveredTask === task.id && 'bg-muted/20'
+                          hoveredTask === task.id && 'bg-muted/20',
+                          isCurrentLinkTarget && 'bg-primary/10 ring-1 ring-primary/50'
                         )}
-                        onMouseEnter={() => setHoveredTask(task.id)}
-                        onMouseLeave={() => setHoveredTask(null)}
+                        onMouseEnter={() => {
+                          setHoveredTask(task.id);
+                          if (linkDragging && linkDragging.fromTaskId !== task.id && task.type === 'task') {
+                            setLinkTargetTask(task.id);
+                          }
+                        }}
+                        onMouseLeave={() => {
+                          setHoveredTask(null);
+                          if (linkTargetTask === task.id) {
+                            setLinkTargetTask(null);
+                          }
+                        }}
                         onDoubleClick={() => handleTaskDoubleClick(task)}
                       >
                         {/* Baseline Bar (shown behind actual) */}
@@ -739,13 +878,24 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                             <TooltipTrigger asChild>
                               <div
                                 className={cn(
-                                  'absolute top-2.5 h-5 rounded flex items-center overflow-hidden group transition-all',
+                                  'absolute top-2.5 h-5 rounded flex items-center overflow-visible group transition-all',
                                   task.is_critical && showCriticalPath ? 'bg-destructive' : 'bg-primary',
-                                  isDragging ? 'cursor-grabbing shadow-lg ring-2 ring-primary' : 'cursor-grab hover:shadow-lg'
+                                  isDragging ? 'cursor-grabbing shadow-lg ring-2 ring-primary' : 'cursor-grab hover:shadow-lg',
+                                  isCurrentLinkTarget && 'ring-2 ring-accent shadow-lg'
                                 )}
                                 style={barStyle}
                                 onMouseDown={(e) => handleMouseDown(e, task, 'move')}
                               >
+                                {/* Left link handle */}
+                                <div
+                                  className={cn(
+                                    "absolute -left-3 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-accent bg-background cursor-crosshair transition-all z-20",
+                                    "opacity-0 group-hover:opacity-100 hover:scale-125 hover:bg-accent"
+                                  )}
+                                  onMouseDown={(e) => handleLinkDragStart(e, task.id, taskIndex, 'start')}
+                                  title="Drag to create dependency"
+                                />
+                                
                                 {/* Left resize handle */}
                                 <div
                                   className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-white/20 opacity-0 group-hover:opacity-100"
@@ -755,7 +905,7 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                                 {/* Progress Fill */}
                                 <div
                                   className={cn(
-                                    'absolute inset-y-0 left-0',
+                                    'absolute inset-y-0 left-0 rounded-l',
                                     task.is_critical && showCriticalPath
                                       ? 'bg-destructive/70'
                                       : 'bg-primary/70'
@@ -771,6 +921,16 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                                 <div
                                   className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-white/20 opacity-0 group-hover:opacity-100"
                                   onMouseDown={(e) => handleMouseDown(e, task, 'resize-end')}
+                                />
+                                
+                                {/* Right link handle */}
+                                <div
+                                  className={cn(
+                                    "absolute -right-3 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-accent bg-background cursor-crosshair transition-all z-20",
+                                    "opacity-0 group-hover:opacity-100 hover:scale-125 hover:bg-accent"
+                                  )}
+                                  onMouseDown={(e) => handleLinkDragStart(e, task.id, taskIndex, 'end')}
+                                  title="Drag to create dependency"
                                 />
                               </div>
                             </TooltipTrigger>
@@ -850,7 +1010,11 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
           )}
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-muted-foreground/60">Double-click to edit • Drag bars to reschedule</span>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded-full border-2 border-accent bg-background" />
+            <span>Link Handle</span>
+          </div>
+          <span className="text-muted-foreground/60">• Drag circles to link • Drag bars to reschedule</span>
           <div className="w-px h-4 bg-border" />
           <Calendar className="h-3 w-3" />
           <span>

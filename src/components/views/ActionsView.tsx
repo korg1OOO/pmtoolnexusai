@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
@@ -24,6 +24,10 @@ import {
   PlayCircle,
   PauseCircle,
   CircleDot,
+  Timer,
+  Bell,
+  TrendingUp,
+  BarChart3,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -33,6 +37,14 @@ import { Progress } from '@/components/ui/progress';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { KPICard } from '@/components/enterprise/KPICard';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 export interface Action {
   id: string;
@@ -66,6 +78,11 @@ export interface Action {
   tags: string[];
   dependencies: string[];
   blockedBy?: string;
+  sla?: {
+    targetHours: number;
+    breached: boolean;
+    remainingHours: number;
+  };
 }
 
 const mockActions: Action[] = [
@@ -79,11 +96,7 @@ const mockActions: Action[] = [
     createdBy: 'System',
     createdAt: '2024-01-20T08:30:00Z',
     dueDate: '2024-01-21T17:00:00Z',
-    source: {
-      type: 'issue',
-      id: 'ISS-001',
-      title: 'API Gateway timeout during peak load',
-    },
+    source: { type: 'issue', id: 'ISS-001', title: 'API Gateway timeout during peak load' },
     linkedItems: [
       { type: 'risk', id: 'R-003', title: 'Infrastructure capacity risk' },
       { type: 'task', id: 'T-045', title: 'Load balancer configuration' },
@@ -97,6 +110,7 @@ const mockActions: Action[] = [
     ],
     tags: ['infrastructure', 'performance'],
     dependencies: [],
+    sla: { targetHours: 4, breached: true, remainingHours: -2 },
   },
   {
     id: 'ACT-002',
@@ -108,11 +122,7 @@ const mockActions: Action[] = [
     createdBy: 'Emily Brown',
     createdAt: '2024-01-19T16:00:00Z',
     dueDate: '2024-01-20T12:00:00Z',
-    source: {
-      type: 'meeting',
-      id: 'MTG-012',
-      title: 'Sprint Planning Meeting',
-    },
+    source: { type: 'meeting', id: 'MTG-012', title: 'Sprint Planning Meeting' },
     linkedItems: [
       { type: 'decision', id: 'DEC-005', title: 'Migration strategy decision' },
       { type: 'issue', id: 'ISS-002', title: 'Database migration scripts failing' },
@@ -125,6 +135,7 @@ const mockActions: Action[] = [
     ],
     tags: ['database', 'migration', 'approval'],
     dependencies: ['ACT-003'],
+    sla: { targetHours: 24, breached: true, remainingHours: -8 },
   },
   {
     id: 'ACT-003',
@@ -136,14 +147,8 @@ const mockActions: Action[] = [
     createdBy: 'QA Team',
     createdAt: '2024-01-18T11:00:00Z',
     dueDate: '2024-01-22T17:00:00Z',
-    source: {
-      type: 'issue',
-      id: 'ISS-003',
-      title: 'Authentication token expiration not handled correctly',
-    },
-    linkedItems: [
-      { type: 'task', id: 'T-067', title: 'Auth module updates' },
-    ],
+    source: { type: 'issue', id: 'ISS-003', title: 'Authentication token expiration not handled correctly' },
+    linkedItems: [{ type: 'task', id: 'T-067', title: 'Auth module updates' }],
     progress: 75,
     notes: 'Implementation complete, pending code review',
     history: [
@@ -153,6 +158,7 @@ const mockActions: Action[] = [
     ],
     tags: ['authentication', 'security'],
     dependencies: [],
+    sla: { targetHours: 48, breached: false, remainingHours: 24 },
   },
   {
     id: 'ACT-004',
@@ -164,14 +170,8 @@ const mockActions: Action[] = [
     createdBy: 'David Wilson',
     createdAt: '2024-01-20T10:00:00Z',
     dueDate: '2024-01-23T17:00:00Z',
-    source: {
-      type: 'issue',
-      id: 'ISS-005',
-      title: 'Third-party payment integration sporadic failures',
-    },
-    linkedItems: [
-      { type: 'meeting', id: 'MTG-008', title: 'Stripe integration review' },
-    ],
+    source: { type: 'issue', id: 'ISS-005', title: 'Third-party payment integration sporadic failures' },
+    linkedItems: [{ type: 'meeting', id: 'MTG-008', title: 'Stripe integration review' }],
     progress: 30,
     notes: 'Waiting for Stripe to confirm availability',
     history: [
@@ -182,6 +182,7 @@ const mockActions: Action[] = [
     tags: ['integration', 'payments'],
     dependencies: [],
     blockedBy: 'Stripe support response',
+    sla: { targetHours: 72, breached: false, remainingHours: 48 },
   },
   {
     id: 'ACT-005',
@@ -194,14 +195,8 @@ const mockActions: Action[] = [
     createdAt: '2024-01-15T09:00:00Z',
     dueDate: '2024-01-19T17:00:00Z',
     completedAt: '2024-01-18T16:00:00Z',
-    source: {
-      type: 'meeting',
-      id: 'MTG-010',
-      title: 'Weekly Team Sync',
-    },
-    linkedItems: [
-      { type: 'task', id: 'T-089', title: 'API documentation update' },
-    ],
+    source: { type: 'meeting', id: 'MTG-010', title: 'Weekly Team Sync' },
+    linkedItems: [{ type: 'task', id: 'T-089', title: 'API documentation update' }],
     progress: 100,
     notes: 'Documentation published to developer portal',
     history: [
@@ -222,21 +217,14 @@ const mockActions: Action[] = [
     createdBy: 'Executive Team',
     createdAt: '2024-01-19T11:00:00Z',
     dueDate: '2024-01-25T17:00:00Z',
-    source: {
-      type: 'decision',
-      id: 'DEC-008',
-      title: 'Cloud vendor selection',
-    },
-    linkedItems: [
-      { type: 'risk', id: 'R-012', title: 'Vendor dependency risk' },
-    ],
+    source: { type: 'decision', id: 'DEC-008', title: 'Cloud vendor selection' },
+    linkedItems: [{ type: 'risk', id: 'R-012', title: 'Vendor dependency risk' }],
     progress: 0,
     notes: '',
-    history: [
-      { timestamp: '2024-01-19T11:00:00Z', user: 'Executive Team', action: 'Created from decision DEC-008' },
-    ],
+    history: [{ timestamp: '2024-01-19T11:00:00Z', user: 'Executive Team', action: 'Created from decision DEC-008' }],
     tags: ['procurement', 'contracts'],
     dependencies: [],
+    sla: { targetHours: 120, breached: false, remainingHours: 96 },
   },
 ];
 
@@ -279,6 +267,44 @@ const getSourceIcon = (type: Action['source']['type']) => {
   }
 };
 
+// SLA Timer Component
+function SLATimer({ sla, status }: { sla?: Action['sla']; status: Action['status'] }) {
+  const [timeRemaining, setTimeRemaining] = useState(sla?.remainingHours || 0);
+
+  useEffect(() => {
+    if (!sla || status === 'completed' || status === 'cancelled') return;
+    
+    const timer = setInterval(() => {
+      setTimeRemaining(prev => prev - (1/3600)); // Decrease by 1 second in hours
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [sla, status]);
+
+  if (!sla || status === 'completed' || status === 'cancelled') return null;
+
+  const isBreached = sla.breached || timeRemaining <= 0;
+  const isWarning = !isBreached && timeRemaining < sla.targetHours * 0.25;
+  const hours = Math.abs(Math.floor(timeRemaining));
+  const minutes = Math.abs(Math.floor((timeRemaining % 1) * 60));
+
+  return (
+    <div className={cn(
+      'flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium',
+      isBreached ? 'bg-destructive/10 text-destructive' :
+      isWarning ? 'bg-warning/10 text-warning' :
+      'bg-muted text-muted-foreground'
+    )}>
+      <Timer className="h-3 w-3" />
+      {isBreached ? (
+        <span>SLA Breached ({hours}h {minutes}m over)</span>
+      ) : (
+        <span>{hours}h {minutes}m remaining</span>
+      )}
+    </div>
+  );
+}
+
 interface ActionCardProps {
   action: Action;
   isSelected: boolean;
@@ -300,27 +326,36 @@ function ActionCard({ action, isSelected, onClick }: ActionCardProps) {
       className={cn(
         'p-4 rounded-lg border cursor-pointer transition-all group',
         isSelected ? 'bg-primary/10 border-primary' : 'bg-card hover:bg-muted/50',
-        isOverdue && 'border-destructive/50'
+        isOverdue && 'border-destructive/50',
+        action.sla?.breached && 'ring-1 ring-destructive/30'
       )}
     >
       <div className="flex items-start gap-3">
         <div className={cn(
           'h-10 w-10 rounded-lg flex items-center justify-center shrink-0',
           action.status === 'completed' ? 'bg-success/10' : 
-          action.status === 'on-hold' ? 'bg-warning/10' : 'bg-muted'
+          action.status === 'on-hold' ? 'bg-warning/10' : 
+          action.sla?.breached ? 'bg-destructive/10' : 'bg-muted'
         )}>
           <StatusIcon className={cn(
             'h-5 w-5',
             action.status === 'completed' ? 'text-success' :
-            action.status === 'on-hold' ? 'text-warning' : 'text-muted-foreground'
+            action.status === 'on-hold' ? 'text-warning' : 
+            action.sla?.breached ? 'text-destructive' : 'text-muted-foreground'
           )} />
         </div>
         
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
+          <div className="flex items-center gap-2 mb-1 flex-wrap">
             <span className="text-xs font-mono text-muted-foreground">{action.id}</span>
             <Badge variant={getPriorityColor(action.priority)}>{action.priority}</Badge>
             <Badge variant={getStatusColor(action.status)}>{action.status}</Badge>
+            {action.sla?.breached && (
+              <Badge variant="destructive" className="gap-1">
+                <Bell className="h-3 w-3" />
+                SLA Breach
+              </Badge>
+            )}
           </div>
           
           <h3 className="font-medium text-sm line-clamp-1 mb-1">{action.title}</h3>
@@ -340,8 +375,11 @@ function ActionCard({ action, isSelected, onClick }: ActionCardProps) {
             </span>
           </div>
 
+          {/* SLA Timer */}
+          <SLATimer sla={action.sla} status={action.status} />
+
           {/* Source Reference */}
-          <div className="flex items-center gap-2 text-xs">
+          <div className="flex items-center gap-2 text-xs mt-2">
             <SourceIcon className="h-3 w-3 text-muted-foreground" />
             <span className="text-muted-foreground">From:</span>
             <Badge variant="outline" className="text-xs">
@@ -398,14 +436,55 @@ function ActionDetailPanel({ action, onClose }: ActionDetailPanelProps) {
         <div className="p-4 space-y-6">
           {/* Header */}
           <div>
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center gap-2 mb-2 flex-wrap">
               <Badge variant={getPriorityColor(action.priority)}>{action.priority}</Badge>
               <Badge variant={getStatusColor(action.status)}>{action.status}</Badge>
               {isOverdue && <Badge variant="destructive">OVERDUE</Badge>}
+              {action.sla?.breached && (
+                <Badge variant="destructive" className="gap-1">
+                  <Bell className="h-3 w-3" />
+                  SLA Breached
+                </Badge>
+              )}
             </div>
             <h2 className="text-xl font-semibold mb-2">{action.title}</h2>
             <p className="text-sm text-muted-foreground">{action.description}</p>
           </div>
+
+          {/* SLA Card */}
+          {action.sla && (
+            <Card className={cn(
+              'border-l-4',
+              action.sla.breached ? 'border-l-destructive bg-destructive/5' : 
+              action.sla.remainingHours < action.sla.targetHours * 0.25 ? 'border-l-warning bg-warning/5' :
+              'border-l-success bg-success/5'
+            )}>
+              <CardContent className="p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Timer className="h-4 w-4" />
+                    <span className="text-sm font-medium">SLA Target</span>
+                  </div>
+                  <span className="text-lg font-bold">{action.sla.targetHours}h</span>
+                </div>
+                <Progress 
+                  value={action.sla.breached ? 100 : Math.max(0, 100 - (action.sla.remainingHours / action.sla.targetHours * 100))} 
+                  className="h-2 mb-2" 
+                />
+                <div className="flex items-center justify-between text-xs">
+                  <span className={action.sla.breached ? 'text-destructive font-medium' : 'text-muted-foreground'}>
+                    {action.sla.breached 
+                      ? `Breached by ${Math.abs(action.sla.remainingHours)}h`
+                      : `${action.sla.remainingHours}h remaining`
+                    }
+                  </span>
+                  <span className="text-muted-foreground">
+                    {Math.round((1 - action.sla.remainingHours / action.sla.targetHours) * 100)}% elapsed
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Progress */}
           <Card>
@@ -576,14 +655,22 @@ export function ActionsView() {
   const [searchQuery, setSearchQuery] = useState('');
   const [priorityFilter, setPriorityFilter] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'all' | 'sla-breached' | 'my-actions'>('all');
+  const [ownerFilter, setOwnerFilter] = useState<string>('all');
 
-  const filteredActions = mockActions.filter((action) => {
-    const matchesSearch = action.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      action.id.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesPriority = !priorityFilter || action.priority === priorityFilter;
-    const matchesStatus = !statusFilter || action.status === statusFilter;
-    return matchesSearch && matchesPriority && matchesStatus;
-  });
+  const filteredActions = useMemo(() => {
+    return mockActions.filter((action) => {
+      const matchesSearch = action.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        action.id.toLowerCase().includes(searchQuery.toLowerCase());
+      const matchesPriority = !priorityFilter || action.priority === priorityFilter;
+      const matchesStatus = !statusFilter || action.status === statusFilter;
+      const matchesView = viewMode === 'all' || 
+        (viewMode === 'sla-breached' && action.sla?.breached) ||
+        (viewMode === 'my-actions' && action.owner === 'John Doe'); // Mock current user
+      const matchesOwner = ownerFilter === 'all' || action.owner === ownerFilter;
+      return matchesSearch && matchesPriority && matchesStatus && matchesView && matchesOwner;
+    });
+  }, [searchQuery, priorityFilter, statusFilter, viewMode, ownerFilter]);
 
   const totalActions = mockActions.length;
   const completedActions = mockActions.filter(a => a.status === 'completed').length;
@@ -591,6 +678,9 @@ export function ActionsView() {
   const overdueActions = mockActions.filter(a => 
     new Date(a.dueDate) < new Date() && a.status !== 'completed' && a.status !== 'cancelled'
   ).length;
+  const slaBreachedCount = mockActions.filter(a => a.sla?.breached).length;
+
+  const uniqueOwners = [...new Set(mockActions.map(a => a.owner))];
 
   return (
     <div className="flex h-full">
@@ -603,12 +693,12 @@ export function ActionsView() {
                 <CheckCircle2 className="h-5 w-5 text-primary" />
                 Actions Tracker
               </h1>
-              <p className="text-sm text-muted-foreground">Track and manage action items from meetings, issues, and decisions</p>
+              <p className="text-sm text-muted-foreground">Track and manage action items with SLA monitoring</p>
             </div>
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm">
-                <Filter className="h-4 w-4 mr-1" />
-                Advanced Filter
+                <BarChart3 className="h-4 w-4 mr-1" />
+                SLA Report
               </Button>
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-1" />
@@ -618,7 +708,7 @@ export function ActionsView() {
           </div>
 
           {/* KPI Cards */}
-          <div className="grid grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-5 gap-4 mb-4">
             <KPICard
               title="Total Actions"
               value={totalActions}
@@ -638,12 +728,70 @@ export function ActionsView() {
               icon={PlayCircle}
             />
             <KPICard
+              title="SLA Breached"
+              value={slaBreachedCount}
+              status={slaBreachedCount > 0 ? 'error' : 'success'}
+              icon={Timer}
+              className={slaBreachedCount > 0 ? 'border-destructive/30' : ''}
+            />
+            <KPICard
               title="Overdue"
               value={overdueActions}
               status={overdueActions > 0 ? 'error' : 'neutral'}
               icon={AlertTriangle}
               className={overdueActions > 0 ? 'border-destructive/30' : ''}
             />
+          </div>
+
+          {/* View Mode Tabs */}
+          <div className="flex items-center gap-4 mb-4">
+            <div className="flex gap-1 p-1 bg-muted rounded-lg">
+              <button
+                onClick={() => setViewMode('all')}
+                className={cn(
+                  'px-3 py-1 rounded text-sm font-medium transition-all',
+                  viewMode === 'all' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                All Actions
+              </button>
+              <button
+                onClick={() => setViewMode('sla-breached')}
+                className={cn(
+                  'px-3 py-1 rounded text-sm font-medium transition-all flex items-center gap-1',
+                  viewMode === 'sla-breached' ? 'bg-destructive text-destructive-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <Bell className="h-3 w-3" />
+                SLA Breached
+                {slaBreachedCount > 0 && (
+                  <span className="ml-1 px-1.5 py-0.5 rounded-full bg-destructive/20 text-[10px]">
+                    {slaBreachedCount}
+                  </span>
+                )}
+              </button>
+              <button
+                onClick={() => setViewMode('my-actions')}
+                className={cn(
+                  'px-3 py-1 rounded text-sm font-medium transition-all',
+                  viewMode === 'my-actions' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                My Actions
+              </button>
+            </div>
+
+            <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+              <SelectTrigger className="w-40">
+                <SelectValue placeholder="Owner" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Owners</SelectItem>
+                {uniqueOwners.map(owner => (
+                  <SelectItem key={owner} value={owner}>{owner}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Search and Filters */}
@@ -697,6 +845,12 @@ export function ActionsView() {
                 onClick={() => setSelectedAction(action)}
               />
             ))}
+            {filteredActions.length === 0 && (
+              <div className="text-center py-12 text-muted-foreground">
+                <CheckCircle2 className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                <p>No actions match your filters</p>
+              </div>
+            )}
           </div>
         </ScrollArea>
       </div>

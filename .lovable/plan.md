@@ -308,18 +308,18 @@ supabase/functions/
 
 ## Implementation Priority
 
-| Priority | Feature | Effort |
-|----------|---------|--------|
-| 1 | Critical Path Algorithm | High |
-| 2 | Predecessor Column in Grid | Medium |
-| 3 | Resource Table + Assignments | High |
-| 4 | Constraint Types | Medium |
-| 5 | Slack/Float Display | Low |
-| 6 | Project Calendar | Medium |
-| 7 | Resource Histogram | High |
-| 8 | Auto-Scheduling | High |
-| 9 | Multiple Baselines UI | Low |
-| 10 | Variance Columns | Low |
+| Priority | Feature | Effort | Status |
+|----------|---------|--------|--------|
+| 1 | Critical Path Algorithm | High | ✅ Done |
+| 2 | Predecessor Column in Grid | Medium | ✅ Done |
+| 3 | Resource Table + Assignments | High | ✅ Done |
+| 4 | Constraint Types | Medium | ✅ Done |
+| 5 | Slack/Float Display | Low | ✅ Done |
+| 6 | Project Calendar | Medium | ✅ Done |
+| 7 | Resource Histogram | High | 🔲 Pending |
+| 8 | Auto-Scheduling | High | 🔲 Pending |
+| 9 | Multiple Baselines UI | Low | 🔲 Pending |
+| 10 | Variance Columns | Low | 🔲 Pending |
 
 ---
 

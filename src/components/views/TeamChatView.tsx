@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useRef } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   Hash,
@@ -33,15 +33,14 @@ import {
   Trash2,
   Copy,
   Forward,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -55,6 +54,13 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { MentionInput } from '@/components/chat/MentionInput';
+import { EmojiPicker, QuickReactionPicker } from '@/components/chat/EmojiPicker';
 
 // Mock data for channels and messages
 const mockChannels = [
@@ -73,14 +79,37 @@ const mockDirectMessages = [
   { id: 'dm-4', name: 'Mike Johnson', avatar: null, status: 'online' as const, unread: 5 },
 ];
 
-const mockMessages = [
+interface MessageReaction {
+  emoji: string;
+  count: number;
+  users: string[];
+  hasReacted: boolean;
+}
+
+interface Message {
+  id: string;
+  author: string;
+  avatar: string | null;
+  content: string;
+  timestamp: string;
+  reactions: MessageReaction[];
+  isPinned: boolean;
+  replies: number;
+  isMention?: boolean;
+  hasAttachment?: { type: 'image' | 'file'; name: string };
+}
+
+const initialMockMessages: Message[] = [
   {
     id: 'm-1',
     author: 'Sarah Mitchell',
     avatar: null,
     content: 'Good morning team! 👋 Just wanted to share the updated project timeline. We\'re on track for the Q4 launch.',
     timestamp: '9:00 AM',
-    reactions: [{ emoji: '👍', count: 4 }, { emoji: '🎉', count: 2 }],
+    reactions: [
+      { emoji: '👍', count: 4, users: ['John', 'Emily', 'Mike', 'Jane'], hasReacted: false },
+      { emoji: '🎉', count: 2, users: ['David', 'Lisa'], hasReacted: true },
+    ],
     isPinned: true,
     replies: 3,
   },
@@ -90,7 +119,7 @@ const mockMessages = [
     avatar: null,
     content: 'Great news! I\'ve completed the API integration for the payment module. Ready for review.',
     timestamp: '9:15 AM',
-    reactions: [{ emoji: '🚀', count: 3 }],
+    reactions: [{ emoji: '🚀', count: 3, users: ['Sarah', 'Emily', 'Mike'], hasReacted: false }],
     isPinned: false,
     replies: 0,
   },
@@ -100,7 +129,10 @@ const mockMessages = [
     avatar: null,
     content: 'Quick update on the design system:\n\n• Updated color tokens\n• New button variants\n• Icon library expanded\n\nAll changes are now live in Figma.',
     timestamp: '9:32 AM',
-    reactions: [{ emoji: '💜', count: 5 }, { emoji: '👀', count: 2 }],
+    reactions: [
+      { emoji: '💜', count: 5, users: ['Sarah', 'John', 'Mike', 'Jane', 'David'], hasReacted: true },
+      { emoji: '👀', count: 2, users: ['Lisa', 'Mark'], hasReacted: false },
+    ],
     isPinned: false,
     replies: 7,
   },
@@ -110,7 +142,7 @@ const mockMessages = [
     avatar: null,
     content: '@channel Reminder: Sprint review meeting at 3 PM today. Please have your demos ready.',
     timestamp: '10:45 AM',
-    reactions: [{ emoji: '✅', count: 8 }],
+    reactions: [{ emoji: '✅', count: 8, users: ['Everyone'], hasReacted: true }],
     isPinned: false,
     replies: 2,
     isMention: true,
@@ -119,7 +151,7 @@ const mockMessages = [
     id: 'm-5',
     author: 'Sarah Mitchell',
     avatar: null,
-    content: 'Here\'s the architecture diagram for the new microservices setup:',
+    content: 'Hey @John Doe, can you check the PR I submitted for the @Emily Brown design updates?',
     timestamp: '11:00 AM',
     reactions: [],
     isPinned: false,
@@ -141,11 +173,31 @@ const mockMembers = [
 ];
 
 interface MessageItemProps {
-  message: typeof mockMessages[0];
+  message: Message;
+  onReact: (messageId: string, emoji: string) => void;
 }
 
-function MessageItem({ message }: MessageItemProps) {
+function MessageItem({ message, onReact }: MessageItemProps) {
   const [showActions, setShowActions] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showQuickReactions, setShowQuickReactions] = useState(false);
+
+  // Render content with highlighted mentions
+  const renderContent = (content: string) => {
+    const parts = content.split(/(@[\w\s]+?)(?=\s|$|@)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('@')) {
+        return (
+          <span key={i} className="bg-primary/20 text-primary rounded px-0.5 font-medium cursor-pointer hover:bg-primary/30">
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
+  };
+
+  const existingEmojis = message.reactions.map(r => r.emoji);
 
   return (
     <motion.div
@@ -156,58 +208,73 @@ function MessageItem({ message }: MessageItemProps) {
         message.isMention && 'bg-warning/5 border-l-2 border-warning'
       )}
       onMouseEnter={() => setShowActions(true)}
-      onMouseLeave={() => setShowActions(false)}
+      onMouseLeave={() => { setShowActions(false); setShowQuickReactions(false); }}
     >
       {/* Quick Actions Bar */}
-      {showActions && (
-        <div className="absolute -top-4 right-4 flex items-center gap-1 bg-card border rounded-lg shadow-lg p-1 z-10">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
+      <AnimatePresence>
+        {showActions && (
+          <motion.div
+            initial={{ opacity: 0, y: 5 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 5 }}
+            className="absolute -top-4 right-4 flex items-center gap-1 bg-card border rounded-lg shadow-lg p-1 z-10"
+          >
+            {/* Quick Reaction Picker */}
+            <Popover open={showQuickReactions} onOpenChange={setShowQuickReactions}>
+              <PopoverTrigger asChild>
                 <Button variant="ghost" size="iconXs">
                   <Smile className="h-3 w-3" />
                 </Button>
-              </TooltipTrigger>
-              <TooltipContent>Add reaction</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0 border-0 bg-transparent shadow-none" align="start">
+                <QuickReactionPicker
+                  onSelect={(emoji) => {
+                    onReact(message.id, emoji);
+                    setShowQuickReactions(false);
+                  }}
+                  existingReactions={existingEmojis}
+                />
+              </PopoverContent>
+            </Popover>
+
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="iconXs">
+                    <Reply className="h-3 w-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Reply in thread</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button variant="ghost" size="iconXs">
+                    <Bookmark className="h-3 w-3" />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>Save message</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="iconXs">
-                  <Reply className="h-3 w-3" />
+                  <MoreHorizontal className="h-3 w-3" />
                 </Button>
-              </TooltipTrigger>
-              <TooltipContent>Reply in thread</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="ghost" size="iconXs">
-                  <Bookmark className="h-3 w-3" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>Save message</TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="iconXs">
-                <MoreHorizontal className="h-3 w-3" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem><Edit2 className="h-3 w-3 mr-2" />Edit message</DropdownMenuItem>
-              <DropdownMenuItem><Copy className="h-3 w-3 mr-2" />Copy text</DropdownMenuItem>
-              <DropdownMenuItem><Forward className="h-3 w-3 mr-2" />Forward</DropdownMenuItem>
-              <DropdownMenuItem><Pin className="h-3 w-3 mr-2" />Pin to channel</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className="text-destructive"><Trash2 className="h-3 w-3 mr-2" />Delete</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      )}
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem><Edit2 className="h-3 w-3 mr-2" />Edit message</DropdownMenuItem>
+                <DropdownMenuItem><Copy className="h-3 w-3 mr-2" />Copy text</DropdownMenuItem>
+                <DropdownMenuItem><Forward className="h-3 w-3 mr-2" />Forward</DropdownMenuItem>
+                <DropdownMenuItem><Pin className="h-3 w-3 mr-2" />Pin to channel</DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-destructive"><Trash2 className="h-3 w-3 mr-2" />Delete</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <div className="flex gap-3">
         <Avatar className="h-9 w-9 mt-1">
@@ -228,7 +295,7 @@ function MessageItem({ message }: MessageItemProps) {
             )}
           </div>
 
-          <div className="text-sm mt-1 whitespace-pre-wrap">{message.content}</div>
+          <div className="text-sm mt-1 whitespace-pre-wrap">{renderContent(message.content)}</div>
 
           {/* Attachment */}
           {message.hasAttachment && (
@@ -244,19 +311,46 @@ function MessageItem({ message }: MessageItemProps) {
 
           {/* Reactions */}
           {message.reactions.length > 0 && (
-            <div className="flex items-center gap-1 mt-2">
+            <div className="flex items-center gap-1 mt-2 flex-wrap">
               {message.reactions.map((reaction, i) => (
-                <button
-                  key={i}
-                  className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-muted hover:bg-muted/80 transition-colors text-sm"
-                >
-                  <span>{reaction.emoji}</span>
-                  <span className="text-xs text-muted-foreground">{reaction.count}</span>
-                </button>
+                <TooltipProvider key={i}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => onReact(message.id, reaction.emoji)}
+                        className={cn(
+                          "inline-flex items-center gap-1 px-2 py-0.5 rounded-full transition-colors text-sm border",
+                          reaction.hasReacted
+                            ? "bg-primary/20 border-primary/30 hover:bg-primary/30"
+                            : "bg-muted border-transparent hover:bg-muted/80"
+                        )}
+                      >
+                        <span>{reaction.emoji}</span>
+                        <span className="text-xs font-medium">{reaction.count}</span>
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p className="text-xs">{reaction.users.join(', ')}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               ))}
-              <button className="inline-flex items-center justify-center h-6 w-6 rounded-full hover:bg-muted transition-colors opacity-0 group-hover:opacity-100">
-                <Smile className="h-3 w-3 text-muted-foreground" />
-              </button>
+              <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+                <PopoverTrigger asChild>
+                  <button className="inline-flex items-center justify-center h-6 w-6 rounded-full hover:bg-muted transition-colors opacity-0 group-hover:opacity-100">
+                    <Smile className="h-3 w-3 text-muted-foreground" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 border-0" align="start">
+                  <EmojiPicker
+                    onSelect={(emoji) => {
+                      onReact(message.id, emoji);
+                      setShowEmojiPicker(false);
+                    }}
+                    onClose={() => setShowEmojiPicker(false)}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
           )}
 
@@ -567,6 +661,8 @@ export function TeamChatView() {
   const [selectedDM, setSelectedDM] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const [showMembers, setShowMembers] = useState(true);
+  const [messages, setMessages] = useState<Message[]>(initialMockMessages);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const currentChannel = selectedChannel
     ? mockChannels.find(c => c.id === selectedChannel)
@@ -574,10 +670,68 @@ export function TeamChatView() {
 
   const handleSend = () => {
     if (message.trim()) {
-      // In a real app, send the message
+      const newMessage: Message = {
+        id: `m-${Date.now()}`,
+        author: 'Current User',
+        avatar: null,
+        content: message,
+        timestamp: new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+        reactions: [],
+        isPinned: false,
+        replies: 0,
+      };
+      setMessages([...messages, newMessage]);
       setMessage('');
     }
   };
+
+  const handleReact = (messageId: string, emoji: string) => {
+    setMessages(messages.map(msg => {
+      if (msg.id !== messageId) return msg;
+
+      const existingReaction = msg.reactions.find(r => r.emoji === emoji);
+      if (existingReaction) {
+        // Toggle reaction
+        if (existingReaction.hasReacted) {
+          // Remove our reaction
+          if (existingReaction.count === 1) {
+            return { ...msg, reactions: msg.reactions.filter(r => r.emoji !== emoji) };
+          }
+          return {
+            ...msg,
+            reactions: msg.reactions.map(r =>
+              r.emoji === emoji
+                ? { ...r, count: r.count - 1, hasReacted: false, users: r.users.filter(u => u !== 'You') }
+                : r
+            ),
+          };
+        } else {
+          // Add our reaction
+          return {
+            ...msg,
+            reactions: msg.reactions.map(r =>
+              r.emoji === emoji
+                ? { ...r, count: r.count + 1, hasReacted: true, users: [...r.users, 'You'] }
+                : r
+            ),
+          };
+        }
+      } else {
+        // Add new reaction
+        return {
+          ...msg,
+          reactions: [...msg.reactions, { emoji, count: 1, users: ['You'], hasReacted: true }],
+        };
+      }
+    }));
+  };
+
+  const mentionableUsers = mockMembers.map(m => ({
+    id: m.id,
+    name: m.name,
+    role: m.role,
+    status: m.status,
+  }));
 
   return (
     <div className="flex h-full">
@@ -673,8 +827,8 @@ export function TeamChatView() {
               <Separator className="flex-1" />
             </div>
 
-            {mockMessages.map(msg => (
-              <MessageItem key={msg.id} message={msg} />
+            {messages.map(msg => (
+              <MessageItem key={msg.id} message={msg} onReact={handleReact} />
             ))}
           </div>
         </ScrollArea>
@@ -724,17 +878,13 @@ export function TeamChatView() {
                 </Tooltip>
               </TooltipProvider>
             </div>
-            <Textarea
+            <MentionInput
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={setMessage}
+              onSubmit={handleSend}
               placeholder={`Message #${currentChannel?.name || 'channel'}`}
-              className="min-h-[60px] border-0 bg-transparent resize-none focus-visible:ring-0"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
+              users={mentionableUsers}
+              className="px-3 py-2"
             />
             <div className="flex items-center justify-between p-2">
               <div className="flex items-center gap-1">
@@ -757,7 +907,8 @@ export function TeamChatView() {
           </div>
           <p className="text-xs text-muted-foreground mt-2">
             Press <kbd className="px-1 py-0.5 bg-muted rounded text-[10px] font-mono">Enter</kbd> to send,{' '}
-            <kbd className="px-1 py-0.5 bg-muted rounded text-[10px] font-mono">Shift + Enter</kbd> for new line
+            <kbd className="px-1 py-0.5 bg-muted rounded text-[10px] font-mono">Shift + Enter</kbd> for new line •{' '}
+            <kbd className="px-1 py-0.5 bg-muted rounded text-[10px] font-mono">@</kbd> to mention
           </p>
         </div>
       </div>

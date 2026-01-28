@@ -23,6 +23,9 @@ import {
   Shield,
   Building2,
   User,
+  CheckCircle2,
+  FileText,
+  Lightbulb,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -39,11 +42,30 @@ interface NavItem {
 }
 
 const navItems: NavItem[] = [
-  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, moduleKey: 'dashboard' },
-  { id: 'executive-dashboard', label: 'Executive Dashboard', icon: Sparkles, moduleKey: 'executiveDashboard' },
-  { id: 'strategic', label: 'Strategic Dashboard', icon: Target, moduleKey: 'strategic' },
-  { id: 'portfolio', label: 'Portfolio', icon: FolderKanban, moduleKey: 'portfolio' },
-  { id: 'traceability', label: 'Traceability Matrix', icon: GitBranch, moduleKey: 'traceability' },
+  {
+    id: 'overview',
+    label: 'Overview',
+    icon: LayoutDashboard,
+    children: [
+      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, moduleKey: 'dashboard' },
+      { id: 'morning-briefing', label: 'Morning Briefing', icon: Sparkles, alwaysShow: true },
+      { id: 'portfolio', label: 'Portfolio', icon: FolderKanban, moduleKey: 'portfolio' },
+      { id: 'strategic', label: 'Strategic Dashboard', icon: Target, moduleKey: 'strategic' },
+      { id: 'executive-dashboard', label: 'Executive Dashboard', icon: Sparkles, moduleKey: 'executiveDashboard' },
+      { id: 'program-timeline', label: 'Project Timeline', icon: Clock, moduleKey: 'programTimeline' },
+      { id: 'reports', label: 'Reports', icon: BarChart3, moduleKey: 'reports' },
+    ]
+  },
+  {
+    id: 'initiation',
+    label: 'Initiation',
+    icon: Target,
+    children: [
+      { id: 'project-charter', label: 'Project Charter', icon: BookOpen, alwaysShow: true },
+      { id: 'stakeholders', label: 'Stakeholder Register', icon: Users, alwaysShow: true },
+      { id: 'create-project', label: 'Create Project', icon: FolderKanban, alwaysShow: true },
+    ]
+  },
   { 
     id: 'planning', 
     label: 'Planning', 
@@ -54,7 +76,8 @@ const navItems: NavItem[] = [
       { id: 'gantt', label: 'Gantt Chart', icon: GitBranch, moduleKey: 'gantt' },
       { id: 'child-gantt', label: 'Child Gantt', icon: GitBranch, moduleKey: 'childGantt' },
       { id: 'milestones', label: 'Milestones', icon: Target, moduleKey: 'milestones' },
-      { id: 'program-timeline', label: 'Program Timeline', icon: Clock, moduleKey: 'programTimeline' },
+      { id: 'scenarios', label: 'Scenarios', icon: GitBranch, alwaysShow: true },
+      { id: 'deliverables', label: 'Deliverables', icon: Target, alwaysShow: true },
     ]
   },
   {
@@ -65,18 +88,51 @@ const navItems: NavItem[] = [
       { id: 'sprints', label: 'Sprints', icon: Clock, moduleKey: 'sprints' },
       { id: 'backlog', label: 'Backlog', icon: ListTodo, moduleKey: 'backlog' },
       { id: 'actions', label: 'Actions', icon: Target, badge: 6, moduleKey: 'actions' },
-      { id: 'issues', label: 'Issues', icon: AlertTriangle, badge: 3, moduleKey: 'issues' },
     ]
   },
-  { id: 'meetings', label: 'AI Meetings', icon: Users, badge: 2, moduleKey: 'meetings' },
-  { id: 'communications', label: 'Communications', icon: BarChart3, moduleKey: 'communications' },
-  { id: 'resources', label: 'Resources', icon: Users, moduleKey: 'resources' },
-  { id: 'risks', label: 'Risks & Issues', icon: AlertTriangle, badge: 5, moduleKey: 'risks' },
-  { id: 'decisions', label: 'Decisions', icon: Target, moduleKey: 'decisions' },
-  { id: 'financials', label: 'Financials', icon: DollarSign, moduleKey: 'financials' },
-  { id: 'notes', label: 'Notes', icon: BookOpen, moduleKey: 'notes' },
-  { id: 'reports', label: 'Reports', icon: BarChart3, moduleKey: 'reports' },
-  { id: 'presentations', label: 'Presentations', icon: Presentation, moduleKey: 'presentations' },
+  {
+    id: 'monitoring',
+    label: 'Monitoring & Control',
+    icon: AlertTriangle,
+    children: [
+      { id: 'risks', label: 'Risks', icon: AlertTriangle, badge: 5, moduleKey: 'risks' },
+      { id: 'issues', label: 'Issues', icon: AlertTriangle, badge: 3, moduleKey: 'issues' },
+      { id: 'decisions', label: 'Decisions', icon: Target, moduleKey: 'decisions' },
+      { id: 'change-requests', label: 'Change Requests', icon: Target, alwaysShow: true },
+      { id: 'traceability', label: 'Traceability Matrix', icon: GitBranch, moduleKey: 'traceability' },
+    ]
+  },
+  {
+    id: 'financials-menu',
+    label: 'Financials',
+    icon: DollarSign,
+    children: [
+      { id: 'financials', label: 'Budget & Billing', icon: DollarSign, moduleKey: 'financials' },
+      { id: 'evm', label: 'Earned Value (EVM)', icon: BarChart3, alwaysShow: true },
+    ]
+  },
+  {
+    id: 'collaboration',
+    label: 'Collaboration',
+    icon: Users,
+    children: [
+      { id: 'meetings', label: 'AI Meetings', icon: Users, badge: 2, moduleKey: 'meetings' },
+      { id: 'communications', label: 'Communications', icon: BarChart3, moduleKey: 'communications' },
+      { id: 'notes', label: 'Notes', icon: BookOpen, moduleKey: 'notes' },
+      { id: 'documents', label: 'Document Center', icon: BookOpen, alwaysShow: true },
+      { id: 'resources', label: 'Resources', icon: Users, moduleKey: 'resources' },
+      { id: 'presentations', label: 'Presentations', icon: Presentation, moduleKey: 'presentations' },
+    ]
+  },
+  {
+    id: 'closing',
+    label: 'Closing',
+    icon: CheckCircle2,
+    children: [
+      { id: 'final-report', label: 'Final Report', icon: FileText, alwaysShow: true },
+      { id: 'lessons-learned', label: 'Lessons Learned', icon: Lightbulb, alwaysShow: true },
+    ]
+  },
 ];
 
 const adminItems: NavItem[] = [

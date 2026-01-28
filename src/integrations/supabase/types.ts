@@ -14,6 +14,47 @@ export type Database = {
   }
   public: {
     Tables: {
+      calendar_exceptions: {
+        Row: {
+          calendar_id: string
+          created_at: string
+          end_date: string
+          exception_type: string
+          id: string
+          name: string
+          start_date: string
+          work_hours: Json | null
+        }
+        Insert: {
+          calendar_id: string
+          created_at?: string
+          end_date: string
+          exception_type?: string
+          id?: string
+          name: string
+          start_date: string
+          work_hours?: Json | null
+        }
+        Update: {
+          calendar_id?: string
+          created_at?: string
+          end_date?: string
+          exception_type?: string
+          id?: string
+          name?: string
+          start_date?: string
+          work_hours?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_exceptions_calendar_id_fkey"
+            columns: ["calendar_id"]
+            isOneToOne: false
+            referencedRelation: "project_calendars"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_baselines: {
         Row: {
           baseline_date: string
@@ -45,6 +86,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "project_baselines_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_calendars: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean
+          name: string
+          project_id: string
+          work_hours: Json
+          working_days: Json
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          project_id: string
+          work_hours?: Json
+          working_days?: Json
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          project_id?: string
+          work_hours?: Json
+          working_days?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_calendars_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
@@ -105,6 +184,132 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      resource_assignments: {
+        Row: {
+          actual_cost: number
+          actual_work_hours: number
+          cost: number
+          created_at: string
+          end_date: string | null
+          id: string
+          remaining_work_hours: number
+          resource_id: string
+          start_date: string | null
+          task_id: string
+          units: number
+          updated_at: string
+          work_hours: number
+        }
+        Insert: {
+          actual_cost?: number
+          actual_work_hours?: number
+          cost?: number
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          remaining_work_hours?: number
+          resource_id: string
+          start_date?: string | null
+          task_id: string
+          units?: number
+          updated_at?: string
+          work_hours?: number
+        }
+        Update: {
+          actual_cost?: number
+          actual_work_hours?: number
+          cost?: number
+          created_at?: string
+          end_date?: string | null
+          id?: string
+          remaining_work_hours?: number
+          resource_id?: string
+          start_date?: string | null
+          task_id?: string
+          units?: number
+          updated_at?: string
+          work_hours?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resource_assignments_resource_id_fkey"
+            columns: ["resource_id"]
+            isOneToOne: false
+            referencedRelation: "resources"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resource_assignments_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      resources: {
+        Row: {
+          calendar_id: string | null
+          cost_per_use: number
+          created_at: string
+          email: string | null
+          id: string
+          max_units: number
+          name: string
+          notes: string | null
+          overtime_rate: number
+          project_id: string
+          standard_rate: number
+          type: Database["public"]["Enums"]["resource_type"]
+          updated_at: string
+        }
+        Insert: {
+          calendar_id?: string | null
+          cost_per_use?: number
+          created_at?: string
+          email?: string | null
+          id?: string
+          max_units?: number
+          name: string
+          notes?: string | null
+          overtime_rate?: number
+          project_id: string
+          standard_rate?: number
+          type?: Database["public"]["Enums"]["resource_type"]
+          updated_at?: string
+        }
+        Update: {
+          calendar_id?: string | null
+          cost_per_use?: number
+          created_at?: string
+          email?: string | null
+          id?: string
+          max_units?: number
+          name?: string
+          notes?: string | null
+          overtime_rate?: number
+          project_id?: string
+          standard_rate?: number
+          type?: Database["public"]["Enums"]["resource_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "resources_calendar_id_fkey"
+            columns: ["calendar_id"]
+            isOneToOne: false
+            referencedRelation: "project_calendars"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "resources_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       task_baselines: {
         Row: {
@@ -191,72 +396,144 @@ export type Database = {
       }
       tasks: {
         Row: {
+          actual_cost: number | null
+          actual_work_hours: number | null
           assignee_id: string | null
+          calendar_id: string | null
+          constraint_date: string | null
+          constraint_type: Database["public"]["Enums"]["constraint_type"] | null
+          cost: number | null
           created_at: string
+          deadline: string | null
           duration: number
+          early_finish: string | null
+          early_start: string | null
+          effort_driven: boolean | null
           end_date: string
           expanded: boolean | null
+          fixed_cost: number | null
+          fixed_cost_accrual: Database["public"]["Enums"]["cost_accrual"] | null
+          free_slack: number | null
           id: string
           is_critical: boolean | null
+          late_finish: string | null
+          late_start: string | null
           level: number
+          manually_scheduled: boolean | null
           name: string
           notes: string | null
           parent_id: string | null
           priority: Database["public"]["Enums"]["priority_level"]
           progress: number
           project_id: string
+          remaining_work_hours: number | null
           sort_order: number
           start_date: string
           status: Database["public"]["Enums"]["task_status"]
+          total_slack: number | null
           type: Database["public"]["Enums"]["task_type"]
           updated_at: string
           wbs: string
+          work_hours: number | null
         }
         Insert: {
+          actual_cost?: number | null
+          actual_work_hours?: number | null
           assignee_id?: string | null
+          calendar_id?: string | null
+          constraint_date?: string | null
+          constraint_type?:
+            | Database["public"]["Enums"]["constraint_type"]
+            | null
+          cost?: number | null
           created_at?: string
+          deadline?: string | null
           duration?: number
+          early_finish?: string | null
+          early_start?: string | null
+          effort_driven?: boolean | null
           end_date?: string
           expanded?: boolean | null
+          fixed_cost?: number | null
+          fixed_cost_accrual?:
+            | Database["public"]["Enums"]["cost_accrual"]
+            | null
+          free_slack?: number | null
           id?: string
           is_critical?: boolean | null
+          late_finish?: string | null
+          late_start?: string | null
           level?: number
+          manually_scheduled?: boolean | null
           name: string
           notes?: string | null
           parent_id?: string | null
           priority?: Database["public"]["Enums"]["priority_level"]
           progress?: number
           project_id: string
+          remaining_work_hours?: number | null
           sort_order?: number
           start_date?: string
           status?: Database["public"]["Enums"]["task_status"]
+          total_slack?: number | null
           type?: Database["public"]["Enums"]["task_type"]
           updated_at?: string
           wbs: string
+          work_hours?: number | null
         }
         Update: {
+          actual_cost?: number | null
+          actual_work_hours?: number | null
           assignee_id?: string | null
+          calendar_id?: string | null
+          constraint_date?: string | null
+          constraint_type?:
+            | Database["public"]["Enums"]["constraint_type"]
+            | null
+          cost?: number | null
           created_at?: string
+          deadline?: string | null
           duration?: number
+          early_finish?: string | null
+          early_start?: string | null
+          effort_driven?: boolean | null
           end_date?: string
           expanded?: boolean | null
+          fixed_cost?: number | null
+          fixed_cost_accrual?:
+            | Database["public"]["Enums"]["cost_accrual"]
+            | null
+          free_slack?: number | null
           id?: string
           is_critical?: boolean | null
+          late_finish?: string | null
+          late_start?: string | null
           level?: number
+          manually_scheduled?: boolean | null
           name?: string
           notes?: string | null
           parent_id?: string | null
           priority?: Database["public"]["Enums"]["priority_level"]
           progress?: number
           project_id?: string
+          remaining_work_hours?: number | null
           sort_order?: number
           start_date?: string
           status?: Database["public"]["Enums"]["task_status"]
+          total_slack?: number | null
           type?: Database["public"]["Enums"]["task_type"]
           updated_at?: string
           wbs?: string
+          work_hours?: number | null
         }
         Relationships: [
+          {
+            foreignKeyName: "tasks_calendar_id_fkey"
+            columns: ["calendar_id"]
+            isOneToOne: false
+            referencedRelation: "project_calendars"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tasks_parent_id_fkey"
             columns: ["parent_id"]
@@ -305,8 +582,19 @@ export type Database = {
       }
     }
     Enums: {
+      constraint_type:
+        | "ASAP"
+        | "ALAP"
+        | "MSO"
+        | "MFO"
+        | "SNET"
+        | "SNLT"
+        | "FNET"
+        | "FNLT"
+      cost_accrual: "start" | "end" | "prorated"
       dependency_type: "FS" | "SS" | "FF" | "SF"
       priority_level: "critical" | "high" | "medium" | "low"
+      resource_type: "work" | "material" | "cost"
       task_status:
         | "not-started"
         | "in-progress"
@@ -441,8 +729,20 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      constraint_type: [
+        "ASAP",
+        "ALAP",
+        "MSO",
+        "MFO",
+        "SNET",
+        "SNLT",
+        "FNET",
+        "FNLT",
+      ],
+      cost_accrual: ["start", "end", "prorated"],
       dependency_type: ["FS", "SS", "FF", "SF"],
       priority_level: ["critical", "high", "medium", "low"],
+      resource_type: ["work", "material", "cost"],
       task_status: [
         "not-started",
         "in-progress",

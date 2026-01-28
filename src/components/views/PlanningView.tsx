@@ -7,9 +7,11 @@ import {
   Keyboard,
   FolderOpen,
   Loader2,
-  Settings,
   User,
   LogOut,
+  Calculator,
+  CalendarDays,
+  Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,9 +20,18 @@ import { DatabaseTaskGrid } from '@/components/planning/DatabaseTaskGrid';
 import { DatabaseGantt } from '@/components/planning/DatabaseGantt';
 import { SprintBoardView } from './SprintBoardView';
 import { AuthDialog } from '@/components/auth/AuthDialog';
+import { CalendarDialog } from '@/components/planning/CalendarDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { useProjects, useCreateProject, Project } from '@/hooks/useProjects';
 import { useTasks, useCreateTask } from '@/hooks/useTasks';
+import { useCalculateCriticalPath } from '@/hooks/useCriticalPath';
+import { 
+  useDefaultCalendar, 
+  useCalendarExceptions, 
+  useUpdateCalendar,
+  useCreateCalendarException,
+  useDeleteCalendarException,
+} from '@/hooks/useCalendars';
 import {
   Dialog,
   DialogContent,
@@ -54,6 +65,7 @@ export function PlanningView() {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
+  const [showCalendarDialog, setShowCalendarDialog] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectCode, setNewProjectCode] = useState('');
@@ -63,6 +75,14 @@ export function PlanningView() {
   const { data: projects = [], isLoading: projectsLoading } = useProjects();
   const createProject = useCreateProject();
   const createTask = useCreateTask();
+  const calculateCriticalPath = useCalculateCriticalPath();
+  
+  // Calendar hooks
+  const { data: defaultCalendar } = useDefaultCalendar(selectedProjectId);
+  const { data: calendarExceptions = [] } = useCalendarExceptions(defaultCalendar?.id || null);
+  const updateCalendar = useUpdateCalendar();
+  const createException = useCreateCalendarException();
+  const deleteException = useDeleteCalendarException();
 
   // Auto-select first project
   useEffect(() => {
@@ -138,6 +158,14 @@ export function PlanningView() {
       level: 0,
       sort_order: 0,
     });
+  };
+
+  const handleCalculateCriticalPath = async () => {
+    if (!selectedProjectId) {
+      toast.error('Please select a project first');
+      return;
+    }
+    await calculateCriticalPath.mutateAsync(selectedProjectId);
   };
 
   // Show auth prompt if not authenticated
@@ -256,6 +284,28 @@ export function PlanningView() {
           </Badge>
           <Button variant="outline" size="sm">
             Baseline
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setShowCalendarDialog(true)}
+            disabled={!selectedProjectId}
+          >
+            <CalendarDays className="h-4 w-4 mr-1" />
+            Calendar
+          </Button>
+          <Button 
+            variant="secondary" 
+            size="sm"
+            onClick={handleCalculateCriticalPath}
+            disabled={!selectedProjectId || calculateCriticalPath.isPending}
+          >
+            {calculateCriticalPath.isPending ? (
+              <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+            ) : (
+              <Calculator className="h-4 w-4 mr-1" />
+            )}
+            Calculate CPM
           </Button>
 
           {/* User Menu */}
@@ -385,6 +435,26 @@ export function PlanningView() {
       </Dialog>
 
       <AuthDialog open={showAuthDialog} onOpenChange={setShowAuthDialog} />
+
+      {/* Calendar Dialog */}
+      {defaultCalendar && (
+        <CalendarDialog
+          open={showCalendarDialog}
+          onOpenChange={setShowCalendarDialog}
+          calendar={defaultCalendar}
+          exceptions={calendarExceptions}
+          onSave={async (updates) => {
+            await updateCalendar.mutateAsync({ id: defaultCalendar.id, ...updates });
+          }}
+          onAddException={async (exception) => {
+            await createException.mutateAsync(exception);
+          }}
+          onRemoveException={async (id) => {
+            await deleteException.mutateAsync({ id, calendarId: defaultCalendar.id });
+          }}
+          isSaving={updateCalendar.isPending}
+        />
+      )}
     </div>
   );
 }

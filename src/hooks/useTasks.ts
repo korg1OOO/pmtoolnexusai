@@ -47,6 +47,9 @@ export interface DbTask {
   late_finish?: string | null;
   free_slack?: number | null;
   total_slack?: number | null;
+  // Scheduling fields
+  manually_scheduled?: boolean | null;
+  calendar_id?: string | null;
 }
 
 export interface DbDependency {

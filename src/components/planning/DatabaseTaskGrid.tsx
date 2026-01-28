@@ -54,6 +54,7 @@ import {
   useCreateDependency,
   useDeleteDependency,
 } from '@/hooks/useTasks';
+import { useScheduleTrigger } from '@/hooks/useScheduleTrigger';
 import { Skeleton } from '@/components/ui/skeleton';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -383,6 +384,7 @@ export function DatabaseTaskGrid({ projectId }: DatabaseTaskGridProps) {
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
+  const { triggerSchedule } = useScheduleTrigger(projectId);
   
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
@@ -524,6 +526,13 @@ export function DatabaseTaskGrid({ projectId }: DatabaseTaskGridProps) {
     setSavingTasks(prev => new Set([...prev, taskId]));
     try {
       await updateTask.mutateAsync({ id: taskId, project_id: projectId, ...updates });
+      
+      // Trigger auto-scheduling when date-related fields change
+      const schedulingFields = ['start_date', 'end_date', 'duration', 'constraint_type', 'constraint_date'];
+      const shouldSchedule = schedulingFields.some(field => field in updates);
+      if (shouldSchedule) {
+        triggerSchedule(taskId);
+      }
     } finally {
       setSavingTasks(prev => {
         const next = new Set(prev);

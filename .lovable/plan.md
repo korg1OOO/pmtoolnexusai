@@ -1,210 +1,337 @@
 
-# Enterprise Project Management Platform - Build Order Strategy
 
-## Executive Summary
+# Microsoft Project Feature Enhancement Plan
 
-Based on my analysis of your codebase, you have an impressive **45 view components** already scaffolded with a robust foundation including:
-- **ProjectContext** for methodology-driven module visibility
-- **Comprehensive mock data** for consulting engagement context
-- **Modern component library** with Radix UI, Framer Motion, and Recharts
-- **Navigation architecture** organized by project lifecycle phases
+## Overview
 
-This plan recommends a strategic build order to maximize value delivery while ensuring architectural integrity.
+This plan adds enterprise-grade MS Project features to the existing Project Plan and Gantt Chart, building on the current database-backed implementation.
 
 ---
 
 ## Current State Analysis
 
-### Already Built (Foundation Complete)
-- Application shell, sidebar, topbar, theming
-- Dynamic navigation based on methodology
-- 45+ view components with varying levels of completeness
-- Mock data for consulting project context
-- Cross-module linking infrastructure (LinkDialog, SyncStatusIndicator)
+### Already Implemented
+- Hierarchical WBS task structure with parent/child relationships
+- Four dependency types (FS, SS, FF, SF) with lag support
+- Baseline management (project and task level)
+- Drag-to-reschedule Gantt bars
+- Real-time sync via Supabase subscriptions
+- Inline editing, keyboard navigation
+- Critical path flag (manual)
 
-### Needs Enhancement
-- Many views are scaffolded but lack interactive depth
-- AI integration points are placeholders
-- Cross-module data flow needs strengthening
-- Some views need polish for enterprise-grade UX
+### Missing MS Project Features
+1. **Resource Management** - No resources table, assignments, or leveling
+2. **Calendar System** - No working calendars, holidays, or non-working time
+3. **Critical Path Algorithm** - Manual flag only, no automatic calculation
+4. **Constraint Types** - No "Must Start On", "No Earlier Than", etc.
+5. **Slack/Float Calculation** - No early/late start-finish dates
+6. **Auto-Scheduling** - No automatic date recalculation on changes
+7. **Cost Management** - Tasks have no cost fields
+8. **Work vs Duration** - No effort-driven scheduling
+9. **Percent Work Complete** - Only percent complete, no work tracking
+10. **Multiple Baselines** - Baseline system exists but UI limited
+11. **Predecessor Column** - No visual predecessor editing in grid
+12. **Resource Histogram** - No workload visualization
 
 ---
 
-## Recommended Build Order
+## Implementation Plan
 
-### Phase 1: Core Planning Engine (Week 1-2) ✅ COMPLETE
-**Priority: Critical - This is the heart of project management**
+### Phase 1: Database Schema Enhancements
 
-```text
-+------------------+     +------------------+     +------------------+
-|   Project Plan   | --> |   Gantt Chart    | --> |   Milestones     |
-|   (WBS Grid)     |     |   (Timeline)     |     |   (Gates)        |
-+------------------+     +------------------+     +------------------+
-         |                       |                       |
-         +-----------+-----------+-----------+-----------+
-                     |
-              +------v------+
-              | Scenarios   |
-              | (What-If)   |
-              +-------------+
+Add new tables and columns to support MS Project features:
+
+**New Tables:**
+```
+resources
+- id, project_id, name, email
+- type (work/material/cost)
+- max_units (100% = 1.0)
+- standard_rate, overtime_rate
+- calendar_id, created_at
+
+resource_assignments
+- id, task_id, resource_id
+- units (percent allocation)
+- work_hours, actual_work
+- start_date, end_date
+- cost, created_at
+
+project_calendars
+- id, project_id, name, is_default
+- working_days (jsonb: {mon: true...})
+- work_hours (jsonb: {start: "09:00", end: "17:00"})
+
+calendar_exceptions
+- id, calendar_id, name
+- exception_type (holiday/working)
+- start_date, end_date
+- work_hours (jsonb, null for non-working)
 ```
 
-| Module | Current State | Work Completed |
-|--------|--------------|-------------|
-| PlanningView | ✅ Complete | Inline editing, keyboard nav (↑↓←→), WBS operations, drag handles |
-| GanttView | ✅ Complete | Drag-to-reschedule, resize handles, dependency arrows, tooltips |
-| MilestonesView | ✅ Complete | Stage gate workflow, approval tracking, criteria checklists |
-| ScenariosView | ✅ Complete | Baseline comparison, visual timeline diff, what-if adjustments |
+**Task Table Additions:**
+- constraint_type (enum: ASAP, ALAP, MustStartOn, MustFinishOn, etc.)
+- constraint_date
+- work_hours (effort in hours)
+- actual_work_hours
+- remaining_work
+- cost, actual_cost
+- fixed_cost, fixed_cost_accrual
+- early_start, early_finish
+- late_start, late_finish
+- free_slack, total_slack
+- effort_driven (boolean)
 
 ---
 
-### Phase 2: Execution & Delivery (Week 2-3) ✅ COMPLETE
-**Priority: High - Daily operational value**
+### Phase 2: Critical Path Calculation Engine
 
-| Module | Current State | Work Completed |
-|--------|--------------|-------------|
-| SprintBoardView | ✅ Complete | Quick type filters, enhanced keyboard nav, active filter count |
-| BacklogView | ✅ Complete | Epic grouping view, Fibonacci story point estimation dialog, sprint scheduling |
-| ActionsView | ✅ Complete | SLA tracking with timers, breach indicators, owner filtering, view modes |
+Create a server-side function for CPM (Critical Path Method):
 
----
-
-### Phase 3: Collaboration Hub (Week 5-6) ✅ COMPLETE
-**Priority: Medium - Team productivity**
-
-| Module | Current State | Work Completed |
-|--------|--------------|-------------|
-| EnhancedMeetingsView | AI sidebar integrated | Add action extraction workflow |
-| TeamChatView | ✅ Complete | @mentions with autocomplete, emoji reactions with user tooltips, quick reaction picker |
-| NotesView | Rich text present | Enhance cross-linking with [[syntax]] |
-| DocumentCenterView | ✅ Complete | Version history with restore/compare, document approval workflow, sequential approvers |
-| TeamManagementView | Roles/permissions ready | Add capacity visualization |
-
-
----
-
-### Phase 4: Financials & Reporting (Week 5)
-**Priority: Medium - Executive visibility**
-
-| Module | Current State | Work Needed |
-|--------|--------------|-------------|
-| FinancialsView | Budget tracking present | Add invoice workflow, T&M calculations |
-| EVMView | SPI/CPI charts ready | Add forecast projections, variance analysis |
-| ReportsView | Basic structure | Add export functionality, scheduled reports |
-| ExecutiveDashboardView | KPIs present | Add drill-down capabilities |
-
----
-### Phase 5: Governance & Control (Week 3-4)
-**Priority: High - Enterprise compliance requirement**
-
-| Module | Current State | Work Needed |
-|--------|--------------|-------------|
-| RisksView | Good foundation | Add risk matrix visualization, trending |
-| IssuesRegisterView | SLA timers present | Enhance severity workflow |
-| DecisionsView | Linking enabled | Add decision tree visualization |
-| ChangeRequestsView | Scaffolded | Add impact analysis panel, approval workflow |
-| TraceabilityMatrixView | Graph + Matrix modes | Enhance interactive linking |
-
-
----
-
-### Phase 6: AI Enhancement Layer (Week 6-7)
-**Priority: Medium-High - Differentiator**
-
-| Module | Current State | Work Needed |
-|--------|--------------|-------------|
-| MorningBriefingView | Placeholder data | Connect to actual project metrics |
-| StrategicDashboardView | KPIs ready | Add AI-driven recommendations |
-| CommunicationIntelligenceView | Sentiment placeholders | Add mock analysis engine |
-| PMCoachSidebar | Context-aware | Enhance with view-specific coaching |
-
----
-
-### Phase 7: Initiation Documents (Week 4)
-**Priority: Medium - Project setup essentials**
-
-| Module | Current State | Work Needed |
-|--------|--------------|-------------|
-| ProjectCharterView | Good structure | Add approval workflow, versioning |
-| StakeholderRegisterView | RACI matrix present | Add Power-Interest matrix interactivity |
-| ProjectCreationView | Template selection ready | Connect to ProjectContext on creation |
-
----
-
-### Phase 8: Closing & Administration (Week 7-8)
-**Priority: Lower - Less frequent use**
-
-| Module | Current State | Work Needed |
-|--------|--------------|-------------|
-| FinalReportView | Template ready | Add auto-population from project data |
-| LessonsLearnedView | Categorization present | Add sentiment analysis, tagging |
-| PlatformAdminView | User/org management | Add audit log viewer |
-| TemplatesAdminView | CRUD ready | Add template preview, cloning |
-
----
-
-## Quick Wins (Can Be Done Anytime)
-
-These are polish items that improve UX without architectural changes:
-
-1. **Keyboard Shortcuts Panel** - Global help modal showing all shortcuts
-2. **Empty States** - Add helpful illustrations when no data exists
-3. **Loading Skeletons** - Replace static content with shimmer effects
-4. **Toast Notifications** - Connect to Sonner for action feedback
-5. **Breadcrumb Navigation** - Add to TopBar for deeper navigation
-
----
-
-## Technical Considerations
-
-### Data Flow Architecture
-```text
-ProjectContext (Methodology + Modules)
-         |
-    Mock Data Layer (mockData.ts, templateData.ts)
-         |
-    View Components (consume via imports)
-         |
-    Shared UI Components (ui/, enterprise/, linking/)
+```
+calculate_critical_path(project_id)
+├── Build dependency graph
+├── Forward pass (calculate Early Start/Finish)
+├── Backward pass (calculate Late Start/Finish)
+├── Calculate Total Slack = Late Start - Early Start
+├── Mark tasks with Slack = 0 as critical
+└── Return updated task data
 ```
 
-### Key Files to Modify First
-1. `src/data/mockData.ts` - Enhance with more realistic data
-2. `src/contexts/ProjectContext.tsx` - Add current sprint, active filters
-3. `src/components/layout/Sidebar.tsx` - Already dynamic, may need badges update
-
-### Dependencies Already Installed
-- Framer Motion (animations)
-- Recharts (charts/graphs)
-- React Day Picker (calendars)
-- cmdk (command palette ready)
+**Implementation approach:**
+- Edge function or database function
+- Triggered on task/dependency changes
+- Updates is_critical, early_start, late_start, etc.
+- Respects calendar exceptions
 
 ---
 
-## Suggested First Build Session
+### Phase 3: Enhanced Task Grid (MS Project Style)
 
-If approved, I recommend starting with:
+New columns for the DatabaseTaskGrid:
 
-1. **Polish PlanningView** - Add inline task editing, keyboard navigation
-2. **Enhance GanttView** - Add interactive drag-to-reschedule
-3. **Connect SprintBoardView** - Ensure drag-drop persists state changes
-4. **Link views together** - Tasks → Sprints → Issues flow
+| Column | Feature |
+|--------|---------|
+| Predecessors | Editable, format: "3FS+2d, 5SS" |
+| Successors | Display only, auto-calculated |
+| Resource Names | Multi-select dropdown |
+| Work | Effort in hours, editable |
+| Constraint | Type + Date selector |
+| Deadline | Warning indicator |
+| Free Slack | Days display |
+| Total Slack | Days display |
+| Cost | Calculated from resources + fixed |
+| Baseline Start | From saved baseline |
+| Baseline Finish | From saved baseline |
+| Variance | Finish - Baseline Finish |
 
-This gives you the complete planning-to-execution core in the first session.
+**Additional Grid Features:**
+- Column resizing and reordering
+- Column visibility toggle dialog
+- Split view (grid + details pane)
+- Task Information dialog (all fields)
+- Copy/Paste tasks
+- Task Notes panel
+
+---
+
+### Phase 4: Resource Management Views
+
+**Resource Sheet:**
+- List all resources with rates
+- Availability calendar
+- Assignments overview
+
+**Resource Usage View:**
+- Time-phased work by resource
+- Over-allocation highlighting (red)
+- Workload histogram
+
+**Task Usage View:**
+- Time-phased work by task
+- Resource breakdown per task
+
+**Resource Leveling:**
+- Auto-level algorithm
+- Priority-based leveling
+- Level selected resources only
+
+---
+
+### Phase 5: Enhanced Gantt Chart
+
+New Gantt features:
+
+**Visual Elements:**
+- Deadline markers (green down arrow)
+- Constraint indicators
+- Slack bars (thin gray extensions)
+- Baseline bars (gray behind actual)
+- Progress lines (serpentine through timeline)
+
+**Interactions:**
+- Link tasks by dragging (visual dependency creation)
+- Double-click to open Task Information
+- Right-click context menu
+- Zoom to fit / zoom to selection
+- Scroll to task button
+
+**Timeline Enhancements:**
+- Non-working time shading
+- Today line with date
+- Status date line
+- Gridline customization
+
+---
+
+### Phase 6: Calendar Management
+
+**Project Calendar Dialog:**
+- Set working hours (e.g., 9AM-5PM)
+- Select working days (Mon-Fri)
+- Add holidays/exceptions
+- Copy calendar from template
+
+**Resource Calendar:**
+- Inherit from project or custom
+- Personal exceptions (vacation)
+- Part-time schedules
+
+**Duration Calculation:**
+- Account for non-working days
+- Work hours to duration conversion
+
+---
+
+### Phase 7: Auto-Scheduling Engine
+
+When enabled, changes trigger automatic recalculation:
+
+```
+Task date changes → Update successors
+Dependency changes → Recalculate chain
+Resource assignment → Recalculate work/duration
+Calendar changes → Recalculate all tasks
+```
+
+**Scheduling Modes:**
+- Auto-schedule (default)
+- Manually scheduled (fixed dates)
+- Per-task toggle
+
+---
+
+### Phase 8: Baseline & Tracking
+
+**Multiple Baselines:**
+- Save up to 10 baselines
+- Clear baseline function
+- Compare any two baselines
+
+**Tracking Table View:**
+- Actual Start/Finish
+- Remaining Duration
+- Percent Complete
+- Physical % Complete (separate from duration %)
+
+**Variance Analysis:**
+- Start Variance
+- Finish Variance
+- Work Variance
+- Cost Variance
+
+---
+
+## Technical Implementation Details
+
+### Database Migration SQL (Summary)
+
+```sql
+-- New enums
+CREATE TYPE constraint_type AS ENUM ('ASAP', 'ALAP', 'MSO', 'MFO', 'SNET', 'SNLT', 'FNET', 'FNLT');
+CREATE TYPE resource_type AS ENUM ('work', 'material', 'cost');
+
+-- Resources table
+CREATE TABLE resources (...);
+
+-- Resource assignments
+CREATE TABLE resource_assignments (...);
+
+-- Project calendars
+CREATE TABLE project_calendars (...);
+
+-- Calendar exceptions
+CREATE TABLE calendar_exceptions (...);
+
+-- Add columns to tasks
+ALTER TABLE tasks ADD COLUMN constraint_type constraint_type DEFAULT 'ASAP';
+ALTER TABLE tasks ADD COLUMN constraint_date date;
+ALTER TABLE tasks ADD COLUMN work_hours numeric DEFAULT 0;
+ALTER TABLE tasks ADD COLUMN early_start date;
+ALTER TABLE tasks ADD COLUMN late_finish date;
+ALTER TABLE tasks ADD COLUMN total_slack integer;
+-- ... more columns
+```
+
+### New React Components
+
+```
+src/components/planning/
+├── MSProjectGrid.tsx          # Enhanced grid with all columns
+├── ResourceSheet.tsx          # Resource management
+├── ResourceUsageView.tsx      # Time-phased workload
+├── TaskInformationDialog.tsx  # Full task editor
+├── DependencyEditor.tsx       # Visual link editing
+├── CalendarDialog.tsx         # Working time setup
+├── BaselineManager.tsx        # Multi-baseline controls
+└── CriticalPathEngine.ts      # CPM algorithm
+
+src/hooks/
+├── useResources.ts            # Resource CRUD
+├── useResourceAssignments.ts  # Assignment management
+├── useCalendars.ts            # Calendar operations
+├── useCriticalPath.ts         # CPM calculation trigger
+└── useAutoSchedule.ts         # Auto-scheduling logic
+```
+
+### Edge Functions
+
+```
+supabase/functions/
+├── calculate-critical-path/   # CPM calculation
+├── auto-schedule/             # Scheduling engine
+├── level-resources/           # Resource leveling
+└── recalculate-dates/         # Calendar-aware dates
+```
+
+---
+
+## Implementation Priority
+
+| Priority | Feature | Effort |
+|----------|---------|--------|
+| 1 | Critical Path Algorithm | High |
+| 2 | Predecessor Column in Grid | Medium |
+| 3 | Resource Table + Assignments | High |
+| 4 | Constraint Types | Medium |
+| 5 | Slack/Float Display | Low |
+| 6 | Project Calendar | Medium |
+| 7 | Resource Histogram | High |
+| 8 | Auto-Scheduling | High |
+| 9 | Multiple Baselines UI | Low |
+| 10 | Variance Columns | Low |
 
 ---
 
 ## Summary
 
-| Phase | Focus | Time | Value |
-|-------|-------|------|-------|
-| 1 | Planning Engine | Week 1-2 | Critical path for any PM tool |
-| 2 | Execution | Week 2-3 | Daily team operations |
-| 3 | Governance | Week 3-4 | Enterprise compliance |
-| 4 | Initiation | Week 4 | Project setup |
-| 5 | Financials | Week 5 | Executive reporting |
-| 6 | Collaboration | Week 5-6 | Team productivity |
-| 7 | AI Layer | Week 6-7 | Market differentiator |
-| 8 | Closing/Admin | Week 7-8 | Complete lifecycle |
+This enhancement transforms the Project Plan into a true MS Project alternative with:
 
-Ready to begin implementation when you approve this plan.
+- **Full scheduling engine** with CPM critical path
+- **Resource management** with leveling
+- **Calendar system** for working time
+- **Constraint types** for complex scheduling
+- **Baseline tracking** with variance analysis
+
+All features will be database-backed with real-time sync, maintaining the existing Supabase architecture.
+

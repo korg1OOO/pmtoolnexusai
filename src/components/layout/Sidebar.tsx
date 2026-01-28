@@ -26,6 +26,7 @@ import {
   CheckCircle2,
   FileText,
   Lightbulb,
+  MessageSquare,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -117,6 +118,7 @@ const navItems: NavItem[] = [
     icon: Users,
     children: [
       { id: 'meetings', label: 'AI Meetings', icon: Users, badge: 2, moduleKey: 'meetings' },
+      { id: 'team-chat', label: 'Team Chat', icon: MessageSquare, alwaysShow: true },
       { id: 'communications', label: 'Communications', icon: BarChart3, moduleKey: 'communications' },
       { id: 'notes', label: 'Notes', icon: BookOpen, moduleKey: 'notes' },
       { id: 'documents', label: 'Document Center', icon: BookOpen, alwaysShow: true },

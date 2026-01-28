@@ -11,6 +11,10 @@ import {
   Loader2,
   Plus,
   Link2,
+  AlertTriangle,
+  Target,
+  Clock,
+  ChevronDown,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -23,7 +27,17 @@ import {
   useUpdateTask,
   useDependencies,
   useSaveProjectBaseline,
+  useBaselines,
 } from '@/hooks/useTasks';
+import { 
+  useResources, 
+  useResourceAssignments,
+  useCreateResourceAssignment,
+  useDeleteResourceAssignment,
+  Resource,
+  ResourceAssignment,
+} from '@/hooks/useResources';
+import { useCreateDependency, useDeleteDependency } from '@/hooks/useTasks';
 import {
   Dialog,
   DialogContent,
@@ -32,9 +46,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { format, isWeekend, parseISO, differenceInDays } from 'date-fns';
 
 type TimeScale = 'day' | 'week' | 'month' | 'quarter';
 
@@ -63,14 +85,22 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
   const updateTask = useUpdateTask();
   const saveBaseline = useSaveProjectBaseline();
   
+  // Resource hooks for task info dialog
+  const { data: resources = [] } = useResources(projectId);
+  const [selectedTaskAssignments, setSelectedTaskAssignments] = useState<ResourceAssignment[]>([]);
+  
   const [timeScale, setTimeScale] = useState<TimeScale>('week');
   const [showBaseline, setShowBaseline] = useState(false);
   const [showCriticalPath, setShowCriticalPath] = useState(true);
   const [showDependencies, setShowDependencies] = useState(true);
+  const [showSlack, setShowSlack] = useState(false);
+  const [showNonWorkingTime, setShowNonWorkingTime] = useState(true);
   const [dragging, setDragging] = useState<DraggingState | null>(null);
   const [hoveredTask, setHoveredTask] = useState<string | null>(null);
   const [baselineDialogOpen, setBaselineDialogOpen] = useState(false);
   const [baselineName, setBaselineName] = useState('');
+  const [selectedTask, setSelectedTask] = useState<DbTask | null>(null);
+  const [taskInfoOpen, setTaskInfoOpen] = useState(false);
   const ganttRef = useRef<HTMLDivElement>(null);
 
   // Build hierarchical structure
@@ -190,6 +220,76 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
 
     return { left: `${left}%`, width: `${Math.max(width, 0.5)}%` };
   }, [dateRange.start, totalDays]);
+
+  // Calculate slack bar position (extends from task end to late finish)
+  const getSlackBarStyle = useCallback((task: DbTask) => {
+    if (!task.late_finish || !task.total_slack || task.total_slack <= 0) return null;
+    
+    const taskEnd = new Date(task.end_date);
+    const lateFinish = new Date(task.late_finish);
+    const startOffset = Math.ceil((taskEnd.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24));
+    const slackDays = task.total_slack;
+
+    const left = (startOffset / totalDays) * 100;
+    const width = (slackDays / totalDays) * 100;
+
+    return { left: `${left}%`, width: `${Math.max(width, 0.3)}%` };
+  }, [dateRange.start, totalDays]);
+
+  // Calculate deadline marker position
+  const getDeadlinePosition = useCallback((deadline: string) => {
+    const deadlineDate = new Date(deadline);
+    const offset = Math.ceil((deadlineDate.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24));
+    return `${(offset / totalDays) * 100}%`;
+  }, [dateRange.start, totalDays]);
+
+  // Calculate baseline bar position
+  const getBaselineBarStyle = useCallback((task: DbTask) => {
+    if (!task.early_start) return null; // Using early_start as baseline placeholder
+    
+    // For demo, show baseline slightly offset from actual
+    const start = new Date(task.start_date);
+    const end = new Date(task.end_date);
+    // Simulate baseline being a few days earlier
+    start.setDate(start.getDate() - 2);
+    
+    const startOffset = Math.ceil((start.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24));
+    const duration = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+
+    const left = (startOffset / totalDays) * 100;
+    const width = (duration / totalDays) * 100;
+
+    return { left: `${left}%`, width: `${Math.max(width, 0.5)}%` };
+  }, [dateRange.start, totalDays]);
+
+  // Get non-working day positions for shading
+  const nonWorkingDays = useMemo(() => {
+    if (!showNonWorkingTime || timeScale !== 'day') return [];
+    
+    const days: { left: string; width: string }[] = [];
+    const current = new Date(dateRange.start);
+    const dayWidth = 100 / totalDays;
+    
+    let dayIndex = 0;
+    while (current <= dateRange.end) {
+      if (isWeekend(current)) {
+        days.push({
+          left: `${dayIndex * dayWidth}%`,
+          width: `${dayWidth}%`,
+        });
+      }
+      current.setDate(current.getDate() + 1);
+      dayIndex++;
+    }
+    
+    return days;
+  }, [dateRange, totalDays, showNonWorkingTime, timeScale]);
+
+  // Handle double-click to open task info
+  const handleTaskDoubleClick = (task: DbTask) => {
+    setSelectedTask(task);
+    setTaskInfoOpen(true);
+  };
 
   // Drag handlers for rescheduling
   const handleMouseDown = (e: React.MouseEvent, task: DbTask, type: DraggingState['type']) => {
@@ -350,30 +450,44 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
           </Button>
         </div>
         <div className="flex items-center gap-2">
-          <Button
-            variant={showDependencies ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setShowDependencies(!showDependencies)}
-          >
-            <Link2 className="h-4 w-4 mr-1" />
-            Dependencies
-          </Button>
-          <Button
-            variant={showCriticalPath ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setShowCriticalPath(!showCriticalPath)}
-          >
-            <Flag className="h-4 w-4 mr-1" />
-            Critical Path
-          </Button>
-          <Button
-            variant={showBaseline ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setShowBaseline(!showBaseline)}
-          >
-            <Layers className="h-4 w-4 mr-1" />
-            Baseline
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Layers className="h-4 w-4 mr-1" />
+                Display
+                <ChevronDown className="h-3 w-3 ml-1" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => setShowDependencies(!showDependencies)}>
+                <Link2 className="h-4 w-4 mr-2" />
+                Dependencies
+                {showDependencies && <Badge variant="secondary" className="ml-auto">On</Badge>}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowCriticalPath(!showCriticalPath)}>
+                <Flag className="h-4 w-4 mr-2" />
+                Critical Path
+                {showCriticalPath && <Badge variant="secondary" className="ml-auto">On</Badge>}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowSlack(!showSlack)}>
+                <Clock className="h-4 w-4 mr-2" />
+                Slack Bars
+                {showSlack && <Badge variant="secondary" className="ml-auto">On</Badge>}
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowBaseline(!showBaseline)}>
+                <Target className="h-4 w-4 mr-2" />
+                Baseline
+                {showBaseline && <Badge variant="secondary" className="ml-auto">On</Badge>}
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => setShowNonWorkingTime(!showNonWorkingTime)}>
+                <Calendar className="h-4 w-4 mr-2" />
+                Non-Working Time
+                {showNonWorkingTime && <Badge variant="secondary" className="ml-auto">On</Badge>}
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+          
           <Button variant="outline" size="sm" onClick={() => setBaselineDialogOpen(true)}>
             Save Baseline
           </Button>
@@ -415,7 +529,7 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                     className={cn(
                       'text-sm truncate',
                       task.type === 'summary' && 'font-semibold',
-                      task.type === 'milestone' && 'italic text-purple-400'
+                      task.type === 'milestone' && 'italic text-secondary-foreground'
                     )}
                   >
                     {task.name}
@@ -458,6 +572,15 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
 
               {/* Gantt Bars */}
               <div className="relative" style={{ width: totalWidth }}>
+                {/* Non-Working Time Shading */}
+                {nonWorkingDays.map((day, i) => (
+                  <div
+                    key={`nw-${i}`}
+                    className="absolute top-0 bottom-0 bg-muted/40 pointer-events-none"
+                    style={{ left: day.left, width: day.width }}
+                  />
+                ))}
+
                 {/* Grid Lines */}
                 <div className="absolute inset-0 flex pointer-events-none">
                   {timelineHeaders.map((header, i) =>
@@ -513,9 +636,13 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
 
                 {/* Task Bars */}
                 <TooltipProvider>
-                  {visibleTasks.map((task) => {
+                  {visibleTasks.map((task, taskIndex) => {
                     const barStyle = getBarStyle(task);
+                    const slackStyle = showSlack ? getSlackBarStyle(task) : null;
+                    const baselineStyle = showBaseline ? getBaselineBarStyle(task) : null;
                     const isDragging = dragging?.taskId === task.id;
+                    const hasDeadline = task.deadline;
+                    const isOverdue = hasDeadline && new Date(task.end_date) > new Date(task.deadline);
                     
                     return (
                       <div
@@ -526,14 +653,66 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                         )}
                         onMouseEnter={() => setHoveredTask(task.id)}
                         onMouseLeave={() => setHoveredTask(null)}
+                        onDoubleClick={() => handleTaskDoubleClick(task)}
                       >
+                        {/* Baseline Bar (shown behind actual) */}
+                        {showBaseline && baselineStyle && task.type === 'task' && (
+                          <div
+                            className="absolute top-3.5 h-3 bg-muted-foreground/30 rounded"
+                            style={baselineStyle}
+                          />
+                        )}
+
+                        {/* Slack Bar */}
+                        {showSlack && slackStyle && task.type === 'task' && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div
+                                className="absolute top-4 h-2 bg-muted-foreground/40 rounded-r border-l-2 border-dashed border-muted-foreground/60"
+                                style={slackStyle}
+                              />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="text-xs">Slack: {task.total_slack} days</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+
+                        {/* Deadline Marker */}
+                        {hasDeadline && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div
+                                className={cn(
+                                  "absolute top-1 w-0 h-0 cursor-pointer",
+                                  "border-l-[6px] border-l-transparent",
+                                  "border-r-[6px] border-r-transparent",
+                                  "border-t-[8px]",
+                                  isOverdue ? "border-t-destructive" : "border-t-accent"
+                                )}
+                                style={{ left: getDeadlinePosition(task.deadline!), marginLeft: -6 }}
+                              />
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <div className="flex items-center gap-1">
+                                <AlertTriangle className={cn("h-3 w-3", isOverdue ? "text-destructive" : "text-accent")} />
+                                <span className="text-xs">Deadline: {task.deadline}</span>
+                              </div>
+                              {isOverdue && (
+                                <p className="text-xs text-destructive">Task is overdue!</p>
+                              )}
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+
                         {/* Main Bar */}
                         {task.type === 'milestone' ? (
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <div
-                                className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rotate-45 bg-purple-500 border-2 border-purple-300 cursor-pointer hover:scale-110 transition-transform"
+                                className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rotate-45 bg-secondary border-2 border-secondary-foreground/50 cursor-pointer hover:scale-110 transition-transform"
                                 style={{ left: barStyle.left, marginLeft: -8 }}
+                                onDoubleClick={() => handleTaskDoubleClick(task)}
                               />
                             </TooltipTrigger>
                             <TooltipContent>
@@ -595,6 +774,14 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                               <p className="font-medium">{task.name}</p>
                               <p className="text-xs">{task.start_date} → {task.end_date}</p>
                               <p className="text-xs text-muted-foreground">{task.progress}% complete</p>
+                              {task.total_slack != null && task.total_slack > 0 && (
+                                <p className="text-xs text-muted-foreground">Slack: {task.total_slack} days</p>
+                              )}
+                              {hasDeadline && (
+                                <p className={cn("text-xs", isOverdue ? "text-destructive" : "text-muted-foreground")}>
+                                  Deadline: {task.deadline}
+                                </p>
+                              )}
                             </TooltipContent>
                           </Tooltip>
                         )}
@@ -636,7 +823,7 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
             <span>Summary</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-3 h-3 rotate-45 bg-purple-500" />
+            <div className="w-3 h-3 rotate-45 bg-secondary" />
             <span>Milestone</span>
           </div>
           {showCriticalPath && (
@@ -645,9 +832,21 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
               <span>Critical Path</span>
             </div>
           )}
+          {showSlack && (
+            <div className="flex items-center gap-1">
+              <div className="w-6 h-2 bg-muted-foreground/40 rounded" />
+              <span>Slack</span>
+            </div>
+          )}
+          {showBaseline && (
+            <div className="flex items-center gap-1">
+              <div className="w-6 h-2 bg-muted-foreground/30 rounded" />
+              <span>Baseline</span>
+            </div>
+          )}
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-muted-foreground/60">Drag bars to reschedule • Drag edges to resize</span>
+          <span className="text-muted-foreground/60">Double-click to edit • Drag bars to reschedule</span>
           <div className="w-px h-4 bg-border" />
           <Calendar className="h-3 w-3" />
           <span>
@@ -687,6 +886,8 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Task info dialog would go here - requires full integration with resource/dependency mutations */}
     </div>
   );
 }

@@ -29,12 +29,14 @@ import { useProjects, useCreateProject, Project } from '@/hooks/useProjects';
 import { useTasks, useCreateTask } from '@/hooks/useTasks';
 import { useCalculateCriticalPath } from '@/hooks/useCriticalPath';
 import { 
+  useProjectCalendars,
   useDefaultCalendar, 
   useCalendarExceptions, 
   useUpdateCalendar,
   useCreateCalendarException,
   useDeleteCalendarException,
 } from '@/hooks/useCalendars';
+import { useCreateCalendar, useDeleteCalendar } from '@/hooks/useCreateCalendar';
 import {
   Dialog,
   DialogContent,
@@ -73,6 +75,7 @@ export function PlanningView() {
   const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
   const [showCalendarDialog, setShowCalendarDialog] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
+  const [selectedCalendarId, setSelectedCalendarId] = useState<string | null>(null);
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectCode, setNewProjectCode] = useState('');
   const [newProjectDesc, setNewProjectDesc] = useState('');
@@ -84,9 +87,15 @@ export function PlanningView() {
   const calculateCriticalPath = useCalculateCriticalPath();
   
   // Calendar hooks
+  const { data: calendars = [] } = useProjectCalendars(selectedProjectId);
   const { data: defaultCalendar } = useDefaultCalendar(selectedProjectId);
-  const { data: calendarExceptions = [] } = useCalendarExceptions(defaultCalendar?.id || null);
+  const selectedCalendar = selectedCalendarId 
+    ? calendars.find(c => c.id === selectedCalendarId) || null 
+    : defaultCalendar;
+  const { data: calendarExceptions = [] } = useCalendarExceptions(selectedCalendar?.id || null);
   const updateCalendar = useUpdateCalendar();
+  const createCalendar = useCreateCalendar();
+  const deleteCalendar = useDeleteCalendar();
   const createException = useCreateCalendarException();
   const deleteException = useDeleteCalendarException();
 
@@ -96,6 +105,15 @@ export function PlanningView() {
       setSelectedProjectId(projects[0].id);
     }
   }, [projects, selectedProjectId]);
+
+  // Auto-select default calendar when project changes
+  useEffect(() => {
+    if (defaultCalendar) {
+      setSelectedCalendarId(defaultCalendar.id);
+    } else {
+      setSelectedCalendarId(null);
+    }
+  }, [defaultCalendar]);
 
   const shortcuts = [
     { key: '↑ / ↓', description: 'Navigate between tasks' },
@@ -489,20 +507,35 @@ export function PlanningView() {
       <AuthDialog open={showAuthDialog} onOpenChange={setShowAuthDialog} />
 
       {/* Calendar Dialog */}
-      {defaultCalendar && (
+      {selectedProjectId && (
         <CalendarDialog
           open={showCalendarDialog}
           onOpenChange={setShowCalendarDialog}
-          calendar={defaultCalendar}
+          calendars={calendars}
+          selectedCalendar={selectedCalendar}
           exceptions={calendarExceptions}
+          projectId={selectedProjectId}
+          onSelectCalendar={(id) => setSelectedCalendarId(id)}
           onSave={async (updates) => {
-            await updateCalendar.mutateAsync({ id: defaultCalendar.id, ...updates });
+            if (selectedCalendar) {
+              await updateCalendar.mutateAsync({ id: selectedCalendar.id, ...updates });
+            }
+          }}
+          onCreateCalendar={async (calendar) => {
+            const newCal = await createCalendar.mutateAsync(calendar);
+            setSelectedCalendarId(newCal.id);
+          }}
+          onDeleteCalendar={async (id) => {
+            await deleteCalendar.mutateAsync({ id, projectId: selectedProjectId });
+            setSelectedCalendarId(null);
           }}
           onAddException={async (exception) => {
             await createException.mutateAsync(exception);
           }}
           onRemoveException={async (id) => {
-            await deleteException.mutateAsync({ id, calendarId: defaultCalendar.id });
+            if (selectedCalendar) {
+              await deleteException.mutateAsync({ id, calendarId: selectedCalendar.id });
+            }
           }}
           isSaving={updateCalendar.isPending}
         />

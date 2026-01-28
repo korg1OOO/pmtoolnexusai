@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, Edit2, Save, X, Users } from 'lucide-react';
+import { Plus, Trash2, Edit2, Save, X, Users, Calendar as CalendarIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -35,6 +35,7 @@ import {
   useDeleteResource,
   Resource,
 } from '@/hooks/useResources';
+import { useProjectCalendars } from '@/hooks/useCalendars';
 import { toast } from 'sonner';
 
 interface ResourceSheetProps {
@@ -43,6 +44,7 @@ interface ResourceSheetProps {
 
 export function ResourceSheet({ projectId }: ResourceSheetProps) {
   const { data: resources = [], isLoading } = useResources(projectId);
+  const { data: calendars = [] } = useProjectCalendars(projectId);
   const createResource = useCreateResource();
   const updateResource = useUpdateResource();
   const deleteResource = useDeleteResource();
@@ -58,6 +60,7 @@ export function ResourceSheet({ projectId }: ResourceSheetProps) {
     overtime_rate: 0,
     cost_per_use: 0,
     notes: '',
+    calendar_id: null as string | null,
   });
 
   const resetForm = () => {
@@ -70,7 +73,14 @@ export function ResourceSheet({ projectId }: ResourceSheetProps) {
       overtime_rate: 0,
       cost_per_use: 0,
       notes: '',
+      calendar_id: null,
     });
+  };
+
+  const getCalendarName = (calendarId: string | null) => {
+    if (!calendarId) return 'Project Default';
+    const cal = calendars.find((c) => c.id === calendarId);
+    return cal?.name || 'Unknown';
   };
 
   const handleAdd = async () => {
@@ -89,7 +99,7 @@ export function ResourceSheet({ projectId }: ResourceSheetProps) {
       overtime_rate: formData.overtime_rate,
       cost_per_use: formData.cost_per_use,
       notes: formData.notes || null,
-      calendar_id: null,
+      calendar_id: formData.calendar_id,
     });
 
     resetForm();
@@ -107,6 +117,7 @@ export function ResourceSheet({ projectId }: ResourceSheetProps) {
       overtime_rate: resource.overtime_rate,
       cost_per_use: resource.cost_per_use,
       notes: resource.notes || '',
+      calendar_id: resource.calendar_id,
     });
   };
 
@@ -121,6 +132,7 @@ export function ResourceSheet({ projectId }: ResourceSheetProps) {
       overtime_rate: formData.overtime_rate,
       cost_per_use: formData.cost_per_use,
       notes: formData.notes || null,
+      calendar_id: formData.calendar_id,
     });
 
     setEditingId(null);
@@ -177,6 +189,7 @@ export function ResourceSheet({ projectId }: ResourceSheetProps) {
               <TableHead className="w-[200px]">Resource Name</TableHead>
               <TableHead>Type</TableHead>
               <TableHead>Email</TableHead>
+              <TableHead>Calendar</TableHead>
               <TableHead className="text-right">Max Units</TableHead>
               <TableHead className="text-right">Std. Rate ($/hr)</TableHead>
               <TableHead className="text-right">OT Rate ($/hr)</TableHead>
@@ -187,7 +200,7 @@ export function ResourceSheet({ projectId }: ResourceSheetProps) {
           <TableBody>
             {resources.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={8} className="text-center text-muted-foreground py-8">
+                <TableCell colSpan={9} className="text-center text-muted-foreground py-8">
                   No resources yet. Click "Add Resource" to create one.
                 </TableCell>
               </TableRow>
@@ -236,6 +249,33 @@ export function ResourceSheet({ projectId }: ResourceSheetProps) {
                       />
                     ) : (
                       <span className="text-muted-foreground">{resource.email || '—'}</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {editingId === resource.id ? (
+                      <Select
+                        value={formData.calendar_id || '__default__'}
+                        onValueChange={(v) =>
+                          setFormData({ ...formData, calendar_id: v === '__default__' ? null : v })
+                        }
+                      >
+                        <SelectTrigger className="h-8 w-32">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__default__">Project Default</SelectItem>
+                          {calendars.map((cal) => (
+                            <SelectItem key={cal.id} value={cal.id}>
+                              {cal.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="flex items-center gap-1.5">
+                        <CalendarIcon className="h-3 w-3 text-muted-foreground" />
+                        <span className="text-sm">{getCalendarName(resource.calendar_id)}</span>
+                      </div>
                     )}
                   </TableCell>
                   <TableCell className="text-right">
@@ -436,6 +476,27 @@ export function ResourceSheet({ projectId }: ResourceSheetProps) {
                   value={formData.cost_per_use}
                   onChange={(e) => setFormData({ ...formData, cost_per_use: parseFloat(e.target.value) })}
                 />
+              </div>
+              <div>
+                <Label htmlFor="calendar">Calendar</Label>
+                <Select
+                  value={formData.calendar_id || '__default__'}
+                  onValueChange={(v) =>
+                    setFormData({ ...formData, calendar_id: v === '__default__' ? null : v })
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__default__">Project Default</SelectItem>
+                    {calendars.map((cal) => (
+                      <SelectItem key={cal.id} value={cal.id}>
+                        {cal.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <div>

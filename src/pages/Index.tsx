@@ -27,6 +27,8 @@ import { PlatformAdminView } from '@/components/views/PlatformAdminView';
 import { UserSettingsView } from '@/components/views/UserSettingsView';
 import { ProjectAdminView } from '@/components/views/ProjectAdminView';
 import { PlanningView } from '@/components/views/PlanningView';
+import { ProjectCreationView } from '@/components/views/ProjectCreationView';
+import { TemplatesAdminView } from '@/components/views/TemplatesAdminView';
 import { ProjectProvider } from '@/contexts/ProjectContext';
 
 const Index = () => {
@@ -85,8 +87,12 @@ const Index = () => {
         return <PlatformAdminView />;
       case 'admin-project':
         return <ProjectAdminView />;
+      case 'admin-templates':
+        return <TemplatesAdminView />;
       case 'settings':
         return <UserSettingsView />;
+      case 'create-project':
+        return <ProjectCreationView />;
       default:
         return <DashboardView />;
     }

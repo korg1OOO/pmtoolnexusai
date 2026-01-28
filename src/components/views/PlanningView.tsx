@@ -12,6 +12,7 @@ import {
   Calculator,
   CalendarDays,
   Users,
+  BarChart3,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +22,8 @@ import { DatabaseGantt } from '@/components/planning/DatabaseGantt';
 import { SprintBoardView } from './SprintBoardView';
 import { AuthDialog } from '@/components/auth/AuthDialog';
 import { CalendarDialog } from '@/components/planning/CalendarDialog';
+import { ResourceSheet } from '@/components/resources/ResourceSheet';
+import { ResourceUsageView } from '@/components/resources/ResourceUsageView';
 import { useAuth } from '@/hooks/useAuth';
 import { useProjects, useCreateProject, Project } from '@/hooks/useProjects';
 import { useTasks, useCreateTask } from '@/hooks/useTasks';
@@ -60,8 +63,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 
+type ResourceViewMode = 'none' | 'sheet' | 'usage';
+
 export function PlanningView() {
   const [viewMode, setViewMode] = useState<PlanViewMode>('grid');
+  const [resourceView, setResourceView] = useState<ResourceViewMode>('none');
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
@@ -267,8 +273,41 @@ export function PlanningView() {
             Outdent
           </Button>
         </div>
-        <div className="flex items-center gap-4">
-          <ViewSwitcher value={viewMode} onChange={setViewMode} />
+        <div className="flex items-center gap-2">
+          <ViewSwitcher value={viewMode} onChange={(v) => { setViewMode(v); setResourceView('none'); }} />
+          <div className="w-px h-6 bg-border" />
+          
+          {/* Resource Views Dropdown */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button 
+                variant={resourceView !== 'none' ? 'secondary' : 'outline'} 
+                size="sm"
+              >
+                <Users className="h-4 w-4 mr-1" />
+                Resources
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent>
+              <DropdownMenuItem onClick={() => setResourceView('sheet')}>
+                <Users className="h-4 w-4 mr-2" />
+                Resource Sheet
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setResourceView('usage')}>
+                <BarChart3 className="h-4 w-4 mr-2" />
+                Resource Usage
+              </DropdownMenuItem>
+              {resourceView !== 'none' && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => setResourceView('none')}>
+                    Back to Tasks
+                  </DropdownMenuItem>
+                </>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           <Button
             variant="ghost"
             size="sm"
@@ -334,13 +373,26 @@ export function PlanningView() {
       {/* Content */}
       {selectedProjectId ? (
         <>
-          {viewMode === 'grid' && (
-            <DatabaseTaskGrid projectId={selectedProjectId} />
+          {/* Resource Views */}
+          {resourceView === 'sheet' && (
+            <ResourceSheet projectId={selectedProjectId} />
           )}
-          {viewMode === 'gantt' && (
-            <DatabaseGantt projectId={selectedProjectId} />
+          {resourceView === 'usage' && (
+            <ResourceUsageView projectId={selectedProjectId} />
           )}
-          {viewMode === 'board' && <SprintBoardView />}
+          
+          {/* Task Views (only show when not in resource view) */}
+          {resourceView === 'none' && (
+            <>
+              {viewMode === 'grid' && (
+                <DatabaseTaskGrid projectId={selectedProjectId} />
+              )}
+              {viewMode === 'gantt' && (
+                <DatabaseGantt projectId={selectedProjectId} />
+              )}
+              {viewMode === 'board' && <SprintBoardView />}
+            </>
+          )}
         </>
       ) : (
         <div className="flex-1 flex items-center justify-center text-muted-foreground">

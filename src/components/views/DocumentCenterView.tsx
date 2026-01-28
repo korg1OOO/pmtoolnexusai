@@ -25,6 +25,9 @@ import {
   FolderPlus,
   ChevronRight,
   Home,
+  History,
+  CheckCircle2,
+  FileCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,8 +38,18 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { VersionHistory, type DocumentVersion } from '@/components/documents/VersionHistory';
+import { DocumentApprovalWorkflow } from '@/components/documents/DocumentApprovalWorkflow';
 
 interface Document {
   id: string;
@@ -50,6 +63,16 @@ interface Document {
   starred: boolean;
   version: string;
   status: 'draft' | 'review' | 'approved' | 'archived';
+  versions: DocumentVersion[];
+  approvers?: Array<{
+    id: string;
+    name: string;
+    role: string;
+    status: 'pending' | 'approved' | 'rejected' | 'skipped';
+    date?: string;
+    comment?: string;
+    order: number;
+  }>;
 }
 
 interface Folder {
@@ -81,6 +104,15 @@ const mockDocuments: Document[] = [
     starred: true,
     version: '2.1',
     status: 'approved',
+    versions: [
+      { id: 'v1', version: '2.1', uploadedBy: 'Sarah Mitchell', uploadedDate: '2024-08-01', size: 2450000, status: 'current', changeNotes: 'Updated project scope and timeline', approvedBy: 'James Wilson', approvedDate: '2024-08-02' },
+      { id: 'v2', version: '2.0', uploadedBy: 'Sarah Mitchell', uploadedDate: '2024-06-15', size: 2300000, status: 'approved', changeNotes: 'Major revision - new objectives added', approvedBy: 'James Wilson', approvedDate: '2024-06-16' },
+      { id: 'v3', version: '1.0', uploadedBy: 'John Doe', uploadedDate: '2024-01-15', size: 1800000, status: 'superseded', changeNotes: 'Initial version', approvedBy: 'Sarah Mitchell', approvedDate: '2024-01-16' },
+    ],
+    approvers: [
+      { id: 'a1', name: 'Sarah Mitchell', role: 'Project Manager', status: 'approved', date: '2024-08-01', order: 1 },
+      { id: 'a2', name: 'James Wilson', role: 'Sponsor', status: 'approved', date: '2024-08-02', comment: 'Approved with minor suggestions', order: 2 },
+    ],
   },
   {
     id: 'd2',
@@ -94,6 +126,10 @@ const mockDocuments: Document[] = [
     starred: true,
     version: '3.0',
     status: 'approved',
+    versions: [
+      { id: 'v1', version: '3.0', uploadedBy: 'Mike Johnson', uploadedDate: '2024-07-15', size: 5600000, status: 'current', changeNotes: 'Added disaster recovery section' },
+      { id: 'v2', version: '2.0', uploadedBy: 'Mike Johnson', uploadedDate: '2024-05-20', size: 4800000, status: 'approved', changeNotes: 'Security enhancements' },
+    ],
   },
   {
     id: 'd3',
@@ -107,6 +143,9 @@ const mockDocuments: Document[] = [
     starred: false,
     version: '8.2',
     status: 'approved',
+    versions: [
+      { id: 'v1', version: '8.2', uploadedBy: 'Sarah Mitchell', uploadedDate: '2024-08-10', size: 1200000, status: 'current', changeNotes: 'August actuals updated' },
+    ],
   },
   {
     id: 'd4',
@@ -120,6 +159,9 @@ const mockDocuments: Document[] = [
     starred: false,
     version: '1.0',
     status: 'approved',
+    versions: [
+      { id: 'v1', version: '1.0', uploadedBy: 'John Doe', uploadedDate: '2024-08-05', size: 3400000, status: 'current' },
+    ],
   },
   {
     id: 'd5',
@@ -133,6 +175,10 @@ const mockDocuments: Document[] = [
     starred: false,
     version: '2.3',
     status: 'approved',
+    versions: [
+      { id: 'v1', version: '2.3', uploadedBy: 'Emily Brown', uploadedDate: '2024-06-28', size: 4200000, status: 'current' },
+      { id: 'v2', version: '2.2', uploadedBy: 'Emily Brown', uploadedDate: '2024-06-15', size: 4000000, status: 'superseded' },
+    ],
   },
   {
     id: 'd6',
@@ -145,7 +191,15 @@ const mockDocuments: Document[] = [
     folder: 'Project Documentation',
     starred: false,
     version: '0.9',
-    status: 'draft',
+    status: 'review',
+    versions: [
+      { id: 'v1', version: '0.9', uploadedBy: 'Emily Brown', uploadedDate: '2024-08-08', size: 1800000, status: 'draft', changeNotes: 'Ready for review' },
+    ],
+    approvers: [
+      { id: 'a1', name: 'Mike Johnson', role: 'Tech Lead', status: 'approved', date: '2024-08-09', order: 1 },
+      { id: 'a2', name: 'Sarah Mitchell', role: 'Project Manager', status: 'pending', order: 2 },
+      { id: 'a3', name: 'James Wilson', role: 'Sponsor', status: 'pending', order: 3 },
+    ],
   },
   {
     id: 'd7',
@@ -158,7 +212,11 @@ const mockDocuments: Document[] = [
     folder: 'Deliverables',
     starred: false,
     version: '1.2',
-    status: 'review',
+    status: 'draft',
+    versions: [
+      { id: 'v1', version: '1.2', uploadedBy: 'Lisa Chen', uploadedDate: '2024-08-09', size: 8500000, status: 'draft', changeNotes: 'Added new module sections' },
+      { id: 'v2', version: '1.1', uploadedBy: 'Lisa Chen', uploadedDate: '2024-08-05', size: 7200000, status: 'superseded' },
+    ],
   },
 ];
 
@@ -167,6 +225,8 @@ export function DocumentCenterView() {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [currentFolder, setCurrentFolder] = useState<string | null>(null);
   const [showStarredOnly, setShowStarredOnly] = useState(false);
+  const [selectedDocument, setSelectedDocument] = useState<Document | null>(null);
+  const [showDocumentDetails, setShowDocumentDetails] = useState(false);
 
   const filteredDocuments = mockDocuments.filter(doc => {
     const matchesSearch = doc.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -190,6 +250,11 @@ export function DocumentCenterView() {
       case 'image': return <FileImage className="h-5 w-5 text-info" />;
       default: return <File className="h-5 w-5 text-muted-foreground" />;
     }
+  };
+
+  const openDocumentDetails = (doc: Document) => {
+    setSelectedDocument(doc);
+    setShowDocumentDetails(true);
   };
 
   return (
@@ -330,18 +395,23 @@ export function DocumentCenterView() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
-                              <DropdownMenuItem>
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openDocumentDetails(doc); }}>
                                 <Eye className="h-4 w-4 mr-2" />
-                                View
+                                View Details
                               </DropdownMenuItem>
                               <DropdownMenuItem>
                                 <Download className="h-4 w-4 mr-2" />
                                 Download
                               </DropdownMenuItem>
+                              <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openDocumentDetails(doc); }}>
+                                <History className="h-4 w-4 mr-2" />
+                                Version History
+                              </DropdownMenuItem>
                               <DropdownMenuItem>
                                 <Share2 className="h-4 w-4 mr-2" />
                                 Share
                               </DropdownMenuItem>
+                              <DropdownMenuSeparator />
                               <DropdownMenuItem className="text-destructive">
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Delete
@@ -357,10 +427,13 @@ export function DocumentCenterView() {
                       </p>
 
                       <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground">
-                          <Clock className="h-3 w-3" />
-                          {new Date(doc.modifiedDate).toLocaleDateString()}
-                        </div>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); openDocumentDetails(doc); }}
+                          className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+                        >
+                          <History className="h-3 w-3" />
+                          {doc.versions.length} versions
+                        </button>
                         <Badge variant={
                           doc.status === 'approved' ? 'success' :
                           doc.status === 'draft' ? 'secondary' :
@@ -380,6 +453,7 @@ export function DocumentCenterView() {
                 {filteredDocuments.map((doc) => (
                   <div
                     key={doc.id}
+                    onClick={() => openDocumentDetails(doc)}
                     className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors cursor-pointer"
                   >
                     <div className="p-2 rounded-lg bg-muted">
@@ -391,10 +465,16 @@ export function DocumentCenterView() {
                         {doc.starred && <Star className="h-3 w-3 text-warning fill-warning" />}
                       </div>
                       <p className="text-xs text-muted-foreground">
-                        {doc.folder} • {formatSize(doc.size)} • v{doc.version}
+                        {doc.folder} • {formatSize(doc.size)} • v{doc.version} • {doc.versions.length} versions
                       </p>
                     </div>
                     <div className="flex items-center gap-3">
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); openDocumentDetails(doc); }}
+                        className="flex items-center gap-1 text-xs text-muted-foreground hover:text-primary transition-colors"
+                      >
+                        <History className="h-3 w-3" />
+                      </button>
                       <div className="text-right">
                         <p className="text-xs">{doc.uploadedBy}</p>
                         <p className="text-xs text-muted-foreground">{new Date(doc.modifiedDate).toLocaleDateString()}</p>
@@ -413,9 +493,15 @@ export function DocumentCenterView() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem><Eye className="h-4 w-4 mr-2" />View</DropdownMenuItem>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openDocumentDetails(doc); }}>
+                            <Eye className="h-4 w-4 mr-2" />View Details
+                          </DropdownMenuItem>
                           <DropdownMenuItem><Download className="h-4 w-4 mr-2" />Download</DropdownMenuItem>
+                          <DropdownMenuItem onClick={(e) => { e.stopPropagation(); openDocumentDetails(doc); }}>
+                            <History className="h-4 w-4 mr-2" />Version History
+                          </DropdownMenuItem>
                           <DropdownMenuItem><Share2 className="h-4 w-4 mr-2" />Share</DropdownMenuItem>
+                          <DropdownMenuSeparator />
                           <DropdownMenuItem className="text-destructive"><Trash2 className="h-4 w-4 mr-2" />Delete</DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
@@ -427,6 +513,114 @@ export function DocumentCenterView() {
           )}
         </div>
       </div>
+
+      {/* Document Details Dialog */}
+      <Dialog open={showDocumentDetails} onOpenChange={setShowDocumentDetails}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+          {selectedDocument && (
+            <>
+              <DialogHeader>
+                <div className="flex items-center gap-3">
+                  <div className="p-3 rounded-lg bg-muted">
+                    {getFileIcon(selectedDocument.type)}
+                  </div>
+                  <div>
+                    <DialogTitle className="flex items-center gap-2">
+                      {selectedDocument.name}
+                      <Badge variant={
+                        selectedDocument.status === 'approved' ? 'success' :
+                        selectedDocument.status === 'draft' ? 'secondary' :
+                        selectedDocument.status === 'review' ? 'warning' : 'outline'
+                      }>
+                        {selectedDocument.status}
+                      </Badge>
+                    </DialogTitle>
+                    <DialogDescription>
+                      {selectedDocument.folder} • v{selectedDocument.version} • {formatSize(selectedDocument.size)}
+                    </DialogDescription>
+                  </div>
+                </div>
+              </DialogHeader>
+
+              <div className="space-y-6 mt-4">
+                {/* Document Actions */}
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm">
+                    <Download className="h-4 w-4 mr-2" />
+                    Download
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    <Eye className="h-4 w-4 mr-2" />
+                    Preview
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    <Share2 className="h-4 w-4 mr-2" />
+                    Share
+                  </Button>
+                  <Button variant="outline" size="sm">
+                    <Upload className="h-4 w-4 mr-2" />
+                    Upload New Version
+                  </Button>
+                </div>
+
+                {/* Version History */}
+                <VersionHistory
+                  documentName={selectedDocument.name}
+                  versions={selectedDocument.versions}
+                  onRestore={(versionId) => console.log('Restore', versionId)}
+                  onDownload={(versionId) => console.log('Download', versionId)}
+                  onCompare={(v1, v2) => console.log('Compare', v1, v2)}
+                />
+
+                {/* Approval Workflow (if applicable) */}
+                {selectedDocument.approvers && selectedDocument.approvers.length > 0 && (
+                  <DocumentApprovalWorkflow
+                    documentId={selectedDocument.id}
+                    documentName={selectedDocument.name}
+                    currentStatus={
+                      selectedDocument.status === 'review' ? 'in-review' :
+                      selectedDocument.status === 'approved' ? 'approved' :
+                      selectedDocument.status === 'draft' ? 'draft' : 'pending-review'
+                    }
+                    approvers={selectedDocument.approvers}
+                    currentUserCanApprove={selectedDocument.status === 'review'}
+                    onApprove={() => console.log('Approved')}
+                    onReject={(comment) => console.log('Rejected:', comment)}
+                    onRequestChanges={(comment) => console.log('Changes requested:', comment)}
+                  />
+                )}
+
+                {/* Document Metadata */}
+                <Card>
+                  <CardHeader className="pb-3">
+                    <CardTitle className="text-sm">Document Information</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <p className="text-muted-foreground">Uploaded by</p>
+                        <p className="font-medium">{selectedDocument.uploadedBy}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Upload date</p>
+                        <p className="font-medium">{new Date(selectedDocument.uploadedDate).toLocaleDateString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">Last modified</p>
+                        <p className="font-medium">{new Date(selectedDocument.modifiedDate).toLocaleDateString()}</p>
+                      </div>
+                      <div>
+                        <p className="text-muted-foreground">File size</p>
+                        <p className="font-medium">{formatSize(selectedDocument.size)}</p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

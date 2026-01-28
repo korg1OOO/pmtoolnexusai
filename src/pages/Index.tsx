@@ -29,6 +29,18 @@ import { ProjectAdminView } from '@/components/views/ProjectAdminView';
 import { PlanningView } from '@/components/views/PlanningView';
 import { ProjectCreationView } from '@/components/views/ProjectCreationView';
 import { TemplatesAdminView } from '@/components/views/TemplatesAdminView';
+import { MorningBriefingView } from '@/components/views/MorningBriefingView';
+import { ProjectCharterView } from '@/components/views/ProjectCharterView';
+import { StakeholderRegisterView } from '@/components/views/StakeholderRegisterView';
+import { ScenariosView } from '@/components/views/ScenariosView';
+import { DeliverablesView } from '@/components/views/DeliverablesView';
+import { ChangeRequestsView } from '@/components/views/ChangeRequestsView';
+import { EVMView } from '@/components/views/EVMView';
+import { DocumentCenterView } from '@/components/views/DocumentCenterView';
+import { FinalReportView } from '@/components/views/FinalReportView';
+import { LessonsLearnedView } from '@/components/views/LessonsLearnedView';
+import { RisksView } from '@/components/views/RisksView';
+import { DecisionsView } from '@/components/views/DecisionsView';
 import { ProjectProvider } from '@/contexts/ProjectContext';
 
 const Index = () => {
@@ -36,65 +48,46 @@ const Index = () => {
 
   const renderView = () => {
     switch (activeView) {
-      case 'dashboard':
-        return <DashboardView />;
-      case 'executive-dashboard':
-        return <ExecutiveDashboardView />;
-      case 'portfolio':
-        return <PortfolioView />;
-      case 'traceability':
-        return <TraceabilityMatrixView />;
-      case 'project-plan':
-        return <PlanningView />;
-      case 'child-plans':
-        return <ChildPlansView />;
-      case 'gantt':
-        return <GanttView />;
-      case 'child-gantt':
-        return <ChildGanttView />;
-      case 'milestones':
-        return <MilestonesView />;
-      case 'program-timeline':
-        return <ProgramTimelineView />;
-      case 'sprints':
-        return <SprintBoardView />;
-      case 'backlog':
-        return <BacklogView />;
-      case 'actions':
-        return <ActionsView />;
-      case 'issues':
-        return <IssuesRegisterView />;
-      case 'meetings':
-        return <EnhancedMeetingsView />;
-      case 'strategic':
-        return <StrategicDashboardView />;
-      case 'communications':
-        return <CommunicationIntelligenceView />;
-      case 'risks':
-      case 'decisions':
-        return <RisksDecisionsView />;
-      case 'financials':
-        return <FinancialsView />;
-      case 'notes':
-        return <NotesView />;
-      case 'resources':
-        return <ResourcesView />;
-      case 'presentations':
-        return <PresentationsView />;
-      case 'reports':
-        return <ReportsView />;
-      case 'admin-platform':
-        return <PlatformAdminView />;
-      case 'admin-project':
-        return <ProjectAdminView />;
-      case 'admin-templates':
-        return <TemplatesAdminView />;
-      case 'settings':
-        return <UserSettingsView />;
-      case 'create-project':
-        return <ProjectCreationView />;
-      default:
-        return <DashboardView />;
+      case 'dashboard': return <DashboardView />;
+      case 'morning-briefing': return <MorningBriefingView />;
+      case 'executive-dashboard': return <ExecutiveDashboardView />;
+      case 'portfolio': return <PortfolioView />;
+      case 'strategic': return <StrategicDashboardView />;
+      case 'program-timeline': return <ProgramTimelineView />;
+      case 'reports': return <ReportsView />;
+      case 'project-charter': return <ProjectCharterView />;
+      case 'stakeholders': return <StakeholderRegisterView />;
+      case 'traceability': return <TraceabilityMatrixView />;
+      case 'project-plan': return <PlanningView />;
+      case 'child-plans': return <ChildPlansView />;
+      case 'gantt': return <GanttView />;
+      case 'child-gantt': return <ChildGanttView />;
+      case 'milestones': return <MilestonesView />;
+      case 'scenarios': return <ScenariosView />;
+      case 'deliverables': return <DeliverablesView />;
+      case 'sprints': return <SprintBoardView />;
+      case 'backlog': return <BacklogView />;
+      case 'actions': return <ActionsView />;
+      case 'risks': return <RisksView />;
+      case 'issues': return <IssuesRegisterView />;
+      case 'decisions': return <DecisionsView />;
+      case 'change-requests': return <ChangeRequestsView />;
+      case 'financials': return <FinancialsView />;
+      case 'evm': return <EVMView />;
+      case 'meetings': return <EnhancedMeetingsView />;
+      case 'communications': return <CommunicationIntelligenceView />;
+      case 'notes': return <NotesView />;
+      case 'documents': return <DocumentCenterView />;
+      case 'resources': return <ResourcesView />;
+      case 'presentations': return <PresentationsView />;
+      case 'final-report': return <FinalReportView />;
+      case 'lessons-learned': return <LessonsLearnedView />;
+      case 'admin-platform': return <PlatformAdminView />;
+      case 'admin-project': return <ProjectAdminView />;
+      case 'admin-templates': return <TemplatesAdminView />;
+      case 'settings': return <UserSettingsView />;
+      case 'create-project': return <ProjectCreationView />;
+      default: return <DashboardView />;
     }
   };
 

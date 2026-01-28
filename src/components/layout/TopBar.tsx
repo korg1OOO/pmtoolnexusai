@@ -10,6 +10,7 @@ import {
   Command,
   Maximize2,
   LayoutGrid,
+  Plus,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { Button } from '@/components/ui/button';
@@ -29,9 +30,10 @@ interface TopBarProps {
   projectName?: string;
   projectCode?: string;
   className?: string;
+  onCreateProject?: () => void;
 }
 
-export function TopBar({ projectName, projectCode, className }: TopBarProps) {
+export function TopBar({ projectName, projectCode, className, onCreateProject }: TopBarProps) {
   return (
     <header
       className={cn(
@@ -70,6 +72,11 @@ export function TopBar({ projectName, projectCode, className }: TopBarProps) {
 
       {/* Right section - Actions */}
       <div className="flex items-center gap-1">
+        <Button size="sm" onClick={onCreateProject} className="mr-2">
+          <Plus className="h-4 w-4 mr-1" />
+          New Project
+        </Button>
+
         <Button variant="ghost" size="iconSm">
           <LayoutGrid className="h-4 w-4" />
         </Button>

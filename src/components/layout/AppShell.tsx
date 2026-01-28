@@ -33,6 +33,7 @@ export function AppShell({ children, activeView, onViewChange }: AppShellProps) 
           <TopBar
             projectName={mockProject.name}
             projectCode={mockProject.code}
+            onCreateProject={() => onViewChange('create-project')}
           />
           <main className="flex-1 overflow-auto">
             {children}

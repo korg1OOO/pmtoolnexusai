@@ -87,6 +87,7 @@ const adminItems: NavItem[] = [
     children: [
       { id: 'admin-platform', label: 'Platform Admin', icon: Building2, alwaysShow: true },
       { id: 'admin-project', label: 'Project Admin', icon: Settings, alwaysShow: true },
+      { id: 'admin-templates', label: 'Templates Admin', icon: FolderKanban, alwaysShow: true },
     ]
   },
   { id: 'settings', label: 'Settings', icon: User, alwaysShow: true },

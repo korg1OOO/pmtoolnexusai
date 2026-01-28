@@ -335,12 +335,16 @@ export function SprintBoardView() {
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkingItem, setLinkingItem] = useState<SprintItem | null>(null);
+  const [focusedColumnIndex, setFocusedColumnIndex] = useState(0);
+  const [focusedItemIndex, setFocusedItemIndex] = useState(0);
+  const [quickFilterType, setQuickFilterType] = useState<string | null>(null);
 
   // Filter state
   const [filters, setFilters] = useState({
     assignees: [] as string[],
     priorities: [] as Priority[],
     labels: [] as string[],
+    types: [] as string[],
     storyPointsMin: 0,
     storyPointsMax: 100,
   });
@@ -366,6 +370,12 @@ export function SprintBoardView() {
     return Array.from(labels);
   }, []);
 
+  const allTypes = useMemo(() => {
+    const types = new Set<string>();
+    mockSprintItems.forEach(item => types.add(item.type));
+    return Array.from(types);
+  }, []);
+
   const allPriorities: Priority[] = ['critical', 'high', 'medium', 'low'];
 
   // Apply filters and sorting
@@ -377,6 +387,8 @@ export function SprintBoardView() {
       if (filters.assignees.length > 0 && !filters.assignees.includes(item.assignee || '')) return false;
       if (filters.priorities.length > 0 && !filters.priorities.includes(item.priority)) return false;
       if (filters.labels.length > 0 && !filters.labels.some(l => item.labels.includes(l))) return false;
+      if (filters.types.length > 0 && !filters.types.includes(item.type)) return false;
+      if (quickFilterType && item.type !== quickFilterType) return false;
       if (item.storyPoints !== undefined) {
         if (item.storyPoints < filters.storyPointsMin || item.storyPoints > filters.storyPointsMax) return false;
       }
@@ -401,7 +413,7 @@ export function SprintBoardView() {
     });
 
     return filtered;
-  }, [items, searchQuery, filters, sortBy, sortOrder]);
+  }, [items, searchQuery, filters, sortBy, sortOrder, quickFilterType]);
 
   const getColumnPoints = (status: SprintStatus) =>
     getColumnItems(status).reduce((sum, item) => sum + (item.storyPoints || 0), 0);
@@ -409,6 +421,9 @@ export function SprintBoardView() {
   const totalPoints = items.reduce((sum, item) => sum + (item.storyPoints || 0), 0);
   const donePoints = getColumnPoints('done');
   const progressPercent = Math.round((donePoints / totalPoints) * 100);
+  
+  const activeFiltersCount = filters.assignees.length + filters.priorities.length + 
+    filters.labels.length + filters.types.length + (quickFilterType ? 1 : 0);
 
   // Drag and drop handlers
   const handleDragEnd = (itemId: string, newStatus: SprintStatus) => {
@@ -473,13 +488,16 @@ export function SprintBoardView() {
       assignees: [],
       priorities: [],
       labels: [],
+      types: [],
       storyPointsMin: 0,
       storyPointsMax: 100,
     });
+    setQuickFilterType(null);
   };
 
   const hasActiveFilters = filters.assignees.length > 0 || filters.priorities.length > 0 || 
-    filters.labels.length > 0 || filters.storyPointsMin > 0 || filters.storyPointsMax < 100;
+    filters.labels.length > 0 || filters.types.length > 0 || filters.storyPointsMin > 0 || 
+    filters.storyPointsMax < 100 || quickFilterType !== null;
 
   const handleOpenLinks = (item: SprintItem) => {
     setLinkingItem(item);

@@ -35,26 +35,12 @@ type TaskType = Database['public']['Enums']['task_type'];
 type TaskStatus = Database['public']['Enums']['task_status'];
 type PriorityLevel = Database['public']['Enums']['priority_level'];
 type DependencyType = Database['public']['Enums']['dependency_type'];
+type ConstraintType = Database['public']['Enums']['constraint_type'];
 
 // Extended task type with new MS Project fields
-interface ExtendedTask extends DbTask {
-  constraint_type?: string | null;
-  constraint_date?: string | null;
-  deadline?: string | null;
-  work_hours?: number | null;
-  actual_work_hours?: number | null;
-  remaining_work_hours?: number | null;
-  effort_driven?: boolean | null;
-  cost?: number | null;
-  actual_cost?: number | null;
-  fixed_cost?: number | null;
+interface ExtendedTask extends Omit<DbTask, 'constraint_type'> {
+  constraint_type?: ConstraintType | string | null;
   fixed_cost_accrual?: string | null;
-  early_start?: string | null;
-  early_finish?: string | null;
-  late_start?: string | null;
-  late_finish?: string | null;
-  free_slack?: number | null;
-  total_slack?: number | null;
   manually_scheduled?: boolean | null;
 }
 

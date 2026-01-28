@@ -7,6 +7,7 @@ import type { Database } from '@/integrations/supabase/types';
 type TaskType = Database['public']['Enums']['task_type'];
 type TaskStatus = Database['public']['Enums']['task_status'];
 type PriorityLevel = Database['public']['Enums']['priority_level'];
+type ConstraintType = Database['public']['Enums']['constraint_type'];
 
 export interface DbTask {
   id: string;
@@ -22,13 +23,30 @@ export interface DbTask {
   duration: number;
   progress: number;
   assignee_id: string | null;
-  is_critical: boolean;
+  is_critical: boolean | null;
   notes: string | null;
-  expanded: boolean;
+  expanded: boolean | null;
   level: number;
   sort_order: number;
   created_at: string;
   updated_at: string;
+  // CPM fields (optional)
+  constraint_type?: ConstraintType | null;
+  constraint_date?: string | null;
+  deadline?: string | null;
+  work_hours?: number | null;
+  actual_work_hours?: number | null;
+  remaining_work_hours?: number | null;
+  effort_driven?: boolean | null;
+  cost?: number | null;
+  actual_cost?: number | null;
+  fixed_cost?: number | null;
+  early_start?: string | null;
+  early_finish?: string | null;
+  late_start?: string | null;
+  late_finish?: string | null;
+  free_slack?: number | null;
+  total_slack?: number | null;
 }
 
 export interface DbDependency {

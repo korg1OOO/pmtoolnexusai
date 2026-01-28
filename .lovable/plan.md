@@ -32,7 +32,7 @@ This plan recommends a strategic build order to maximize value delivery while en
 
 ## Recommended Build Order
 
-### Phase 1: Core Planning Engine (Week 1-2)
+### Phase 1: Core Planning Engine (Week 1-2) ✅ COMPLETE
 **Priority: Critical - This is the heart of project management**
 
 ```text
@@ -49,12 +49,12 @@ This plan recommends a strategic build order to maximize value delivery while en
               +-------------+
 ```
 
-| Module | Current State | Work Needed |
+| Module | Current State | Work Completed |
 |--------|--------------|-------------|
-| PlanningView | Good foundation | Add inline editing, keyboard nav, WBS operations |
-| GanttView | Visualization complete | Add drag-to-reschedule, dependency line drawing |
-| MilestonesView | Basic list | Add stage gate workflow, approval tracking |
-| ScenariosView | Scaffolded | Enable baseline comparison, date impact preview |
+| PlanningView | ✅ Complete | Inline editing, keyboard nav (↑↓←→), WBS operations, drag handles |
+| GanttView | ✅ Complete | Drag-to-reschedule, resize handles, dependency arrows, tooltips |
+| MilestonesView | ✅ Complete | Stage gate workflow, approval tracking, criteria checklists |
+| ScenariosView | ✅ Complete | Baseline comparison, visual timeline diff, what-if adjustments |
 
 ---
 

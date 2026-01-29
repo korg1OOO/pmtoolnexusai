@@ -543,6 +543,10 @@ export type Database = {
           purpose_description: string | null
           purpose_type: string | null
           recording_url: string | null
+          recurring_end_date: string | null
+          recurring_instance_date: string | null
+          recurring_parent_id: string | null
+          recurring_schedule: string | null
           required_quorum: number | null
           resource_authority: boolean | null
           scope_change_authority: boolean | null
@@ -591,6 +595,10 @@ export type Database = {
           purpose_description?: string | null
           purpose_type?: string | null
           recording_url?: string | null
+          recurring_end_date?: string | null
+          recurring_instance_date?: string | null
+          recurring_parent_id?: string | null
+          recurring_schedule?: string | null
           required_quorum?: number | null
           resource_authority?: boolean | null
           scope_change_authority?: boolean | null
@@ -639,6 +647,10 @@ export type Database = {
           purpose_description?: string | null
           purpose_type?: string | null
           recording_url?: string | null
+          recurring_end_date?: string | null
+          recurring_instance_date?: string | null
+          recurring_parent_id?: string | null
+          recurring_schedule?: string | null
           required_quorum?: number | null
           resource_authority?: boolean | null
           scope_change_authority?: boolean | null
@@ -658,6 +670,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meetings_recurring_parent_fkey"
+            columns: ["recurring_parent_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
             referencedColumns: ["id"]
           },
         ]

@@ -171,6 +171,8 @@ export function MeetingCreationDialog({
         purpose_description: data.purposeDescription,
         expected_outcomes: expectedOutcomes.length > 0 ? expectedOutcomes : undefined,
         success_criteria: successCriteria.length > 0 ? successCriteria : undefined,
+        recurring_schedule: data.recurringSchedule || 'none',
+        recurring_end_date: data.recurringEndDate ? format(data.recurringEndDate, 'yyyy-MM-dd') : undefined,
         status: 'scheduled',
       };
 
@@ -188,12 +190,6 @@ export function MeetingCreationDialog({
         presenter_name: a.presenterName || undefined,
         sort_order: index,
       }));
-
-      // For recurring meetings, we could create multiple meetings here
-      // For now, store the recurrence info in description or handle in backend
-      if (data.recurringSchedule && data.recurringSchedule !== 'none') {
-        meetingInput.description = `${meetingInput.description || ''}\n\n[Recurring: ${data.recurringSchedule}${data.recurringEndDate ? ` until ${format(data.recurringEndDate, 'PPP')}` : ''}]`.trim();
-      }
 
       await onCreateMeeting(meetingInput, participantInputs, agendaInputs);
       

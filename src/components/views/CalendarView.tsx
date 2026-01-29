@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   format,
@@ -31,6 +31,7 @@ import {
   List,
   Plus,
   MoreHorizontal,
+  GripVertical,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -52,6 +53,7 @@ import {
 import { useMeetings, MeetingWithRelations } from '@/hooks/useMeetings';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { MeetingCreationDialog } from '@/components/meetings/MeetingCreationDialog';
+import { toast } from 'sonner';
 
 type ViewMode = 'month' | 'week' | 'day';
 
@@ -90,15 +92,19 @@ function mapToCalendarMeeting(meeting: MeetingWithRelations): CalendarMeeting {
   };
 }
 
-// Meeting event component for calendar cells
+// Meeting event component for calendar cells with drag support
 function MeetingEvent({
   meeting,
   compact = false,
   onClick,
+  onDragStart,
+  isDragging = false,
 }: {
   meeting: CalendarMeeting;
   compact?: boolean;
   onClick: (meeting: CalendarMeeting) => void;
+  onDragStart?: (e: React.DragEvent, meeting: CalendarMeeting) => void;
+  isDragging?: boolean;
 }) {
   const typeColors: Record<string, string> = {
     online: 'bg-info/20 text-info border-info/30',
@@ -113,28 +119,39 @@ function MeetingEvent({
     cancelled: 'border-l-destructive',
   };
 
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+    e.dataTransfer.setData('meetingId', meeting.id);
+    e.dataTransfer.effectAllowed = 'move';
+    if (onDragStart) {
+      onDragStart(e, meeting);
+    }
+  };
+
   if (compact) {
     return (
       <Tooltip>
         <TooltipTrigger asChild>
-          <motion.div
-            whileHover={{ scale: 1.02 }}
+          <div
+            draggable
+            onDragStart={handleDragStart}
             onClick={(e) => {
               e.stopPropagation();
               onClick(meeting);
             }}
             className={cn(
-              'text-xs px-1.5 py-0.5 rounded truncate cursor-pointer transition-colors',
+              'text-xs px-1.5 py-0.5 rounded truncate cursor-grab active:cursor-grabbing transition-all hover:scale-[1.02]',
               'border-l-2',
               statusColors[meeting.status] || 'border-l-primary',
-              typeColors[meeting.type] || 'bg-primary/20 text-primary'
+              typeColors[meeting.type] || 'bg-primary/20 text-primary',
+              isDragging && 'opacity-50 ring-2 ring-primary'
             )}
           >
             <span className="flex items-center gap-1">
+              <GripVertical className="h-2.5 w-2.5 shrink-0 opacity-40" />
               {meeting.isRecurring && <Repeat className="h-2.5 w-2.5 shrink-0" />}
               <span className="truncate">{meeting.startTime.slice(0, 5)} {meeting.title}</span>
             </span>
-          </motion.div>
+          </div>
         </TooltipTrigger>
         <TooltipContent side="right" className="max-w-xs">
           <div className="space-y-1">
@@ -147,6 +164,7 @@ function MeetingEvent({
                 {meeting.participants.length} participant(s)
               </p>
             )}
+            <p className="text-xs text-primary mt-1">Drag to reschedule</p>
           </div>
         </TooltipContent>
       </Tooltip>
@@ -154,19 +172,22 @@ function MeetingEvent({
   }
 
   return (
-    <motion.div
-      whileHover={{ scale: 1.01 }}
+    <div
+      draggable
+      onDragStart={handleDragStart}
       onClick={() => onClick(meeting)}
       className={cn(
-        'p-2 rounded-lg border cursor-pointer transition-all',
+        'p-2 rounded-lg border cursor-grab active:cursor-grabbing transition-all hover:scale-[1.01]',
         'border-l-4',
         statusColors[meeting.status] || 'border-l-primary',
-        'bg-card hover:bg-muted/50'
+        'bg-card hover:bg-muted/50',
+        isDragging && 'opacity-50 ring-2 ring-primary'
       )}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5 mb-1">
+            <GripVertical className="h-3 w-3 shrink-0 opacity-40" />
             {meeting.isRecurring && (
               <Repeat className="h-3 w-3 text-primary shrink-0" />
             )}
@@ -197,11 +218,11 @@ function MeetingEvent({
           {meeting.type === 'online' ? <Video className="h-3 w-3" /> : <MapPin className="h-3 w-3" />}
         </Badge>
       </div>
-    </motion.div>
+    </div>
   );
 }
 
-// Day cell for month view
+// Day cell for month view with drop support
 function DayCell({
   date,
   meetings,
@@ -209,6 +230,12 @@ function DayCell({
   selectedDate,
   onSelectDate,
   onSelectMeeting,
+  onDragStart,
+  onDrop,
+  dragOverDate,
+  onDragOver,
+  onDragLeave,
+  draggingMeetingId,
 }: {
   date: Date;
   meetings: CalendarMeeting[];
@@ -216,19 +243,39 @@ function DayCell({
   selectedDate: Date | null;
   onSelectDate: (date: Date) => void;
   onSelectMeeting: (meeting: CalendarMeeting) => void;
+  onDragStart: (e: React.DragEvent, meeting: CalendarMeeting) => void;
+  onDrop: (e: React.DragEvent, date: Date) => void;
+  dragOverDate: Date | null;
+  onDragOver: (e: React.DragEvent, date: Date) => void;
+  onDragLeave: () => void;
+  draggingMeetingId: string | null;
 }) {
   const isCurrentMonth = isSameMonth(date, currentMonth);
   const isSelected = selectedDate && isSameDay(date, selectedDate);
   const isTodayDate = isToday(date);
+  const isDragOver = dragOverDate && isSameDay(date, dragOverDate);
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    onDrop(e, date);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    onDragOver(e, date);
+  };
 
   return (
-    <motion.div
-      whileHover={{ backgroundColor: 'hsl(var(--muted) / 0.5)' }}
+    <div
       onClick={() => onSelectDate(date)}
+      onDrop={handleDrop}
+      onDragOver={handleDragOver}
+      onDragLeave={onDragLeave}
       className={cn(
-        'min-h-[100px] p-1.5 border-r border-b cursor-pointer transition-colors',
+        'min-h-[100px] p-1.5 border-r border-b cursor-pointer transition-all',
         !isCurrentMonth && 'bg-muted/20 text-muted-foreground',
-        isSelected && 'bg-primary/5 ring-1 ring-primary/30'
+        isSelected && 'bg-primary/5 ring-1 ring-primary/30',
+        isDragOver && 'bg-primary/10 ring-2 ring-primary ring-dashed'
       )}
     >
       <div className="flex items-center justify-between mb-1">
@@ -254,10 +301,12 @@ function DayCell({
             meeting={meeting}
             compact
             onClick={onSelectMeeting}
+            onDragStart={onDragStart}
+            isDragging={draggingMeetingId === meeting.id}
           />
         ))}
       </div>
-    </motion.div>
+    </div>
   );
 }
 
@@ -458,13 +507,17 @@ function MeetingDetailsPanel({
 export function CalendarView() {
   const { settings } = useProjectContext();
   const projectId = settings.id;
-  const { meetings, isLoading, createMeeting, addParticipant, addAgendaItem } = useMeetings(projectId);
+  const { meetings, isLoading, createMeeting, addParticipant, addAgendaItem, updateMeeting } = useMeetings(projectId);
 
   const [viewMode, setViewMode] = useState<ViewMode>('month');
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [selectedMeeting, setSelectedMeeting] = useState<CalendarMeeting | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
+  
+  // Drag-and-drop state
+  const [draggingMeetingId, setDraggingMeetingId] = useState<string | null>(null);
+  const [dragOverDate, setDragOverDate] = useState<Date | null>(null);
 
   // Map meetings to calendar format
   const calendarMeetings = useMemo(
@@ -511,6 +564,41 @@ export function CalendarView() {
     setCurrentDate(new Date());
     setSelectedDate(new Date());
   };
+
+  // Drag-and-drop handlers
+  const handleDragStart = useCallback((e: React.DragEvent, meeting: CalendarMeeting) => {
+    setDraggingMeetingId(meeting.id);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent, date: Date) => {
+    setDragOverDate(date);
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setDragOverDate(null);
+  }, []);
+
+  const handleDrop = useCallback(async (e: React.DragEvent, targetDate: Date) => {
+    e.preventDefault();
+    const meetingId = e.dataTransfer.getData('meetingId');
+    
+    if (meetingId && draggingMeetingId) {
+      const meeting = calendarMeetings.find((m) => m.id === meetingId);
+      if (meeting && !isSameDay(meeting.date, targetDate)) {
+        try {
+          await updateMeeting(meetingId, {
+            date: format(targetDate, 'yyyy-MM-dd'),
+          });
+          toast.success(`"${meeting.title}" moved to ${format(targetDate, 'MMM d, yyyy')}`);
+        } catch (error) {
+          toast.error('Failed to reschedule meeting');
+        }
+      }
+    }
+    
+    setDraggingMeetingId(null);
+    setDragOverDate(null);
+  }, [draggingMeetingId, calendarMeetings, updateMeeting]);
 
   const handleCreateMeeting = async (
     meeting: Parameters<typeof createMeeting>[0],
@@ -622,6 +710,12 @@ export function CalendarView() {
                   selectedDate={selectedDate}
                   onSelectDate={setSelectedDate}
                   onSelectMeeting={setSelectedMeeting}
+                  onDragStart={handleDragStart}
+                  onDrop={handleDrop}
+                  dragOverDate={dragOverDate}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  draggingMeetingId={draggingMeetingId}
                 />
               ))}
             </div>

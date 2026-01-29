@@ -58,7 +58,6 @@ export function GlobalAISidebar({
   const [pendingAction, setPendingAction] = useState<AIAction | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [intentMode, setIntentMode] = useState<IntentMode>('plan');
-  const [clarifyingQuestion, setClarifyingQuestion] = useState<ClarifyingQuestionData | null>(null);
   const [showContext, setShowContext] = useState(true);
   const [selectedContexts, setSelectedContexts] = useState<ContextItem[]>([]);
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
@@ -76,10 +75,12 @@ export function GlobalAISidebar({
     isLoading,
     isSending,
     currentAgent,
+    pendingClarification,
     sendMessage,
     createConversation,
     selectConversation,
     deleteConversation,
+    clearClarification,
   } = useAIChat({ projectId, currentView, intentMode });
 
   // Handle action confirmation from chat messages
@@ -109,16 +110,16 @@ export function GlobalAISidebar({
 
   // Handle clarifying question answer
   const handleClarifyingAnswer = useCallback(async (questionId: string, selectedOptions: string[]) => {
-    if (!clarifyingQuestion) return;
+    if (!pendingClarification) return;
     
-    const selectedLabels = clarifyingQuestion.options
+    const selectedLabels = pendingClarification.options
       .filter(opt => selectedOptions.includes(opt.id))
       .map(opt => opt.label)
       .join(', ');
     
     await sendMessage(`My answer: ${selectedLabels}`);
-    setClarifyingQuestion(null);
-  }, [clarifyingQuestion, sendMessage]);
+    clearClarification();
+  }, [pendingClarification, sendMessage, clearClarification]);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -430,11 +431,11 @@ export function GlobalAISidebar({
                   ))}
                   
                   {/* Clarifying Question */}
-                  {clarifyingQuestion && (
+                  {pendingClarification && (
                     <ClarifyingQuestion
-                      question={clarifyingQuestion}
+                      question={pendingClarification}
                       onAnswer={handleClarifyingAnswer}
-                      onDismiss={() => setClarifyingQuestion(null)}
+                      onDismiss={clearClarification}
                       isLoading={isSending}
                     />
                   )}

@@ -135,10 +135,27 @@ Would you like me to help with one of these, or should I request elevated access
 }
 
 // =============================================================================
+// CLARIFYING QUESTION TYPES
+// =============================================================================
+
+interface ClarifyingQuestion {
+  id: string;
+  question: string;
+  options: Array<{ id: string; label: string; description?: string }>;
+  multiSelect?: boolean;
+  context?: string;
+}
+
+interface IntentClassificationWithClarification extends IntentClassification {
+  needs_clarification?: boolean;
+  clarifying_question?: ClarifyingQuestion;
+}
+
+// =============================================================================
 // INTENT CLASSIFIER
 // =============================================================================
 
-async function classifyIntent(query: string, conversationHistory: Message[]): Promise<IntentClassification> {
+async function classifyIntent(query: string, conversationHistory: Message[]): Promise<IntentClassificationWithClarification> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!LOVABLE_API_KEY) {
     throw new Error("LOVABLE_API_KEY is not configured");
@@ -163,6 +180,12 @@ Given a user message, classify it into ONE primary category from this list:
 - COMMUNICATION_SCAN: Check communications for patterns, delay signals, sentiment
 - GENERAL_CHAT: General conversation, greetings, unclear intent
 
+IMPORTANT: If the user's request is AMBIGUOUS or lacks specific details needed to complete the task, set needs_clarification to true and provide a clarifying_question. Examples of ambiguous requests:
+- "Generate the document" (which document? status report? executive summary?)
+- "Update the task" (which task? what changes?)
+- "Show me the budget" (which aspect? overall? by resource? by phase?)
+- "Create a report" (what type? for whom? what period?)
+
 Consider recent conversation context when classifying.
 
 Output ONLY valid JSON in this exact format:
@@ -170,8 +193,20 @@ Output ONLY valid JSON in this exact format:
   "primary_intent": "CATEGORY_NAME",
   "secondary_intents": ["CATEGORY_NAME"],
   "requires_modification": true/false,
-  "confidence": 0.0-1.0
-}`;
+  "confidence": 0.0-1.0,
+  "needs_clarification": true/false,
+  "clarifying_question": {
+    "id": "unique_id",
+    "question": "What would you like to clarify?",
+    "options": [
+      {"id": "opt1", "label": "Option 1", "description": "Description"},
+      {"id": "opt2", "label": "Option 2", "description": "Description"}
+    ],
+    "context": "I want to help you with the right information"
+  }
+}
+
+Only include clarifying_question if needs_clarification is true.`;
 
   const recentContext = conversationHistory.slice(-4).map(m => `${m.role}: ${m.content}`).join("\n");
 
@@ -712,6 +747,23 @@ serve(async (req) => {
     console.log("Classifying intent for:", message);
     const intent = await classifyIntent(message, conversationHistory);
     console.log("Intent classified:", intent);
+
+    // Step 1.5: Handle Clarification Needed
+    if (intent.needs_clarification && intent.clarifying_question) {
+      console.log("Clarification needed:", intent.clarifying_question);
+      
+      return new Response(
+        JSON.stringify({
+          response: intent.clarifying_question.context || "I need a bit more information to help you.",
+          agentType: "system",
+          intent,
+          needsClarification: true,
+          clarifyingQuestion: intent.clarifying_question,
+          executionTime: Date.now() - startTime,
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Step 2: Determine Agent
     const agentType = INTENT_TO_AGENT[intent.primary_intent] || "insight";

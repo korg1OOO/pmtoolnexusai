@@ -52,8 +52,6 @@ const navItems: NavItem[] = [
       { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, moduleKey: 'dashboard' },
       { id: 'morning-briefing', label: 'Morning Briefing', icon: Sparkles, alwaysShow: true },
       { id: 'portfolio', label: 'Portfolio', icon: FolderKanban, moduleKey: 'portfolio' },
-      { id: 'strategic', label: 'Strategic Dashboard', icon: Target, moduleKey: 'strategic' },
-      { id: 'executive-dashboard', label: 'Executive Dashboard', icon: Sparkles, moduleKey: 'executiveDashboard' },
       { id: 'program-timeline', label: 'Project Timeline', icon: Clock, moduleKey: 'programTimeline' },
       { id: 'reports', label: 'Reports', icon: BarChart3, moduleKey: 'reports' },
     ]

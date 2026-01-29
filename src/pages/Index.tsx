@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
-import { DashboardView } from '@/components/views/DashboardView';
+import { DashboardHub } from '@/components/views/DashboardHub';
 import { ProjectPlanView } from '@/components/views/ProjectPlanView';
 import { GanttView } from '@/components/views/GanttView';
 import { SprintBoardView } from '@/components/views/SprintBoardView';
@@ -70,11 +70,9 @@ const Index = () => {
 
   const renderView = () => {
     switch (activeView) {
-      case 'dashboard': return <DashboardView />;
+      case 'dashboard': return <DashboardHub />;
       case 'morning-briefing': return <MorningBriefingView />;
-      case 'executive-dashboard': return <ExecutiveDashboardView />;
       case 'portfolio': return <PortfolioView />;
-      case 'strategic': return <StrategicDashboardView />;
       case 'program-timeline': return <ProgramTimelineView />;
       case 'reports': return <ReportsView />;
       case 'project-charter': return <ProjectCharterView />;
@@ -113,7 +111,7 @@ const Index = () => {
       case 'admin-templates': return <TemplatesAdminView />;
       case 'settings': return <UserSettingsView />;
       case 'create-project': return <ProjectCreationView />;
-      default: return <DashboardView />;
+      default: return <DashboardHub />;
     }
   };
 

@@ -43,17 +43,24 @@ export function useAIChat({ projectId, onNewMessage }: UseAIChatOptions): UseAIC
 
   // Fetch conversations for the project
   useEffect(() => {
-    if (!projectId || !user?.id) {
+    if (!projectId) {
       setConversations([]);
       return;
     }
 
     const fetchConversations = async () => {
+      // Check if user is authenticated
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) {
+        setConversations([]);
+        return;
+      }
+
       const { data, error } = await supabase
         .from('ai_conversations')
         .select('*')
         .eq('project_id', projectId)
-        .eq('user_id', user.id)
+        .eq('user_id', currentUser.id)
         .order('updated_at', { ascending: false });
 
       if (error) {
@@ -130,13 +137,20 @@ export function useAIChat({ projectId, onNewMessage }: UseAIChatOptions): UseAIC
 
   // Create a new conversation
   const createConversation = useCallback(async (): Promise<string | null> => {
-    if (!projectId || !user?.id) return null;
+    if (!projectId) return null;
+
+    // Get current user
+    const { data: { user: currentUser } } = await supabase.auth.getUser();
+    if (!currentUser) {
+      toast.error('Please sign in to use AI Assistant');
+      return null;
+    }
 
     const { data, error } = await supabase
       .from('ai_conversations')
       .insert({
         project_id: projectId,
-        user_id: user.id,
+        user_id: currentUser.id,
         title: 'New Conversation',
       })
       .select()
@@ -154,7 +168,7 @@ export function useAIChat({ projectId, onNewMessage }: UseAIChatOptions): UseAIC
     setMessages([]);
     
     return newConversation.id;
-  }, [projectId, user?.id]);
+  }, [projectId]);
 
   // Select a conversation
   const selectConversation = useCallback((conversationId: string) => {
@@ -186,7 +200,7 @@ export function useAIChat({ projectId, onNewMessage }: UseAIChatOptions): UseAIC
 
   // Send a message
   const sendMessage = useCallback(async (content: string) => {
-    if (!content.trim() || !projectId || !user?.id) return;
+    if (!content.trim() || !projectId) return;
 
     let conversationId = activeConversationId;
 
@@ -295,7 +309,7 @@ export function useAIChat({ projectId, onNewMessage }: UseAIChatOptions): UseAIC
     } finally {
       setIsSending(false);
     }
-  }, [projectId, user?.id, activeConversationId, messages, createConversation]);
+  }, [projectId, activeConversationId, messages, createConversation]);
 
   // Clear messages (for UI reset)
   const clearMessages = useCallback(() => {

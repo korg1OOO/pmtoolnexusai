@@ -1,17 +1,20 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Bot, User } from 'lucide-react';
+import { Bot, User, CheckCircle, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import { AgentIndicator } from './AgentIndicator';
-import type { AIMessage } from '@/types/ai-agents';
+import type { AIMessage, AIAction } from '@/types/ai-agents';
 
 interface ChatMessageProps {
   message: AIMessage;
+  onActionRequest?: (action: AIAction) => void;
 }
 
-export function ChatMessage({ message }: ChatMessageProps) {
+export function ChatMessage({ message, onActionRequest }: ChatMessageProps) {
   const isUser = message.role === 'user';
   const isSystem = message.role === 'system';
+  const actions = message.metadata?.actions as AIAction[] | undefined;
 
   if (isSystem) {
     return (
@@ -99,11 +102,57 @@ export function ChatMessage({ message }: ChatMessageProps) {
           )}
         </div>
 
+        {/* Action Buttons */}
+        {!isUser && actions && actions.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-2">
+            {actions.filter(a => !a.confirmed).map((action, index) => (
+              <Button
+                key={index}
+                size="sm"
+                variant={action.type === 'delete' ? 'destructive' : 'default'}
+                className="h-8 text-xs"
+                onClick={() => onActionRequest?.(action)}
+              >
+                <CheckCircle className="h-3 w-3 mr-1" />
+                {action.type === 'confirm' ? 'Confirm' : `Confirm ${action.type}`}
+              </Button>
+            ))}
+            {actions.some(a => !a.confirmed) && (
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-8 text-xs"
+                onClick={() => {
+                  // Just dismiss - no action needed
+                }}
+              >
+                <XCircle className="h-3 w-3 mr-1" />
+                Dismiss
+              </Button>
+            )}
+          </div>
+        )}
+
+        {/* Confirmed Actions Badge */}
+        {!isUser && actions && actions.some(a => a.confirmed) && (
+          <div className="mt-2 flex items-center gap-1 text-xs text-primary">
+            <CheckCircle className="h-3 w-3" />
+            <span>Action confirmed</span>
+          </div>
+        )}
+
         {/* Permission Denied Warning */}
         {message.metadata?.permissionDenied && (
           <div className="mt-2 text-xs text-destructive flex items-center gap-1">
             <span className="w-1.5 h-1.5 rounded-full bg-destructive" />
             Access restricted
+          </div>
+        )}
+
+        {/* Execution Time */}
+        {!isUser && message.metadata?.executionTime && (
+          <div className="mt-1 text-xs text-muted-foreground">
+            Processed in {Math.round(message.metadata.executionTime as number)}ms
           </div>
         )}
 

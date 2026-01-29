@@ -5,7 +5,7 @@ import { TopBar } from './TopBar';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { GlobalAISidebar } from '@/components/ai/GlobalAISidebar';
 import { PresenceProvider } from '@/contexts/PresenceContext';
-import { mockProject } from '@/data/mockData';
+import { useProjectContext } from '@/contexts/ProjectContext';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -15,6 +15,7 @@ interface AppShellProps {
 
 export function AppShell({ children, activeView, onViewChange }: AppShellProps) {
   const [showAISidebar, setShowAISidebar] = useState(false);
+  const { settings } = useProjectContext();
 
   return (
     <PresenceProvider>
@@ -29,8 +30,8 @@ export function AppShell({ children, activeView, onViewChange }: AppShellProps) 
             showAISidebar && "mr-96"
           )}>
             <TopBar
-              projectName={mockProject.name}
-              projectCode={mockProject.code}
+              projectName={settings.name}
+              projectCode={settings.code}
               onCreateProject={() => onViewChange('create-project')}
               onOpenChat={() => onViewChange('team-chat')}
             />
@@ -41,8 +42,8 @@ export function AppShell({ children, activeView, onViewChange }: AppShellProps) 
           <GlobalAISidebar 
             isOpen={showAISidebar} 
             onToggle={() => setShowAISidebar(!showAISidebar)}
-            projectId={mockProject.id}
-            projectName={mockProject.name}
+            projectId={settings.id}
+            projectName={settings.name}
           />
         </div>
       </TooltipProvider>

@@ -141,6 +141,7 @@ export type Database = {
           created_at: string
           id: string
           project_id: string
+          reactions: Json | null
           user_email: string
           user_id: string
         }
@@ -153,6 +154,7 @@ export type Database = {
           created_at?: string
           id?: string
           project_id: string
+          reactions?: Json | null
           user_email: string
           user_id: string
         }
@@ -165,6 +167,7 @@ export type Database = {
           created_at?: string
           id?: string
           project_id?: string
+          reactions?: Json | null
           user_email?: string
           user_id?: string
         }

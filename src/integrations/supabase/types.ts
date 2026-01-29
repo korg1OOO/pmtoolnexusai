@@ -131,6 +131,44 @@ export type Database = {
           },
         ]
       }
+      briefing_preferences: {
+        Row: {
+          created_at: string
+          enabled_sections: Json
+          id: string
+          project_id: string | null
+          section_order: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          enabled_sections?: Json
+          id?: string
+          project_id?: string | null
+          section_order?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          enabled_sections?: Json
+          id?: string
+          project_id?: string | null
+          section_order?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "briefing_preferences_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calendar_exceptions: {
         Row: {
           calendar_id: string

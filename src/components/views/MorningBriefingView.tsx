@@ -1,77 +1,268 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   Sun,
-  Coffee,
-  AlertTriangle,
-  Target,
-  CheckCircle2,
-  Clock,
-  TrendingUp,
-  TrendingDown,
-  Calendar,
-  Users,
   Sparkles,
   RefreshCw,
-  ChevronRight,
-  Zap,
-  MessageSquare,
-  Bell,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+import { useNavigate } from 'react-router-dom';
 import { mockProject, mockRisks, mockMeetings } from '@/data/mockData';
+import { useAuth } from '@/hooks/useAuth';
+
+import {
+  BriefingSectionCard,
+  BriefingSettingsPanel,
+  useBriefingPreferences,
+  BRIEFING_SECTIONS,
+  BriefingSectionId,
+} from '@/components/briefing';
+import { useBriefingGeneration } from '@/components/briefing/hooks/useBriefingGeneration';
+
+// Section Components
+import { CriticalAlertsSection } from '@/components/briefing/sections/CriticalAlertsSection';
+import { AIInsightsSection } from '@/components/briefing/sections/AIInsightsSection';
+import { ProfitLossSection } from '@/components/briefing/sections/ProfitLossSection';
+import { ScheduleSlippageSection } from '@/components/briefing/sections/ScheduleSlippageSection';
+import { RiskAssessmentSection } from '@/components/briefing/sections/RiskAssessmentSection';
+import { ActionsSection } from '@/components/briefing/sections/ActionsSection';
+import { IssuesSection } from '@/components/briefing/sections/IssuesSection';
+import { MeetingsSection } from '@/components/briefing/sections/MeetingsSection';
+import { DecisionsSection } from '@/components/briefing/sections/DecisionsSection';
+import { TeamAvailabilitySection } from '@/components/briefing/sections/TeamAvailabilitySection';
+import { BudgetAnalysisSection } from '@/components/briefing/sections/BudgetAnalysisSection';
+
+// Mock data for sections (will be replaced by real data and AI generation)
+const mockCriticalAlerts = [
+  {
+    id: '1',
+    type: 'critical' as const,
+    title: 'Data Migration Risk Escalated',
+    description: 'Risk level increased from MEDIUM to HIGH due to complexity findings',
+    source: 'Risk Register',
+    timestamp: new Date().toISOString(),
+  },
+  {
+    id: '2',
+    type: 'warning' as const,
+    title: 'Milestone Deadline Approaching',
+    description: 'Implementation Phase milestone due in 14 days',
+    source: 'Schedule',
+    timestamp: new Date().toISOString(),
+  },
+  {
+    id: '3',
+    type: 'warning' as const,
+    title: 'Overdue Actions',
+    description: '3 action items require immediate attention',
+    source: 'Action Log',
+    timestamp: new Date().toISOString(),
+  },
+];
+
+const mockActions = [
+  { id: '1', title: 'Review API Gateway configuration', assignee: 'Mike Johnson', dueDate: new Date().toISOString(), status: 'open' as const, priority: 'high' as const, source: 'Meeting' },
+  { id: '2', title: 'Complete data validation scripts', assignee: 'Emily Brown', dueDate: new Date(Date.now() - 86400000).toISOString(), status: 'overdue' as const, priority: 'critical' as const, source: 'Sprint' },
+  { id: '3', title: 'Update stakeholder presentation', assignee: 'Sarah Mitchell', dueDate: new Date(Date.now() + 86400000).toISOString(), status: 'in-progress' as const, priority: 'medium' as const, source: 'Task' },
+];
+
+const mockIssues = [
+  { id: '1', title: 'API Integration timeout issues', severity: 'high' as const, status: 'open' as const, owner: 'Mike Johnson', createdDate: new Date().toISOString(), trending: 'escalating' as const },
+  { id: '2', title: 'Database performance degradation', severity: 'critical' as const, status: 'in-progress' as const, owner: 'Emily Brown', createdDate: new Date().toISOString(), trending: 'stable' as const },
+];
+
+const mockDecisions = [
+  { id: '1', title: 'Adopt microservices architecture', description: 'Team voted to move forward with microservices for Phase 2', status: 'approved' as const, owner: 'John Doe', date: new Date().toISOString(), impact: 'high' as const },
+  { id: '2', title: 'Extend testing phase by 1 week', description: 'Requires stakeholder approval for timeline adjustment', status: 'pending' as const, owner: 'Jane Smith', date: new Date().toISOString(), impact: 'medium' as const },
+];
+
+const mockTeamMembers = [
+  { id: '1', name: 'John Doe', role: 'Project Manager', status: 'available' as const, workload: 85, tasksAssigned: 12, hoursAllocated: 40 },
+  { id: '2', name: 'Jane Smith', role: 'Tech Lead', status: 'busy' as const, workload: 110, tasksAssigned: 18, hoursAllocated: 48 },
+  { id: '3', name: 'Mike Johnson', role: 'Developer', status: 'available' as const, workload: 70, tasksAssigned: 8, hoursAllocated: 32 },
+  { id: '4', name: 'Emily Brown', role: 'QA Lead', status: 'away' as const, workload: 50, tasksAssigned: 5, hoursAllocated: 20 },
+];
+
+const mockMeetingsToday = [
+  { id: '1', title: 'Daily Standup', startTime: new Date().toISOString(), endTime: new Date(Date.now() + 1800000).toISOString(), type: 'online' as const, participants: 8, status: 'in-progress' as const, meetingLink: 'https://meet.google.com' },
+  { id: '2', title: 'Stakeholder Review', startTime: new Date(Date.now() + 7200000).toISOString(), endTime: new Date(Date.now() + 10800000).toISOString(), type: 'hybrid' as const, participants: 12, status: 'upcoming' as const, location: 'Conference Room A' },
+  { id: '3', title: 'Sprint Planning', startTime: new Date(Date.now() + 14400000).toISOString(), endTime: new Date(Date.now() + 18000000).toISOString(), type: 'online' as const, participants: 6, status: 'upcoming' as const, meetingLink: 'https://zoom.us' },
+];
+
+const mockProfitLossData = {
+  expectedProfit: 125000,
+  expectedLoss: 45000,
+  currentBurnRate: 28500,
+  projectedCompletion: 450000,
+  scenarios: { optimistic: 95000, likely: 80000, pessimistic: 45000 },
+  riskFactors: ['Resource overallocation increasing costs', 'Scope creep adding unplanned work', 'Vendor delays affecting timeline'],
+  budgetUtilization: 72,
+};
+
+const mockScheduleSlippageData = {
+  totalSlippageDays: 5,
+  criticalPathChanged: true,
+  slippingTasks: [
+    { id: '1', name: 'API Integration', baselineEnd: new Date(Date.now() - 172800000).toISOString(), currentEnd: new Date(Date.now() + 259200000).toISOString(), slippageDays: 5, isCritical: true, impact: 'Delaying downstream testing phase' },
+    { id: '2', name: 'Data Migration Scripts', baselineEnd: new Date(Date.now()).toISOString(), currentEnd: new Date(Date.now() + 172800000).toISOString(), slippageDays: 2, isCritical: false, impact: 'Minor impact on UAT start' },
+  ],
+  atRiskMilestones: [
+    { name: 'Go-Live', date: new Date(Date.now() + 2592000000).toISOString(), riskLevel: 'medium' as const },
+    { name: 'UAT Complete', date: new Date(Date.now() + 1728000000).toISOString(), riskLevel: 'high' as const },
+  ],
+  cascadingDelays: ['API Integration → Integration Testing → UAT', 'Data Migration → System Testing'],
+};
+
+const mockRiskAssessmentData = {
+  totalRisks: 12,
+  criticalRisks: 3,
+  newRisksIdentified: [
+    { id: '1', title: 'Third-party API deprecation', category: 'Technical', probability: 'medium' as const, impact: 'high' as const, status: 'new', trending: 'up' as const },
+  ],
+  escalatedRisks: [
+    { id: '2', title: 'Key resource availability', category: 'Resource', probability: 'high' as const, impact: 'high' as const, status: 'escalated', trending: 'up' as const },
+  ],
+  mitigationSuggestions: [
+    { riskId: '2', riskTitle: 'Key resource availability', suggestion: 'Consider cross-training team members or engaging backup contractors to reduce single-point-of-failure risk.' },
+  ],
+  riskScore: { current: 72, previous: 65, trend: 'worsening' as const },
+};
+
+const mockBudgetData = {
+  totalBudget: 500000,
+  spent: 225000,
+  committed: 75000,
+  remaining: 200000,
+  burnRate: 28500,
+  costVariance: -15000,
+  scheduleVariance: -22000,
+  estimateAtCompletion: 520000,
+  estimateToComplete: 295000,
+  forecasts: { optimistic: 480000, likely: 520000, pessimistic: 580000 },
+};
+
+const mockAIInsights = [
+  { id: '1', category: 'prediction' as const, title: 'Sprint Completion Forecast', description: 'Based on current velocity, Sprint 12 is likely to complete 2 days ahead of schedule.', trend: 'up' as const, confidence: 0.85 },
+  { id: '2', category: 'recommendation' as const, title: 'Resource Reallocation', description: 'Consider reallocating resources from Phase 3 to Phase 4 to mitigate testing risks.', confidence: 0.78 },
+  { id: '3', category: 'warning' as const, title: 'Integration Bottleneck', description: 'Integration testing bottleneck predicted in Week 3 - recommend starting early.', trend: 'down' as const, confidence: 0.82 },
+  { id: '4', category: 'pattern' as const, title: 'Historical Trend', description: 'Similar projects have experienced 15-20% scope creep at this stage. Monitor change requests closely.', confidence: 0.75 },
+];
 
 export function MorningBriefingView() {
-  const [isGenerating, setIsGenerating] = useState(false);
-  const [lastUpdated] = useState(new Date());
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const { toast } = useToast();
+  const [lastUpdated, setLastUpdated] = useState(new Date());
 
-  const briefingData = {
-    greeting: `Good morning! Here's your daily briefing for ${mockProject.name}`,
-    projectHealth: mockProject.health,
-    criticalAlerts: [
-      { type: 'risk', message: 'Data Migration Complexity risk escalated to HIGH', priority: 'critical' },
-      { type: 'deadline', message: 'Implementation Phase milestone in 14 days', priority: 'warning' },
-      { type: 'action', message: '3 overdue action items require attention', priority: 'high' },
-    ],
-    todayFocus: [
-      { task: 'Review API Gateway configuration', owner: 'Mike Johnson', priority: 'high' },
-      { task: 'Complete data validation scripts', owner: 'Emily Brown', priority: 'medium' },
-      { task: 'Stakeholder update meeting at 10:00 AM', owner: 'Sarah Mitchell', priority: 'high' },
-    ],
-    progressSummary: {
-      yesterday: { completed: 5, added: 2 },
-      thisWeek: { completed: 18, target: 25 },
-      velocity: 'on-track',
-    },
-    upcomingMeetings: mockMeetings.slice(0, 3),
-    teamAvailability: [
-      { name: 'John Doe', status: 'available', load: 85 },
-      { name: 'Jane Smith', status: 'busy', load: 100 },
-      { name: 'Mike Johnson', status: 'available', load: 70 },
-      { name: 'Emily Brown', status: 'away', load: 50 },
-    ],
-    aiInsights: [
-      'Based on current velocity, Sprint 12 is likely to complete 2 days ahead of schedule.',
-      'Consider reallocating resources from Phase 3 to Phase 4 to mitigate testing risks.',
-      'Integration testing bottleneck predicted in Week 3 - recommend starting early.',
-    ],
-    keyMetrics: {
-      budgetUsed: 45,
-      scheduleVariance: -2,
-      riskScore: 72,
-      teamMorale: 85,
-    },
+  // Preferences hook - using null for global preferences (not project-specific for now)
+  const {
+    preferences,
+    loading: preferencesLoading,
+    saving,
+    toggleSection,
+    reorderSections,
+    savePreferences,
+    resetToDefaults,
+    getOrderedSections,
+  } = useBriefingPreferences(null);
+
+  // AI generation hook
+  const { loading: generating, briefingData, generateBriefing } = useBriefingGeneration();
+
+  const isLoading = preferencesLoading;
+  const isGenerating = generating;
+
+  // Handle refresh - triggers AI generation
+  const handleRefresh = async () => {
+    setLastUpdated(new Date());
+    
+    if (!preferences) return;
+
+    // Gather project data for AI analysis
+    const projectData = {
+      project: mockProject,
+      tasks: [], // Would come from real data
+      risks: mockRisks,
+      meetings: mockMeetings,
+      resources: mockTeamMembers,
+      financials: mockBudgetData,
+    };
+
+    await generateBriefing(
+      mockProject.id,
+      preferences.enabled_sections,
+      projectData
+    );
   };
 
-  const handleRefresh = () => {
-    setIsGenerating(true);
-    setTimeout(() => setIsGenerating(false), 2000);
+  // Handle save preferences
+  const handleSavePreferences = () => {
+    if (preferences) {
+      savePreferences(preferences.enabled_sections, preferences.section_order);
+    }
   };
+
+  // Handle view details navigation
+  const handleViewDetails = (route: string) => {
+    navigate(`/${route}`);
+  };
+
+  // Get section config by ID
+  const getSectionConfig = (id: BriefingSectionId) => {
+    return BRIEFING_SECTIONS.find(s => s.id === id);
+  };
+
+  // Render section content based on ID
+  const renderSectionContent = (sectionId: BriefingSectionId) => {
+    switch (sectionId) {
+      case 'critical-alerts':
+        return <CriticalAlertsSection alerts={mockCriticalAlerts} />;
+      case 'ai-insights':
+        return <AIInsightsSection insights={mockAIInsights} summary="Here's what AI predicts for your project based on current trends and historical data." />;
+      case 'profit-loss':
+        return <ProfitLossSection data={mockProfitLossData} />;
+      case 'schedule-slippage':
+        return <ScheduleSlippageSection data={mockScheduleSlippageData} />;
+      case 'budget-analysis':
+        return <BudgetAnalysisSection data={mockBudgetData} />;
+      case 'risk-assessment':
+        return <RiskAssessmentSection data={mockRiskAssessmentData} />;
+      case 'actions-due':
+        return <ActionsSection actions={mockActions} />;
+      case 'issues-summary':
+        return <IssuesSection issues={mockIssues} summary={{ total: 8, critical: 2, new: 3, resolved: 5 }} />;
+      case 'meetings-today':
+        return <MeetingsSection meetings={mockMeetingsToday} />;
+      case 'recent-decisions':
+        return <DecisionsSection decisions={mockDecisions} />;
+      case 'team-availability':
+        return <TeamAvailabilitySection members={mockTeamMembers} summary={{ totalMembers: 12, available: 8, overloaded: 2, averageWorkload: 78 }} />;
+      default:
+        return <p className="text-sm text-muted-foreground">Section content coming soon...</p>;
+    }
+  };
+
+  // Ordered enabled sections
+  const orderedSections = useMemo(() => {
+    if (!preferences) return [];
+    return getOrderedSections();
+  }, [preferences, getOrderedSections]);
+
+  if (isLoading) {
+    return (
+      <div className="flex flex-col h-full overflow-auto p-6 space-y-4">
+        <Skeleton className="h-24 w-full" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {[1, 2, 3, 4].map(i => (
+            <Skeleton key={i} className="h-48" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full overflow-auto">
@@ -87,301 +278,74 @@ export function MorningBriefingView() {
                 Morning Briefing
                 <Sparkles className="h-5 w-5 text-primary animate-pulse" />
               </h1>
-              <p className="text-muted-foreground">{briefingData.greeting}</p>
+              <p className="text-muted-foreground">
+                Good morning! Here's your daily briefing for {mockProject.name}
+              </p>
               <p className="text-xs text-muted-foreground mt-1">
                 Last updated: {lastUpdated.toLocaleTimeString()}
               </p>
             </div>
           </div>
-          <Button variant="outline" onClick={handleRefresh} disabled={isGenerating}>
-            <RefreshCw className={cn("h-4 w-4 mr-2", isGenerating && "animate-spin")} />
-            Refresh Briefing
-          </Button>
+          <div className="flex items-center gap-2">
+            {preferences && (
+              <BriefingSettingsPanel
+                enabledSections={preferences.enabled_sections}
+                sectionOrder={preferences.section_order}
+                onToggleSection={toggleSection}
+                onReorderSections={reorderSections}
+                onSave={handleSavePreferences}
+                onReset={resetToDefaults}
+                saving={saving}
+              />
+            )}
+            <Button variant="default" onClick={handleRefresh} disabled={isGenerating}>
+              <RefreshCw className={cn('h-4 w-4 mr-2', isGenerating && 'animate-spin')} />
+              Refresh Briefing
+            </Button>
+          </div>
         </div>
       </div>
 
+      {/* Content */}
       <div className="flex-1 p-6">
-        <div className="max-w-7xl mx-auto space-y-6">
-          {/* Critical Alerts */}
-          {briefingData.criticalAlerts.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <Card className="border-destructive/30 bg-destructive/5">
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-base flex items-center gap-2 text-destructive">
-                    <Bell className="h-5 w-5" />
-                    Critical Alerts Requiring Attention
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {briefingData.criticalAlerts.map((alert, i) => (
-                      <div
-                        key={i}
-                        className="flex items-center justify-between p-3 rounded-lg bg-background border"
-                      >
-                        <div className="flex items-center gap-3">
-                          <AlertTriangle className={cn(
-                            "h-4 w-4",
-                            alert.priority === 'critical' ? 'text-destructive' :
-                            alert.priority === 'warning' ? 'text-warning' : 'text-orange-500'
-                          )} />
-                          <span className="text-sm">{alert.message}</span>
-                        </div>
-                        <Badge variant={alert.priority as any}>{alert.priority}</Badge>
-                      </div>
-                    ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </motion.div>
-          )}
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            {orderedSections.map((sectionId, index) => {
+              const sectionConfig = getSectionConfig(sectionId);
+              if (!sectionConfig) return null;
 
-          {/* Main Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Left Column */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Today's Focus */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.1 }}
-              >
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Target className="h-5 w-5 text-primary" />
-                      Today's Focus Areas
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {briefingData.todayFocus.map((item, i) => (
-                        <div
-                          key={i}
-                          className="flex items-center justify-between p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={cn(
-                              "h-2 w-2 rounded-full",
-                              item.priority === 'high' ? 'bg-destructive' : 'bg-warning'
-                            )} />
-                            <div>
-                              <p className="text-sm font-medium">{item.task}</p>
-                              <p className="text-xs text-muted-foreground">{item.owner}</p>
-                            </div>
-                          </div>
-                          <ChevronRight className="h-4 w-4 text-muted-foreground" />
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-
-              {/* AI Insights */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.2 }}
-              >
-                <Card className="border-primary/30 bg-primary/5">
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Sparkles className="h-5 w-5 text-primary" />
-                      AI-Powered Insights
-                    </CardTitle>
-                    <CardDescription>Predictions and recommendations based on project data</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {briefingData.aiInsights.map((insight, i) => (
-                        <div
-                          key={i}
-                          className="flex items-start gap-3 p-3 rounded-lg bg-background border"
-                        >
-                          <Zap className="h-4 w-4 text-primary mt-0.5" />
-                          <p className="text-sm">{insight}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-
-              {/* Progress Summary */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.3 }}
-              >
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <TrendingUp className="h-5 w-5 text-success" />
-                      Progress Summary
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="text-center p-4 rounded-lg bg-muted/30">
-                        <div className="text-2xl font-bold text-success">
-                          {briefingData.progressSummary.yesterday.completed}
-                        </div>
-                        <p className="text-xs text-muted-foreground">Tasks Completed Yesterday</p>
-                      </div>
-                      <div className="text-center p-4 rounded-lg bg-muted/30">
-                        <div className="text-2xl font-bold">
-                          {briefingData.progressSummary.thisWeek.completed}/{briefingData.progressSummary.thisWeek.target}
-                        </div>
-                        <p className="text-xs text-muted-foreground">Weekly Progress</p>
-                      </div>
-                      <div className="text-center p-4 rounded-lg bg-muted/30">
-                        <Badge variant="success" className="text-sm">
-                          {briefingData.progressSummary.velocity}
-                        </Badge>
-                        <p className="text-xs text-muted-foreground mt-1">Velocity Status</p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </div>
-
-            {/* Right Column */}
-            <div className="space-y-6">
-              {/* Key Metrics */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.15 }}
-              >
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base">Key Metrics</CardTitle>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    <div>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span>Budget Utilization</span>
-                        <span className="font-medium">{briefingData.keyMetrics.budgetUsed}%</span>
-                      </div>
-                      <Progress value={briefingData.keyMetrics.budgetUsed} className="h-2" />
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span>Schedule Variance</span>
-                        <span className={cn(
-                          "font-medium",
-                          briefingData.keyMetrics.scheduleVariance < 0 ? 'text-success' : 'text-destructive'
-                        )}>
-                          {briefingData.keyMetrics.scheduleVariance > 0 ? '+' : ''}{briefingData.keyMetrics.scheduleVariance} days
-                        </span>
-                      </div>
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span>Risk Score</span>
-                        <span className="font-medium">{briefingData.keyMetrics.riskScore}/100</span>
-                      </div>
-                      <Progress 
-                        value={briefingData.keyMetrics.riskScore} 
-                        className={cn("h-2", briefingData.keyMetrics.riskScore > 70 ? '[&>div]:bg-warning' : '')}
-                      />
-                    </div>
-                    <div>
-                      <div className="flex justify-between text-sm mb-1">
-                        <span>Team Morale</span>
-                        <span className="font-medium text-success">{briefingData.keyMetrics.teamMorale}%</span>
-                      </div>
-                      <Progress value={briefingData.keyMetrics.teamMorale} className="h-2 [&>div]:bg-success" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-
-              {/* Today's Meetings */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.25 }}
-              >
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Calendar className="h-5 w-5 text-primary" />
-                      Today's Meetings
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {briefingData.upcomingMeetings.map((meeting, i) => (
-                        <div
-                          key={meeting.id}
-                          className="flex items-center gap-3 p-2 rounded-lg bg-muted/30"
-                        >
-                          <div className="text-center min-w-[50px]">
-                            <span className="text-sm font-medium">{meeting.startTime}</span>
-                          </div>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium truncate">{meeting.title}</p>
-                            <p className="text-xs text-muted-foreground">{meeting.participants.length} participants</p>
-                          </div>
-                          <Badge variant="outline">{meeting.type}</Badge>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-
-              {/* Team Availability */}
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.35 }}
-              >
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-base flex items-center gap-2">
-                      <Users className="h-5 w-5 text-primary" />
-                      Team Availability
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {briefingData.teamAvailability.map((member, i) => (
-                        <div
-                          key={i}
-                          className="flex items-center justify-between"
-                        >
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-7 w-7">
-                              <AvatarFallback className="text-xs">
-                                {member.name.split(' ').map(n => n[0]).join('')}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-sm">{member.name}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <Badge variant={
-                              member.status === 'available' ? 'success' :
-                              member.status === 'busy' ? 'warning' : 'secondary'
-                            } className="text-xs">
-                              {member.status}
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">{member.load}%</span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            </div>
+              return (
+                <motion.div
+                  key={sectionId}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.05 }}
+                  className={cn(
+                    // Make critical alerts and AI insights span full width
+                    (sectionId === 'critical-alerts' || sectionId === 'ai-insights') && 'lg:col-span-2'
+                  )}
+                >
+                  <BriefingSectionCard
+                    section={sectionConfig}
+                    loading={isGenerating && sectionConfig.isAIPowered}
+                    generatedAt={sectionConfig.isAIPowered ? lastUpdated.toISOString() : undefined}
+                    onRefresh={sectionConfig.isAIPowered ? handleRefresh : undefined}
+                    onViewDetails={sectionConfig.detailsRoute ? () => handleViewDetails(sectionConfig.detailsRoute!) : undefined}
+                  >
+                    {renderSectionContent(sectionId)}
+                  </BriefingSectionCard>
+                </motion.div>
+              );
+            })}
           </div>
+
+          {orderedSections.length === 0 && (
+            <div className="text-center py-12 text-muted-foreground">
+              <Sparkles className="h-12 w-12 mx-auto mb-4 opacity-50" />
+              <h3 className="text-lg font-medium mb-2">No sections enabled</h3>
+              <p className="text-sm">Click "Customize" to select which sections to display in your briefing.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>

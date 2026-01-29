@@ -17,6 +17,9 @@ import {
   startOfDay,
   endOfDay,
   addDays,
+  parseISO,
+  isWithinInterval,
+  addMinutes,
 } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
@@ -32,6 +35,7 @@ import {
   Plus,
   MoreHorizontal,
   GripVertical,
+  AlertTriangle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -50,10 +54,69 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useMeetings, MeetingWithRelations } from '@/hooks/useMeetings';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { MeetingCreationDialog } from '@/components/meetings/MeetingCreationDialog';
 import { toast } from 'sonner';
+
+// Helper function to check for time conflicts
+function checkTimeConflict(
+  meeting: CalendarMeeting,
+  targetDate: Date,
+  existingMeetings: CalendarMeeting[]
+): CalendarMeeting[] {
+  const meetingsOnTargetDate = existingMeetings.filter(
+    (m) => isSameDay(m.date, targetDate) && m.id !== meeting.id
+  );
+
+  if (meetingsOnTargetDate.length === 0) return [];
+
+  // Parse meeting times
+  const [meetingStartHour, meetingStartMin] = meeting.startTime.split(':').map(Number);
+  const meetingStart = addMinutes(startOfDay(targetDate), meetingStartHour * 60 + meetingStartMin);
+  
+  let meetingEnd: Date;
+  if (meeting.endTime) {
+    const [meetingEndHour, meetingEndMin] = meeting.endTime.split(':').map(Number);
+    meetingEnd = addMinutes(startOfDay(targetDate), meetingEndHour * 60 + meetingEndMin);
+  } else {
+    // Default to 1 hour if no end time
+    meetingEnd = addMinutes(meetingStart, 60);
+  }
+
+  // Check for overlaps
+  const conflicts = meetingsOnTargetDate.filter((existing) => {
+    const [existingStartHour, existingStartMin] = existing.startTime.split(':').map(Number);
+    const existingStart = addMinutes(startOfDay(targetDate), existingStartHour * 60 + existingStartMin);
+    
+    let existingEnd: Date;
+    if (existing.endTime) {
+      const [existingEndHour, existingEndMin] = existing.endTime.split(':').map(Number);
+      existingEnd = addMinutes(startOfDay(targetDate), existingEndHour * 60 + existingEndMin);
+    } else {
+      existingEnd = addMinutes(existingStart, 60);
+    }
+
+    // Check if times overlap
+    return (
+      (meetingStart >= existingStart && meetingStart < existingEnd) ||
+      (meetingEnd > existingStart && meetingEnd <= existingEnd) ||
+      (meetingStart <= existingStart && meetingEnd >= existingEnd)
+    );
+  });
+
+  return conflicts;
+}
 
 type ViewMode = 'month' | 'week' | 'day';
 
@@ -310,15 +373,29 @@ function DayCell({
   );
 }
 
-// Week/Day view time grid
+// Week/Day view time grid with drag-and-drop support
 function TimeGrid({
   dates,
   meetings,
   onSelectMeeting,
+  onDragStart,
+  onDrop,
+  dragOverDate,
+  dragOverHour,
+  onDragOver,
+  onDragLeave,
+  draggingMeetingId,
 }: {
   dates: Date[];
   meetings: CalendarMeeting[];
   onSelectMeeting: (meeting: CalendarMeeting) => void;
+  onDragStart: (e: React.DragEvent, meeting: CalendarMeeting) => void;
+  onDrop: (e: React.DragEvent, date: Date, hour?: number) => void;
+  dragOverDate: Date | null;
+  dragOverHour: number | null;
+  onDragOver: (e: React.DragEvent, date: Date, hour?: number) => void;
+  onDragLeave: () => void;
+  draggingMeetingId: string | null;
 }) {
   const hours = Array.from({ length: 24 }, (_, i) => i);
 
@@ -375,12 +452,24 @@ function TimeGrid({
             {/* Hour slots */}
             {hours.map((hour) => {
               const hourMeetings = getMeetingsForDateHour(date, hour);
+              const isDragOver = dragOverDate && isSameDay(date, dragOverDate) && dragOverHour === hour;
+              
               return (
                 <div
                   key={hour}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    onDrop(e, date, hour);
+                  }}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    onDragOver(e, date, hour);
+                  }}
+                  onDragLeave={onDragLeave}
                   className={cn(
-                    'h-12 border-b px-1 py-0.5',
-                    hour >= 9 && hour < 18 ? 'bg-background' : 'bg-muted/20'
+                    'h-12 border-b px-1 py-0.5 transition-colors',
+                    hour >= 9 && hour < 18 ? 'bg-background' : 'bg-muted/20',
+                    isDragOver && 'bg-primary/10 ring-2 ring-primary ring-inset'
                   )}
                 >
                   {hourMeetings.map((meeting) => (
@@ -389,6 +478,8 @@ function TimeGrid({
                       meeting={meeting}
                       compact
                       onClick={onSelectMeeting}
+                      onDragStart={onDragStart}
+                      isDragging={draggingMeetingId === meeting.id}
                     />
                   ))}
                 </div>
@@ -518,6 +609,16 @@ export function CalendarView() {
   // Drag-and-drop state
   const [draggingMeetingId, setDraggingMeetingId] = useState<string | null>(null);
   const [dragOverDate, setDragOverDate] = useState<Date | null>(null);
+  const [dragOverHour, setDragOverHour] = useState<number | null>(null);
+  
+  // Conflict detection state
+  const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
+  const [pendingDrop, setPendingDrop] = useState<{
+    meetingId: string;
+    targetDate: Date;
+    targetHour?: number;
+    conflicts: CalendarMeeting[];
+  } | null>(null);
 
   // Map meetings to calendar format
   const calendarMeetings = useMemo(
@@ -570,35 +671,110 @@ export function CalendarView() {
     setDraggingMeetingId(meeting.id);
   }, []);
 
-  const handleDragOver = useCallback((e: React.DragEvent, date: Date) => {
+  const handleDragOver = useCallback((e: React.DragEvent, date: Date, hour?: number) => {
     setDragOverDate(date);
+    setDragOverHour(hour ?? null);
   }, []);
 
   const handleDragLeave = useCallback(() => {
     setDragOverDate(null);
+    setDragOverHour(null);
   }, []);
 
-  const handleDrop = useCallback(async (e: React.DragEvent, targetDate: Date) => {
+  // Execute the actual meeting move
+  const executeMove = useCallback(async (
+    meetingId: string,
+    targetDate: Date,
+    targetHour?: number
+  ) => {
+    const meeting = calendarMeetings.find((m) => m.id === meetingId);
+    if (!meeting) return;
+
+    try {
+      const updates: Record<string, string> = {
+        date: format(targetDate, 'yyyy-MM-dd'),
+      };
+
+      // If dropped on a specific hour (Week/Day view), update the time
+      if (targetHour !== undefined) {
+        const originalStartParts = meeting.startTime.split(':');
+        const originalEndParts = meeting.endTime?.split(':');
+        
+        // Calculate duration to preserve it
+        const originalStartMinutes = parseInt(originalStartParts[0]) * 60 + parseInt(originalStartParts[1] || '0');
+        const duration = meeting.endTime 
+          ? (parseInt(originalEndParts![0]) * 60 + parseInt(originalEndParts![1] || '0')) - originalStartMinutes
+          : 60;
+
+        const newStartTime = `${targetHour.toString().padStart(2, '0')}:00:00`;
+        const newEndHour = targetHour + Math.floor(duration / 60);
+        const newEndMin = duration % 60;
+        const newEndTime = `${newEndHour.toString().padStart(2, '0')}:${newEndMin.toString().padStart(2, '0')}:00`;
+
+        updates.start_time = newStartTime;
+        updates.end_time = newEndTime;
+      }
+
+      await updateMeeting(meetingId, updates);
+      
+      const timeChange = targetHour !== undefined 
+        ? ` at ${format(new Date().setHours(targetHour, 0), 'h:mm a')}`
+        : '';
+      toast.success(`"${meeting.title}" moved to ${format(targetDate, 'MMM d, yyyy')}${timeChange}`);
+    } catch (error) {
+      toast.error('Failed to reschedule meeting');
+    }
+  }, [calendarMeetings, updateMeeting]);
+
+  const handleDrop = useCallback(async (e: React.DragEvent, targetDate: Date, targetHour?: number) => {
     e.preventDefault();
     const meetingId = e.dataTransfer.getData('meetingId');
     
     if (meetingId && draggingMeetingId) {
       const meeting = calendarMeetings.find((m) => m.id === meetingId);
-      if (meeting && !isSameDay(meeting.date, targetDate)) {
-        try {
-          await updateMeeting(meetingId, {
-            date: format(targetDate, 'yyyy-MM-dd'),
-          });
-          toast.success(`"${meeting.title}" moved to ${format(targetDate, 'MMM d, yyyy')}`);
-        } catch (error) {
-          toast.error('Failed to reschedule meeting');
+      if (meeting) {
+        const isSameDateAndTime = isSameDay(meeting.date, targetDate) && 
+          (targetHour === undefined || parseInt(meeting.startTime.split(':')[0]) === targetHour);
+        
+        if (!isSameDateAndTime) {
+          // Check for conflicts
+          const conflicts = checkTimeConflict(meeting, targetDate, calendarMeetings);
+          
+          if (conflicts.length > 0) {
+            // Show conflict dialog
+            setPendingDrop({
+              meetingId,
+              targetDate,
+              targetHour,
+              conflicts,
+            });
+            setConflictDialogOpen(true);
+          } else {
+            // No conflicts, proceed with move
+            await executeMove(meetingId, targetDate, targetHour);
+          }
         }
       }
     }
     
     setDraggingMeetingId(null);
     setDragOverDate(null);
-  }, [draggingMeetingId, calendarMeetings, updateMeeting]);
+    setDragOverHour(null);
+  }, [draggingMeetingId, calendarMeetings, executeMove]);
+
+  // Handle conflict dialog confirmation
+  const handleConfirmConflictMove = useCallback(async () => {
+    if (pendingDrop) {
+      await executeMove(pendingDrop.meetingId, pendingDrop.targetDate, pendingDrop.targetHour);
+    }
+    setConflictDialogOpen(false);
+    setPendingDrop(null);
+  }, [pendingDrop, executeMove]);
+
+  const handleCancelConflictMove = useCallback(() => {
+    setConflictDialogOpen(false);
+    setPendingDrop(null);
+  }, []);
 
   const handleCreateMeeting = async (
     meeting: Parameters<typeof createMeeting>[0],
@@ -726,6 +902,13 @@ export function CalendarView() {
               dates={viewDates}
               meetings={calendarMeetings}
               onSelectMeeting={setSelectedMeeting}
+              onDragStart={handleDragStart}
+              onDrop={handleDrop}
+              dragOverDate={dragOverDate}
+              dragOverHour={dragOverHour}
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              draggingMeetingId={draggingMeetingId}
             />
           </ScrollArea>
         )}
@@ -748,6 +931,57 @@ export function CalendarView() {
         onCreateMeeting={handleCreateMeeting}
         projectId={projectId}
       />
+
+      {/* Conflict Warning Dialog */}
+      <AlertDialog open={conflictDialogOpen} onOpenChange={setConflictDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-warning" />
+              Meeting Conflict Detected
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <p>
+                  Moving this meeting will create a time conflict with the following meeting(s):
+                </p>
+                <div className="space-y-2">
+                  {pendingDrop?.conflicts.map((conflict) => (
+                    <div
+                      key={conflict.id}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-muted/50 border"
+                    >
+                      <div className="flex-1">
+                        <p className="font-medium text-sm text-foreground">{conflict.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {conflict.startTime.slice(0, 5)} - {conflict.endTime?.slice(0, 5) || 'TBD'}
+                        </p>
+                      </div>
+                      <Badge variant={conflict.type === 'online' ? 'info' : 'secondary'}>
+                        {conflict.type}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+                <p className="text-sm text-muted-foreground">
+                  Do you want to proceed with rescheduling anyway?
+                </p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={handleCancelConflictMove}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmConflictMove}
+              className="bg-warning text-warning-foreground hover:bg-warning/90"
+            >
+              Move Anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

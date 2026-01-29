@@ -4,3 +4,8 @@ export { SlideEditor } from './SlideEditor';
 export { SlidePropertiesPanel } from './SlidePropertiesPanel';
 export { SpeakerNotesPanel } from './SpeakerNotesPanel';
 export { ShapeLibrary } from './ShapeLibrary';
+
+// Re-export types
+export type { PresentationFolder } from '@/hooks/usePresentationFolders';
+export type { Presentation } from '@/hooks/usePresentations';
+export type { PresentationSlide, SlideShape, SlideImage, SlideChart } from '@/hooks/useSlides';

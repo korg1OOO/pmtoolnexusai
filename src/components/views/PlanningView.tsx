@@ -211,27 +211,7 @@ export function PlanningView() {
     recalculateAll();
   };
 
-  // Show auth prompt if not authenticated
-  if (!authLoading && !isAuthenticated) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full p-8">
-        <div className="max-w-md text-center space-y-6">
-          <div className="p-4 rounded-full bg-primary/20 w-fit mx-auto">
-            <User className="h-12 w-12 text-primary" />
-          </div>
-          <h2 className="text-2xl font-bold">Sign In Required</h2>
-          <p className="text-muted-foreground">
-            To access the Project Plan and collaborate with your team, please sign in or create an account.
-          </p>
-          <Button size="lg" onClick={() => setShowAuthDialog(true)}>
-            Sign In to Continue
-          </Button>
-        </div>
-        <AuthDialog open={showAuthDialog} onOpenChange={setShowAuthDialog} />
-      </div>
-    );
-  }
-
+  // Show loading state only while auth is initializing
   if (authLoading) {
     return (
       <div className="flex items-center justify-center h-full">

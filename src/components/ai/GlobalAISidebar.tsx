@@ -61,6 +61,11 @@ export function GlobalAISidebar({
   const [showContext, setShowContext] = useState(true);
   const [selectedContexts, setSelectedContexts] = useState<ContextItem[]>([]);
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
+  
+  // Draggable position state
+  const [buttonPosition, setButtonPosition] = useState({ x: 0, y: 0 });
+  const [isDragging, setIsDragging] = useState(false);
+  
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -188,28 +193,51 @@ export function GlobalAISidebar({
 
   return (
     <>
-      {/* Toggle Button (when closed) */}
+      {/* Draggable Toggle Button (when closed) */}
       <AnimatePresence>
         {!isOpen && (
           <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: 20 }}
-            className="fixed right-4 top-1/2 -translate-y-1/2 z-50"
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.8 }}
+            drag
+            dragMomentum={false}
+            dragElastic={0}
+            onDragStart={() => setIsDragging(true)}
+            onDragEnd={(_, info) => {
+              setIsDragging(false);
+              setButtonPosition(prev => ({
+                x: prev.x + info.offset.x,
+                y: prev.y + info.offset.y,
+              }));
+            }}
+            style={{
+              x: buttonPosition.x,
+              y: buttonPosition.y,
+            }}
+            className="fixed right-4 top-1/2 -translate-y-1/2 z-[60] cursor-grab active:cursor-grabbing"
           >
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
                   variant="default"
                   size="icon"
-                  className="h-12 w-12 rounded-full shadow-lg"
-                  onClick={onToggle}
+                  className={cn(
+                    "h-12 w-12 rounded-full shadow-lg transition-all",
+                    isDragging && "shadow-2xl scale-110"
+                  )}
+                  onClick={(e) => {
+                    // Only toggle if not dragging
+                    if (!isDragging) {
+                      onToggle();
+                    }
+                  }}
                 >
                   <Sparkles className="h-5 w-5" />
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="left">
-                <p>AI Assistant</p>
+                <p>AI Assistant (drag to move)</p>
               </TooltipContent>
             </Tooltip>
           </motion.div>

@@ -140,8 +140,13 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          is_pinned: boolean | null
+          pinned_at: string | null
+          pinned_by: string | null
           project_id: string
           reactions: Json | null
+          read_by: Json | null
+          reply_to: string | null
           user_email: string
           user_id: string
         }
@@ -153,8 +158,13 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          is_pinned?: boolean | null
+          pinned_at?: string | null
+          pinned_by?: string | null
           project_id: string
           reactions?: Json | null
+          read_by?: Json | null
+          reply_to?: string | null
           user_email: string
           user_id: string
         }
@@ -166,8 +176,13 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          is_pinned?: boolean | null
+          pinned_at?: string | null
+          pinned_by?: string | null
           project_id?: string
           reactions?: Json | null
+          read_by?: Json | null
+          reply_to?: string | null
           user_email?: string
           user_id?: string
         }
@@ -177,6 +192,13 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_messages_reply_to_fkey"
+            columns: ["reply_to"]
+            isOneToOne: false
+            referencedRelation: "project_messages"
             referencedColumns: ["id"]
           },
         ]

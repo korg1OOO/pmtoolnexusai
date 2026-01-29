@@ -14,6 +14,123 @@ export type Database = {
   }
   public: {
     Tables: {
+      ai_agent_logs: {
+        Row: {
+          agent_type: string
+          conversation_id: string | null
+          created_at: string | null
+          error_message: string | null
+          execution_time_ms: number | null
+          id: string
+          input_data: Json | null
+          output_data: Json | null
+          success: boolean | null
+        }
+        Insert: {
+          agent_type: string
+          conversation_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          input_data?: Json | null
+          output_data?: Json | null
+          success?: boolean | null
+        }
+        Update: {
+          agent_type?: string
+          conversation_id?: string | null
+          created_at?: string | null
+          error_message?: string | null
+          execution_time_ms?: number | null
+          id?: string
+          input_data?: Json | null
+          output_data?: Json | null
+          success?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_agent_logs_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_conversations: {
+        Row: {
+          created_at: string | null
+          id: string
+          project_id: string | null
+          title: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          project_id?: string | null
+          title?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          project_id?: string | null
+          title?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_conversations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_messages: {
+        Row: {
+          agent_type: string | null
+          content: string
+          conversation_id: string
+          created_at: string | null
+          id: string
+          metadata: Json | null
+          role: string
+        }
+        Insert: {
+          agent_type?: string | null
+          content: string
+          conversation_id: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          role: string
+        }
+        Update: {
+          agent_type?: string | null
+          content?: string
+          conversation_id?: string
+          created_at?: string | null
+          id?: string
+          metadata?: Json | null
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calendar_exceptions: {
         Row: {
           calendar_id: string
@@ -2513,6 +2630,38 @@ export type Database = {
           },
         ]
       }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          project_id: string | null
+          role: Database["public"]["Enums"]["project_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          project_id?: string | null
+          role?: Database["public"]["Enums"]["project_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          project_id?: string | null
+          role?: Database["public"]["Enums"]["project_role"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -2543,6 +2692,18 @@ export type Database = {
           wbs: string
         }[]
       }
+      get_user_role: {
+        Args: { p_project_id: string; p_user_id: string }
+        Returns: Database["public"]["Enums"]["project_role"]
+      }
+      has_project_role: {
+        Args: {
+          p_project_id: string
+          p_role: Database["public"]["Enums"]["project_role"]
+          p_user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       constraint_type:
@@ -2557,6 +2718,7 @@ export type Database = {
       cost_accrual: "start" | "end" | "prorated"
       dependency_type: "FS" | "SS" | "FF" | "SF"
       priority_level: "critical" | "high" | "medium" | "low"
+      project_role: "admin" | "pm" | "lead" | "developer" | "analyst" | "viewer"
       resource_type: "work" | "material" | "cost"
       task_status:
         | "not-started"
@@ -2705,6 +2867,7 @@ export const Constants = {
       cost_accrual: ["start", "end", "prorated"],
       dependency_type: ["FS", "SS", "FF", "SF"],
       priority_level: ["critical", "high", "medium", "low"],
+      project_role: ["admin", "pm", "lead", "developer", "analyst", "viewer"],
       resource_type: ["work", "material", "cost"],
       task_status: [
         "not-started",

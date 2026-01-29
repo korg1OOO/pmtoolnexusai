@@ -9,8 +9,12 @@ import type {
   AgentType,
 } from '@/types/ai-agents';
 
+export type IntentMode = 'plan' | 'action';
+
 interface UseAIChatOptions {
   projectId: string | null;
+  currentView?: string;
+  intentMode?: IntentMode;
   onNewMessage?: (message: AIMessage) => void;
 }
 
@@ -30,7 +34,12 @@ interface UseAIChatReturn {
   clearMessages: () => void;
 }
 
-export function useAIChat({ projectId, onNewMessage }: UseAIChatOptions): UseAIChatReturn {
+export function useAIChat({ 
+  projectId, 
+  currentView = 'dashboard', 
+  intentMode = 'plan',
+  onNewMessage 
+}: UseAIChatOptions): UseAIChatReturn {
   const { user } = useAuth();
   const [messages, setMessages] = useState<AIMessage[]>([]);
   const [conversations, setConversations] = useState<AIConversation[]>([]);
@@ -248,13 +257,15 @@ export function useAIChat({ projectId, onNewMessage }: UseAIChatOptions): UseAIC
         .slice(-10)
         .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
 
-      // Call the orchestrator
+      // Call the orchestrator with context and intent mode
       const response = await supabase.functions.invoke('ai-orchestrator', {
         body: {
           message: content,
           projectId,
           conversationId,
           conversationHistory,
+          currentView,
+          intentMode,
         },
       });
 

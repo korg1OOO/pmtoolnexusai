@@ -1,188 +1,328 @@
 
-# Spreadsheet to Project Plan Conversion & Bi-directional Sync
+# Document Center Module - Full Implementation
 
 ## Overview
-This feature allows users to convert a spreadsheet into a linked Project Plan, creating a powerful bi-directional sync between tabular data entry and the formal project scheduling system. Once linked, edits in either view automatically propagate to the other.
+Transform the existing static Document Center into a fully functional module inspired by Microsoft OneDrive, with database persistence, file storage, comprehensive toolbar, folder management, and document workflow features.
 
 ## Visual Design
 
-### Linked Spreadsheet Indicators
-- **Blue-tinted grid cells**: All data cells in a linked spreadsheet will have a subtle blue background (`#eff6ff` / light blue) to distinguish them from regular spreadsheets
-- **Special icon in sidebar**: The sidebar will display a linked icon (Table2 with a small link badge) instead of the standard spreadsheet icon
-- **Sync status indicator**: A sync button/badge in the toolbar showing last sync time and status
-- **Locked sheet tabs**: "Add Sheet" button will be disabled; existing sheets cannot be deleted
+### Toolbar Features (OneDrive-inspired)
+- **New**: Create new folder, upload file, upload folder
+- **Copy/Move/Delete**: Bulk operations on selected files
+- **Rename**: Quick rename functionality
+- **Download**: Download selected files
+- **Share**: Share documents with team members
+- **Sort**: Sort by name, date modified, size, type
+- **View Options**: Grid view, List view, Details view
+- **Details Panel**: Toggle right sidebar with file properties
 
-### Project Plan Column Mapping
-When converted, the spreadsheet will automatically populate with these columns:
-
-| Column | Header | Description |
-|--------|--------|-------------|
-| A | WBS | Work Breakdown Structure code |
-| B | Task Name | Name of the task |
-| C | Type | task / milestone / summary |
-| D | Status | not-started / in-progress / completed / blocked / on-hold |
-| E | Priority | critical / high / medium / low |
-| F | Start Date | Task start date |
-| G | End Date | Task end date |
-| H | Duration | Calculated duration in days |
-| I | Progress | 0-100% completion |
-| J | Assignee | Resource name |
-| K | Critical | Yes/No if on critical path |
-| L | Notes | Task notes |
+### Layout Structure
+```text
++------------------+-----------------------------+----------------+
+|    Folder Tree   |      Document Grid/List     | Details Panel  |
+|                  |                             |   (Toggleable) |
+|  - All Files     |  +-------+ +-------+        |                |
+|  - Starred       |  | File1 | | File2 |        |  File Info     |
+|  - Shared        |  +-------+ +-------+        |  Properties    |
+|  - Recent        |  +-------+ +-------+        |  Versions      |
+|  - Trash         |  | File3 | | File4 |        |  Activity      |
+|  > Folder 1      |  +-------+ +-------+        |                |
+|  > Folder 2      |                             |  Sharing       |
++------------------+-----------------------------+----------------+
+```
 
 ---
 
 ## Technical Implementation
 
-### Phase 1: Database Schema Extension
+### Phase 1: Database Schema
 
-**New columns for `notebook_spreadsheets` table:**
-```text
-linked_project_id     UUID (nullable, FK to projects)
-linked_at             TIMESTAMP (when linking occurred)
-last_synced_at        TIMESTAMP (last successful sync)
-sync_status           TEXT ('synced' | 'syncing' | 'error')
-sync_direction        TEXT ('spreadsheet' | 'project' | 'both')
-```
+**New table `documents`:**
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| project_id | UUID | FK to projects |
+| folder_id | UUID | FK to document_folders (nullable for root) |
+| name | TEXT | File name |
+| file_type | TEXT | pdf, doc, xls, ppt, image, other |
+| file_url | TEXT | Storage URL |
+| file_size | INTEGER | Size in bytes |
+| version | TEXT | Current version number |
+| status | TEXT | draft, review, approved, archived |
+| uploaded_by | UUID | User who uploaded |
+| uploaded_by_name | TEXT | Cached user name |
+| is_starred | BOOLEAN | Starred/favorite |
+| is_locked | BOOLEAN | Locked for editing |
+| locked_by | UUID | User who locked |
+| metadata | JSONB | Custom properties |
+| created_at | TIMESTAMP | |
+| updated_at | TIMESTAMP | |
 
-**New table `spreadsheet_task_mappings`:**
-```text
-id                    UUID PRIMARY KEY
-spreadsheet_id        UUID FK to notebook_spreadsheets
-sheet_id              UUID FK to spreadsheet_sheets
-task_id               UUID FK to tasks
-row_index             INTEGER (0-based row in spreadsheet)
-created_at            TIMESTAMP
-```
+**New table `document_folders`:**
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| project_id | UUID | FK to projects |
+| parent_id | UUID | FK to self (nullable for root) |
+| name | TEXT | Folder name |
+| color | TEXT | Folder color/icon |
+| sort_order | INTEGER | Order in tree |
+| created_at | TIMESTAMP | |
+| updated_at | TIMESTAMP | |
 
-This mapping table enables tracking which spreadsheet row corresponds to which task.
+**New table `document_versions`:**
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| document_id | UUID | FK to documents |
+| version | TEXT | Version number |
+| file_url | TEXT | Storage URL for this version |
+| file_size | INTEGER | Size in bytes |
+| change_notes | TEXT | Description of changes |
+| uploaded_by | UUID | User who uploaded |
+| uploaded_by_name | TEXT | Cached user name |
+| status | TEXT | current, approved, superseded, draft |
+| approved_by | UUID | Approver user |
+| approved_by_name | TEXT | Cached approver name |
+| approved_at | TIMESTAMP | |
+| created_at | TIMESTAMP | |
 
-### Phase 2: Hook & State Management
+**New table `document_approvers`:**
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| document_id | UUID | FK to documents |
+| user_id | UUID | Approver user |
+| user_name | TEXT | Cached user name |
+| user_role | TEXT | Role in approval chain |
+| order_num | INTEGER | Order in approval chain |
+| status | TEXT | pending, approved, rejected, skipped |
+| comment | TEXT | Approval/rejection comment |
+| decided_at | TIMESTAMP | |
+| created_at | TIMESTAMP | |
 
-**New hook: `useLinkedSpreadsheet`**
-- Manages the link between spreadsheet and project plan
-- Provides methods:
-  - `convertToProjectPlan()`: Creates tasks from spreadsheet data
-  - `syncToSpreadsheet()`: Pulls task changes into spreadsheet
-  - `syncToProjectPlan()`: Pushes spreadsheet changes to tasks
-  - `unlinkFromProjectPlan()`: Removes the link (keeps data in both)
-- Subscribes to realtime changes on both `tasks` and `spreadsheet_sheets` tables
-- Implements conflict detection and resolution
+**New table `document_shares`:**
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| document_id | UUID | FK to documents |
+| folder_id | UUID | FK to folders (for folder sharing) |
+| shared_with_user_id | UUID | User shared with |
+| shared_with_email | TEXT | Email for external sharing |
+| permission | TEXT | view, comment, edit |
+| share_link | TEXT | Public share link (if enabled) |
+| expires_at | TIMESTAMP | Link expiration |
+| created_by | UUID | |
+| created_at | TIMESTAMP | |
+
+**New storage bucket `project-documents`:**
+- Public access for authenticated users
+- RLS policies for project-based access
+
+### Phase 2: Hooks & State Management
+
+**`useDocuments.ts`:**
+- CRUD operations for documents
+- Upload with progress tracking
+- Real-time subscriptions
+- Search and filter functionality
+- Bulk operations (delete, move, copy)
+
+**`useDocumentFolders.ts`:**
+- Folder tree management
+- Drag-and-drop reordering
+- Nested folder navigation
+
+**`useDocumentVersions.ts`:**
+- Version management
+- Restore functionality
+- Comparison logic
+
+**`useDocumentSharing.ts`:**
+- Share management
+- Permission controls
+- Link generation
 
 ### Phase 3: UI Components
 
-**A. Conversion Dialog (`ConvertToProjectPlanDialog.tsx`)**
-- Triggered from spreadsheet toolbar/menu
-- Options:
-  - Create new project or link to existing
-  - Column mapping preview
-  - Confirmation of data parsing
+**A. DocumentToolbar.tsx**
+- Upload button with drag-drop zone
+- New folder button
+- View mode toggles (grid/list/details)
+- Sort dropdown (name, date, size, type)
+- Filter buttons (All, Starred, Shared, Recent)
+- Bulk action buttons (appears when items selected)
+- Search input
+- Details panel toggle
 
-**B. Enhanced SpreadsheetEditor**
-- Detect `linked_project_id` and render blue-tinted cells
-- Add sync button to toolbar when linked
-- Show sync status indicator (last synced time, error states)
-- Disable "Add Sheet" and sheet deletion for linked spreadsheets
-- Add visual lock icon on sheet tabs
+**B. DocumentSidebar.tsx (Left Panel)**
+- Quick access sections (All Files, Starred, Shared, Recent, Trash)
+- Folder tree with nested navigation
+- Drag-drop for moving files to folders
+- Context menu for folder operations
 
-**C. Enhanced NotebookSidebar**
-- New icon variant for linked spreadsheets:
-  - Use `Table2` with a small blue link overlay badge
-  - Tooltip shows "Linked to Project Plan"
+**C. DocumentGrid.tsx / DocumentList.tsx**
+- Grid view with thumbnails and file icons
+- List view with columns (Name, Modified, Size, Status)
+- Multi-select with checkboxes
+- Drag-drop for bulk operations
+- Right-click context menu
+- Double-click to open/preview
 
-**D. Sync Status Component**
-- Shows sync direction arrows
-- Displays last sync timestamp
-- Manual sync trigger button
-- Conflict resolution modal when needed
+**D. DocumentDetailsPanel.tsx (Right Panel - Toggleable)**
+- File preview thumbnail
+- Basic info (name, size, type, location)
+- Properties editing (status, tags)
+- Version history accordion
+- Sharing management
+- Activity log
+- Approval workflow (if applicable)
 
-### Phase 4: Sync Logic
+**E. DocumentUploadDialog.tsx**
+- Drag-and-drop zone
+- File picker button
+- Multiple file support
+- Upload progress bars
+- Version upload option (for existing files)
+- Metadata input (description, tags)
 
-**Spreadsheet → Project Plan:**
-1. Parse spreadsheet rows starting from row 2 (row 1 = headers)
-2. For each row with data in column B (Task Name):
-   - If row exists in `spreadsheet_task_mappings`: UPDATE task
-   - If row is new: CREATE task and mapping
-   - If row was deleted: Mark task as deleted or remove
-3. Calculate WBS automatically based on hierarchy (blank cells in Name = child of previous)
-4. Update `last_synced_at` timestamp
+**F. FolderCreateDialog.tsx**
+- Folder name input
+- Parent folder selection
+- Color picker
 
-**Project Plan → Spreadsheet:**
-1. Query all tasks for the linked project
-2. Sort by `sort_order` (maintains hierarchy)
-3. For each task:
-   - Find corresponding row in mapping or add new row
-   - Update cell values for all mapped columns
-4. Apply blue cell formatting
-5. Update `last_synced_at` timestamp
+**G. DocumentShareDialog.tsx**
+- Search/add users
+- Permission level dropdown
+- Generate shareable link
+- Expiration date picker
+- Copy link button
 
-**Conflict Resolution:**
-- Timestamp-based: Most recent change wins
-- Option to show conflict dialog for major differences
-- Preserve user's manual formatting choices
+**H. DocumentMoveDialog.tsx**
+- Folder tree picker
+- Move/Copy toggle
+- Confirmation
 
-### Phase 5: Real-time Sync
+### Phase 4: Integration Features
 
-**Supabase Subscriptions:**
-- Subscribe to `tasks` changes for the linked project
-- Subscribe to `spreadsheet_sheets` changes for the linked spreadsheet
-- Debounce rapid changes (500ms) to prevent sync storms
-- Queue changes and apply in batches
+**A. Breadcrumb Navigation**
+- Current folder path
+- Click to navigate up
+
+**B. Drag-and-Drop**
+- Files to folders
+- Reorder folders
+- Multi-file operations
+
+**C. Keyboard Shortcuts**
+- Delete: Move to trash
+- Ctrl+C/V: Copy/Paste files
+- Ctrl+A: Select all
+- Enter: Open/Preview
+- F2: Rename
+
+**D. Search & Filter**
+- Real-time search across names
+- Filter by file type
+- Filter by status
+- Filter by date range
+- Filter by uploader
+
+---
+
+## File Storage Strategy
+
+Using Lovable Cloud Storage bucket `project-documents`:
+```text
+project-documents/
+  {project_id}/
+    {document_id}/
+      v1/original_filename.pdf
+      v2/original_filename.pdf
+      ...
+```
+
+---
+
+## Files to Create
+
+| File | Purpose |
+|------|---------|
+| `src/hooks/useDocuments.ts` | Document CRUD and uploads |
+| `src/hooks/useDocumentFolders.ts` | Folder management |
+| `src/hooks/useDocumentVersions.ts` | Version control |
+| `src/hooks/useDocumentSharing.ts` | Sharing functionality |
+| `src/components/documents/DocumentToolbar.tsx` | Main toolbar component |
+| `src/components/documents/DocumentSidebar.tsx` | Left navigation panel |
+| `src/components/documents/DocumentGrid.tsx` | Grid view display |
+| `src/components/documents/DocumentList.tsx` | List view display |
+| `src/components/documents/DocumentDetailsPanel.tsx` | Right details panel |
+| `src/components/documents/DocumentUploadDialog.tsx` | Upload interface |
+| `src/components/documents/FolderCreateDialog.tsx` | Create folder dialog |
+| `src/components/documents/DocumentShareDialog.tsx` | Sharing dialog |
+| `src/components/documents/DocumentMoveDialog.tsx` | Move/copy dialog |
+| `src/components/documents/DocumentContextMenu.tsx` | Right-click menu |
+| `src/components/documents/DocumentPreviewDialog.tsx` | File preview modal |
+| `supabase/migrations/xxx_documents_schema.sql` | Database tables |
+
+## Files to Modify
+
+| File | Changes |
+|------|---------|
+| `src/components/views/DocumentCenterView.tsx` | Complete refactor to use new components |
+| `src/components/documents/VersionHistory.tsx` | Connect to database |
+| `src/components/documents/DocumentApprovalWorkflow.tsx` | Connect to database |
 
 ---
 
 ## User Workflow
 
-### Converting a Spreadsheet to Project Plan:
-1. User creates a spreadsheet and enters task data
-2. User clicks "Convert to Project Plan" in toolbar
-3. Dialog appears with options and preview
-4. Upon confirmation:
-   - Spreadsheet headers auto-populate if empty
-   - Existing data maps to tasks
-   - Grid turns blue-tinted
-   - Sync button appears
-   - Sidebar icon updates
+### Uploading Documents:
+1. Click "Upload" or drag files to the drop zone
+2. Select single or multiple files
+3. Add optional description/tags
+4. Files upload to storage with progress indicator
+5. Document records created in database
+6. Real-time updates show new files immediately
 
-### Working with Linked Spreadsheet:
-1. Edit cells directly - changes sync to Project Plan
-2. Use Gantt/Planning views - changes sync back to spreadsheet
-3. Click Sync button to force immediate sync
-4. View sync status for last updated time
+### Organizing Documents:
+1. Create folders via toolbar or right-click
+2. Drag-drop files into folders
+3. Use breadcrumb to navigate folder hierarchy
+4. Star important files for quick access
+5. Use search/filter to find specific documents
 
----
+### Versioning:
+1. Right-click file and select "Upload New Version"
+2. Previous version moves to version history
+3. View all versions in details panel
+4. Restore previous version if needed
+5. Compare versions side-by-side
 
-## Files to Create/Modify
+### Sharing:
+1. Select file and click "Share" in toolbar
+2. Add users with specific permissions (view/edit)
+3. Optionally generate public link with expiration
+4. Recipients see shared files in their "Shared with me" section
 
-### New Files:
-1. `src/hooks/useLinkedSpreadsheet.ts` - Main sync logic hook
-2. `src/components/notes/spreadsheet/ConvertToProjectPlanDialog.tsx` - Conversion wizard
-3. `src/components/notes/spreadsheet/SyncStatusIndicator.tsx` - Sync status display
-4. `src/components/notes/spreadsheet/LinkedSpreadsheetIcon.tsx` - Special sidebar icon
-
-### Modified Files:
-1. `src/hooks/useSpreadsheets.ts` - Add linked fields to types
-2. `src/components/notes/SpreadsheetEditor.tsx` - Blue tint, sync button, disable add sheet
-3. `src/components/notes/NotebookSidebar.tsx` - Linked spreadsheet icon
-4. `src/components/notes/spreadsheet/SpreadsheetToolbar.tsx` - Add convert/sync buttons
-5. `supabase/migrations/` - New migration for schema changes
-
-### Database Migration:
-- Add columns to `notebook_spreadsheets`
-- Create `spreadsheet_task_mappings` table
-- Add RLS policies for new table
+### Approval Workflow:
+1. Upload document and set status to "Review"
+2. Add approvers in order
+3. Each approver receives notification
+4. Approvers approve/reject with comments
+5. Document status updates automatically
 
 ---
 
-## Enhancement Suggestions
+## Enhancement Ideas for Future
 
-1. **Bulk Import Mode**: Allow pasting Excel data that auto-converts to Project Plan
-2. **Template Columns**: Pre-built column templates for different methodologies (Agile, Waterfall)
-3. **Dependency Editing**: Column for predecessor task references (e.g., "3FS+2d")
-4. **Resource Integration**: Column linked to resources table for assignee dropdown
-5. **Baseline Comparison**: Show baseline data in separate columns (grayed out)
-6. **Version History**: Track sync history with rollback capability
-7. **Export Options**: Export linked spreadsheet as .xlsx with formatting
-8. **Validation Indicators**: Cell-level validation errors (red border for invalid dates, etc.)
-9. **Auto-hierarchy Detection**: Detect parent/child relationships from indentation in Task Name
-10. **Smart Date Parsing**: Parse various date formats and convert to standard format
+1. **Document Preview**: In-browser preview for PDFs, images, and Office files
+2. **Comments/Annotations**: Comment on specific parts of documents
+3. **Tags/Labels**: Categorize documents with custom tags
+4. **Favorites/Collections**: Group related documents
+5. **Activity Feed**: See all document activity in one place
+6. **Email Notifications**: Notify on shares, approvals, comments
+7. **Offline Access**: Mark files for offline access
+8. **Bulk Upload**: Upload entire folder structures
+9. **AI Integration**: Auto-categorize, summarize documents
+10. **Integration with Tasks**: Link documents to project tasks

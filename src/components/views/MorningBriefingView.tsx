@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
@@ -9,9 +9,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { useNavigate } from 'react-router-dom';
 import { mockProject, mockRisks, mockMeetings } from '@/data/mockData';
-import { useAuth } from '@/hooks/useAuth';
 
 import {
   BriefingSectionCard,
@@ -152,10 +150,16 @@ const mockAIInsights = [
 ];
 
 export function MorningBriefingView() {
-  const { user } = useAuth();
-  const navigate = useNavigate();
   const { toast } = useToast();
   const [lastUpdated, setLastUpdated] = useState(new Date());
+  
+  // Local preferences state for when user is not authenticated
+  const [localEnabledSections, setLocalEnabledSections] = useState<BriefingSectionId[]>(
+    BRIEFING_SECTIONS.filter(s => s.defaultEnabled).map(s => s.id)
+  );
+  const [localSectionOrder, setLocalSectionOrder] = useState<BriefingSectionId[]>(
+    BRIEFING_SECTIONS.map(s => s.id)
+  );
 
   // Preferences hook - using null for global preferences (not project-specific for now)
   const {
@@ -171,6 +175,10 @@ export function MorningBriefingView() {
 
   // AI generation hook
   const { loading: generating, briefingData, generateBriefing } = useBriefingGeneration();
+  
+  // Use local state if preferences not loaded (e.g., user not authenticated)
+  const effectiveEnabledSections = preferences?.enabled_sections ?? localEnabledSections;
+  const effectiveSectionOrder = preferences?.section_order ?? localSectionOrder;
 
   const isLoading = preferencesLoading;
   const isGenerating = generating;
@@ -205,9 +213,36 @@ export function MorningBriefingView() {
     }
   };
 
-  // Handle view details navigation
-  const handleViewDetails = (route: string) => {
-    navigate(`/${route}`);
+  // Handle local toggle when not authenticated
+  const handleLocalToggle = (sectionId: BriefingSectionId) => {
+    if (preferences) {
+      toggleSection(sectionId);
+    } else {
+      setLocalEnabledSections(prev => 
+        prev.includes(sectionId) 
+          ? prev.filter(id => id !== sectionId)
+          : [...prev, sectionId]
+      );
+    }
+  };
+
+  // Handle local reorder when not authenticated
+  const handleLocalReorder = (newOrder: BriefingSectionId[]) => {
+    if (preferences) {
+      reorderSections(newOrder);
+    } else {
+      setLocalSectionOrder(newOrder);
+    }
+  };
+
+  // Handle reset
+  const handleReset = () => {
+    if (preferences) {
+      resetToDefaults();
+    } else {
+      setLocalEnabledSections(BRIEFING_SECTIONS.filter(s => s.defaultEnabled).map(s => s.id));
+      setLocalSectionOrder(BRIEFING_SECTIONS.map(s => s.id));
+    }
   };
 
   // Get section config by ID
@@ -247,9 +282,10 @@ export function MorningBriefingView() {
 
   // Ordered enabled sections
   const orderedSections = useMemo(() => {
-    if (!preferences) return [];
-    return getOrderedSections();
-  }, [preferences, getOrderedSections]);
+    const order = effectiveSectionOrder;
+    const enabled = effectiveEnabledSections;
+    return order.filter(id => enabled.includes(id));
+  }, [effectiveSectionOrder, effectiveEnabledSections]);
 
   if (isLoading) {
     return (
@@ -287,17 +323,15 @@ export function MorningBriefingView() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {preferences && (
-              <BriefingSettingsPanel
-                enabledSections={preferences.enabled_sections}
-                sectionOrder={preferences.section_order}
-                onToggleSection={toggleSection}
-                onReorderSections={reorderSections}
-                onSave={handleSavePreferences}
-                onReset={resetToDefaults}
-                saving={saving}
-              />
-            )}
+            <BriefingSettingsPanel
+              enabledSections={effectiveEnabledSections}
+              sectionOrder={effectiveSectionOrder}
+              onToggleSection={handleLocalToggle}
+              onReorderSections={handleLocalReorder}
+              onSave={handleSavePreferences}
+              onReset={handleReset}
+              saving={saving}
+            />
             <Button variant="default" onClick={handleRefresh} disabled={isGenerating}>
               <RefreshCw className={cn('h-4 w-4 mr-2', isGenerating && 'animate-spin')} />
               Refresh Briefing
@@ -330,7 +364,6 @@ export function MorningBriefingView() {
                     loading={isGenerating && sectionConfig.isAIPowered}
                     generatedAt={sectionConfig.isAIPowered ? lastUpdated.toISOString() : undefined}
                     onRefresh={sectionConfig.isAIPowered ? handleRefresh : undefined}
-                    onViewDetails={sectionConfig.detailsRoute ? () => handleViewDetails(sectionConfig.detailsRoute!) : undefined}
                   >
                     {renderSectionContent(sectionId)}
                   </BriefingSectionCard>

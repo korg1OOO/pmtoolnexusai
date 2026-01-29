@@ -7,6 +7,7 @@ import type {
   AIConversation,
   AIOrchestratorResponse,
   AgentType,
+  ClarifyingQuestion,
 } from '@/types/ai-agents';
 
 export type IntentMode = 'plan' | 'action';
@@ -25,6 +26,7 @@ interface UseAIChatReturn {
   isLoading: boolean;
   isSending: boolean;
   currentAgent: AgentType | null;
+  pendingClarification: ClarifyingQuestion | null;
   
   // Actions
   sendMessage: (content: string) => Promise<void>;
@@ -32,6 +34,7 @@ interface UseAIChatReturn {
   selectConversation: (conversationId: string) => void;
   deleteConversation: (conversationId: string) => Promise<void>;
   clearMessages: () => void;
+  clearClarification: () => void;
 }
 
 export function useAIChat({ 
@@ -47,6 +50,7 @@ export function useAIChat({
   const [isLoading, setIsLoading] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [currentAgent, setCurrentAgent] = useState<AgentType | null>(null);
+  const [pendingClarification, setPendingClarification] = useState<ClarifyingQuestion | null>(null);
   const onNewMessageRef = useRef(onNewMessage);
   onNewMessageRef.current = onNewMessage;
 
@@ -276,6 +280,11 @@ export function useAIChat({
       const aiResponse = response.data as AIOrchestratorResponse;
       setCurrentAgent(aiResponse.agentType);
 
+      // Check if AI needs clarification
+      if (aiResponse.needsClarification && aiResponse.clarifyingQuestion) {
+        setPendingClarification(aiResponse.clarifyingQuestion);
+      }
+
       // Insert assistant message
       const { error: assistantError } = await supabase
         .from('ai_messages')
@@ -291,6 +300,8 @@ export function useAIChat({
             agentsUsed: aiResponse.agentsUsed,
             actions: aiResponse.actions,
             permissionDenied: aiResponse.permissionDenied,
+            needsClarification: aiResponse.needsClarification,
+            clarifyingQuestion: aiResponse.clarifyingQuestion,
           } as unknown as Record<string, unknown>,
         } as any);
 
@@ -326,6 +337,12 @@ export function useAIChat({
   const clearMessages = useCallback(() => {
     setMessages([]);
     setActiveConversationId(null);
+    setPendingClarification(null);
+  }, []);
+
+  // Clear pending clarification
+  const clearClarification = useCallback(() => {
+    setPendingClarification(null);
   }, []);
 
   return {
@@ -335,10 +352,12 @@ export function useAIChat({
     isLoading,
     isSending,
     currentAgent,
+    pendingClarification,
     sendMessage,
     createConversation,
     selectConversation,
     deleteConversation,
     clearMessages,
+    clearClarification,
   };
 }

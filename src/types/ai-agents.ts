@@ -83,6 +83,14 @@ export interface AIOrchestratorRequest {
   conversationHistory?: Array<{ role: 'user' | 'assistant'; content: string }>;
 }
 
+export interface ClarifyingQuestion {
+  id: string;
+  question: string;
+  options: Array<{ id: string; label: string; description?: string }>;
+  multiSelect?: boolean;
+  context?: string;
+}
+
 export interface AIOrchestratorResponse {
   response: string;
   agentType: AgentType;
@@ -92,6 +100,8 @@ export interface AIOrchestratorResponse {
   actions?: AIAction[];
   executionTime?: number;
   permissionDenied?: boolean;
+  needsClarification?: boolean;
+  clarifyingQuestion?: ClarifyingQuestion;
   error?: string;
 }
 

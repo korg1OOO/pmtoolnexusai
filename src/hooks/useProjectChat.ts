@@ -9,6 +9,10 @@ export interface ChatMessage {
   user_email: string;
   content: string;
   created_at: string;
+  attachment_url?: string | null;
+  attachment_name?: string | null;
+  attachment_type?: string | null;
+  attachment_size?: number | null;
 }
 
 export function useProjectChat(projectId: string | null) {
@@ -81,8 +85,16 @@ export function useProjectChat(projectId: string | null) {
     };
   }, [projectId]);
 
-  const sendMessage = async (content: string): Promise<boolean> => {
-    if (!content.trim() || !user || !projectId) return false;
+  const sendMessage = async (
+    content: string,
+    attachment?: {
+      url: string;
+      name: string;
+      type: string;
+      size: number;
+    }
+  ): Promise<boolean> => {
+    if ((!content.trim() && !attachment) || !user || !projectId) return false;
 
     setIsSending(true);
     const { error } = await supabase.from('project_messages').insert({
@@ -90,6 +102,10 @@ export function useProjectChat(projectId: string | null) {
       user_id: user.id,
       user_email: user.email || 'Unknown',
       content: content.trim(),
+      attachment_url: attachment?.url || null,
+      attachment_name: attachment?.name || null,
+      attachment_type: attachment?.type || null,
+      attachment_size: attachment?.size || null,
     });
 
     setIsSending(false);

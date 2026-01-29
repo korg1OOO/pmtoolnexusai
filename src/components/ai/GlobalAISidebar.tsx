@@ -9,12 +9,16 @@ import {
   Trash2, 
   Loader2,
   ChevronRight,
-  Sparkles
+  Sparkles,
+  BarChart3,
+  Lightbulb,
+  Zap
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import {
   Tooltip,
   TooltipContent,
@@ -26,6 +30,9 @@ import { useUserRole } from '@/hooks/useUserRole';
 import { ChatMessage } from './ChatMessage';
 import { AgentIndicator } from './AgentIndicator';
 import { ActionConfirmDialog } from './ActionConfirmDialog';
+import { PageContextPanel, getSuggestedQuestions, getViewContext } from './PageContextPanel';
+import { IntentModeToggle, type IntentMode } from './IntentModeToggle';
+import { ClarifyingQuestion, type ClarifyingQuestionData } from './ClarifyingQuestion';
 import { ROLE_DISPLAY_NAMES, type ProjectRole, type AIAction } from '@/types/ai-agents';
 import { toast } from 'sonner';
 
@@ -34,22 +41,29 @@ interface GlobalAISidebarProps {
   onToggle: () => void;
   projectId: string | null;
   projectName?: string;
+  currentView?: string;
 }
 
 export function GlobalAISidebar({ 
   isOpen, 
   onToggle, 
   projectId,
-  projectName = 'Current Project'
+  projectName = 'Current Project',
+  currentView = 'dashboard'
 }: GlobalAISidebarProps) {
   const [input, setInput] = useState('');
   const [showHistory, setShowHistory] = useState(false);
   const [pendingAction, setPendingAction] = useState<AIAction | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
+  const [intentMode, setIntentMode] = useState<IntentMode>('plan');
+  const [clarifyingQuestion, setClarifyingQuestion] = useState<ClarifyingQuestionData | null>(null);
+  const [showContext, setShowContext] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { data: userRole = 'viewer' } = useUserRole(projectId);
+  const viewContext = getViewContext(currentView);
+  const suggestedQuestions = getSuggestedQuestions(currentView);
   
   const {
     messages,
@@ -62,7 +76,7 @@ export function GlobalAISidebar({
     createConversation,
     selectConversation,
     deleteConversation,
-  } = useAIChat({ projectId });
+  } = useAIChat({ projectId, currentView, intentMode });
 
   // Handle action confirmation from chat messages
   const handleActionRequest = useCallback((action: AIAction) => {
@@ -74,7 +88,6 @@ export function GlobalAISidebar({
     
     setIsActionLoading(true);
     try {
-      // Send confirmation message to AI
       await sendMessage(`Confirmed: ${pendingAction.description}`);
       toast.success('Action confirmed and executed');
     } catch (error) {
@@ -90,6 +103,19 @@ export function GlobalAISidebar({
     toast.info('Action cancelled');
   }, []);
 
+  // Handle clarifying question answer
+  const handleClarifyingAnswer = useCallback(async (questionId: string, selectedOptions: string[]) => {
+    if (!clarifyingQuestion) return;
+    
+    const selectedLabels = clarifyingQuestion.options
+      .filter(opt => selectedOptions.includes(opt.id))
+      .map(opt => opt.label)
+      .join(', ');
+    
+    await sendMessage(`My answer: ${selectedLabels}`);
+    setClarifyingQuestion(null);
+  }, [clarifyingQuestion, sendMessage]);
+
   // Auto-scroll to bottom on new messages
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -102,11 +128,25 @@ export function GlobalAISidebar({
     }
   }, [isOpen]);
 
+  // Hide context panel after first message
+  useEffect(() => {
+    if (messages.length > 0) {
+      setShowContext(false);
+    }
+  }, [messages.length]);
+
   const handleSend = async () => {
     if (!input.trim() || isSending) return;
     const message = input;
     setInput('');
-    await sendMessage(message);
+    
+    // Include context in the message
+    const contextPrefix = intentMode === 'plan' 
+      ? '[Plan Mode] ' 
+      : '[Action Mode] ';
+    const viewPrefix = `[Context: ${viewContext.title}] `;
+    
+    await sendMessage(viewPrefix + contextPrefix + message);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -119,7 +159,15 @@ export function GlobalAISidebar({
   const handleNewChat = async () => {
     await createConversation();
     setShowHistory(false);
+    setShowContext(true);
   };
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setInput(suggestion);
+    textareaRef.current?.focus();
+  };
+
+  const IconComponent = viewContext.icon;
 
   return (
     <>
@@ -199,14 +247,27 @@ export function GlobalAISidebar({
               </div>
             </div>
 
-            {/* Role Badge */}
-            <div className="px-4 py-2 border-b bg-muted/20">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-muted-foreground">Your Role:</span>
-                <Badge variant="outline" className="capitalize">
-                  {ROLE_DISPLAY_NAMES[userRole as ProjectRole] || userRole}
+            {/* Context Banner - Current View */}
+            <div className="px-3 py-2 border-b bg-muted/20 flex items-center justify-between">
+              <div className="flex items-center gap-2 text-sm">
+                <Badge variant="outline" className="gap-1">
+                  <IconComponent className="h-3 w-3" />
+                  {viewContext.title}
                 </Badge>
+                <span className="text-muted-foreground text-xs">Active context</span>
               </div>
+              <Badge variant="secondary" className="capitalize text-xs">
+                {ROLE_DISPLAY_NAMES[userRole as ProjectRole] || userRole}
+              </Badge>
+            </div>
+
+            {/* Intent Mode Toggle */}
+            <div className="px-3 py-2 border-b flex items-center justify-center">
+              <IntentModeToggle
+                mode={intentMode}
+                onChange={setIntentMode}
+                disabled={isSending}
+              />
             </div>
 
             {/* History Panel */}
@@ -281,35 +342,65 @@ export function GlobalAISidebar({
                   <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
                 </div>
               ) : messages.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-full text-center px-4">
-                  <div className="p-4 rounded-full bg-primary/10 mb-4">
-                    <Sparkles className="h-8 w-8 text-primary" />
+                <div className="space-y-4">
+                  {/* Page Context Panel */}
+                  {showContext && (
+                    <PageContextPanel currentView={currentView} />
+                  )}
+
+                  {/* Welcome Message */}
+                  <div className="text-center px-2">
+                    <div className="p-3 rounded-full bg-primary/10 inline-flex mb-3">
+                      <Sparkles className="h-6 w-6 text-primary" />
+                    </div>
+                    <h3 className="font-medium mb-1 text-sm">How can I help you?</h3>
+                    <p className="text-xs text-muted-foreground mb-3">
+                      {intentMode === 'plan' 
+                        ? "I'll analyze and provide insights without making changes."
+                        : "I'll help you make changes (with confirmation)."}
+                    </p>
                   </div>
-                  <h3 className="font-medium mb-2">How can I help you?</h3>
-                  <p className="text-sm text-muted-foreground mb-4">
-                    I can analyze your project schedule, budget, risks, and more.
-                  </p>
-                  <div className="grid grid-cols-1 gap-2 w-full max-w-[280px]">
-                    {[
-                      "What's the project status?",
-                      "Show me the critical path",
-                      "Any schedule risks?",
-                      "Generate a status report",
-                    ].map((suggestion) => (
-                      <Button
-                        key={suggestion}
-                        variant="outline"
-                        size="sm"
-                        className="justify-start text-left h-auto py-2 px-3"
-                        onClick={() => {
-                          setInput(suggestion);
-                          textareaRef.current?.focus();
-                        }}
-                      >
-                        <ChevronRight className="h-3 w-3 mr-2 shrink-0" />
-                        <span className="truncate">{suggestion}</span>
-                      </Button>
-                    ))}
+
+                  {/* Mode Indicator */}
+                  <div className={cn(
+                    "flex items-center gap-2 p-2 rounded-lg text-xs",
+                    intentMode === 'plan' 
+                      ? "bg-primary/10 text-primary"
+                      : "bg-accent text-accent-foreground"
+                  )}>
+                    {intentMode === 'plan' ? (
+                      <Lightbulb className="h-4 w-4" />
+                    ) : (
+                      <Zap className="h-4 w-4" />
+                    )}
+                    <span>
+                      {intentMode === 'plan'
+                        ? "Plan Mode: Ask questions, get insights, explore options"
+                        : "Action Mode: Make changes to your project (requires confirmation)"}
+                    </span>
+                  </div>
+
+                  <Separator className="my-3" />
+
+                  {/* Context-specific suggested questions */}
+                  <div className="space-y-2">
+                    <p className="text-xs text-muted-foreground font-medium">
+                      Suggested for {viewContext.title}:
+                    </p>
+                    <div className="grid grid-cols-1 gap-1.5">
+                      {suggestedQuestions.map((suggestion) => (
+                        <Button
+                          key={suggestion}
+                          variant="outline"
+                          size="sm"
+                          className="justify-start text-left h-auto py-2 px-3"
+                          onClick={() => handleSuggestionClick(suggestion)}
+                        >
+                          <ChevronRight className="h-3 w-3 mr-2 shrink-0 text-muted-foreground" />
+                          <span className="text-xs truncate">{suggestion}</span>
+                        </Button>
+                      ))}
+                    </div>
                   </div>
                 </div>
               ) : (
@@ -321,6 +412,16 @@ export function GlobalAISidebar({
                       onActionRequest={handleActionRequest}
                     />
                   ))}
+                  
+                  {/* Clarifying Question */}
+                  {clarifyingQuestion && (
+                    <ClarifyingQuestion
+                      question={clarifyingQuestion}
+                      onAnswer={handleClarifyingAnswer}
+                      onDismiss={() => setClarifyingQuestion(null)}
+                      isLoading={isSending}
+                    />
+                  )}
                   
                   {/* Typing/Processing Indicator */}
                   {isSending && (
@@ -352,7 +453,11 @@ export function GlobalAISidebar({
                   value={input}
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={handleKeyDown}
-                  placeholder="Ask anything about your project..."
+                  placeholder={
+                    intentMode === 'plan'
+                      ? "Ask a question about your project..."
+                      : "What would you like me to do?"
+                  }
                   className="min-h-[44px] max-h-32 resize-none"
                   disabled={isSending || !projectId}
                 />

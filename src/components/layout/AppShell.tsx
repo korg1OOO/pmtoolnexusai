@@ -44,6 +44,7 @@ export function AppShell({ children, activeView, onViewChange }: AppShellProps) 
             onToggle={() => setShowAISidebar(!showAISidebar)}
             projectId={settings.id}
             projectName={settings.name}
+            currentView={activeView}
           />
         </div>
       </TooltipProvider>

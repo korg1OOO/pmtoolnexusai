@@ -1,1 +1,13 @@
 project_id = "wmnfuwmjauslyqqucmov"
+
+[functions.auto-schedule]
+verify_jwt = false
+
+[functions.calculate-critical-path]
+verify_jwt = false
+
+[functions.meeting-ai-extract]
+verify_jwt = false
+
+[functions.meeting-generate-mom]
+verify_jwt = false

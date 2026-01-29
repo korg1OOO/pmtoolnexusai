@@ -3,9 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { toast } from 'sonner';
 
-export type ItemType = 'epic' | 'story' | 'task' | 'bug' | 'tech-debt';
+export type ItemType = 'epic' | 'story' | 'task' | 'bug' | 'tech-debt' | 'feature' | 'enhancement' | 'technical-debt';
 export type BacklogStatus = 'todo' | 'in-progress' | 'review' | 'done';
 export type BacklogPriority = 'critical' | 'high' | 'medium' | 'low';
+export type PriorityLevel = BacklogPriority;
 
 export interface BacklogItem { id: string; project_id: string | null; epic_id: string | null; sprint_id: string | null; key: string | null; title: string; description: string | null; type: ItemType; priority: BacklogPriority; story_points: number | null; assignee_id: string | null; assignee_name: string | null; labels: string[]; status: BacklogStatus; sort_order: number; created_at: string; updated_at: string; }
 export interface BacklogItemInput { title: string; description?: string; type?: ItemType; priority?: BacklogPriority; story_points?: number; assignee_name?: string; labels?: string[]; epic_id?: string; sprint_id?: string; status?: BacklogStatus; }

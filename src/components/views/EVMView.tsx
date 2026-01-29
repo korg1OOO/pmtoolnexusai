@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useRef } from 'react';
 import { cn } from '@/lib/utils';
 import {
   TrendingUp,
@@ -7,8 +6,6 @@ import {
   DollarSign,
   Calendar,
   BarChart3,
-  ArrowUp,
-  ArrowDown,
   AlertTriangle,
   CheckCircle2,
   Info,
@@ -19,6 +16,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
+import { PDFExporter, PDFExportSection } from '@/components/common/PDFExporter';
 import {
   LineChart,
   Line,
@@ -35,22 +33,18 @@ import {
 
 const evmData = {
   asOfDate: '2024-08-10',
-  bac: 2500000, // Budget at Completion
-  pv: 1250000, // Planned Value
-  ev: 1125000, // Earned Value
-  ac: 1180000, // Actual Cost
-  
-  // Calculated metrics
-  sv: -125000, // Schedule Variance (EV - PV)
-  cv: -55000, // Cost Variance (EV - AC)
-  spi: 0.90, // Schedule Performance Index (EV / PV)
-  cpi: 0.95, // Cost Performance Index (EV / AC)
-  
-  // Forecasts
-  eac: 2631579, // Estimate at Completion (BAC / CPI)
-  etc: 1451579, // Estimate to Complete (EAC - AC)
-  vac: -131579, // Variance at Completion (BAC - EAC)
-  tcpi: 1.04, // To-Complete Performance Index
+  bac: 2500000,
+  pv: 1250000,
+  ev: 1125000,
+  ac: 1180000,
+  sv: -125000,
+  cv: -55000,
+  spi: 0.90,
+  cpi: 0.95,
+  eac: 2631579,
+  etc: 1451579,
+  vac: -131579,
+  tcpi: 1.04,
 };
 
 const trendData = [
@@ -84,6 +78,17 @@ const wbsMetrics = [
 ];
 
 export function EVMView() {
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const pdfSections: PDFExportSection[] = [
+    { id: 'overview', name: 'Key Metrics Overview', selector: '[data-section="overview"]' },
+    { id: 'variances', name: 'Variances', selector: '[data-section="variances"]' },
+    { id: 'scurve', name: 'S-Curve Chart', selector: '[data-section="scurve"]' },
+    { id: 'trends', name: 'Performance Trends', selector: '[data-section="trends"]' },
+    { id: 'forecasts', name: 'Forecasts', selector: '[data-section="forecasts"]' },
+    { id: 'wbs', name: 'WBS Analysis', selector: '[data-section="wbs"]' },
+  ];
+
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -93,11 +98,6 @@ export function EVMView() {
     }).format(value);
   };
 
-  const getVarianceStatus = (value: number, inverse = false) => {
-    const isPositive = inverse ? value < 0 : value > 0;
-    return isPositive ? 'success' : value === 0 ? 'secondary' : 'destructive';
-  };
-
   const getIndexStatus = (value: number) => {
     if (value >= 1) return 'success';
     if (value >= 0.9) return 'warning';
@@ -105,7 +105,7 @@ export function EVMView() {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-auto">
+    <div className="flex flex-col h-full overflow-auto" ref={contentRef}>
       {/* Header */}
       <div className="p-6 border-b bg-card">
         <div className="flex items-start justify-between">
@@ -125,9 +125,15 @@ export function EVMView() {
               <Filter className="h-4 w-4 mr-2" />
               Filter
             </Button>
-            <Button>
-              Export Report
-            </Button>
+            <PDFExporter
+              title="EVM Analysis Report"
+              filename="evm-report"
+              contentRef={contentRef}
+              sections={pdfSections}
+              showSectionPicker
+              orientation="landscape"
+              variant="dropdown"
+            />
           </div>
         </div>
       </div>
@@ -143,7 +149,7 @@ export function EVMView() {
 
           <TabsContent value="overview" className="space-y-6">
             {/* Key Metrics */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-4 gap-4" data-section="overview">
               <Card>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Planned Value (PV)</CardTitle>
@@ -202,7 +208,7 @@ export function EVMView() {
             </div>
 
             {/* Variances */}
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-2 gap-4" data-section="variances">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">
@@ -265,7 +271,7 @@ export function EVMView() {
             </div>
 
             {/* S-Curve Chart */}
-            <Card>
+            <Card data-section="scurve">
               <CardHeader>
                 <CardTitle className="text-base">Earned Value S-Curve</CardTitle>
                 <CardDescription>PV, EV, and AC trend over time</CardDescription>
@@ -292,7 +298,7 @@ export function EVMView() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="trends" className="space-y-6">
+          <TabsContent value="trends" className="space-y-6" data-section="trends">
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">Performance Index Trends</CardTitle>
@@ -318,7 +324,7 @@ export function EVMView() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="forecasts" className="space-y-6">
+          <TabsContent value="forecasts" className="space-y-6" data-section="forecasts">
             <div className="grid grid-cols-3 gap-4">
               <Card>
                 <CardHeader className="pb-2">
@@ -385,7 +391,7 @@ export function EVMView() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="wbs" className="space-y-6">
+          <TabsContent value="wbs" className="space-y-6" data-section="wbs">
             <Card>
               <CardHeader>
                 <CardTitle className="text-base">WBS Performance Summary</CardTitle>
@@ -393,41 +399,32 @@ export function EVMView() {
               <CardContent>
                 <div className="space-y-4">
                   {wbsMetrics.map((wbs) => (
-                    <div key={wbs.wbs} className="p-4 rounded-lg border bg-muted/20">
-                      <div className="flex items-center justify-between mb-2">
+                    <div key={wbs.wbs} className="flex items-center gap-4 p-3 rounded-lg border bg-muted/20">
+                      <div className={cn(
+                        'w-3 h-3 rounded-full',
+                        wbs.status === 'green' ? 'bg-success' :
+                        wbs.status === 'red' ? 'bg-destructive' :
+                        'bg-muted-foreground/30'
+                      )} />
+                      <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <span className="font-mono text-sm text-muted-foreground">{wbs.wbs}</span>
                           <span className="font-medium">{wbs.name}</span>
                         </div>
-                        <Badge variant={
-                          wbs.status === 'green' ? 'success' :
-                          wbs.status === 'red' ? 'destructive' : 'secondary'
-                        }>
-                          {wbs.status === 'green' ? 'On Track' : wbs.status === 'red' ? 'Behind' : 'Not Started'}
-                        </Badge>
                       </div>
-                      {wbs.pv > 0 && (
-                        <div className="grid grid-cols-3 gap-4 text-sm">
-                          <div>
-                            <span className="text-muted-foreground">PV:</span>{' '}
-                            <span className="font-medium">{formatCurrency(wbs.pv)}</span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">EV:</span>{' '}
-                            <span className={cn(
-                              "font-medium",
-                              wbs.ev < wbs.pv ? 'text-destructive' : 'text-success'
-                            )}>{formatCurrency(wbs.ev)}</span>
-                          </div>
-                          <div>
-                            <span className="text-muted-foreground">AC:</span>{' '}
-                            <span className={cn(
-                              "font-medium",
-                              wbs.ac > wbs.ev ? 'text-destructive' : 'text-success'
-                            )}>{formatCurrency(wbs.ac)}</span>
-                          </div>
+                      <div className="text-right text-sm">
+                        <div>PV: {formatCurrency(wbs.pv)}</div>
+                        <div className="text-muted-foreground">EV: {formatCurrency(wbs.ev)}</div>
+                      </div>
+                      <div className="text-right text-sm">
+                        <div>AC: {formatCurrency(wbs.ac)}</div>
+                        <div className={cn(
+                          'font-medium',
+                          wbs.ev - wbs.ac >= 0 ? 'text-success' : 'text-destructive'
+                        )}>
+                          CV: {formatCurrency(wbs.ev - wbs.ac)}
                         </div>
-                      )}
+                      </div>
                     </div>
                   ))}
                 </div>

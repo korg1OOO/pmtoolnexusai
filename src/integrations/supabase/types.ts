@@ -1181,6 +1181,44 @@ export type Database = {
           },
         ]
       }
+      notebook_spreadsheets: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+          notebook_id: string
+          sort_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          notebook_id: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          notebook_id?: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notebook_spreadsheets_notebook_id_fkey"
+            columns: ["notebook_id"]
+            isOneToOne: false
+            referencedRelation: "notebooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       notebooks: {
         Row: {
           color: string | null
@@ -1564,6 +1602,56 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spreadsheet_sheets: {
+        Row: {
+          column_widths: Json | null
+          created_at: string
+          data: Json | null
+          frozen_cols: number | null
+          frozen_rows: number | null
+          id: string
+          name: string
+          row_heights: Json | null
+          sort_order: number | null
+          spreadsheet_id: string
+          updated_at: string
+        }
+        Insert: {
+          column_widths?: Json | null
+          created_at?: string
+          data?: Json | null
+          frozen_cols?: number | null
+          frozen_rows?: number | null
+          id?: string
+          name?: string
+          row_heights?: Json | null
+          sort_order?: number | null
+          spreadsheet_id: string
+          updated_at?: string
+        }
+        Update: {
+          column_widths?: Json | null
+          created_at?: string
+          data?: Json | null
+          frozen_cols?: number | null
+          frozen_rows?: number | null
+          id?: string
+          name?: string
+          row_heights?: Json | null
+          sort_order?: number | null
+          spreadsheet_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spreadsheet_sheets_spreadsheet_id_fkey"
+            columns: ["spreadsheet_id"]
+            isOneToOne: false
+            referencedRelation: "notebook_spreadsheets"
             referencedColumns: ["id"]
           },
         ]

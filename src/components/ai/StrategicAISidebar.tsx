@@ -32,11 +32,19 @@ interface StrategicAISidebarProps {
   onToggle: () => void;
 }
 
+interface StrategicRisk {
+  category?: string;
+  risk?: string;
+  title?: string;
+  impact?: string;
+  confidence?: number;
+}
+
 interface StrategicInsight {
   riskCount: number;
   hiddenRiskCount: number;
   timingRiskCount: number;
-  risks: Array<{ id: string; title: string; confidence: number }>;
+  risks: StrategicRisk[];
   recommendations: string;
   stakeholderInsights: Array<{ name: string; role: string; attitude: string }>;
   tradeoffAnalysis: string;
@@ -111,12 +119,7 @@ export function StrategicAISidebar({ isOpen, onToggle }: StrategicAISidebarProps
     }
   };
 
-  // Fetch insights when sidebar opens
-  useEffect(() => {
-    if (isOpen && !insights && !isLoading) {
-      fetchStrategicInsights();
-    }
-  }, [isOpen]);
+  // Removed auto-fetch - user must click button to load insights
 
   return (
     <>
@@ -226,10 +229,18 @@ export function StrategicAISidebar({ isOpen, onToggle }: StrategicAISidebarProps
                       </div>
                       {insights.risks.length > 0 && (
                         <div className="space-y-1">
-                          {insights.risks.slice(0, 2).map((risk) => (
-                            <div key={risk.id} className="text-xs p-2 rounded bg-muted/50">
-                              <p className="font-medium">{risk.title}</p>
-                              <p className="text-muted-foreground">{Math.round(risk.confidence * 100)}% confident</p>
+                          {insights.risks.slice(0, 3).map((risk, idx) => (
+                            <div key={idx} className="text-xs p-2 rounded bg-muted/50">
+                              {risk.category && (
+                                <Badge variant="outline" className="text-[10px] mb-1">{risk.category}</Badge>
+                              )}
+                              <p className="font-medium">{risk.risk || risk.title}</p>
+                              {risk.impact && (
+                                <p className="text-muted-foreground">Impact: {risk.impact}</p>
+                              )}
+                              {risk.confidence && (
+                                <p className="text-muted-foreground">{Math.round(risk.confidence * 100)}% confident</p>
+                              )}
                             </div>
                           ))}
                         </div>

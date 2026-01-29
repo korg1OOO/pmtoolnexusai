@@ -133,11 +133,7 @@ export function CommunicationAISidebar({ isOpen, onToggle }: CommunicationAISide
     }
   };
 
-  useEffect(() => {
-    if (isOpen && !insights && !isLoading) {
-      fetchCommunicationInsights();
-    }
-  }, [isOpen]);
+  // Removed auto-fetch - user must click button to load insights
 
   return (
     <>

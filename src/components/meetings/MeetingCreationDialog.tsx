@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { format } from 'date-fns';
-import { CalendarIcon, Plus, X, Users, Clock, Video, MapPin } from 'lucide-react';
+import { CalendarIcon, Plus, X, Users, Clock, Video, MapPin, Repeat, Target, CheckCircle2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -42,6 +42,8 @@ const meetingSchema = z.object({
   location: z.string().optional(),
   purposeType: z.string().optional(),
   purposeDescription: z.string().optional(),
+  recurringSchedule: z.enum(['none', 'daily', 'weekly', 'bi-weekly', 'monthly']).optional(),
+  recurringEndDate: z.date().optional(),
 });
 
 type MeetingFormData = z.infer<typeof meetingSchema>;
@@ -78,8 +80,12 @@ export function MeetingCreationDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [participants, setParticipants] = useState<ParticipantInput[]>([]);
   const [agendaItems, setAgendaItems] = useState<AgendaItemInput[]>([]);
+  const [expectedOutcomes, setExpectedOutcomes] = useState<string[]>([]);
+  const [successCriteria, setSuccessCriteria] = useState<string[]>([]);
   const [newParticipant, setNewParticipant] = useState({ name: '', email: '', role: 'contributor' });
   const [newAgendaItem, setNewAgendaItem] = useState({ title: '', duration: 15, presenterName: '' });
+  const [newOutcome, setNewOutcome] = useState('');
+  const [newCriterion, setNewCriterion] = useState('');
 
   const {
     register,
@@ -94,11 +100,14 @@ export function MeetingCreationDialog({
       meetingType: 'online',
       sourceType: 'teams',
       purposeType: 'status-update',
+      recurringSchedule: 'none',
     },
   });
 
   const selectedDate = watch('date');
   const meetingType = watch('meetingType');
+  const recurringSchedule = watch('recurringSchedule');
+  const recurringEndDate = watch('recurringEndDate');
 
   const addParticipant = () => {
     if (newParticipant.name.trim()) {
@@ -122,6 +131,28 @@ export function MeetingCreationDialog({
     setAgendaItems(agendaItems.filter((_, i) => i !== index));
   };
 
+  const addOutcome = () => {
+    if (newOutcome.trim()) {
+      setExpectedOutcomes([...expectedOutcomes, newOutcome.trim()]);
+      setNewOutcome('');
+    }
+  };
+
+  const removeOutcome = (index: number) => {
+    setExpectedOutcomes(expectedOutcomes.filter((_, i) => i !== index));
+  };
+
+  const addCriterion = () => {
+    if (newCriterion.trim()) {
+      setSuccessCriteria([...successCriteria, newCriterion.trim()]);
+      setNewCriterion('');
+    }
+  };
+
+  const removeCriterion = (index: number) => {
+    setSuccessCriteria(successCriteria.filter((_, i) => i !== index));
+  };
+
   const onSubmit = async (data: MeetingFormData) => {
     setIsSubmitting(true);
     try {
@@ -138,6 +169,8 @@ export function MeetingCreationDialog({
         location: data.location,
         purpose_type: data.purposeType,
         purpose_description: data.purposeDescription,
+        expected_outcomes: expectedOutcomes.length > 0 ? expectedOutcomes : undefined,
+        success_criteria: successCriteria.length > 0 ? successCriteria : undefined,
         status: 'scheduled',
       };
 
@@ -156,12 +189,20 @@ export function MeetingCreationDialog({
         sort_order: index,
       }));
 
+      // For recurring meetings, we could create multiple meetings here
+      // For now, store the recurrence info in description or handle in backend
+      if (data.recurringSchedule && data.recurringSchedule !== 'none') {
+        meetingInput.description = `${meetingInput.description || ''}\n\n[Recurring: ${data.recurringSchedule}${data.recurringEndDate ? ` until ${format(data.recurringEndDate, 'PPP')}` : ''}]`.trim();
+      }
+
       await onCreateMeeting(meetingInput, participantInputs, agendaInputs);
       
       // Reset form
       reset();
       setParticipants([]);
       setAgendaItems([]);
+      setExpectedOutcomes([]);
+      setSuccessCriteria([]);
       onOpenChange(false);
     } finally {
       setIsSubmitting(false);
@@ -185,6 +226,14 @@ export function MeetingCreationDialog({
     { value: 'observer', label: 'Observer' },
     { value: 'approver', label: 'Approver' },
     { value: 'subject-matter-expert', label: 'Subject Matter Expert' },
+  ];
+
+  const recurringOptions = [
+    { value: 'none', label: 'Does not repeat' },
+    { value: 'daily', label: 'Daily' },
+    { value: 'weekly', label: 'Weekly' },
+    { value: 'bi-weekly', label: 'Bi-weekly' },
+    { value: 'monthly', label: 'Monthly' },
   ];
 
   return (
@@ -373,6 +422,148 @@ export function MeetingCreationDialog({
                     {...register('purposeDescription')}
                     placeholder="Brief purpose..."
                   />
+                </div>
+              </div>
+
+              {/* Recurring Schedule */}
+              <div className="border rounded-lg p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Repeat className="h-4 w-4 text-primary" />
+                  <Label className="text-base font-semibold">Recurring Schedule</Label>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <Label>Repeat</Label>
+                    <Select
+                      value={recurringSchedule || 'none'}
+                      onValueChange={(value) => setValue('recurringSchedule', value as any)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {recurringOptions.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {recurringSchedule && recurringSchedule !== 'none' && (
+                    <div>
+                      <Label>End Date (optional)</Label>
+                      <Popover>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="outline"
+                            className={cn(
+                              'w-full justify-start text-left font-normal',
+                              !recurringEndDate && 'text-muted-foreground'
+                            )}
+                          >
+                            <CalendarIcon className="mr-2 h-4 w-4" />
+                            {recurringEndDate ? format(recurringEndDate, 'PPP') : 'No end date'}
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <Calendar
+                            mode="single"
+                            selected={recurringEndDate}
+                            onSelect={(date) => setValue('recurringEndDate', date)}
+                            disabled={(date) => selectedDate ? date < selectedDate : false}
+                            initialFocus
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Expected Outcomes */}
+              <div className="border rounded-lg p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <Target className="h-4 w-4 text-primary" />
+                  <Label className="text-base font-semibold">Expected Outcomes</Label>
+                </div>
+
+                {expectedOutcomes.length > 0 && (
+                  <div className="space-y-2">
+                    {expectedOutcomes.map((outcome, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-2 rounded bg-muted/50"
+                      >
+                        <span className="text-sm">{outcome}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="iconXs"
+                          onClick={() => removeOutcome(index)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="e.g., Finalize Q1 budget allocation"
+                    value={newOutcome}
+                    onChange={(e) => setNewOutcome(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addOutcome())}
+                    className="flex-1"
+                  />
+                  <Button type="button" variant="outline" size="icon" onClick={addOutcome}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* Success Criteria */}
+              <div className="border rounded-lg p-4 space-y-3">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-4 w-4 text-primary" />
+                  <Label className="text-base font-semibold">Success Criteria</Label>
+                </div>
+
+                {successCriteria.length > 0 && (
+                  <div className="space-y-2">
+                    {successCriteria.map((criterion, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-between p-2 rounded bg-muted/50"
+                      >
+                        <span className="text-sm">{criterion}</span>
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="iconXs"
+                          onClick={() => removeCriterion(index)}
+                        >
+                          <X className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="e.g., All stakeholders agree on timeline"
+                    value={newCriterion}
+                    onChange={(e) => setNewCriterion(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCriterion())}
+                    className="flex-1"
+                  />
+                  <Button type="button" variant="outline" size="icon" onClick={addCriterion}>
+                    <Plus className="h-4 w-4" />
+                  </Button>
                 </div>
               </div>
             </div>

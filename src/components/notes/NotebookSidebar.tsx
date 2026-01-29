@@ -153,7 +153,7 @@ export function NotebookSidebar({
   };
 
   return (
-    <div className="w-64 border-r border-border bg-sidebar flex flex-col h-full">
+    <div className="w-full h-full border-r border-border bg-sidebar flex flex-col overflow-hidden">
       <div className="p-4 border-b border-border">
         <h2 className="font-semibold text-foreground flex items-center gap-2">
           <BookOpen className="h-4 w-4 text-primary" />

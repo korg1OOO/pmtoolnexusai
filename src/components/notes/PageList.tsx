@@ -72,7 +72,7 @@ export function PageList({
   };
 
   return (
-    <div className="w-80 border-r border-border bg-card flex flex-col h-full">
+    <div className="w-full h-full border-r border-border bg-card flex flex-col overflow-hidden">
       <div className="p-4 border-b border-border space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="font-medium text-foreground">{sectionName || 'Pages'}</h3>

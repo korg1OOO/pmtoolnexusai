@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { AppShell } from '@/components/layout/AppShell';
 import { DashboardView } from '@/components/views/DashboardView';
 import { ProjectPlanView } from '@/components/views/ProjectPlanView';
@@ -49,7 +50,23 @@ import { TrackingView } from '@/components/views/TrackingView';
 import { ProjectProvider } from '@/contexts/ProjectContext';
 
 const Index = () => {
-  const [activeView, setActiveView] = useState('dashboard');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const viewFromUrl = searchParams.get('view') || 'dashboard';
+  const [activeView, setActiveView] = useState(viewFromUrl);
+
+  // Sync URL when view changes
+  const handleViewChange = useCallback((view: string) => {
+    setActiveView(view);
+    setSearchParams({ view }, { replace: true });
+  }, [setSearchParams]);
+
+  // Sync state when URL changes (e.g., browser back/forward)
+  useEffect(() => {
+    const urlView = searchParams.get('view') || 'dashboard';
+    if (urlView !== activeView) {
+      setActiveView(urlView);
+    }
+  }, [searchParams]);
 
   const renderView = () => {
     switch (activeView) {
@@ -102,7 +119,7 @@ const Index = () => {
 
   return (
     <ProjectProvider>
-      <AppShell activeView={activeView} onViewChange={setActiveView}>
+      <AppShell activeView={activeView} onViewChange={handleViewChange}>
         {renderView()}
       </AppShell>
     </ProjectProvider>

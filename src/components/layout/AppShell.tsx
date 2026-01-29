@@ -4,6 +4,7 @@ import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { PMCoachSidebar } from '@/components/ai/PMCoachSidebar';
+import { PresenceProvider } from '@/contexts/PresenceContext';
 import { mockProject } from '@/data/mockData';
 
 interface AppShellProps {
@@ -20,33 +21,35 @@ export function AppShell({ children, activeView, onViewChange }: AppShellProps) 
   const showPMCoachToggle = !aiViews.includes(activeView);
 
   return (
-    <TooltipProvider delayDuration={0}>
-      <div className="flex h-screen w-full overflow-hidden bg-background">
-        <Sidebar
-          activeItem={activeView}
-          onItemClick={onViewChange}
-        />
-        <div className={cn(
-          "flex flex-1 flex-col min-w-0 transition-all duration-300",
-          showPMCoach && showPMCoachToggle && "mr-96"
-        )}>
-          <TopBar
-            projectName={mockProject.name}
-            projectCode={mockProject.code}
-            onCreateProject={() => onViewChange('create-project')}
+    <PresenceProvider>
+      <TooltipProvider delayDuration={0}>
+        <div className="flex h-screen w-full overflow-hidden bg-background">
+          <Sidebar
+            activeItem={activeView}
+            onItemClick={onViewChange}
           />
-          <main className="flex-1 overflow-auto">
-            {children}
-          </main>
+          <div className={cn(
+            "flex flex-1 flex-col min-w-0 transition-all duration-300",
+            showPMCoach && showPMCoachToggle && "mr-96"
+          )}>
+            <TopBar
+              projectName={mockProject.name}
+              projectCode={mockProject.code}
+              onCreateProject={() => onViewChange('create-project')}
+            />
+            <main className="flex-1 overflow-auto">
+              {children}
+            </main>
+          </div>
+          {showPMCoachToggle && (
+            <PMCoachSidebar 
+              isOpen={showPMCoach} 
+              onToggle={() => setShowPMCoach(!showPMCoach)} 
+              currentView={activeView}
+            />
+          )}
         </div>
-        {showPMCoachToggle && (
-          <PMCoachSidebar 
-            isOpen={showPMCoach} 
-            onToggle={() => setShowPMCoach(!showPMCoach)} 
-            currentView={activeView}
-          />
-        )}
-      </div>
-    </TooltipProvider>
+      </TooltipProvider>
+    </PresenceProvider>
   );
 }

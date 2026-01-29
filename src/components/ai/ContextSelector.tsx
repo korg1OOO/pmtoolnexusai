@@ -138,14 +138,23 @@ export function ContextSelector({ selectedContexts, onContextChange, currentView
     onContextChange(selectedContexts.filter(c => c.type === 'text'));
   };
 
-  // Auto-add current page if nothing selected
+  // Track if we've already auto-added to prevent infinite loops
+  const hasAutoAddedRef = React.useRef(false);
+
+  // Auto-add current page only once on mount when contexts are empty
   React.useEffect(() => {
-    if (selectedContexts.length === 0) {
+    if (!hasAutoAddedRef.current && selectedContexts.length === 0) {
       const currentPage = AVAILABLE_PAGES.find(p => p.id === currentView);
       if (currentPage) {
+        hasAutoAddedRef.current = true;
         onContextChange([currentPage]);
       }
     }
+  }, [currentView, selectedContexts.length, onContextChange]);
+
+  // Reset ref when view changes to allow re-initialization
+  React.useEffect(() => {
+    hasAutoAddedRef.current = false;
   }, [currentView]);
 
   return (

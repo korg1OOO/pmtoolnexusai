@@ -1,337 +1,278 @@
 
 
-# Microsoft Project Feature Enhancement Plan
+# Chat Components Consolidation Plan
 
 ## Overview
 
-This plan adds enterprise-grade MS Project features to the existing Project Plan and Gantt Chart, building on the current database-backed implementation.
+This plan consolidates **ProjectChat.tsx** (622 lines) and **TeamChatView.tsx** (933 lines) into a shared architecture, eliminating approximately **400+ lines of duplicated code** while preserving the distinct UI patterns for each use case.
 
 ---
 
-## Current State Analysis
+## Problem Analysis
 
-### Already Implemented
-- Hierarchical WBS task structure with parent/child relationships
-- Four dependency types (FS, SS, FF, SF) with lag support
-- Baseline management (project and task level)
-- Drag-to-reschedule Gantt bars
-- Real-time sync via Supabase subscriptions
-- Inline editing, keyboard navigation
-- Critical path flag (manual)
+Both components contain nearly identical implementations for:
 
-### Missing MS Project Features
-1. **Resource Management** - No resources table, assignments, or leveling
-2. **Calendar System** - No working calendars, holidays, or non-working time
-3. **Critical Path Algorithm** - Manual flag only, no automatic calculation
-4. **Constraint Types** - No "Must Start On", "No Earlier Than", etc.
-5. **Slack/Float Calculation** - No early/late start-finish dates
-6. **Auto-Scheduling** - No automatic date recalculation on changes
-7. **Cost Management** - Tasks have no cost fields
-8. **Work vs Duration** - No effort-driven scheduling
-9. **Percent Work Complete** - Only percent complete, no work tracking
-10. **Multiple Baselines** - Baseline system exists but UI limited
-11. **Predecessor Column** - No visual predecessor editing in grid
-12. **Resource Histogram** - No workload visualization
+| Duplicated Logic | ProjectChat.tsx | TeamChatView.tsx |
+|------------------|-----------------|------------------|
+| Message fetching from Supabase | Lines 121-147 | Lines 364-391 |
+| Realtime subscription setup | Lines 150-199 | Lines 394-424 |
+| Send message handler | Lines 235-261 | Lines 434-459 |
+| Toggle pin handler | Lines 268-285 | Lines 466-476 |
+| Edit message handler | Lines 287-313 | Lines 478-493 |
+| Delete message handler | Lines 315-331 | Lines 495-504 |
+| Forward message handler | Lines 333-359 | Lines 506-527 |
+| Add/remove reaction handlers | Lines 361-394 | Lines 529-560 |
+| Jump to message | Lines 408-415 | Lines 562-569 |
+| Toggle notifications | Lines 396-406 | Lines 571-578 |
+| Parse reactions/read_by JSONB | Lines 137-143 | Lines 379-385 |
+| Render @mentions | Lines 417-425 | Lines 593-601 |
+| Get pinned messages | Lines 427-431 | Lines 581-584 |
+| Filter visible messages | Line 432 | Line 586 |
 
----
-
-## Implementation Plan
-
-### Phase 1: Database Schema Enhancements
-
-Add new tables and columns to support MS Project features:
-
-**New Tables:**
-```
-resources
-- id, project_id, name, email
-- type (work/material/cost)
-- max_units (100% = 1.0)
-- standard_rate, overtime_rate
-- calendar_id, created_at
-
-resource_assignments
-- id, task_id, resource_id
-- units (percent allocation)
-- work_hours, actual_work
-- start_date, end_date
-- cost, created_at
-
-project_calendars
-- id, project_id, name, is_default
-- working_days (jsonb: {mon: true...})
-- work_hours (jsonb: {start: "09:00", end: "17:00"})
-
-calendar_exceptions
-- id, calendar_id, name
-- exception_type (holiday/working)
-- start_date, end_date
-- work_hours (jsonb, null for non-working)
-```
-
-**Task Table Additions:**
-- constraint_type (enum: ASAP, ALAP, MustStartOn, MustFinishOn, etc.)
-- constraint_date
-- work_hours (effort in hours)
-- actual_work_hours
-- remaining_work
-- cost, actual_cost
-- fixed_cost, fixed_cost_accrual
-- early_start, early_finish
-- late_start, late_finish
-- free_slack, total_slack
-- effort_driven (boolean)
+**UI Differences (to be preserved):**
+- **ProjectChat**: Floating overlay widget (320x500px), compact bubble-style messages, grouped by sender
+- **TeamChatView**: Full-page layout with channel sidebar, member list, framer-motion animations, individual message rows
 
 ---
 
-### Phase 2: Critical Path Calculation Engine
+## Solution Architecture
 
-Create a server-side function for CPM (Critical Path Method):
-
-```
-calculate_critical_path(project_id)
-├── Build dependency graph
-├── Forward pass (calculate Early Start/Finish)
-├── Backward pass (calculate Late Start/Finish)
-├── Calculate Total Slack = Late Start - Early Start
-├── Mark tasks with Slack = 0 as critical
-└── Return updated task data
-```
-
-**Implementation approach:**
-- Edge function or database function
-- Triggered on task/dependency changes
-- Updates is_critical, early_start, late_start, etc.
-- Respects calendar exceptions
-
----
-
-### Phase 3: Enhanced Task Grid (MS Project Style)
-
-New columns for the DatabaseTaskGrid:
-
-| Column | Feature |
-|--------|---------|
-| Predecessors | Editable, format: "3FS+2d, 5SS" |
-| Successors | Display only, auto-calculated |
-| Resource Names | Multi-select dropdown |
-| Work | Effort in hours, editable |
-| Constraint | Type + Date selector |
-| Deadline | Warning indicator |
-| Free Slack | Days display |
-| Total Slack | Days display |
-| Cost | Calculated from resources + fixed |
-| Baseline Start | From saved baseline |
-| Baseline Finish | From saved baseline |
-| Variance | Finish - Baseline Finish |
-
-**Additional Grid Features:**
-- Column resizing and reordering
-- Column visibility toggle dialog
-- Split view (grid + details pane)
-- Task Information dialog (all fields)
-- Copy/Paste tasks
-- Task Notes panel
-
----
-
-### Phase 4: Resource Management Views
-
-**Resource Sheet:**
-- List all resources with rates
-- Availability calendar
-- Assignments overview
-
-**Resource Usage View:**
-- Time-phased work by resource
-- Over-allocation highlighting (red)
-- Workload histogram
-
-**Task Usage View:**
-- Time-phased work by task
-- Resource breakdown per task
-
-**Resource Leveling:**
-- Auto-level algorithm
-- Priority-based leveling
-- Level selected resources only
-
----
-
-### Phase 5: Enhanced Gantt Chart
-
-New Gantt features:
-
-**Visual Elements:**
-- Deadline markers (green down arrow)
-- Constraint indicators
-- Slack bars (thin gray extensions)
-- Baseline bars (gray behind actual)
-- Progress lines (serpentine through timeline)
-
-**Interactions:**
-- Link tasks by dragging (visual dependency creation)
-- Double-click to open Task Information
-- Right-click context menu
-- Zoom to fit / zoom to selection
-- Scroll to task button
-
-**Timeline Enhancements:**
-- Non-working time shading
-- Today line with date
-- Status date line
-- Gridline customization
-
----
-
-### Phase 6: Calendar Management
-
-**Project Calendar Dialog:**
-- Set working hours (e.g., 9AM-5PM)
-- Select working days (Mon-Fri)
-- Add holidays/exceptions
-- Copy calendar from template
-
-**Resource Calendar:**
-- Inherit from project or custom
-- Personal exceptions (vacation)
-- Part-time schedules
-
-**Duration Calculation:**
-- Account for non-working days
-- Work hours to duration conversion
-
----
-
-### Phase 7: Auto-Scheduling Engine
-
-When enabled, changes trigger automatic recalculation:
-
-```
-Task date changes → Update successors
-Dependency changes → Recalculate chain
-Resource assignment → Recalculate work/duration
-Calendar changes → Recalculate all tasks
-```
-
-**Scheduling Modes:**
-- Auto-schedule (default)
-- Manually scheduled (fixed dates)
-- Per-task toggle
-
----
-
-### Phase 8: Baseline & Tracking
-
-**Multiple Baselines:**
-- Save up to 10 baselines
-- Clear baseline function
-- Compare any two baselines
-
-**Tracking Table View:**
-- Actual Start/Finish
-- Remaining Duration
-- Percent Complete
-- Physical % Complete (separate from duration %)
-
-**Variance Analysis:**
-- Start Variance
-- Finish Variance
-- Work Variance
-- Cost Variance
-
----
-
-## Technical Implementation Details
-
-### Database Migration SQL (Summary)
-
-```sql
--- New enums
-CREATE TYPE constraint_type AS ENUM ('ASAP', 'ALAP', 'MSO', 'MFO', 'SNET', 'SNLT', 'FNET', 'FNLT');
-CREATE TYPE resource_type AS ENUM ('work', 'material', 'cost');
-
--- Resources table
-CREATE TABLE resources (...);
-
--- Resource assignments
-CREATE TABLE resource_assignments (...);
-
--- Project calendars
-CREATE TABLE project_calendars (...);
-
--- Calendar exceptions
-CREATE TABLE calendar_exceptions (...);
-
--- Add columns to tasks
-ALTER TABLE tasks ADD COLUMN constraint_type constraint_type DEFAULT 'ASAP';
-ALTER TABLE tasks ADD COLUMN constraint_date date;
-ALTER TABLE tasks ADD COLUMN work_hours numeric DEFAULT 0;
-ALTER TABLE tasks ADD COLUMN early_start date;
-ALTER TABLE tasks ADD COLUMN late_finish date;
-ALTER TABLE tasks ADD COLUMN total_slack integer;
--- ... more columns
-```
-
-### New React Components
-
-```
-src/components/planning/
-├── MSProjectGrid.tsx          # Enhanced grid with all columns
-├── ResourceSheet.tsx          # Resource management
-├── ResourceUsageView.tsx      # Time-phased workload
-├── TaskInformationDialog.tsx  # Full task editor
-├── DependencyEditor.tsx       # Visual link editing
-├── CalendarDialog.tsx         # Working time setup
-├── BaselineManager.tsx        # Multi-baseline controls
-└── CriticalPathEngine.ts      # CPM algorithm
-
+```text
 src/hooks/
-├── useResources.ts            # Resource CRUD
-├── useResourceAssignments.ts  # Assignment management
-├── useCalendars.ts            # Calendar operations
-├── useCriticalPath.ts         # CPM calculation trigger
-└── useAutoSchedule.ts         # Auto-scheduling logic
-```
+  useChatEngine.ts          <- NEW: Core chat logic (fetch, send, CRUD, reactions)
+  useChatPresence.ts        <- EXISTING: Typing indicators
+  useMentionNotifications.ts <- EXISTING: Push notifications
+  useProjectChat.ts         <- DELETE: Already replaced by inline logic
 
-### Edge Functions
+src/components/chat/
+  ChatEngine/
+    types.ts                <- NEW: Shared ChatMessage interface and types
+    utils.ts                <- NEW: Shared utilities (getInitials, getColorForUser, formatMessageTime)
+  MessageBubble.tsx         <- NEW: Reusable message with reactions, threading, edit state
+  ComposeArea.tsx           <- NEW: Shared input area with mentions, attachments, reply preview
 
-```
-supabase/functions/
-├── calculate-critical-path/   # CPM calculation
-├── auto-schedule/             # Scheduling engine
-├── level-resources/           # Resource leveling
-└── recalculate-dates/         # Calendar-aware dates
+src/components/collaboration/
+  ProjectChat.tsx           <- REFACTORED: Uses useChatEngine + compact UI wrapper
+
+src/components/views/
+  TeamChatView.tsx          <- REFACTORED: Uses useChatEngine + full-page UI wrapper
 ```
 
 ---
 
-## Implementation Priority
+## Implementation Steps
 
-| Priority | Feature | Effort | Status |
-|----------|---------|--------|--------|
-| 1 | Critical Path Algorithm | High | ✅ Done |
-| 2 | Predecessor Column in Grid | Medium | ✅ Done |
-| 3 | Resource Table + Assignments | High | ✅ Done |
-| 4 | Constraint Types | Medium | ✅ Done |
-| 5 | Slack/Float Display | Low | ✅ Done |
-| 6 | Project Calendar | Medium | ✅ Done |
-| 7 | Resource Histogram | High | 🔲 Pending |
-| 8 | Auto-Scheduling | High | 🔲 Pending |
-| 9 | Multiple Baselines UI | Low | 🔲 Pending |
-| 10 | Variance Columns | Low | 🔲 Pending |
+### Phase 1: Create Shared Types and Utilities
+
+**1.1 Create `src/components/chat/ChatEngine/types.ts`**
+
+Define shared interfaces extracted from both components:
+- `ChatMessage` - unified message structure with all JSONB fields
+- `Reaction` - emoji reaction with user array
+- `ReadReceipt` - read receipt with userId/timestamp
+- `EditHistoryEntry` - edit history tracking
+- `PinnedMessage` - pinned message display type
+
+**1.2 Create `src/components/chat/ChatEngine/utils.ts`**
+
+Extract shared utility functions:
+- `getInitials(email: string): string` - avatar initials from email
+- `getColorForUser(userId: string): string` - deterministic color from user ID
+- `formatMessageTime(dateStr: string): string` - relative time formatting (Today, Yesterday, date)
+- `renderMentions(content: string): ReactNode` - @mention highlighting
+- `parseMessageJsonFields(msg: DbMessage): ChatMessage` - JSONB parsing for reactions/read_by/edit_history
 
 ---
 
-## Summary
+### Phase 2: Create the useChatEngine Hook
 
-This enhancement transforms the Project Plan into a true MS Project alternative with:
+**2.1 Create `src/hooks/useChatEngine.ts`**
 
-- **Full scheduling engine** with CPM critical path
-- **Resource management** with leveling
-- **Calendar system** for working time
-- **Constraint types** for complex scheduling
-- **Baseline tracking** with variance analysis
+A comprehensive hook that encapsulates all chat business logic:
 
-All features will be database-backed with real-time sync, maintaining the existing Supabase architecture.
+```typescript
+interface UseChatEngineOptions {
+  projectId: string | null;
+  onNewMessage?: (msg: ChatMessage) => void;
+}
+
+interface UseChatEngineReturn {
+  // State
+  messages: ChatMessage[];
+  isLoading: boolean;
+  isSending: boolean;
+  
+  // Derived data
+  pinnedMessages: PinnedMessage[];
+  visibleMessages: ChatMessage[];
+  
+  // Message CRUD
+  sendMessage: (content: string, attachment?: AttachmentData, replyTo?: string) => Promise<boolean>;
+  editMessage: (messageId: string, newContent: string) => Promise<boolean>;
+  deleteMessage: (messageId: string) => Promise<boolean>;
+  forwardMessage: (msg: ChatMessage, targetProjectId: string, additionalText?: string) => Promise<boolean>;
+  
+  // Features
+  togglePin: (messageId: string, currentPinned: boolean) => Promise<void>;
+  addReaction: (messageId: string, emoji: string) => Promise<void>;
+  removeReaction: (messageId: string, emoji: string) => Promise<void>;
+  updateReadReceipts: (messageId: string) => Promise<void>;
+  
+  // Helpers
+  getParentMessage: (replyToId: string | null) => ChatMessage | undefined;
+  jumpToMessage: (messageId: string, refs: Map<string, HTMLDivElement>) => void;
+}
+```
+
+**Implementation details:**
+- Fetch messages from `project_messages` table on mount
+- Subscribe to Supabase Realtime for INSERT/UPDATE/DELETE events
+- Parse JSONB fields (reactions, read_by, edit_history) consistently
+- Handle optimistic updates where appropriate
+- Clean up subscription on unmount
+- Integrate with `useChatPresence` and `useMentionNotifications` internally or allow external composition
+
+---
+
+### Phase 3: Create Reusable Message Components
+
+**3.1 Create `src/components/chat/MessageBubble.tsx`**
+
+A flexible message component that adapts to different layouts:
+
+```typescript
+interface MessageBubbleProps {
+  message: ChatMessage;
+  currentUserId?: string;
+  variant: 'compact' | 'full';  // compact = ProjectChat, full = TeamChatView
+  isEditing: boolean;
+  parentMessage?: ChatMessage;
+  replyCount: number;
+  lastReplyTime?: string;
+  
+  // Handlers
+  onReply: () => void;
+  onForward: () => void;
+  onPin: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  onViewHistory: () => void;
+  onAddReaction: (emoji: string) => void;
+  onRemoveReaction: (emoji: string) => void;
+  onJumpToMessage: (id: string) => void;
+  onSaveEdit: (newContent: string) => void;
+  onCancelEdit: () => void;
+  
+  // Ref for scroll-to
+  messageRef?: (el: HTMLDivElement | null) => void;
+}
+```
+
+**Variants:**
+- `compact`: Bubble-style with colored backgrounds, grouped sender display
+- `full`: Row-based with avatar, timestamp inline, framer-motion animations
+
+**3.2 Create `src/components/chat/ComposeArea.tsx`**
+
+Unified message composition component:
+
+```typescript
+interface ComposeAreaProps {
+  value: string;
+  onChange: (value: string) => void;
+  onSubmit: () => void;
+  onTyping: () => void;
+  variant: 'compact' | 'full';
+  
+  // Optional features
+  replyingTo?: ChatMessage | null;
+  onCancelReply?: () => void;
+  pendingAttachment?: AttachmentData | null;
+  onAttach?: (attachment: AttachmentData) => void;
+  onRemoveAttachment?: () => void;
+  
+  mentionableUsers: MentionUser[];
+  channelName?: string;  // For placeholder in TeamChatView
+  isLoading: boolean;
+  disabled: boolean;
+}
+```
+
+---
+
+### Phase 4: Refactor ProjectChat.tsx
+
+**4.1 Update `src/components/collaboration/ProjectChat.tsx`**
+
+Reduce from ~622 lines to ~200 lines:
+
+1. Import and use `useChatEngine` for all data/logic
+2. Import and use `MessageBubble` with `variant="compact"`
+3. Import and use `ComposeArea` with `variant="compact"`
+4. Keep only:
+   - Floating overlay positioning/toggle logic
+   - Message grouping by sender (UI-specific)
+   - Unread count badge management
+   - Compact layout styling
+
+---
+
+### Phase 5: Refactor TeamChatView.tsx
+
+**5.1 Update `src/components/views/TeamChatView.tsx`**
+
+Reduce from ~933 lines to ~450 lines:
+
+1. Import and use `useChatEngine` for all data/logic
+2. Import and use `MessageBubble` with `variant="full"`
+3. Import and use `ComposeArea` with `variant="full"`
+4. Keep only:
+   - `ChannelSidebar` component (UI-specific, currently mock data)
+   - `MembersSidebar` component (UI-specific, currently mock data)
+   - Full-page layout with header toolbar
+   - Framer-motion animation wrapper around message list
+   - Date separator ("Today") rendering
+
+---
+
+### Phase 6: Cleanup
+
+**6.1 Delete deprecated file**
+- Remove `src/hooks/useProjectChat.ts` (no longer used, logic moved to useChatEngine)
+
+**6.2 Update imports**
+- Ensure all chat-related imports point to the new shared modules
+
+---
+
+## File Changes Summary
+
+| Action | File | Est. Lines |
+|--------|------|------------|
+| CREATE | `src/components/chat/ChatEngine/types.ts` | ~60 |
+| CREATE | `src/components/chat/ChatEngine/utils.ts` | ~80 |
+| CREATE | `src/hooks/useChatEngine.ts` | ~250 |
+| CREATE | `src/components/chat/MessageBubble.tsx` | ~200 |
+| CREATE | `src/components/chat/ComposeArea.tsx` | ~120 |
+| REFACTOR | `src/components/collaboration/ProjectChat.tsx` | 622 -> ~200 |
+| REFACTOR | `src/components/views/TeamChatView.tsx` | 933 -> ~450 |
+| DELETE | `src/hooks/useProjectChat.ts` | -102 |
+
+**Net reduction: ~555 lines** (1,555 current -> ~1,000 after refactor)
+
+---
+
+## Technical Notes
+
+1. **Supabase Realtime**: Both components subscribe to the same `project_messages` table. The hook will create one subscription per `projectId`, preventing duplicate listeners.
+
+2. **Type Safety**: The shared types ensure consistent handling of JSONB fields (`reactions`, `read_by`, `edit_history`) across all consumers.
+
+3. **Backward Compatibility**: Both UI components will behave identically to current implementations - this is purely an internal refactor.
+
+4. **Future Extensions**: The `useChatEngine` hook can easily support:
+   - Channel-based filtering (for real channel implementation)
+   - Direct messages (by filtering on user pairs)
+   - Message search at the engine level
+   - Pagination/infinite scroll
 

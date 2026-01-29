@@ -104,11 +104,7 @@ export function MeetingAISidebar({ isOpen, onToggle, meeting }: MeetingAISidebar
     }
   };
 
-  useEffect(() => {
-    if (isOpen && meeting && !insights) {
-      fetchMeetingInsights();
-    }
-  }, [isOpen, meeting]);
+  // Removed auto-fetch - user must click button to load insights
 
   // Reset insights when meeting changes
   useEffect(() => {

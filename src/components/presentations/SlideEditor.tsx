@@ -15,12 +15,18 @@ import TableCell from '@tiptap/extension-table-cell';
 import TableHeader from '@tiptap/extension-table-header';
 import type { PresentationSlide } from '@/hooks/useSlides';
 import { cn } from '@/lib/utils';
+import { EmbeddedDashboardWidget, EmbeddedComponentData } from './EmbeddedDashboardWidget';
 
 interface SlideEditorProps {
   slide: PresentationSlide | null;
   onContentChange: (content: string) => void;
   onEditorReady: (editor: ReturnType<typeof useEditor>) => void;
   isEditable?: boolean;
+  embeddedComponents?: EmbeddedComponentData[];
+  isActivePresentation?: boolean;
+  onRefreshComponent?: (componentId: string) => void;
+  onToggleLive?: (componentId: string, isLive: boolean) => void;
+  onRemoveComponent?: (componentId: string) => void;
 }
 
 export function SlideEditor({
@@ -28,6 +34,11 @@ export function SlideEditor({
   onContentChange,
   onEditorReady,
   isEditable = true,
+  embeddedComponents = [],
+  isActivePresentation = false,
+  onRefreshComponent,
+  onToggleLive,
+  onRemoveComponent,
 }: SlideEditorProps) {
   const editor = useEditor({
     extensions: [
@@ -142,10 +153,29 @@ export function SlideEditor({
 
   return (
     <div
-      className="h-full overflow-auto bg-card rounded-lg shadow-lg border border-border"
+      className="h-full overflow-auto bg-card rounded-lg shadow-lg border border-border relative"
       style={getBackgroundStyle()}
     >
       <EditorContent editor={editor} className="h-full" />
+      
+      {/* Embedded Dashboard Components Layer */}
+      {embeddedComponents.length > 0 && (
+        <div className="absolute inset-0 pointer-events-none p-4">
+          <div className="flex flex-wrap gap-4 pointer-events-auto">
+            {embeddedComponents.map((component) => (
+              <EmbeddedDashboardWidget
+                key={component.id}
+                data={component}
+                isActive={isActivePresentation}
+                isEditable={isEditable}
+                onRefresh={onRefreshComponent || (() => {})}
+                onToggleLive={onToggleLive || (() => {})}
+                onRemove={onRemoveComponent || (() => {})}
+              />
+            ))}
+          </div>
+        </div>
+      )}
       
       {/* Shapes Layer */}
       {slide.shapes && slide.shapes.length > 0 && (

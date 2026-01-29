@@ -46,6 +46,8 @@ import {
   Type,
   Palette,
   Highlighter,
+  LayoutDashboard,
+  RefreshCw,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -59,8 +61,12 @@ interface PresentationToolbarProps {
   onInsertImage: () => void;
   onInsertShape: () => void;
   onInsertChart: () => void;
+  onInsertComponent?: () => void;
+  onRefreshComponents?: () => void;
   onAIGenerate: () => void;
   saveStatus: 'saved' | 'saving' | 'unsaved';
+  hasEmbeddedComponents?: boolean;
+  isActivePresentation?: boolean;
 }
 
 const COLORS = [
@@ -80,8 +86,12 @@ export function PresentationToolbar({
   onInsertImage,
   onInsertShape,
   onInsertChart,
+  onInsertComponent,
+  onRefreshComponents,
   onAIGenerate,
   saveStatus,
+  hasEmbeddedComponents,
+  isActivePresentation,
 }: PresentationToolbarProps) {
   const setLink = useCallback(() => {
     if (!editor) return;
@@ -323,8 +333,29 @@ export function PresentationToolbar({
         <Button variant="ghost" size="iconSm" onClick={onInsertChart}>
           <BarChart3 className="h-4 w-4" />
         </Button>
+        {onInsertComponent && (
+          <Button variant="ghost" size="iconSm" onClick={onInsertComponent} title="Insert Dashboard Component">
+            <LayoutDashboard className="h-4 w-4" />
+          </Button>
+        )}
 
         <Separator orientation="vertical" className="h-6 mx-1" />
+
+        {/* Refresh Components */}
+        {hasEmbeddedComponents && onRefreshComponents && (
+          <>
+            <Button 
+              variant="ghost" 
+              size="iconSm" 
+              onClick={onRefreshComponents}
+              title={isActivePresentation ? "Refresh all live components" : "Activate presentation to refresh"}
+              className={cn(!isActivePresentation && 'opacity-50')}
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+            <Separator orientation="vertical" className="h-6 mx-1" />
+          </>
+        )}
 
         {/* History */}
         <Button

@@ -3,6 +3,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import {
   Presentation,
   Plus,
@@ -10,20 +12,29 @@ import {
   ChevronLeft,
   Loader2,
   FolderPlus,
+  Sparkles,
 } from 'lucide-react';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { usePresentationFolders } from '@/hooks/usePresentationFolders';
 import { usePresentations, Presentation as PresentationType } from '@/hooks/usePresentations';
 import { useSlides } from '@/hooks/useSlides';
+import { useEmbeddedComponents } from '@/hooks/useEmbeddedComponents';
+import { useActivePresentation } from '@/hooks/useActivePresentation';
+import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 import {
   PresentationSidebar,
   PresentationToolbar,
   SlideEditor,
   SlidePropertiesPanel,
   SpeakerNotesPanel,
+  ComponentPicker,
+  ShapeLibrary,
 } from '@/components/presentations';
 import type { Editor } from '@tiptap/react';
 import type { SlideShape } from '@/hooks/useSlides';
+import type { EmbeddableComponent } from '@/lib/embeddableComponents';
+import type { EmbeddedComponentData } from '@/components/presentations/EmbeddedDashboardWidget';
 
 export function PresentationsView() {
   const { settings } = useProjectContext();
@@ -43,6 +54,12 @@ export function PresentationsView() {
   const [showCollaborators, setShowCollaborators] = useState(false);
   const [saveStatus, setSaveStatus] = useState<'saved' | 'saving' | 'unsaved'>('saved');
   const [editorInstance, setEditorInstance] = useState<Editor | null>(null);
+  const [showComponentPicker, setShowComponentPicker] = useState(false);
+  const [showAIGenerateDialog, setShowAIGenerateDialog] = useState(false);
+  const [aiPrompt, setAIPrompt] = useState('');
+  const [aiGenerating, setAIGenerating] = useState(false);
+  const [showShapeLibrary, setShowShapeLibrary] = useState(false);
+  const { toast } = useToast();
 
   // Hooks
   const { folders, loading: foldersLoading, buildFolderTree, createFolder, deleteFolder, renameFolder } = usePresentationFolders(projectId);
@@ -59,8 +76,21 @@ export function PresentationsView() {
     saveSlideDebounced,
     uploadImage,
   } = useSlides(selectedPresentationId || undefined);
-
-  // Build folder tree with presentation counts
+  
+  // Embedded components hooks
+  const {
+    addEmbeddedComponent,
+    removeEmbeddedComponent,
+    updateComponentLiveStatus,
+    refreshComponent,
+    refreshAllComponents,
+  } = useEmbeddedComponents(selectedSlideId || undefined);
+  
+  const {
+    activePresentation,
+    setActivePresentationId,
+    isPresentation: isActivePresentation,
+  } = useActivePresentation();
   const presentationCounts = presentations.reduce((acc, p) => {
     if (p.folder_id) {
       acc[p.folder_id] = (acc[p.folder_id] || 0) + 1;
@@ -205,6 +235,72 @@ export function PresentationsView() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [presentationMode, slides, selectedSlideId]);
 
+  // AI Generate slide content handler
+  const handleAIGenerate = async () => {
+    if (!aiPrompt.trim() || !selectedSlideId || !editorInstance) return;
+
+    setAIGenerating(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('ai-orchestrator', {
+        body: {
+          agentType: 'document',
+          context: {
+            action: 'generate_slide_content',
+            prompt: aiPrompt,
+            slideTemplate: selectedSlide?.template || 'blank',
+            presentationTitle: selectedPresentation?.title || 'Untitled',
+          },
+          userMessage: `Generate professional slide content for: ${aiPrompt}`,
+        },
+      });
+
+      if (error) throw error;
+
+      const content = data?.response || data?.message || '';
+      if (content) {
+        // Convert to HTML-friendly format
+        const htmlContent = `<h1>${selectedSlide?.title || 'Slide Title'}</h1>\n${content.replace(/\n/g, '<br/>')}`;
+        editorInstance.commands.setContent(htmlContent);
+        handleSlideContentChange(htmlContent);
+        toast({
+          title: 'Content Generated',
+          description: 'AI has generated content for your slide',
+        });
+      }
+    } catch (error) {
+      console.error('AI generation error:', error);
+      toast({
+        title: 'Generation Failed',
+        description: 'Failed to generate slide content',
+        variant: 'destructive',
+      });
+    } finally {
+      setAIGenerating(false);
+      setShowAIGenerateDialog(false);
+      setAIPrompt('');
+    }
+  };
+
+  // Handle inserting embedded component
+  const handleInsertComponent = async (component: EmbeddableComponent) => {
+    if (!selectedSlideId) return;
+    
+    const position = {
+      x: 50,
+      y: 50,
+      width: component.defaultSize.width,
+      height: component.defaultSize.height,
+    };
+    
+    await addEmbeddedComponent(component, position);
+    setShowComponentPicker(false);
+  };
+
+  // Get embedded components for current slide
+  const currentSlideComponents = (selectedSlide?.embedded_components as unknown as EmbeddedComponentData[]) || [];
+  const hasEmbeddedComponents = currentSlideComponents.length > 0;
+  const isPresentationActive = selectedPresentationId ? isActivePresentation(selectedPresentationId) : false;
+
   const isLoading = foldersLoading || presentationsLoading;
 
   if (isLoading) {
@@ -222,26 +318,37 @@ export function PresentationsView() {
         editor={editorInstance}
         title={selectedPresentation?.title || ''}
         onTitleChange={(title) => {
-          // Would need updatePresentation hook
+          if (selectedPresentationId) {
+            updatePresentation(selectedPresentationId, { title });
+          }
         }}
         onPresent={() => setPresentationMode(true)}
         onExport={() => {
-          // PDF export - future implementation
+          toast({
+            title: 'Export',
+            description: 'PDF export feature coming soon',
+          });
         }}
         onShare={() => {
-          // Share dialog - future implementation
+          toast({
+            title: 'Share',
+            description: 'Sharing feature coming soon',
+          });
         }}
         onInsertImage={handleInsertImage}
-        onInsertShape={() => {
-          // Shape library is triggered via the ShapeLibrary component
-        }}
+        onInsertShape={handleInsertShape}
         onInsertChart={() => {
-          // Chart picker - future implementation
+          toast({
+            title: 'Insert Chart',
+            description: 'Chart insertion feature coming soon',
+          });
         }}
-        onAIGenerate={() => {
-          // AI generation - future implementation
-        }}
+        onInsertComponent={() => setShowComponentPicker(true)}
+        onRefreshComponents={refreshAllComponents}
+        onAIGenerate={() => setShowAIGenerateDialog(true)}
         saveStatus={saveStatus}
+        hasEmbeddedComponents={hasEmbeddedComponents}
+        isActivePresentation={isPresentationActive}
       />
 
       <div className="flex-1 flex overflow-hidden">
@@ -279,6 +386,11 @@ export function PresentationsView() {
                     onContentChange={handleSlideContentChange}
                     onEditorReady={handleEditorReady}
                     isEditable={true}
+                    embeddedComponents={currentSlideComponents}
+                    isActivePresentation={isPresentationActive}
+                    onRefreshComponent={refreshComponent}
+                    onToggleLive={updateComponentLiveStatus}
+                    onRemoveComponent={removeEmbeddedComponent}
                   />
                 </div>
               </div>
@@ -413,6 +525,59 @@ export function PresentationsView() {
               </Button>
               <Button onClick={() => handleCreatePresentation(newPresentationTitle, selectedFolderId)} disabled={!newPresentationTitle.trim()}>
                 Create
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Component Picker Dialog */}
+      <ComponentPicker
+        open={showComponentPicker}
+        onOpenChange={setShowComponentPicker}
+        onSelectComponent={handleInsertComponent}
+      />
+
+      {/* AI Generate Dialog */}
+      <Dialog open={showAIGenerateDialog} onOpenChange={setShowAIGenerateDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              AI Generate Slide Content
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-4">
+            <div className="space-y-2">
+              <Label htmlFor="ai-prompt">What would you like to create?</Label>
+              <Textarea
+                id="ai-prompt"
+                placeholder="E.g., 'Create an executive summary for Q4 project status' or 'Generate key milestones timeline'"
+                value={aiPrompt}
+                onChange={(e) => setAIPrompt(e.target.value)}
+                rows={4}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" onClick={() => setShowAIGenerateDialog(false)}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleAIGenerate} 
+                disabled={!aiPrompt.trim() || aiGenerating}
+                className="gap-2"
+              >
+                {aiGenerating ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Generating...
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-4 w-4" />
+                    Generate
+                  </>
+                )}
               </Button>
             </div>
           </div>

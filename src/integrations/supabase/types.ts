@@ -14,6 +14,107 @@ export type Database = {
   }
   public: {
     Tables: {
+      actions: {
+        Row: {
+          blocked_by: string | null
+          completed_at: string | null
+          created_at: string
+          created_by_id: string | null
+          created_by_name: string | null
+          dependencies: Json | null
+          description: string | null
+          due_date: string | null
+          history: Json | null
+          id: string
+          linked_items: Json | null
+          notes: string | null
+          owner_id: string | null
+          owner_name: string | null
+          priority: Database["public"]["Enums"]["priority_level"] | null
+          progress: number | null
+          project_id: string | null
+          sla_breached: boolean | null
+          sla_breached_at: string | null
+          sla_started_at: string | null
+          sla_target_hours: number | null
+          source_id: string | null
+          source_title: string | null
+          source_type: string | null
+          status: Database["public"]["Enums"]["action_status"] | null
+          tags: Json | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          blocked_by?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by_id?: string | null
+          created_by_name?: string | null
+          dependencies?: Json | null
+          description?: string | null
+          due_date?: string | null
+          history?: Json | null
+          id?: string
+          linked_items?: Json | null
+          notes?: string | null
+          owner_id?: string | null
+          owner_name?: string | null
+          priority?: Database["public"]["Enums"]["priority_level"] | null
+          progress?: number | null
+          project_id?: string | null
+          sla_breached?: boolean | null
+          sla_breached_at?: string | null
+          sla_started_at?: string | null
+          sla_target_hours?: number | null
+          source_id?: string | null
+          source_title?: string | null
+          source_type?: string | null
+          status?: Database["public"]["Enums"]["action_status"] | null
+          tags?: Json | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          blocked_by?: string | null
+          completed_at?: string | null
+          created_at?: string
+          created_by_id?: string | null
+          created_by_name?: string | null
+          dependencies?: Json | null
+          description?: string | null
+          due_date?: string | null
+          history?: Json | null
+          id?: string
+          linked_items?: Json | null
+          notes?: string | null
+          owner_id?: string | null
+          owner_name?: string | null
+          priority?: Database["public"]["Enums"]["priority_level"] | null
+          progress?: number | null
+          project_id?: string | null
+          sla_breached?: boolean | null
+          sla_breached_at?: string | null
+          sla_started_at?: string | null
+          sla_target_hours?: number | null
+          source_id?: string | null
+          source_title?: string | null
+          source_type?: string | null
+          status?: Database["public"]["Enums"]["action_status"] | null
+          tags?: Json | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "actions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       active_presentations: {
         Row: {
           activated_at: string
@@ -159,6 +260,88 @@ export type Database = {
             columns: ["conversation_id"]
             isOneToOne: false
             referencedRelation: "ai_conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      backlog_items: {
+        Row: {
+          assignee_id: string | null
+          assignee_name: string | null
+          created_at: string
+          description: string | null
+          epic_id: string | null
+          id: string
+          key: string | null
+          labels: Json | null
+          priority: Database["public"]["Enums"]["priority_level"] | null
+          project_id: string | null
+          sort_order: number | null
+          sprint_id: string | null
+          status: Database["public"]["Enums"]["backlog_status"] | null
+          story_points: number | null
+          title: string
+          type: Database["public"]["Enums"]["item_type"] | null
+          updated_at: string
+        }
+        Insert: {
+          assignee_id?: string | null
+          assignee_name?: string | null
+          created_at?: string
+          description?: string | null
+          epic_id?: string | null
+          id?: string
+          key?: string | null
+          labels?: Json | null
+          priority?: Database["public"]["Enums"]["priority_level"] | null
+          project_id?: string | null
+          sort_order?: number | null
+          sprint_id?: string | null
+          status?: Database["public"]["Enums"]["backlog_status"] | null
+          story_points?: number | null
+          title: string
+          type?: Database["public"]["Enums"]["item_type"] | null
+          updated_at?: string
+        }
+        Update: {
+          assignee_id?: string | null
+          assignee_name?: string | null
+          created_at?: string
+          description?: string | null
+          epic_id?: string | null
+          id?: string
+          key?: string | null
+          labels?: Json | null
+          priority?: Database["public"]["Enums"]["priority_level"] | null
+          project_id?: string | null
+          sort_order?: number | null
+          sprint_id?: string | null
+          status?: Database["public"]["Enums"]["backlog_status"] | null
+          story_points?: number | null
+          title?: string
+          type?: Database["public"]["Enums"]["item_type"] | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "backlog_items_epic_id_fkey"
+            columns: ["epic_id"]
+            isOneToOne: false
+            referencedRelation: "epics"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "backlog_items_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "backlog_items_sprint_id_fkey"
+            columns: ["sprint_id"]
+            isOneToOne: false
+            referencedRelation: "sprints"
             referencedColumns: ["id"]
           },
         ]
@@ -838,6 +1021,151 @@ export type Database = {
             columns: ["folder_id"]
             isOneToOne: false
             referencedRelation: "email_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      epics: {
+        Row: {
+          color: string | null
+          completed_points: number | null
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          progress: number | null
+          project_id: string | null
+          sort_order: number | null
+          total_points: number | null
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          completed_points?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          progress?: number | null
+          project_id?: string | null
+          sort_order?: number | null
+          total_points?: number | null
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          completed_points?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          progress?: number | null
+          project_id?: string | null
+          sort_order?: number | null
+          total_points?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "epics_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      issues: {
+        Row: {
+          affected_areas: Json | null
+          assignee_id: string | null
+          assignee_name: string | null
+          closed_at: string | null
+          comments: Json | null
+          created_at: string
+          description: string | null
+          history: Json | null
+          id: string
+          key: string | null
+          linked_items: Json | null
+          priority: Database["public"]["Enums"]["priority_level"] | null
+          project_id: string | null
+          reporter_id: string | null
+          reporter_name: string | null
+          resolution: string | null
+          resolved_at: string | null
+          root_cause: string | null
+          severity: Database["public"]["Enums"]["issue_severity"] | null
+          sla_breached: boolean | null
+          sla_target_resolution: number | null
+          status: Database["public"]["Enums"]["issue_status"] | null
+          tags: Json | null
+          title: string
+          type: string | null
+          updated_at: string
+        }
+        Insert: {
+          affected_areas?: Json | null
+          assignee_id?: string | null
+          assignee_name?: string | null
+          closed_at?: string | null
+          comments?: Json | null
+          created_at?: string
+          description?: string | null
+          history?: Json | null
+          id?: string
+          key?: string | null
+          linked_items?: Json | null
+          priority?: Database["public"]["Enums"]["priority_level"] | null
+          project_id?: string | null
+          reporter_id?: string | null
+          reporter_name?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          root_cause?: string | null
+          severity?: Database["public"]["Enums"]["issue_severity"] | null
+          sla_breached?: boolean | null
+          sla_target_resolution?: number | null
+          status?: Database["public"]["Enums"]["issue_status"] | null
+          tags?: Json | null
+          title: string
+          type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          affected_areas?: Json | null
+          assignee_id?: string | null
+          assignee_name?: string | null
+          closed_at?: string | null
+          comments?: Json | null
+          created_at?: string
+          description?: string | null
+          history?: Json | null
+          id?: string
+          key?: string | null
+          linked_items?: Json | null
+          priority?: Database["public"]["Enums"]["priority_level"] | null
+          project_id?: string | null
+          reporter_id?: string | null
+          reporter_name?: string | null
+          resolution?: string | null
+          resolved_at?: string | null
+          root_cause?: string | null
+          severity?: Database["public"]["Enums"]["issue_severity"] | null
+          sla_breached?: boolean | null
+          sla_target_resolution?: number | null
+          status?: Database["public"]["Enums"]["issue_status"] | null
+          tags?: Json | null
+          title?: string
+          type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "issues_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -2365,6 +2693,77 @@ export type Database = {
           },
         ]
       }
+      risks: {
+        Row: {
+          category: string | null
+          closed_at: string | null
+          contingency_plan: string | null
+          created_at: string
+          description: string | null
+          due_date: string | null
+          id: string
+          impact: Database["public"]["Enums"]["risk_level"] | null
+          linked_items: Json | null
+          mitigation_plan: string | null
+          owner_id: string | null
+          owner_name: string | null
+          probability: Database["public"]["Enums"]["risk_level"] | null
+          project_id: string | null
+          status: Database["public"]["Enums"]["risk_status"] | null
+          title: string
+          triggers: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          closed_at?: string | null
+          contingency_plan?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          impact?: Database["public"]["Enums"]["risk_level"] | null
+          linked_items?: Json | null
+          mitigation_plan?: string | null
+          owner_id?: string | null
+          owner_name?: string | null
+          probability?: Database["public"]["Enums"]["risk_level"] | null
+          project_id?: string | null
+          status?: Database["public"]["Enums"]["risk_status"] | null
+          title: string
+          triggers?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          closed_at?: string | null
+          contingency_plan?: string | null
+          created_at?: string
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          impact?: Database["public"]["Enums"]["risk_level"] | null
+          linked_items?: Json | null
+          mitigation_plan?: string | null
+          owner_id?: string | null
+          owner_name?: string | null
+          probability?: Database["public"]["Enums"]["risk_level"] | null
+          project_id?: string | null
+          status?: Database["public"]["Enums"]["risk_status"] | null
+          title?: string
+          triggers?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "risks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spreadsheet_sheets: {
         Row: {
           column_widths: Json | null
@@ -2460,6 +2859,56 @@ export type Database = {
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sprints: {
+        Row: {
+          capacity: number | null
+          created_at: string
+          end_date: string
+          goal: string | null
+          id: string
+          name: string
+          project_id: string | null
+          start_date: string
+          status: Database["public"]["Enums"]["sprint_status"] | null
+          updated_at: string
+          velocity: number | null
+        }
+        Insert: {
+          capacity?: number | null
+          created_at?: string
+          end_date: string
+          goal?: string | null
+          id?: string
+          name: string
+          project_id?: string | null
+          start_date: string
+          status?: Database["public"]["Enums"]["sprint_status"] | null
+          updated_at?: string
+          velocity?: number | null
+        }
+        Update: {
+          capacity?: number | null
+          created_at?: string
+          end_date?: string
+          goal?: string | null
+          id?: string
+          name?: string
+          project_id?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["sprint_status"] | null
+          updated_at?: string
+          velocity?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sprints_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -2779,6 +3228,13 @@ export type Database = {
       }
     }
     Enums: {
+      action_status:
+        | "pending"
+        | "in-progress"
+        | "completed"
+        | "deferred"
+        | "cancelled"
+      backlog_status: "todo" | "in-progress" | "review" | "done"
       constraint_type:
         | "ASAP"
         | "ALAP"
@@ -2790,9 +3246,25 @@ export type Database = {
         | "FNLT"
       cost_accrual: "start" | "end" | "prorated"
       dependency_type: "FS" | "SS" | "FF" | "SF"
+      issue_severity: "minor" | "moderate" | "major" | "critical"
+      issue_status:
+        | "open"
+        | "investigating"
+        | "in-progress"
+        | "resolved"
+        | "closed"
+      item_type: "epic" | "story" | "task" | "bug" | "tech-debt"
       priority_level: "critical" | "high" | "medium" | "low"
       project_role: "admin" | "pm" | "lead" | "developer" | "analyst" | "viewer"
       resource_type: "work" | "material" | "cost"
+      risk_level: "low" | "medium" | "high" | "critical"
+      risk_status:
+        | "identified"
+        | "analyzing"
+        | "mitigating"
+        | "closed"
+        | "accepted"
+      sprint_status: "planning" | "active" | "completed" | "cancelled"
       task_status:
         | "not-started"
         | "in-progress"
@@ -2927,6 +3399,14 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      action_status: [
+        "pending",
+        "in-progress",
+        "completed",
+        "deferred",
+        "cancelled",
+      ],
+      backlog_status: ["todo", "in-progress", "review", "done"],
       constraint_type: [
         "ASAP",
         "ALAP",
@@ -2939,9 +3419,27 @@ export const Constants = {
       ],
       cost_accrual: ["start", "end", "prorated"],
       dependency_type: ["FS", "SS", "FF", "SF"],
+      issue_severity: ["minor", "moderate", "major", "critical"],
+      issue_status: [
+        "open",
+        "investigating",
+        "in-progress",
+        "resolved",
+        "closed",
+      ],
+      item_type: ["epic", "story", "task", "bug", "tech-debt"],
       priority_level: ["critical", "high", "medium", "low"],
       project_role: ["admin", "pm", "lead", "developer", "analyst", "viewer"],
       resource_type: ["work", "material", "cost"],
+      risk_level: ["low", "medium", "high", "critical"],
+      risk_status: [
+        "identified",
+        "analyzing",
+        "mitigating",
+        "closed",
+        "accepted",
+      ],
+      sprint_status: ["planning", "active", "completed", "cancelled"],
       task_status: [
         "not-started",
         "in-progress",

@@ -1574,6 +1574,267 @@ export type Database = {
           },
         ]
       }
+      presentation_collaborators: {
+        Row: {
+          created_at: string
+          cursor_position: Json | null
+          id: string
+          last_active: string | null
+          permission: string | null
+          presentation_id: string
+          user_email: string | null
+          user_id: string | null
+          user_name: string
+        }
+        Insert: {
+          created_at?: string
+          cursor_position?: Json | null
+          id?: string
+          last_active?: string | null
+          permission?: string | null
+          presentation_id: string
+          user_email?: string | null
+          user_id?: string | null
+          user_name: string
+        }
+        Update: {
+          created_at?: string
+          cursor_position?: Json | null
+          id?: string
+          last_active?: string | null
+          permission?: string | null
+          presentation_id?: string
+          user_email?: string | null
+          user_id?: string | null
+          user_name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presentation_collaborators_presentation_id_fkey"
+            columns: ["presentation_id"]
+            isOneToOne: false
+            referencedRelation: "presentations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      presentation_folders: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+          parent_id: string | null
+          project_id: string
+          sort_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          parent_id?: string | null
+          project_id: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          parent_id?: string | null
+          project_id?: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presentation_folders_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "presentation_folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "presentation_folders_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      presentation_slides: {
+        Row: {
+          background: Json | null
+          charts: Json | null
+          content: Json | null
+          created_at: string
+          html_content: string | null
+          id: string
+          images: Json | null
+          presentation_id: string
+          shapes: Json | null
+          sort_order: number | null
+          speaker_notes: string | null
+          template: string | null
+          title: string
+          transition: Json | null
+          updated_at: string
+        }
+        Insert: {
+          background?: Json | null
+          charts?: Json | null
+          content?: Json | null
+          created_at?: string
+          html_content?: string | null
+          id?: string
+          images?: Json | null
+          presentation_id: string
+          shapes?: Json | null
+          sort_order?: number | null
+          speaker_notes?: string | null
+          template?: string | null
+          title?: string
+          transition?: Json | null
+          updated_at?: string
+        }
+        Update: {
+          background?: Json | null
+          charts?: Json | null
+          content?: Json | null
+          created_at?: string
+          html_content?: string | null
+          id?: string
+          images?: Json | null
+          presentation_id?: string
+          shapes?: Json | null
+          sort_order?: number | null
+          speaker_notes?: string | null
+          template?: string | null
+          title?: string
+          transition?: Json | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presentation_slides_presentation_id_fkey"
+            columns: ["presentation_id"]
+            isOneToOne: false
+            referencedRelation: "presentations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      presentation_versions: {
+        Row: {
+          change_notes: string | null
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          id: string
+          presentation_id: string
+          slides_snapshot: Json
+          version: number
+        }
+        Insert: {
+          change_notes?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          id?: string
+          presentation_id: string
+          slides_snapshot: Json
+          version: number
+        }
+        Update: {
+          change_notes?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          id?: string
+          presentation_id?: string
+          slides_snapshot?: Json
+          version?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presentation_versions_presentation_id_fkey"
+            columns: ["presentation_id"]
+            isOneToOne: false
+            referencedRelation: "presentations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      presentations: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          created_by_name: string | null
+          folder_id: string | null
+          id: string
+          is_shared: boolean | null
+          project_id: string
+          slide_master: Json | null
+          template: string | null
+          theme: Json | null
+          title: string
+          transitions: Json | null
+          updated_at: string
+          version: number | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          folder_id?: string | null
+          id?: string
+          is_shared?: boolean | null
+          project_id: string
+          slide_master?: Json | null
+          template?: string | null
+          theme?: Json | null
+          title?: string
+          transitions?: Json | null
+          updated_at?: string
+          version?: number | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          created_by_name?: string | null
+          folder_id?: string | null
+          id?: string
+          is_shared?: boolean | null
+          project_id?: string
+          slide_master?: Json | null
+          template?: string | null
+          theme?: Json | null
+          title?: string
+          transitions?: Json | null
+          updated_at?: string
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "presentations_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "presentation_folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "presentations_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_baselines: {
         Row: {
           baseline_date: string

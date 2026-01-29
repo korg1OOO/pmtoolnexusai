@@ -105,29 +105,36 @@ export function MessageReactions({
 // Quick reaction picker shown on hover
 interface QuickReactionPickerProps {
   onSelect: (emoji: string) => void;
+  existingReactions?: string[];
   className?: string;
 }
 
-export function QuickReactionPicker({ onSelect, className }: QuickReactionPickerProps) {
+export function QuickReactionPicker({ onSelect, existingReactions = [], className }: QuickReactionPickerProps) {
   const QUICK_REACTIONS = ['👍', '❤️', '😂', '🎉'];
   
   return (
     <div className={cn(
-      'absolute -top-8 right-0 flex items-center gap-0.5 px-1.5 py-1 bg-popover border rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity z-10',
+      'flex items-center gap-0.5 px-1.5 py-1 bg-popover border rounded-full shadow-lg z-10',
       className
     )}>
-      {QUICK_REACTIONS.map((emoji) => (
-        <button
-          key={emoji}
-          onClick={(e) => {
-            e.stopPropagation();
-            onSelect(emoji);
-          }}
-          className="p-1 hover:bg-muted rounded-full transition-colors text-sm"
-        >
-          {emoji}
-        </button>
-      ))}
+      {QUICK_REACTIONS.map((emoji) => {
+        const isUsed = existingReactions.includes(emoji);
+        return (
+          <button
+            key={emoji}
+            onClick={(e) => {
+              e.stopPropagation();
+              onSelect(emoji);
+            }}
+            className={cn(
+              'p-1 hover:bg-muted rounded-full transition-colors text-sm',
+              isUsed && 'bg-primary/10'
+            )}
+          >
+            {emoji}
+          </button>
+        );
+      })}
     </div>
   );
 }

@@ -55,6 +55,302 @@ export type Database = {
           },
         ]
       }
+      email_accounts: {
+        Row: {
+          account_type: string
+          created_at: string
+          display_name: string | null
+          email_address: string
+          id: string
+          imap_encryption: string
+          imap_host: string
+          imap_password: string
+          imap_port: number
+          imap_username: string
+          is_active: boolean
+          last_sync_at: string | null
+          project_id: string | null
+          smtp_encryption: string | null
+          smtp_host: string | null
+          smtp_password: string | null
+          smtp_port: number | null
+          smtp_username: string | null
+          sync_error: string | null
+          sync_status: string | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          account_type?: string
+          created_at?: string
+          display_name?: string | null
+          email_address: string
+          id?: string
+          imap_encryption?: string
+          imap_host: string
+          imap_password: string
+          imap_port?: number
+          imap_username: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          project_id?: string | null
+          smtp_encryption?: string | null
+          smtp_host?: string | null
+          smtp_password?: string | null
+          smtp_port?: number | null
+          smtp_username?: string | null
+          sync_error?: string | null
+          sync_status?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          account_type?: string
+          created_at?: string
+          display_name?: string | null
+          email_address?: string
+          id?: string
+          imap_encryption?: string
+          imap_host?: string
+          imap_password?: string
+          imap_port?: number
+          imap_username?: string
+          is_active?: boolean
+          last_sync_at?: string | null
+          project_id?: string | null
+          smtp_encryption?: string | null
+          smtp_host?: string | null
+          smtp_password?: string | null
+          smtp_port?: number | null
+          smtp_username?: string | null
+          sync_error?: string | null
+          sync_status?: string | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_accounts_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_drafts: {
+        Row: {
+          account_id: string
+          bcc_addresses: Json | null
+          body_html: string | null
+          body_text: string | null
+          cc_addresses: Json | null
+          created_at: string
+          forward_email_id: string | null
+          id: string
+          reply_to_email_id: string | null
+          subject: string | null
+          to_addresses: Json | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          account_id: string
+          bcc_addresses?: Json | null
+          body_html?: string | null
+          body_text?: string | null
+          cc_addresses?: Json | null
+          created_at?: string
+          forward_email_id?: string | null
+          id?: string
+          reply_to_email_id?: string | null
+          subject?: string | null
+          to_addresses?: Json | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          account_id?: string
+          bcc_addresses?: Json | null
+          body_html?: string | null
+          body_text?: string | null
+          cc_addresses?: Json | null
+          created_at?: string
+          forward_email_id?: string | null
+          id?: string
+          reply_to_email_id?: string | null
+          subject?: string | null
+          to_addresses?: Json | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_drafts_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "email_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_drafts_forward_email_id_fkey"
+            columns: ["forward_email_id"]
+            isOneToOne: false
+            referencedRelation: "emails"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_drafts_reply_to_email_id_fkey"
+            columns: ["reply_to_email_id"]
+            isOneToOne: false
+            referencedRelation: "emails"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_folders: {
+        Row: {
+          account_id: string
+          created_at: string
+          folder_type: string | null
+          id: string
+          name: string
+          remote_name: string
+          total_count: number | null
+          unread_count: number | null
+        }
+        Insert: {
+          account_id: string
+          created_at?: string
+          folder_type?: string | null
+          id?: string
+          name: string
+          remote_name: string
+          total_count?: number | null
+          unread_count?: number | null
+        }
+        Update: {
+          account_id?: string
+          created_at?: string
+          folder_type?: string | null
+          id?: string
+          name?: string
+          remote_name?: string
+          total_count?: number | null
+          unread_count?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_folders_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "email_accounts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      emails: {
+        Row: {
+          account_id: string
+          attachments: Json | null
+          bcc_addresses: Json | null
+          body_html: string | null
+          body_text: string | null
+          cc_addresses: Json | null
+          created_at: string
+          folder_id: string
+          from_address: string
+          from_name: string | null
+          has_attachments: boolean | null
+          id: string
+          in_reply_to: string | null
+          is_flagged: boolean | null
+          is_read: boolean | null
+          is_starred: boolean | null
+          labels: Json | null
+          message_id: string
+          received_at: string
+          references_ids: Json | null
+          reply_to: string | null
+          sent_at: string | null
+          snippet: string | null
+          subject: string | null
+          thread_id: string | null
+          to_addresses: Json | null
+        }
+        Insert: {
+          account_id: string
+          attachments?: Json | null
+          bcc_addresses?: Json | null
+          body_html?: string | null
+          body_text?: string | null
+          cc_addresses?: Json | null
+          created_at?: string
+          folder_id: string
+          from_address: string
+          from_name?: string | null
+          has_attachments?: boolean | null
+          id?: string
+          in_reply_to?: string | null
+          is_flagged?: boolean | null
+          is_read?: boolean | null
+          is_starred?: boolean | null
+          labels?: Json | null
+          message_id: string
+          received_at?: string
+          references_ids?: Json | null
+          reply_to?: string | null
+          sent_at?: string | null
+          snippet?: string | null
+          subject?: string | null
+          thread_id?: string | null
+          to_addresses?: Json | null
+        }
+        Update: {
+          account_id?: string
+          attachments?: Json | null
+          bcc_addresses?: Json | null
+          body_html?: string | null
+          body_text?: string | null
+          cc_addresses?: Json | null
+          created_at?: string
+          folder_id?: string
+          from_address?: string
+          from_name?: string | null
+          has_attachments?: boolean | null
+          id?: string
+          in_reply_to?: string | null
+          is_flagged?: boolean | null
+          is_read?: boolean | null
+          is_starred?: boolean | null
+          labels?: Json | null
+          message_id?: string
+          received_at?: string
+          references_ids?: Json | null
+          reply_to?: string | null
+          sent_at?: string | null
+          snippet?: string | null
+          subject?: string | null
+          thread_id?: string | null
+          to_addresses?: Json | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emails_account_id_fkey"
+            columns: ["account_id"]
+            isOneToOne: false
+            referencedRelation: "email_accounts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emails_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "email_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_action_items: {
         Row: {
           ai_confidence: number | null

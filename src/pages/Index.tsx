@@ -19,6 +19,7 @@ import { EnhancedMeetingsView } from '@/components/views/EnhancedMeetingsView';
 import { CalendarView } from '@/components/views/CalendarView';
 import { StrategicDashboardView } from '@/components/views/StrategicDashboardView';
 import { CommunicationIntelligenceView } from '@/components/views/CommunicationIntelligenceView';
+import { CommunicationsView } from '@/components/communications/CommunicationsView';
 import { IssuesRegisterView } from '@/components/views/IssuesRegisterView';
 import { ActionsView } from '@/components/views/ActionsView';
 import { TraceabilityMatrixView } from '@/components/views/TraceabilityMatrixView';
@@ -82,7 +83,7 @@ const Index = () => {
       case 'meetings': return <EnhancedMeetingsView />;
       case 'calendar': return <CalendarView />;
       case 'team-chat': return <TeamChatView />;
-      case 'communications': return <CommunicationIntelligenceView />;
+      case 'communications': return <CommunicationsView />;
       case 'notes': return <NotesView />;
       case 'documents': return <DocumentCenterView />;
       case 'resources': return <ResourcesView />;

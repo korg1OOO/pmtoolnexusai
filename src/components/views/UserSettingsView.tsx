@@ -24,6 +24,7 @@ import {
   LogOut,
   Globe,
   Clock,
+  Inbox,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -36,6 +37,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTheme } from 'next-themes';
+import { EmailAccountSettings } from '@/components/communications/EmailAccountSettings';
 
 interface Session {
   id: string;
@@ -79,6 +81,10 @@ export function UserSettingsView() {
             <TabsTrigger value="profile" className="gap-2">
               <User className="h-4 w-4" />
               Profile
+            </TabsTrigger>
+            <TabsTrigger value="email" className="gap-2">
+              <Inbox className="h-4 w-4" />
+              Email
             </TabsTrigger>
             <TabsTrigger value="notifications" className="gap-2">
               <Bell className="h-4 w-4" />
@@ -174,6 +180,11 @@ export function UserSettingsView() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Email Tab */}
+          <TabsContent value="email" className="space-y-6">
+            <EmailAccountSettings />
           </TabsContent>
 
           {/* Notifications Tab */}

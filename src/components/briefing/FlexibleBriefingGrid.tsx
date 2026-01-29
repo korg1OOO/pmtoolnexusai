@@ -11,6 +11,7 @@ interface FlexibleBriefingGridProps {
   isGenerating: boolean;
   lastUpdated: Date;
   onRefresh: () => void;
+  isCustomizing: boolean;
 }
 
 const COLS = 12;
@@ -22,6 +23,7 @@ export function FlexibleBriefingGrid({
   isGenerating,
   lastUpdated,
   onRefresh,
+  isCustomizing,
 }: FlexibleBriefingGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(1200);
@@ -113,17 +115,19 @@ export function FlexibleBriefingGrid({
         cols={COLS}
         rowHeight={ROW_HEIGHT}
         width={width}
-        onLayoutChange={setLayout}
+        onLayoutChange={isCustomizing ? setLayout : undefined}
         draggableHandle=".drag-handle"
-        isResizable={true}
-        isDraggable={true}
+        isResizable={isCustomizing}
+        isDraggable={isCustomizing}
         compactType="vertical"
         margin={[16, 16]}
       >
         {sections.map((sectionId) => (
           <div key={sectionId}>
             <div className="h-full flex flex-col relative">
-              <div className="drag-handle absolute top-0 left-0 right-0 h-12 z-10" />
+              {isCustomizing && (
+                <div className="drag-handle absolute top-0 left-0 right-0 h-12 z-10 cursor-grab active:cursor-grabbing" />
+              )}
               {renderSection(sectionId)}
             </div>
           </div>

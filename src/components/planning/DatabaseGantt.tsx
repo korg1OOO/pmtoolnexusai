@@ -18,6 +18,7 @@ import {
   Undo2,
   Redo2,
   Scale,
+  Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -45,7 +46,11 @@ import { useCreateDependency, useDeleteDependency, useUpdateDependency } from '@
 import { useScheduleTrigger } from '@/hooks/useScheduleTrigger';
 import { useGanttHistory } from '@/hooks/useGanttHistory';
 import { useResourceLeveling } from '@/hooks/useResourceLeveling';
+import { usePresenceContext } from '@/contexts/PresenceContext';
+import { useAuth } from '@/hooks/useAuth';
 import { DependencyContextMenu, DependencyType } from '@/components/planning/DependencyContextMenu';
+import { CollaboratorCursors } from '@/components/collaboration/CollaboratorCursors';
+import { TaskLockIndicator, useTaskLock } from '@/components/collaboration/TaskLockIndicator';
 import {
   Dialog,
   DialogContent,
@@ -104,6 +109,12 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
   const saveBaseline = useSaveProjectBaseline();
   const { triggerSchedule } = useScheduleTrigger(projectId);
   
+  // Auth for current user
+  const { user } = useAuth();
+  
+  // Presence for collaboration
+  const { users: presenceUsers, startEditing, stopEditing, updateCursor } = usePresenceContext();
+  
   // Resource hooks for task info dialog
   const { data: resources = [] } = useResources(projectId);
   const { data: allAssignments = [] } = useTaskResourceAssignments(projectId);
@@ -126,6 +137,7 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
   const [showDependencies, setShowDependencies] = useState(true);
   const [showSlack, setShowSlack] = useState(false);
   const [showNonWorkingTime, setShowNonWorkingTime] = useState(true);
+  const [showCollaborators, setShowCollaborators] = useState(true);
   const [dragging, setDragging] = useState<DraggingState | null>(null);
   const [linkDragging, setLinkDragging] = useState<LinkDraggingState | null>(null);
   const [hoveredTask, setHoveredTask] = useState<string | null>(null);
@@ -134,7 +146,30 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
   const [baselineName, setBaselineName] = useState('');
   const [selectedTask, setSelectedTask] = useState<DbTask | null>(null);
   const [taskInfoOpen, setTaskInfoOpen] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
   const ganttRef = useRef<HTMLDivElement>(null);
+
+  // Track cursor movements for collaboration
+  const handleGanttMouseMove = useCallback((e: React.MouseEvent) => {
+    if (!ganttRef.current || !showCollaborators) return;
+    
+    const rect = ganttRef.current.getBoundingClientRect();
+    updateCursor({
+      x: e.clientX,
+      y: e.clientY,
+    });
+  }, [updateCursor, showCollaborators]);
+
+  // Handle task editing start/stop for locking
+  const handleStartEditing = useCallback((taskId: string) => {
+    setEditingTaskId(taskId);
+    startEditing(taskId);
+  }, [startEditing]);
+
+  const handleStopEditing = useCallback(() => {
+    setEditingTaskId(null);
+    stopEditing();
+  }, [stopEditing]);
 
   // Build hierarchical structure
   const visibleTasks = useMemo(() => {
@@ -837,6 +872,11 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                 Non-Working Time
                 {showNonWorkingTime && <Badge variant="secondary" className="ml-auto">On</Badge>}
               </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setShowCollaborators(!showCollaborators)}>
+                <Users className="h-4 w-4 mr-2" />
+                Collaborator Cursors
+                {showCollaborators && <Badge variant="secondary" className="ml-auto">On</Badge>}
+              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
           
@@ -869,8 +909,17 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
         </div>
       </div>
 
+      {/* Collaborator Cursors Overlay */}
+      {showCollaborators && (
+        <CollaboratorCursors users={presenceUsers} containerRef={ganttRef} />
+      )}
+
       {/* Gantt Container */}
-      <div className="flex-1 overflow-auto" ref={ganttRef}>
+      <div 
+        className="flex-1 overflow-auto" 
+        ref={ganttRef}
+        onMouseMove={handleGanttMouseMove}
+      >
         {visibleTasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-64 text-muted-foreground">
             <p className="mb-4">No tasks to display. Add tasks in the Grid view first.</p>
@@ -884,29 +933,45 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                 <span className="text-xs font-medium text-muted-foreground">Task Name</span>
               </div>
               {/* Task Names */}
-              {visibleTasks.map((task) => (
-                <div
-                  key={task.id}
-                  className={cn(
-                    'h-10 border-b flex items-center px-2 hover:bg-muted/30 transition-colors',
-                    task.is_critical && showCriticalPath && 'border-l-2 border-l-destructive',
-                    hoveredTask === task.id && 'bg-muted/50'
-                  )}
-                  style={{ paddingLeft: task.level * 16 + 8 }}
-                  onMouseEnter={() => setHoveredTask(task.id)}
-                  onMouseLeave={() => setHoveredTask(null)}
-                >
-                  <span
+              {visibleTasks.map((task) => {
+                // Check if task is locked by another user
+                const lockedBy = presenceUsers.find(
+                  (u) => u.isEditing && u.editingTaskId === task.id && u.id !== user?.id
+                );
+                const isLocked = !!lockedBy;
+                
+                return (
+                  <div
+                    key={task.id}
                     className={cn(
-                      'text-sm truncate',
-                      task.type === 'summary' && 'font-semibold',
-                      task.type === 'milestone' && 'italic text-secondary-foreground'
+                      'h-10 border-b flex items-center px-2 hover:bg-muted/30 transition-colors gap-2',
+                      task.is_critical && showCriticalPath && 'border-l-2 border-l-destructive',
+                      hoveredTask === task.id && 'bg-muted/50',
+                      isLocked && 'bg-warning/10'
                     )}
+                    style={{ paddingLeft: task.level * 16 + 8 }}
+                    onMouseEnter={() => setHoveredTask(task.id)}
+                    onMouseLeave={() => setHoveredTask(null)}
                   >
-                    {task.name}
-                  </span>
-                </div>
-              ))}
+                    <span
+                      className={cn(
+                        'text-sm truncate flex-1',
+                        task.type === 'summary' && 'font-semibold',
+                        task.type === 'milestone' && 'italic text-secondary-foreground'
+                      )}
+                    >
+                      {task.name}
+                    </span>
+                    {isLocked && (
+                      <TaskLockIndicator 
+                        taskId={task.id} 
+                        users={presenceUsers} 
+                        currentUserId={user?.id} 
+                      />
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             {/* Timeline Panel */}
@@ -1086,13 +1151,30 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                     const isOverdue = hasDeadline && new Date(task.end_date) > new Date(task.deadline);
                     const isCurrentLinkTarget = linkTargetTask === task.id;
                     
+                    // Check if task is locked by another user
+                    const lockedBy = presenceUsers.find(
+                      (u) => u.isEditing && u.editingTaskId === task.id && u.id !== user?.id
+                    );
+                    const isLocked = !!lockedBy;
+                    
+                    // Mouse down handler that respects locking
+                    const handleTaskMouseDown = (e: React.MouseEvent, type: DraggingState['type']) => {
+                      if (isLocked) {
+                        toast.error(`This task is being edited by ${lockedBy?.displayName}`);
+                        return;
+                      }
+                      handleStartEditing(task.id);
+                      handleMouseDown(e, task, type);
+                    };
+                    
                     return (
                       <div
                         key={task.id}
                         className={cn(
                           'h-10 border-b relative',
                           hoveredTask === task.id && 'bg-muted/20',
-                          isCurrentLinkTarget && 'bg-primary/10 ring-1 ring-primary/50'
+                          isCurrentLinkTarget && 'bg-primary/10 ring-1 ring-primary/50',
+                          isLocked && 'bg-warning/5'
                         )}
                         onMouseEnter={() => {
                           setHoveredTask(task.id);
@@ -1107,6 +1189,7 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                           }
                         }}
                         onDoubleClick={() => handleTaskDoubleClick(task)}
+                        onMouseUp={handleStopEditing}
                       >
                         {/* Baseline Bar (shown behind actual) */}
                         {showBaseline && baselineStyle && task.type === 'task' && (
@@ -1191,16 +1274,25 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                                   'absolute top-2.5 h-5 rounded flex items-center overflow-visible group transition-all',
                                   task.is_critical && showCriticalPath ? 'bg-destructive' : 'bg-primary',
                                   isDragging ? 'cursor-grabbing shadow-lg ring-2 ring-primary' : 'cursor-grab hover:shadow-lg',
-                                  isCurrentLinkTarget && 'ring-2 ring-accent shadow-lg'
+                                  isCurrentLinkTarget && 'ring-2 ring-accent shadow-lg',
+                                  isLocked && 'opacity-70 cursor-not-allowed'
                                 )}
                                 style={barStyle}
-                                onMouseDown={(e) => handleMouseDown(e, task, 'move')}
+                                onMouseDown={(e) => handleTaskMouseDown(e, 'move')}
                               >
+                                {/* Locked indicator on bar */}
+                                {isLocked && (
+                                  <div className="absolute -top-2 left-1/2 -translate-x-1/2 px-1 py-0.5 bg-warning text-warning-foreground rounded text-[8px] font-medium whitespace-nowrap">
+                                    {lockedBy?.displayName}
+                                  </div>
+                                )}
+                                
                                 {/* Left link handle */}
                                 <div
                                   className={cn(
                                     "absolute -left-3 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-accent bg-background cursor-crosshair transition-all z-20",
-                                    "opacity-0 group-hover:opacity-100 hover:scale-125 hover:bg-accent"
+                                    "opacity-0 group-hover:opacity-100 hover:scale-125 hover:bg-accent",
+                                    isLocked && "hidden"
                                   )}
                                   onMouseDown={(e) => handleLinkDragStart(e, task.id, taskIndex, 'start')}
                                   title="Drag to create dependency"
@@ -1208,8 +1300,11 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                                 
                                 {/* Left resize handle */}
                                 <div
-                                  className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-white/20 opacity-0 group-hover:opacity-100"
-                                  onMouseDown={(e) => handleMouseDown(e, task, 'resize-start')}
+                                  className={cn(
+                                    "absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-white/20 opacity-0 group-hover:opacity-100",
+                                    isLocked && "hidden"
+                                  )}
+                                  onMouseDown={(e) => handleTaskMouseDown(e, 'resize-start')}
                                 />
                                 
                                 {/* Progress Fill */}
@@ -1229,15 +1324,19 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                                 
                                 {/* Right resize handle */}
                                 <div
-                                  className="absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-white/20 opacity-0 group-hover:opacity-100"
-                                  onMouseDown={(e) => handleMouseDown(e, task, 'resize-end')}
+                                  className={cn(
+                                    "absolute right-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-white/20 opacity-0 group-hover:opacity-100",
+                                    isLocked && "hidden"
+                                  )}
+                                  onMouseDown={(e) => handleTaskMouseDown(e, 'resize-end')}
                                 />
                                 
                                 {/* Right link handle */}
                                 <div
                                   className={cn(
                                     "absolute -right-3 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full border-2 border-accent bg-background cursor-crosshair transition-all z-20",
-                                    "opacity-0 group-hover:opacity-100 hover:scale-125 hover:bg-accent"
+                                    "opacity-0 group-hover:opacity-100 hover:scale-125 hover:bg-accent",
+                                    isLocked && "hidden"
                                   )}
                                   onMouseDown={(e) => handleLinkDragStart(e, task.id, taskIndex, 'end')}
                                   title="Drag to create dependency"
@@ -1254,6 +1353,11 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                               {hasDeadline && (
                                 <p className={cn("text-xs", isOverdue ? "text-destructive" : "text-muted-foreground")}>
                                   Deadline: {task.deadline}
+                                </p>
+                              )}
+                              {isLocked && (
+                                <p className="text-xs text-warning mt-1">
+                                  🔒 Locked by {lockedBy?.displayName}
                                 </p>
                               )}
                             </TooltipContent>

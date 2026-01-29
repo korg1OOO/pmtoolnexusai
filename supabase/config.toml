@@ -11,3 +11,6 @@ verify_jwt = false
 
 [functions.meeting-generate-mom]
 verify_jwt = false
+
+[functions.ai-orchestrator]
+verify_jwt = false

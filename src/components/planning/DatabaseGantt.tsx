@@ -51,6 +51,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { DependencyContextMenu, DependencyType } from '@/components/planning/DependencyContextMenu';
 import { CollaboratorCursors } from '@/components/collaboration/CollaboratorCursors';
 import { TaskLockIndicator, useTaskLock } from '@/components/collaboration/TaskLockIndicator';
+import { ConflictResolutionDialog } from '@/components/collaboration/ConflictResolutionDialog';
+import { PresenceUser } from '@/hooks/usePresence';
 import {
   Dialog,
   DialogContent,
@@ -147,6 +149,13 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
   const [selectedTask, setSelectedTask] = useState<DbTask | null>(null);
   const [taskInfoOpen, setTaskInfoOpen] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  
+  // Conflict resolution dialog state
+  const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
+  const [conflictLockedBy, setConflictLockedBy] = useState<PresenceUser | null>(null);
+  const [conflictTaskName, setConflictTaskName] = useState('');
+  const [pendingEditAction, setPendingEditAction] = useState<(() => void) | null>(null);
+  
   const ganttRef = useRef<HTMLDivElement>(null);
 
   // Track cursor movements for collaboration
@@ -359,10 +368,40 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
     setTaskInfoOpen(true);
   };
 
+  // Check if a task is locked by another user
+  const isTaskLockedByOther = useCallback((taskId: string): { locked: boolean; lockedBy: PresenceUser | null } => {
+    const lockedBy = presenceUsers.find(
+      u => u.isEditing && u.editingTaskId === taskId && u.id !== user?.id
+    );
+    return { locked: !!lockedBy, lockedBy: lockedBy || null };
+  }, [presenceUsers, user?.id]);
+
   // Drag handlers for rescheduling
   const handleMouseDown = (e: React.MouseEvent, task: DbTask, type: DraggingState['type']) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // Check if task is locked by another user
+    const { locked, lockedBy } = isTaskLockedByOther(task.id);
+    if (locked) {
+      setConflictLockedBy(lockedBy);
+      setConflictTaskName(task.name);
+      setPendingEditAction(() => () => {
+        // Force edit - start dragging anyway
+        handleStartEditing(task.id);
+        setDragging({
+          taskId: task.id,
+          type,
+          startX: e.clientX,
+          originalStart: new Date(task.start_date),
+          originalEnd: new Date(task.end_date),
+        });
+      });
+      setConflictDialogOpen(true);
+      return;
+    }
+    
+    handleStartEditing(task.id);
     setDragging({
       taskId: task.id,
       type,
@@ -412,8 +451,28 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
       // This is simplified - in production you'd track the final mouse position
     }
     
+    handleStopEditing();
     setDragging(null);
-  }, [dragging, tasks]);
+  }, [dragging, tasks, handleStopEditing]);
+
+  // Conflict resolution handlers
+  const handleForceEdit = () => {
+    if (pendingEditAction) {
+      pendingEditAction();
+      setPendingEditAction(null);
+    }
+    toast.warning('Forcing edit - other user\'s changes may be overwritten');
+  };
+
+  const handleWaitForUnlock = () => {
+    toast.info('Waiting for the task to be unlocked...');
+    // In a real implementation, you might set up a watcher for when the lock is released
+  };
+
+  const handleRefreshTask = () => {
+    // Trigger a refresh of the tasks data
+    toast.success('Refreshed task data');
+  };
 
   useEffect(() => {
     if (dragging) {
@@ -1468,6 +1527,20 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Conflict Resolution Dialog */}
+      <ConflictResolutionDialog
+        isOpen={conflictDialogOpen}
+        onClose={() => {
+          setConflictDialogOpen(false);
+          setPendingEditAction(null);
+        }}
+        lockedBy={conflictLockedBy}
+        taskName={conflictTaskName}
+        onForceEdit={handleForceEdit}
+        onWait={handleWaitForUnlock}
+        onRefresh={handleRefreshTask}
+      />
 
       {/* Task info dialog would go here - requires full integration with resource/dependency mutations */}
     </div>

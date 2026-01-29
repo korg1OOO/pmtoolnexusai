@@ -2,13 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { cn } from '@/lib/utils';
 import { MessageCircle, Send, X, ChevronDown, Smile } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { format, isToday, isYesterday } from 'date-fns';
 import { toast } from 'sonner';
+import { MentionInput } from '@/components/chat/MentionInput';
+import { ChatAttachmentButton, AttachmentPreview, AttachmentDisplay, AttachmentData } from '@/components/chat/ChatAttachment';
 
 interface ChatMessage {
   id: string;
@@ -17,6 +18,10 @@ interface ChatMessage {
   user_email: string;
   content: string;
   created_at: string;
+  attachment_url?: string | null;
+  attachment_name?: string | null;
+  attachment_type?: string | null;
+  attachment_size?: number | null;
 }
 
 interface ProjectChatProps {
@@ -62,14 +67,23 @@ function formatMessageTime(dateStr: string): string {
   return format(date, 'MMM d, HH:mm');
 }
 
+// Mock users for @mention - in production, fetch from project members
+const mockTeamMembers = [
+  { id: '1', name: 'Sarah Chen', role: 'Project Manager', status: 'online' as const },
+  { id: '2', name: 'Mike Johnson', role: 'Developer', status: 'online' as const },
+  { id: '3', name: 'Emily Davis', role: 'Designer', status: 'away' as const },
+  { id: '4', name: 'Alex Thompson', role: 'QA Lead', status: 'offline' as const },
+  { id: '5', name: 'Jordan Lee', role: 'DevOps', status: 'online' as const },
+];
+
 export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
   const { user } = useAuth();
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [newMessage, setNewMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [pendingAttachment, setPendingAttachment] = useState<AttachmentData | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
 
   // Fetch initial messages
   useEffect(() => {
@@ -148,12 +162,11 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
   useEffect(() => {
     if (isOpen) {
       setUnreadCount(0);
-      inputRef.current?.focus();
     }
   }, [isOpen]);
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() || !user || !projectId) return;
+    if ((!newMessage.trim() && !pendingAttachment) || !user || !projectId) return;
 
     setIsLoading(true);
     const { error } = await supabase.from('project_messages').insert({
@@ -161,6 +174,10 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
       user_id: user.id,
       user_email: user.email || 'Unknown',
       content: newMessage.trim(),
+      attachment_url: pendingAttachment?.url || null,
+      attachment_name: pendingAttachment?.name || null,
+      attachment_type: pendingAttachment?.type || null,
+      attachment_size: pendingAttachment?.size || null,
     });
 
     if (error) {
@@ -168,15 +185,28 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
       toast.error('Failed to send message');
     } else {
       setNewMessage('');
+      setPendingAttachment(null);
     }
     setIsLoading(false);
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
+  const handleSubmit = () => {
+    handleSendMessage();
+  };
+
+  // Render message content with @mention highlighting
+  const renderMessageContent = (content: string) => {
+    const parts = content.split(/(@\w+(?:\s\w+)?)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('@')) {
+        return (
+          <span key={i} className="bg-primary/20 text-primary rounded px-0.5 font-medium">
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
   };
 
   // Group messages by sender for cleaner UI
@@ -270,7 +300,15 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
                                 : 'bg-muted'
                             )}
                           >
-                            {msg.content}
+                            {renderMessageContent(msg.content)}
+                            {msg.attachment_url && msg.attachment_name && msg.attachment_type && (
+                              <AttachmentDisplay
+                                url={msg.attachment_url}
+                                name={msg.attachment_name}
+                                type={msg.attachment_type}
+                                size={msg.attachment_size || 0}
+                              />
+                            )}
                           </div>
                         ))}
                         <span className="text-[10px] text-muted-foreground ml-1">
@@ -285,25 +323,41 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
           </ScrollArea>
 
           {/* Input */}
-          <div className="p-3 border-t">
-            <div className="flex gap-2">
-              <Input
-                ref={inputRef}
-                value={newMessage}
-                onChange={(e) => setNewMessage(e.target.value)}
-                onKeyPress={handleKeyPress}
-                placeholder="Type a message..."
-                className="flex-1 h-9"
+          <div className="p-3 border-t space-y-2">
+            {/* Pending attachment preview */}
+            {pendingAttachment && (
+              <AttachmentPreview
+                attachment={pendingAttachment}
+                onRemove={() => setPendingAttachment(null)}
+              />
+            )}
+            
+            <div className="flex items-end gap-2">
+              <ChatAttachmentButton
+                onAttach={setPendingAttachment}
                 disabled={isLoading || !user}
               />
+              <div className="flex-1 border rounded-md bg-background">
+                <MentionInput
+                  value={newMessage}
+                  onChange={setNewMessage}
+                  onSubmit={handleSubmit}
+                  placeholder="Type a message... Use @ to mention"
+                  users={mockTeamMembers}
+                  className="text-sm px-3 py-2"
+                />
+              </div>
               <Button
                 size="sm"
                 onClick={handleSendMessage}
-                disabled={!newMessage.trim() || isLoading || !user}
+                disabled={(!newMessage.trim() && !pendingAttachment) || isLoading || !user}
               >
                 <Send className="h-4 w-4" />
               </Button>
             </div>
+            <p className="text-[10px] text-muted-foreground">
+              @ to mention • Enter to send • Shift+Enter for new line
+            </p>
           </div>
         </div>
       )}

@@ -1,5 +1,4 @@
 import React, { useState, useMemo } from 'react';
-import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   Sun,
@@ -19,6 +18,7 @@ import {
   BriefingSectionId,
 } from '@/components/briefing';
 import { useBriefingGeneration } from '@/components/briefing/hooks/useBriefingGeneration';
+import { ResizableBriefingLayout } from '@/components/briefing/ResizableBriefingLayout';
 
 // Section Components
 import { CriticalAlertsSection } from '@/components/briefing/sections/CriticalAlertsSection';
@@ -341,38 +341,17 @@ export function MorningBriefingView() {
       </div>
 
       {/* Content */}
-      <div className="flex-1 p-6">
+      <div className="flex-1 p-6 overflow-auto">
         <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {orderedSections.map((sectionId, index) => {
-              const sectionConfig = getSectionConfig(sectionId);
-              if (!sectionConfig) return null;
-
-              return (
-                <motion.div
-                  key={sectionId}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  className={cn(
-                    // Make critical alerts and AI insights span full width
-                    (sectionId === 'critical-alerts' || sectionId === 'ai-insights') && 'lg:col-span-2'
-                  )}
-                >
-                  <BriefingSectionCard
-                    section={sectionConfig}
-                    loading={isGenerating && sectionConfig.isAIPowered}
-                    generatedAt={sectionConfig.isAIPowered ? lastUpdated.toISOString() : undefined}
-                    onRefresh={sectionConfig.isAIPowered ? handleRefresh : undefined}
-                  >
-                    {renderSectionContent(sectionId)}
-                  </BriefingSectionCard>
-                </motion.div>
-              );
-            })}
-          </div>
-
-          {orderedSections.length === 0 && (
+          {orderedSections.length > 0 ? (
+            <ResizableBriefingLayout
+              sections={orderedSections}
+              renderContent={renderSectionContent}
+              isGenerating={isGenerating}
+              lastUpdated={lastUpdated}
+              onRefresh={handleRefresh}
+            />
+          ) : (
             <div className="text-center py-12 text-muted-foreground">
               <Sparkles className="h-12 w-12 mx-auto mb-4 opacity-50" />
               <h3 className="text-lg font-medium mb-2">No sections enabled</h3>

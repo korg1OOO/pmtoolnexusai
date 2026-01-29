@@ -14,6 +14,38 @@ export type Database = {
   }
   public: {
     Tables: {
+      active_presentations: {
+        Row: {
+          activated_at: string
+          created_at: string
+          id: string
+          presentation_id: string
+          user_id: string
+        }
+        Insert: {
+          activated_at?: string
+          created_at?: string
+          id?: string
+          presentation_id: string
+          user_id: string
+        }
+        Update: {
+          activated_at?: string
+          created_at?: string
+          id?: string
+          presentation_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "active_presentations_presentation_id_fkey"
+            columns: ["presentation_id"]
+            isOneToOne: false
+            referencedRelation: "presentations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ai_agent_logs: {
         Row: {
           agent_type: string
@@ -1827,6 +1859,7 @@ export type Database = {
           charts: Json | null
           content: Json | null
           created_at: string
+          embedded_components: Json | null
           html_content: string | null
           id: string
           images: Json | null
@@ -1844,6 +1877,7 @@ export type Database = {
           charts?: Json | null
           content?: Json | null
           created_at?: string
+          embedded_components?: Json | null
           html_content?: string | null
           id?: string
           images?: Json | null
@@ -1861,6 +1895,7 @@ export type Database = {
           charts?: Json | null
           content?: Json | null
           created_at?: string
+          embedded_components?: Json | null
           html_content?: string | null
           id?: string
           images?: Json | null

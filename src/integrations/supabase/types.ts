@@ -1048,6 +1048,186 @@ export type Database = {
           },
         ]
       }
+      notebook_page_links: {
+        Row: {
+          created_at: string
+          id: string
+          link_text: string | null
+          source_page_id: string
+          target_page_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          link_text?: string | null
+          source_page_id: string
+          target_page_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          link_text?: string | null
+          source_page_id?: string
+          target_page_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notebook_page_links_source_page_id_fkey"
+            columns: ["source_page_id"]
+            isOneToOne: false
+            referencedRelation: "notebook_pages"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notebook_page_links_target_page_id_fkey"
+            columns: ["target_page_id"]
+            isOneToOne: false
+            referencedRelation: "notebook_pages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notebook_pages: {
+        Row: {
+          content: string | null
+          content_html: string | null
+          created_at: string
+          created_by: string | null
+          created_by_user_id: string | null
+          id: string
+          is_favorite: boolean | null
+          is_pinned: boolean | null
+          section_id: string
+          sort_order: number | null
+          tags: string[] | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string | null
+          content_html?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_user_id?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          is_pinned?: boolean | null
+          section_id: string
+          sort_order?: number | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string | null
+          content_html?: string | null
+          created_at?: string
+          created_by?: string | null
+          created_by_user_id?: string | null
+          id?: string
+          is_favorite?: boolean | null
+          is_pinned?: boolean | null
+          section_id?: string
+          sort_order?: number | null
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notebook_pages_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "notebook_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notebook_sections: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+          notebook_id: string
+          sort_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          notebook_id: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          notebook_id?: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notebook_sections_notebook_id_fkey"
+            columns: ["notebook_id"]
+            isOneToOne: false
+            referencedRelation: "notebooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notebooks: {
+        Row: {
+          color: string | null
+          created_at: string
+          icon: string | null
+          id: string
+          is_shared: boolean | null
+          name: string
+          project_id: string | null
+          sort_order: number | null
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_shared?: boolean | null
+          name: string
+          project_id?: string | null
+          sort_order?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          icon?: string | null
+          id?: string
+          is_shared?: boolean | null
+          name?: string
+          project_id?: string | null
+          sort_order?: number | null
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notebooks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_baselines: {
         Row: {
           baseline_date: string

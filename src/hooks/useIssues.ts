@@ -3,9 +3,10 @@ import { supabase } from '@/integrations/supabase/client';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { toast } from 'sonner';
 
-export type IssueSeverity = 'minor' | 'moderate' | 'major' | 'critical';
-export type IssueStatus = 'open' | 'investigating' | 'in-progress' | 'resolved' | 'closed';
+export type IssueSeverity = 'minor' | 'moderate' | 'major' | 'critical' | 'high' | 'medium' | 'low';
+export type IssueStatus = 'open' | 'investigating' | 'in-progress' | 'blocked' | 'resolved' | 'closed';
 export type IssuePriority = 'critical' | 'high' | 'medium' | 'low';
+export type IssueType = 'bug' | 'blocker' | 'impediment' | 'defect' | 'incident';
 
 export interface Issue { id: string; project_id: string | null; key: string | null; title: string; description: string | null; type: string; severity: IssueSeverity; priority: IssuePriority; status: IssueStatus; reporter_id: string | null; reporter_name: string | null; assignee_id: string | null; assignee_name: string | null; sla_target_resolution: number | null; sla_breached: boolean; linked_items: any[]; affected_areas: string[]; tags: string[]; root_cause: string | null; resolution: string | null; comments: any[]; history: any[]; created_at: string; updated_at: string; resolved_at: string | null; closed_at: string | null; }
 export interface IssueInput { title: string; description?: string; type?: string; severity?: IssueSeverity; priority?: IssuePriority; status?: IssueStatus; reporter_name?: string; assignee_name?: string; sla_target_resolution?: number; affected_areas?: string[]; tags?: string[]; }

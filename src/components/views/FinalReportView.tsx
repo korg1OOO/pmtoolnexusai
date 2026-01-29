@@ -1,5 +1,4 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useRef } from 'react';
 import { cn } from '@/lib/utils';
 import {
   FileCheck,
@@ -7,24 +6,32 @@ import {
   Target,
   DollarSign,
   Calendar,
-  Users,
-  TrendingUp,
   Award,
   Download,
-  Share2,
   Printer,
   Edit2,
   Star,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { PDFExporter, PDFExportSection } from '@/components/common/PDFExporter';
 import { mockProject } from '@/data/mockData';
 
 export function FinalReportView() {
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const pdfSections: PDFExportSection[] = [
+    { id: 'summary', name: 'Executive Summary', selector: '[data-section="summary"]' },
+    { id: 'metrics', name: 'Key Metrics', selector: '[data-section="metrics"]' },
+    { id: 'objectives', name: 'Objectives', selector: '[data-section="objectives"]' },
+    { id: 'financials', name: 'Financial Summary', selector: '[data-section="financials"]' },
+    { id: 'deliverables', name: 'Deliverables', selector: '[data-section="deliverables"]' },
+    { id: 'team', name: 'Team Recognition', selector: '[data-section="team"]' },
+  ];
+
   const reportData = {
     projectName: mockProject.name,
     projectCode: mockProject.code,
@@ -89,7 +96,7 @@ export function FinalReportView() {
   };
 
   return (
-    <div className="flex flex-col h-full overflow-auto">
+    <div className="flex flex-col h-full overflow-auto" ref={contentRef}>
       {/* Header */}
       <div className="p-6 border-b bg-gradient-to-r from-success/10 via-success/5 to-transparent">
         <div className="flex items-start justify-between">
@@ -120,10 +127,14 @@ export function FinalReportView() {
               <Printer className="h-4 w-4 mr-2" />
               Print
             </Button>
-            <Button>
-              <Download className="h-4 w-4 mr-2" />
-              Export PDF
-            </Button>
+            <PDFExporter
+              title="Project Final Report"
+              filename="final-report"
+              contentRef={contentRef}
+              sections={pdfSections}
+              showSectionPicker
+              variant="button"
+            />
           </div>
         </div>
       </div>
@@ -141,7 +152,7 @@ export function FinalReportView() {
 
             <TabsContent value="summary" className="space-y-6">
               {/* Executive Summary */}
-              <Card>
+              <Card data-section="summary">
                 <CardHeader>
                   <CardTitle className="text-base">Executive Summary</CardTitle>
                 </CardHeader>
@@ -151,7 +162,7 @@ export function FinalReportView() {
               </Card>
 
               {/* Key Metrics */}
-              <div className="grid grid-cols-4 gap-4">
+              <div className="grid grid-cols-4 gap-4" data-section="metrics">
                 <Card className="border-success/30 bg-success/5">
                   <CardContent className="p-4">
                     <DollarSign className="h-5 w-5 text-success mb-2" />
@@ -206,7 +217,7 @@ export function FinalReportView() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="objectives" className="space-y-6">
+            <TabsContent value="objectives" className="space-y-6" data-section="objectives">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Objectives Achievement</CardTitle>
@@ -241,7 +252,7 @@ export function FinalReportView() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="financials" className="space-y-6">
+            <TabsContent value="financials" className="space-y-6" data-section="financials">
               <div className="grid grid-cols-2 gap-6">
                 <Card>
                   <CardHeader>
@@ -291,7 +302,7 @@ export function FinalReportView() {
               </div>
             </TabsContent>
 
-            <TabsContent value="deliverables" className="space-y-6">
+            <TabsContent value="deliverables" className="space-y-6" data-section="deliverables">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base">Deliverables Status</CardTitle>
@@ -317,7 +328,7 @@ export function FinalReportView() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="team" className="space-y-6">
+            <TabsContent value="team" className="space-y-6" data-section="team">
               <Card>
                 <CardHeader>
                   <CardTitle className="text-base flex items-center gap-2">

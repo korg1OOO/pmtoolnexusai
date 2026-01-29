@@ -1,21 +1,36 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Target, Plus, Filter, User, Calendar, Link2, X, Search, ChevronDown } from 'lucide-react';
+import { Target, Plus, Filter, User, Calendar, Link2, Search, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { mockDecisions } from '@/data/mockData';
+import { useDecisions, Decision, DecisionInput, DecisionStatus } from '@/hooks/useDecisions';
 import { LinkDialog, LinkableItem } from '@/components/linking/LinkDialog';
-import type { Decision } from '@/types/project';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import {
   Sheet,
   SheetContent,
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 interface DecisionCardProps {
   decision: Decision;
@@ -35,23 +50,24 @@ function DecisionCard({ decision, onSelect, isSelected }: DecisionCardProps) {
         <Badge variant={decision.status === 'active' ? 'success' : decision.status === 'pending' ? 'warning' : 'secondary'}>
           {decision.status}
         </Badge>
-        <span className="text-xs text-muted-foreground font-mono">{decision.id}</span>
+        <span className="text-xs text-muted-foreground font-mono">{decision.key}</span>
       </div>
       <h3 className="font-medium mb-2">{decision.title}</h3>
       <div className="p-3 bg-muted/50 rounded-lg mb-3">
-        <p className="text-sm">{decision.decision}</p>
+        <p className="text-sm line-clamp-2">{decision.decision}</p>
       </div>
       <div className="flex items-center justify-between text-sm">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-1 text-muted-foreground">
-            <User className="h-3 w-3" />{decision.owner}
+            <User className="h-3 w-3" />{decision.owner_name || 'Unassigned'}
           </div>
           <div className="flex items-center gap-1 text-muted-foreground">
             <Calendar className="h-3 w-3" />{new Date(decision.date).toLocaleDateString()}
           </div>
         </div>
         <div className="flex items-center gap-1 text-muted-foreground">
-          <Link2 className="h-3 w-3" />{decision.linkedTasks.length + decision.linkedRisks.length + decision.linkedMeetings.length}
+          <Link2 className="h-3 w-3" />
+          {decision.linked_tasks.length + decision.linked_risks.length + decision.linked_meetings.length}
         </div>
       </div>
     </motion.div>
@@ -62,9 +78,14 @@ interface DecisionDetailPanelProps {
   decision: Decision;
   onClose: () => void;
   onOpenLinkDialog: () => void;
+  onUpdate: (id: string, updates: Partial<DecisionInput>) => Promise<boolean>;
 }
 
-function DecisionDetailPanel({ decision, onClose, onOpenLinkDialog }: DecisionDetailPanelProps) {
+function DecisionDetailPanel({ decision, onClose, onOpenLinkDialog, onUpdate }: DecisionDetailPanelProps) {
+  const handleStatusChange = async (status: DecisionStatus) => {
+    await onUpdate(decision.id, { status });
+  };
+
   return (
     <Sheet open={true} onOpenChange={() => onClose()}>
       <SheetContent className="w-[500px] sm:max-w-[500px]">
@@ -72,7 +93,7 @@ function DecisionDetailPanel({ decision, onClose, onOpenLinkDialog }: DecisionDe
           <div className="flex items-center justify-between">
             <SheetTitle className="flex items-center gap-2">
               <Target className="h-5 w-5 text-primary" />
-              {decision.id}
+              {decision.key}
             </SheetTitle>
           </div>
         </SheetHeader>
@@ -81,12 +102,22 @@ function DecisionDetailPanel({ decision, onClose, onOpenLinkDialog }: DecisionDe
           <div className="space-y-6">
             {/* Status & Info */}
             <div>
-              <Badge variant={decision.status === 'active' ? 'success' : decision.status === 'pending' ? 'warning' : 'secondary'} className="mb-2">
-                {decision.status}
-              </Badge>
+              <div className="flex items-center gap-2 mb-2">
+                <Select value={decision.status} onValueChange={handleStatusChange}>
+                  <SelectTrigger className="w-[140px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pending">Pending</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="superseded">Superseded</SelectItem>
+                    <SelectItem value="rejected">Rejected</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
               <h2 className="text-lg font-semibold mb-2">{decision.title}</h2>
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                <span className="flex items-center gap-1"><User className="h-3 w-3" />{decision.owner}</span>
+                <span className="flex items-center gap-1"><User className="h-3 w-3" />{decision.owner_name || 'Unassigned'}</span>
                 <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{new Date(decision.date).toLocaleDateString()}</span>
               </div>
             </div>
@@ -114,7 +145,7 @@ function DecisionDetailPanel({ decision, onClose, onOpenLinkDialog }: DecisionDe
                     <CardTitle className="text-sm">Context</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-muted-foreground">{decision.context}</p>
+                    <p className="text-sm text-muted-foreground">{decision.context || 'No context provided'}</p>
                   </CardContent>
                 </Card>
 
@@ -123,7 +154,7 @@ function DecisionDetailPanel({ decision, onClose, onOpenLinkDialog }: DecisionDe
                     <CardTitle className="text-sm">Impact</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm text-muted-foreground">{decision.impact}</p>
+                    <p className="text-sm text-muted-foreground">{decision.impact || 'No impact documented'}</p>
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -134,14 +165,18 @@ function DecisionDetailPanel({ decision, onClose, onOpenLinkDialog }: DecisionDe
                     <CardTitle className="text-sm">Alternatives Considered</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <ul className="space-y-2">
-                      {decision.alternatives.map((alt, i) => (
-                        <li key={i} className="flex items-start gap-2 text-sm">
-                          <span className="text-muted-foreground">{i + 1}.</span>
-                          <span>{alt}</span>
-                        </li>
-                      ))}
-                    </ul>
+                    {decision.alternatives.length > 0 ? (
+                      <ul className="space-y-2">
+                        {decision.alternatives.map((alt, i) => (
+                          <li key={i} className="flex items-start gap-2 text-sm">
+                            <span className="text-muted-foreground">{i + 1}.</span>
+                            <span>{alt}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">No alternatives documented</p>
+                    )}
                   </CardContent>
                 </Card>
               </TabsContent>
@@ -156,11 +191,11 @@ function DecisionDetailPanel({ decision, onClose, onOpenLinkDialog }: DecisionDe
                 </div>
 
                 {/* Linked Tasks */}
-                {decision.linkedTasks.length > 0 && (
+                {decision.linked_tasks.length > 0 && (
                   <div>
-                    <span className="text-xs font-medium text-muted-foreground uppercase">Tasks ({decision.linkedTasks.length})</span>
+                    <span className="text-xs font-medium text-muted-foreground uppercase">Tasks ({decision.linked_tasks.length})</span>
                     <div className="mt-2 space-y-1">
-                      {decision.linkedTasks.map((taskId) => (
+                      {decision.linked_tasks.map((taskId) => (
                         <div key={taskId} className="p-2 rounded bg-muted/50 text-sm flex items-center gap-2">
                           <Badge variant="secondary" className="text-xs">{taskId}</Badge>
                           <span className="text-muted-foreground">Linked task</span>
@@ -171,11 +206,11 @@ function DecisionDetailPanel({ decision, onClose, onOpenLinkDialog }: DecisionDe
                 )}
 
                 {/* Linked Risks */}
-                {decision.linkedRisks.length > 0 && (
+                {decision.linked_risks.length > 0 && (
                   <div>
-                    <span className="text-xs font-medium text-muted-foreground uppercase">Risks ({decision.linkedRisks.length})</span>
+                    <span className="text-xs font-medium text-muted-foreground uppercase">Risks ({decision.linked_risks.length})</span>
                     <div className="mt-2 space-y-1">
-                      {decision.linkedRisks.map((riskId) => (
+                      {decision.linked_risks.map((riskId) => (
                         <div key={riskId} className="p-2 rounded bg-muted/50 text-sm flex items-center gap-2">
                           <Badge variant="warning" className="text-xs">{riskId}</Badge>
                           <span className="text-muted-foreground">Linked risk</span>
@@ -186,11 +221,11 @@ function DecisionDetailPanel({ decision, onClose, onOpenLinkDialog }: DecisionDe
                 )}
 
                 {/* Linked Meetings */}
-                {decision.linkedMeetings.length > 0 && (
+                {decision.linked_meetings.length > 0 && (
                   <div>
-                    <span className="text-xs font-medium text-muted-foreground uppercase">Meetings ({decision.linkedMeetings.length})</span>
+                    <span className="text-xs font-medium text-muted-foreground uppercase">Meetings ({decision.linked_meetings.length})</span>
                     <div className="mt-2 space-y-1">
-                      {decision.linkedMeetings.map((meetingId) => (
+                      {decision.linked_meetings.map((meetingId) => (
                         <div key={meetingId} className="p-2 rounded bg-muted/50 text-sm flex items-center gap-2">
                           <Badge variant="info" className="text-xs">{meetingId}</Badge>
                           <span className="text-muted-foreground">Linked meeting</span>
@@ -200,7 +235,7 @@ function DecisionDetailPanel({ decision, onClose, onOpenLinkDialog }: DecisionDe
                   </div>
                 )}
 
-                {decision.linkedTasks.length === 0 && decision.linkedRisks.length === 0 && decision.linkedMeetings.length === 0 && (
+                {decision.linked_tasks.length === 0 && decision.linked_risks.length === 0 && decision.linked_meetings.length === 0 && (
                   <div className="text-center py-8 text-muted-foreground">
                     <Link2 className="h-8 w-8 mx-auto mb-2 opacity-30" />
                     <p className="text-sm">No linked items yet</p>
@@ -218,25 +253,168 @@ function DecisionDetailPanel({ decision, onClose, onOpenLinkDialog }: DecisionDe
   );
 }
 
+interface CreateDecisionDialogProps {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onCreate: (input: DecisionInput) => Promise<Decision | null>;
+}
+
+function CreateDecisionDialog({ open, onOpenChange, onCreate }: CreateDecisionDialogProps) {
+  const [title, setTitle] = useState('');
+  const [decision, setDecision] = useState('');
+  const [context, setContext] = useState('');
+  const [impact, setImpact] = useState('');
+  const [ownerName, setOwnerName] = useState('');
+  const [status, setStatus] = useState<DecisionStatus>('pending');
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!title.trim() || !decision.trim()) return;
+
+    setIsSubmitting(true);
+    const result = await onCreate({
+      title: title.trim(),
+      decision: decision.trim(),
+      context: context.trim() || undefined,
+      impact: impact.trim() || undefined,
+      owner_name: ownerName.trim() || undefined,
+      status,
+    });
+
+    if (result) {
+      setTitle('');
+      setDecision('');
+      setContext('');
+      setImpact('');
+      setOwnerName('');
+      setStatus('pending');
+      onOpenChange(false);
+    }
+    setIsSubmitting(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Add Decision</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-4">
+          <div className="space-y-2">
+            <Label htmlFor="title">Title *</Label>
+            <Input
+              id="title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="Decision title"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="decision">Decision Statement *</Label>
+            <Textarea
+              id="decision"
+              value={decision}
+              onChange={(e) => setDecision(e.target.value)}
+              placeholder="What was decided?"
+              rows={3}
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="owner">Owner</Label>
+              <Input
+                id="owner"
+                value={ownerName}
+                onChange={(e) => setOwnerName(e.target.value)}
+                placeholder="Decision owner"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="status">Status</Label>
+              <Select value={status} onValueChange={(v) => setStatus(v as DecisionStatus)}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="superseded">Superseded</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="context">Context</Label>
+            <Textarea
+              id="context"
+              value={context}
+              onChange={(e) => setContext(e.target.value)}
+              placeholder="Why was this decision made?"
+              rows={2}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="impact">Impact</Label>
+            <Textarea
+              id="impact"
+              value={impact}
+              onChange={(e) => setImpact(e.target.value)}
+              placeholder="What is the impact of this decision?"
+              rows={2}
+            />
+          </div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Cancel
+          </Button>
+          <Button onClick={handleSubmit} disabled={!title.trim() || !decision.trim() || isSubmitting}>
+            {isSubmitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+            Create Decision
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function DecisionsView() {
+  const { decisions, loading, createDecision, updateDecision, activeDecisions, pendingDecisions, supersededDecisions } = useDecisions();
   const [selectedDecision, setSelectedDecision] = useState<Decision | null>(null);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
 
-  const activeDecisions = mockDecisions.filter(d => d.status === 'active');
-
-  const filteredDecisions = mockDecisions.filter(d => {
+  const filteredDecisions = decisions.filter(d => {
     if (statusFilter !== 'all' && d.status !== statusFilter) return false;
     if (searchQuery && !d.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !d.id.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+        !d.key?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
   });
 
-  const handleLinkItems = (items: LinkableItem[]) => {
-    console.log('Linked items to decision:', items);
-    // In real app, save the links
+  const handleLinkItems = async (items: LinkableItem[]) => {
+    if (!selectedDecision) return;
+
+    const linked_tasks = items.filter(i => i.type === 'task').map(i => i.id);
+    const linked_risks = items.filter(i => i.type === 'risk').map(i => i.id);
+    const linked_meetings = items.filter(i => i.type === 'meeting').map(i => i.id);
+
+    await updateDecision(selectedDecision.id, {
+      linked_tasks,
+      linked_risks,
+      linked_meetings,
+    });
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -244,13 +422,13 @@ export function DecisionsView() {
         <div className="flex items-center gap-3">
           <Target className="h-6 w-6 text-primary" />
           <h2 className="text-lg font-semibold">Decision Register</h2>
-          <Badge>{mockDecisions.length} Decisions</Badge>
+          <Badge>{decisions.length} Decisions</Badge>
         </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm">
             <Filter className="h-4 w-4 mr-1" />Filter
           </Button>
-          <Button size="sm">
+          <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-1" />Add Decision
           </Button>
         </div>
@@ -287,7 +465,7 @@ export function DecisionsView() {
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
           <Card>
             <CardContent className="p-4">
-              <div className="text-3xl font-bold text-primary">{mockDecisions.length}</div>
+              <div className="text-3xl font-bold text-primary">{decisions.length}</div>
               <p className="text-sm text-muted-foreground">Total Decisions</p>
             </CardContent>
           </Card>
@@ -299,13 +477,13 @@ export function DecisionsView() {
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="text-3xl font-bold text-warning">{mockDecisions.filter(d => d.status === 'pending').length}</div>
+              <div className="text-3xl font-bold text-warning">{pendingDecisions.length}</div>
               <p className="text-sm text-muted-foreground">Pending</p>
             </CardContent>
           </Card>
           <Card>
             <CardContent className="p-4">
-              <div className="text-3xl font-bold text-muted-foreground">{mockDecisions.filter(d => d.status === 'superseded').length}</div>
+              <div className="text-3xl font-bold text-muted-foreground">{supersededDecisions.length}</div>
               <p className="text-sm text-muted-foreground">Superseded</p>
             </CardContent>
           </Card>
@@ -331,6 +509,10 @@ export function DecisionsView() {
           <div className="text-center py-12 text-muted-foreground">
             <Target className="h-12 w-12 mx-auto mb-4 opacity-30" />
             <p>No decisions found</p>
+            <Button size="sm" className="mt-4" onClick={() => setCreateDialogOpen(true)}>
+              <Plus className="h-4 w-4 mr-1" />
+              Add First Decision
+            </Button>
           </div>
         )}
       </div>
@@ -341,6 +523,7 @@ export function DecisionsView() {
           decision={selectedDecision}
           onClose={() => setSelectedDecision(null)}
           onOpenLinkDialog={() => setLinkDialogOpen(true)}
+          onUpdate={updateDecision}
         />
       )}
 
@@ -353,12 +536,19 @@ export function DecisionsView() {
           onLink={handleLinkItems}
           allowedTypes={['task', 'meeting', 'action', 'risk']}
           existingLinks={[
-            ...selectedDecision.linkedTasks.map(id => ({ type: 'task' as const, id })),
-            ...selectedDecision.linkedRisks.map(id => ({ type: 'risk' as const, id })),
-            ...selectedDecision.linkedMeetings.map(id => ({ type: 'meeting' as const, id })),
+            ...selectedDecision.linked_tasks.map(id => ({ type: 'task' as const, id })),
+            ...selectedDecision.linked_risks.map(id => ({ type: 'risk' as const, id })),
+            ...selectedDecision.linked_meetings.map(id => ({ type: 'meeting' as const, id })),
           ]}
         />
       )}
+
+      {/* Create Dialog */}
+      <CreateDecisionDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onCreate={createDecision}
+      />
     </div>
   );
 }

@@ -89,7 +89,7 @@ export function StrategicAISidebar({ isOpen, onToggle }: StrategicAISidebarProps
             riskCount: 3,
             hiddenRiskCount: 2,
             timingRiskCount: 1,
-            risks: [{ id: '1', title: 'Strategic risk identified', confidence: 0.85 }],
+            risks: [{ title: 'Strategic risk identified', confidence: 0.85 }],
             recommendations: aiResponse.slice(0, 200),
             stakeholderInsights: [],
             tradeoffAnalysis: 'AI analysis pending more context',

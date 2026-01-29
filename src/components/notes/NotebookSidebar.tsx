@@ -37,6 +37,7 @@ import {
 } from 'lucide-react';
 import type { Notebook, NotebookSection } from '@/hooks/useNotebooks';
 import type { NotebookSpreadsheet } from '@/hooks/useSpreadsheets';
+import { LinkedSpreadsheetIcon } from './spreadsheet/LinkedSpreadsheetIcon';
 
 const iconMap: Record<string, React.ElementType> = {
   'book-open': BookOpen,
@@ -300,7 +301,7 @@ export function NotebookSidebar({
                               selectedSpreadsheetId === spreadsheet.id && 'bg-accent text-accent-foreground'
                             )}
                           >
-                            <Table2 className="h-3.5 w-3.5 text-green-500" />
+                            <LinkedSpreadsheetIcon isLinked={!!spreadsheet.linked_project_id} />
                             <span className="truncate">{spreadsheet.name}</span>
                           </button>
 

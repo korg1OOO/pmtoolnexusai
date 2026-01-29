@@ -25,6 +25,7 @@ import {
   Clipboard,
   Scissors,
   Trash2,
+  Link2,
 } from 'lucide-react';
 import type { CellFormat } from './types';
 import { cn } from '@/lib/utils';
@@ -65,6 +66,10 @@ interface SpreadsheetToolbarProps {
   onPaste: () => void;
   onClearContent: () => void;
   hasSelection: boolean;
+  // Linked spreadsheet props
+  isLinked?: boolean;
+  onConvertToProjectPlan?: () => void;
+  syncStatusComponent?: React.ReactNode;
 }
 
 export function SpreadsheetToolbar({
@@ -79,9 +84,33 @@ export function SpreadsheetToolbar({
   onPaste,
   onClearContent,
   hasSelection,
+  isLinked,
+  onConvertToProjectPlan,
+  syncStatusComponent,
 }: SpreadsheetToolbarProps) {
   return (
     <div className="flex items-center gap-1 px-2 py-1 border-b border-border bg-muted/30 flex-wrap">
+      {/* Convert to Project Plan / Sync Status */}
+      {isLinked ? (
+        syncStatusComponent
+      ) : (
+        onConvertToProjectPlan && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button variant="outline" size="sm" className="gap-1.5" onClick={onConvertToProjectPlan}>
+                <Link2 className="h-4 w-4" />
+                Convert to Project Plan
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Link this spreadsheet to a project plan</TooltipContent>
+          </Tooltip>
+        )
+      )}
+
+      {(isLinked || onConvertToProjectPlan) && (
+        <Separator orientation="vertical" className="h-6 mx-1" />
+      )}
+
       {/* Undo/Redo */}
       <div className="flex items-center gap-0.5">
         <Tooltip>

@@ -31,9 +31,11 @@ import {
   Scissors,
   ArrowUp,
   ArrowDown,
+  Lock,
 } from 'lucide-react';
 import type { SpreadsheetSheet, NotebookSpreadsheet } from '@/hooks/useSpreadsheets';
 import { useSheets } from '@/hooks/useSpreadsheets';
+import { useLinkedSpreadsheet } from '@/hooks/useLinkedSpreadsheet';
 import { formatDistanceToNow } from 'date-fns';
 import {
   SpreadsheetToolbar,
@@ -41,6 +43,8 @@ import {
   getCellRefString,
   getCellDisplayValue,
   indexToColumn,
+  ConvertToProjectPlanDialog,
+  SyncStatusIndicator,
 } from './spreadsheet';
 import type { CellFormat, Selection, CellData } from './spreadsheet/types';
 import { isInSelection, getSelectionRange, createEmptySelection } from './spreadsheet/types';
@@ -60,12 +64,24 @@ interface HistoryEntry {
 
 export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
   const { sheets, loading, createSheet, updateSheet, deleteSheet } = useSheets(spreadsheet?.id || null);
+  const { 
+    linkInfo, 
+    isLinked, 
+    isSyncing, 
+    convertToProjectPlan, 
+    syncToProjectPlan, 
+    syncToSpreadsheet, 
+    unlinkFromProjectPlan,
+    debouncedSync,
+  } = useLinkedSpreadsheet(spreadsheet?.id || null);
+  
   const [activeSheetId, setActiveSheetId] = useState<string | null>(null);
   const [editingSheetName, setEditingSheetName] = useState<string | null>(null);
   const [newSheetName, setNewSheetName] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
+  const [showConvertDialog, setShowConvertDialog] = useState(false);
   
   // Selection state
   const [selection, setSelection] = useState<Selection | null>(null);
@@ -586,8 +602,20 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
       {/* Top Bar */}
       <div className="flex items-center justify-between p-2 border-b border-border shrink-0">
         <div className="flex items-center gap-2">
-          <Table2 className="h-5 w-5 text-primary" />
+          {isLinked ? (
+            <div className="relative">
+              <Table2 className="h-5 w-5 text-blue-500" />
+              <div className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-blue-500 border-2 border-background" />
+            </div>
+          ) : (
+            <Table2 className="h-5 w-5 text-primary" />
+          )}
           <span className="font-medium">{spreadsheet.name}</span>
+          {isLinked && (
+            <span className="text-xs bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 px-2 py-0.5 rounded-full">
+              Linked
+            </span>
+          )}
         </div>
         
         <div className="flex items-center gap-2">
@@ -618,6 +646,19 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
         onPaste={handlePaste}
         onClearContent={handleClearContent}
         hasSelection={selection !== null}
+        isLinked={isLinked}
+        onConvertToProjectPlan={() => setShowConvertDialog(true)}
+        syncStatusComponent={
+          linkInfo ? (
+            <SyncStatusIndicator
+              linkInfo={linkInfo}
+              isSyncing={isSyncing}
+              onSyncToProject={() => activeSheet && syncToProjectPlan(activeSheet.id, localData || [])}
+              onSyncToSpreadsheet={() => activeSheet && syncToSpreadsheet(activeSheet.id)}
+              onUnlink={unlinkFromProjectPlan}
+            />
+          ) : null
+        }
       />
 
       {/* Formula Bar */}
@@ -682,13 +723,16 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
                         <div
                           className={cn(
                             'border-b border-r border-border relative',
-                            isSelected && 'bg-primary/10',
-                            isActiveCell && 'ring-2 ring-primary ring-inset z-10'
+                            isSelected && !isLinked && 'bg-primary/10',
+                            isSelected && isLinked && 'bg-blue-200/50 dark:bg-blue-900/30',
+                            isActiveCell && 'ring-2 ring-primary ring-inset z-10',
+                            // Blue tint for linked spreadsheets (only data rows, not header row)
+                            isLinked && rowIndex > 0 && !isSelected && 'bg-blue-50/50 dark:bg-blue-950/20'
                           )}
                           style={{ 
                             width: columnWidths[colIndex] ?? DEFAULT_COL_WIDTH, 
                             height: ROW_HEIGHT,
-                            backgroundColor: format.bgColor || undefined,
+                            backgroundColor: !isLinked && format.bgColor ? format.bgColor : undefined,
                           }}
                           onMouseDown={(e) => handleCellMouseDown(rowIndex, colIndex, e)}
                           onMouseEnter={() => handleCellMouseEnter(rowIndex, colIndex)}
@@ -827,7 +871,7 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
                         e.stopPropagation();
                         handleDeleteSheet(sheet.id);
                       }}
-                      disabled={sheets.length <= 1}
+                      disabled={sheets.length <= 1 || isLinked}
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
                       Delete
@@ -839,15 +883,38 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
           </div>
         ))}
         
-        <Button
-          variant="ghost"
-          size="iconSm"
-          className="h-7 w-7"
-          onClick={handleAddSheet}
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
+        {/* Disable add sheet for linked spreadsheets */}
+        {!isLinked && (
+          <Button
+            variant="ghost"
+            size="iconSm"
+            className="h-7 w-7"
+            onClick={handleAddSheet}
+          >
+            <Plus className="h-4 w-4" />
+          </Button>
+        )}
+        {isLinked && (
+          <div className="flex items-center gap-1 px-2 text-xs text-muted-foreground">
+            <Lock className="h-3 w-3" />
+            <span>Sheets locked</span>
+          </div>
+        )}
       </div>
+
+      {/* Convert to Project Plan Dialog */}
+      <ConvertToProjectPlanDialog
+        open={showConvertDialog}
+        onOpenChange={setShowConvertDialog}
+        spreadsheetName={spreadsheet?.name || 'Spreadsheet'}
+        sheetData={localData || []}
+        onConvert={async (projectId) => {
+          if (activeSheet) {
+            return await convertToProjectPlan(projectId, activeSheet.id, localData || []);
+          }
+          return false;
+        }}
+      />
     </div>
   );
 }

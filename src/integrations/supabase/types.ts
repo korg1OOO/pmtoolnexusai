@@ -1186,30 +1186,52 @@ export type Database = {
           color: string | null
           created_at: string
           id: string
+          last_synced_at: string | null
+          linked_at: string | null
+          linked_project_id: string | null
           name: string
           notebook_id: string
           sort_order: number | null
+          sync_direction: string | null
+          sync_status: string | null
           updated_at: string
         }
         Insert: {
           color?: string | null
           created_at?: string
           id?: string
+          last_synced_at?: string | null
+          linked_at?: string | null
+          linked_project_id?: string | null
           name?: string
           notebook_id: string
           sort_order?: number | null
+          sync_direction?: string | null
+          sync_status?: string | null
           updated_at?: string
         }
         Update: {
           color?: string | null
           created_at?: string
           id?: string
+          last_synced_at?: string | null
+          linked_at?: string | null
+          linked_project_id?: string | null
           name?: string
           notebook_id?: string
           sort_order?: number | null
+          sync_direction?: string | null
+          sync_status?: string | null
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "notebook_spreadsheets_linked_project_id_fkey"
+            columns: ["linked_project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "notebook_spreadsheets_notebook_id_fkey"
             columns: ["notebook_id"]
@@ -1652,6 +1674,55 @@ export type Database = {
             columns: ["spreadsheet_id"]
             isOneToOne: false
             referencedRelation: "notebook_spreadsheets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spreadsheet_task_mappings: {
+        Row: {
+          created_at: string
+          id: string
+          row_index: number
+          sheet_id: string
+          spreadsheet_id: string
+          task_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          row_index: number
+          sheet_id: string
+          spreadsheet_id: string
+          task_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          row_index?: number
+          sheet_id?: string
+          spreadsheet_id?: string
+          task_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spreadsheet_task_mappings_sheet_id_fkey"
+            columns: ["sheet_id"]
+            isOneToOne: false
+            referencedRelation: "spreadsheet_sheets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spreadsheet_task_mappings_spreadsheet_id_fkey"
+            columns: ["spreadsheet_id"]
+            isOneToOne: false
+            referencedRelation: "notebook_spreadsheets"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "spreadsheet_task_mappings_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
         ]

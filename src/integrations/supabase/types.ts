@@ -139,7 +139,11 @@ export type Database = {
           attachment_url: string | null
           content: string
           created_at: string
+          deleted_at: string | null
+          edit_history: Json | null
+          edited_at: string | null
           id: string
+          is_deleted: boolean | null
           is_pinned: boolean | null
           pinned_at: string | null
           pinned_by: string | null
@@ -157,7 +161,11 @@ export type Database = {
           attachment_url?: string | null
           content: string
           created_at?: string
+          deleted_at?: string | null
+          edit_history?: Json | null
+          edited_at?: string | null
           id?: string
+          is_deleted?: boolean | null
           is_pinned?: boolean | null
           pinned_at?: string | null
           pinned_by?: string | null
@@ -175,7 +183,11 @@ export type Database = {
           attachment_url?: string | null
           content?: string
           created_at?: string
+          deleted_at?: string | null
+          edit_history?: Json | null
+          edited_at?: string | null
           id?: string
+          is_deleted?: boolean | null
           is_pinned?: boolean | null
           pinned_at?: string | null
           pinned_by?: string | null

@@ -87,8 +87,8 @@ export function BriefingSectionCard({
       : 'text-orange-600 dark:text-orange-400';
 
   return (
-    <Card className="overflow-hidden">
-      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+    <Card className="overflow-hidden h-full flex flex-col">
+      <Collapsible open={isOpen} onOpenChange={setIsOpen} className="flex flex-col flex-1 min-h-0">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -176,8 +176,8 @@ export function BriefingSectionCard({
           )}
         </CardHeader>
 
-        <CollapsibleContent>
-          <CardContent className="pt-2">
+        <CollapsibleContent className="flex-1 min-h-0 overflow-auto">
+          <CardContent className="pt-2 h-full">
             {loading ? (
               <div className="space-y-2">
                 <Skeleton className="h-4 w-full" />

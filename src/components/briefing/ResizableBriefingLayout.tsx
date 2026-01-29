@@ -83,21 +83,13 @@ export function ResizableBriefingLayout({
   return (
     <div className="space-y-4">
       {rows.map((row, rowIndex) => (
-        <div key={rowIndex} className="min-h-[200px]">
+        <div key={rowIndex} className="h-[350px]">
           {row.isFullWidth || row.sections.length === 1 ? (
-            <ResizablePanelGroup direction="horizontal" className="min-h-[200px]">
-              <ResizablePanel 
-                defaultSize={100} 
-                minSize={30}
-                className="transition-all duration-200"
-              >
-                <div className="h-full pr-0">
-                  {renderSection(row.sections[0])}
-                </div>
-              </ResizablePanel>
-            </ResizablePanelGroup>
+            <div className="h-full">
+              {renderSection(row.sections[0])}
+            </div>
           ) : (
-            <ResizablePanelGroup direction="horizontal" className="min-h-[200px]">
+            <ResizablePanelGroup direction="horizontal" className="h-full">
               <ResizablePanel 
                 defaultSize={50} 
                 minSize={25}
@@ -109,7 +101,7 @@ export function ResizableBriefingLayout({
               </ResizablePanel>
               <ResizableHandle 
                 withHandle 
-                className="mx-1 bg-transparent hover:bg-primary/20 transition-colors"
+                className="mx-1 w-2 bg-border/50 hover:bg-primary/30 transition-colors cursor-col-resize rounded"
               />
               <ResizablePanel 
                 defaultSize={50} 

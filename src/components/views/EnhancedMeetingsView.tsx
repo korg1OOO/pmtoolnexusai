@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
+import { isSameDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
   Video,
@@ -29,6 +30,8 @@ import {
   Loader2,
   Repeat,
   Edit,
+  PanelRightClose,
+  PanelRightOpen,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -40,7 +43,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MeetingAISidebar } from '@/components/ai/MeetingAISidebar';
 import { LinkDialog, LinkableItem } from '@/components/linking/LinkDialog';
-import { MeetingCreationDialog, TranscriptUploadDialog, RecurringEditDialog, MeetingEditDialog } from '@/components/meetings';
+import { MeetingCreationDialog, TranscriptUploadDialog, RecurringEditDialog, MeetingEditDialog, MiniCalendarSidebar } from '@/components/meetings';
 import { useMeetings, MeetingWithRelations, CreateMeetingInput, CreateParticipantInput, CreateAgendaItemInput } from '@/hooks/useMeetings';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -180,11 +183,16 @@ export function EnhancedMeetingsView() {
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null);
   const [showMoM, setShowMoM] = useState(false);
   const [showAISidebar, setShowAISidebar] = useState(true);
+  const [showMiniCalendar, setShowMiniCalendar] = useState(true);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [linkingAction, setLinkingAction] = useState<{ id: string; title: string } | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showTranscriptDialog, setShowTranscriptDialog] = useState(false);
   const [isGeneratingMoM, setIsGeneratingMoM] = useState(false);
+  
+  // Mini calendar states
+  const [calendarMonth, setCalendarMonth] = useState(new Date());
+  const [filterDate, setFilterDate] = useState<Date | null>(null);
   
   // Edit dialog states
   const [showRecurringEditDialog, setShowRecurringEditDialog] = useState(false);
@@ -194,21 +202,46 @@ export function EnhancedMeetingsView() {
 
   // Map meetings to display format
   const displayMeetings = useMemo(() => meetings.map(mapMeetingToDisplay), [meetings]);
+
+  // Filter meetings by selected date
+  const filteredMeetings = useMemo(() => {
+    if (!filterDate) return displayMeetings;
+    return displayMeetings.filter((m) => isSameDay(new Date(m.date), filterDate));
+  }, [displayMeetings, filterDate]);
+
+  // Generate meeting dates for mini calendar (count meetings per day)
+  const meetingDates = useMemo(() => {
+    const dateMap = new Map<string, number>();
+    displayMeetings.forEach((m) => {
+      const dateKey = new Date(m.date).toDateString();
+      dateMap.set(dateKey, (dateMap.get(dateKey) || 0) + 1);
+    });
+    return Array.from(dateMap.entries()).map(([dateStr, count]) => ({
+      date: new Date(dateStr),
+      count,
+    }));
+  }, [displayMeetings]);
   
   // Get selected meeting
   const selectedMeeting = useMemo(() => {
-    if (!selectedMeetingId && displayMeetings.length > 0) {
-      return displayMeetings[0];
+    if (!selectedMeetingId && filteredMeetings.length > 0) {
+      return filteredMeetings[0];
     }
-    return displayMeetings.find((m) => m.id === selectedMeetingId) || null;
-  }, [selectedMeetingId, displayMeetings]);
+    return filteredMeetings.find((m) => m.id === selectedMeetingId) || null;
+  }, [selectedMeetingId, filteredMeetings]);
 
   // Auto-select first meeting
   React.useEffect(() => {
-    if (displayMeetings.length > 0 && !selectedMeetingId) {
-      setSelectedMeetingId(displayMeetings[0].id);
+    if (filteredMeetings.length > 0 && !selectedMeetingId) {
+      setSelectedMeetingId(filteredMeetings[0].id);
     }
-  }, [displayMeetings, selectedMeetingId]);
+  }, [filteredMeetings, selectedMeetingId]);
+
+  // Handle date selection from mini calendar
+  const handleDateSelect = (date: Date | null) => {
+    setFilterDate(date);
+    setSelectedMeetingId(null); // Reset selection when filtering
+  };
 
   const handleOpenLinkDialog = (actionId: string, actionTitle: string) => {
     setLinkingAction({ id: actionId, title: actionTitle });
@@ -395,26 +428,60 @@ export function EnhancedMeetingsView() {
           <div className="p-4 border-b">
             <div className="flex items-center justify-between mb-2">
               <h2 className="font-semibold">AI-Enhanced Meetings</h2>
-              <Button size="sm" onClick={() => setShowCreateDialog(true)}>
-                <Plus className="h-4 w-4 mr-1" />
-                New
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => setShowMiniCalendar(!showMiniCalendar)}
+                  title={showMiniCalendar ? "Hide calendar" : "Show calendar"}
+                >
+                  {showMiniCalendar ? (
+                    <PanelRightClose className="h-4 w-4" />
+                  ) : (
+                    <PanelRightOpen className="h-4 w-4" />
+                  )}
+                </Button>
+                <Button size="sm" onClick={() => setShowCreateDialog(true)}>
+                  <Plus className="h-4 w-4 mr-1" />
+                  New
+                </Button>
+              </div>
             </div>
-            <p className="text-xs text-muted-foreground">
-              {displayMeetings.length} meetings with AI intelligence extraction
-            </p>
+            <div className="flex items-center justify-between">
+              <p className="text-xs text-muted-foreground">
+                {filterDate 
+                  ? `${filteredMeetings.length} meeting(s) on ${filterDate.toLocaleDateString()}`
+                  : `${displayMeetings.length} meetings total`
+                }
+              </p>
+              {filterDate && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-xs px-2"
+                  onClick={() => setFilterDate(null)}
+                >
+                  Clear filter
+                </Button>
+              )}
+            </div>
           </div>
 
           <ScrollArea className="flex-1">
             <div className="p-2 space-y-2">
-              {displayMeetings.length === 0 ? (
+              {filteredMeetings.length === 0 ? (
                 <div className="p-8 text-center text-muted-foreground">
                   <Video className="h-10 w-10 mx-auto mb-3 opacity-50" />
-                  <p className="text-sm font-medium mb-1">No meetings yet</p>
-                  <p className="text-xs">Create your first meeting to get started</p>
+                  <p className="text-sm font-medium mb-1">
+                    {filterDate ? 'No meetings on this date' : 'No meetings yet'}
+                  </p>
+                  <p className="text-xs">
+                    {filterDate ? 'Select a different date or clear the filter' : 'Create your first meeting to get started'}
+                  </p>
                 </div>
               ) : (
-                displayMeetings.map((meeting) => (
+                filteredMeetings.map((meeting) => (
                   <motion.div
                     key={meeting.id}
                     whileHover={{ scale: 1.01 }}
@@ -1136,6 +1203,17 @@ export function EnhancedMeetingsView() {
           </div>
         )}
       </div>
+
+      {/* Mini Calendar Sidebar */}
+      {showMiniCalendar && (
+        <MiniCalendarSidebar
+          selectedDate={filterDate}
+          onSelectDate={handleDateSelect}
+          meetingDates={meetingDates}
+          currentMonth={calendarMonth}
+          onMonthChange={setCalendarMonth}
+        />
+      )}
 
       {/* Dialogs */}
       <MeetingCreationDialog

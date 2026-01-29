@@ -55,6 +55,292 @@ export type Database = {
           },
         ]
       }
+      document_approvers: {
+        Row: {
+          comment: string | null
+          created_at: string
+          decided_at: string | null
+          document_id: string
+          id: string
+          order_num: number
+          status: string
+          user_id: string | null
+          user_name: string
+          user_role: string | null
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          decided_at?: string | null
+          document_id: string
+          id?: string
+          order_num?: number
+          status?: string
+          user_id?: string | null
+          user_name: string
+          user_role?: string | null
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          decided_at?: string | null
+          document_id?: string
+          id?: string
+          order_num?: number
+          status?: string
+          user_id?: string | null
+          user_name?: string
+          user_role?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_approvers_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_folders: {
+        Row: {
+          color: string | null
+          created_at: string
+          id: string
+          name: string
+          parent_id: string | null
+          project_id: string
+          sort_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          parent_id?: string | null
+          project_id: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          parent_id?: string | null
+          project_id?: string
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_folders_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "document_folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_folders_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_shares: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          document_id: string | null
+          expires_at: string | null
+          folder_id: string | null
+          id: string
+          permission: string
+          share_link: string | null
+          shared_with_email: string | null
+          shared_with_user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          document_id?: string | null
+          expires_at?: string | null
+          folder_id?: string | null
+          id?: string
+          permission?: string
+          share_link?: string | null
+          shared_with_email?: string | null
+          shared_with_user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          document_id?: string | null
+          expires_at?: string | null
+          folder_id?: string | null
+          id?: string
+          permission?: string
+          share_link?: string | null
+          shared_with_email?: string | null
+          shared_with_user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_shares_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "document_shares_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "document_folders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      document_versions: {
+        Row: {
+          approved_at: string | null
+          approved_by: string | null
+          approved_by_name: string | null
+          change_notes: string | null
+          created_at: string
+          document_id: string
+          file_size: number
+          file_url: string
+          id: string
+          status: string
+          uploaded_by: string | null
+          uploaded_by_name: string | null
+          version: string
+        }
+        Insert: {
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_by_name?: string | null
+          change_notes?: string | null
+          created_at?: string
+          document_id: string
+          file_size?: number
+          file_url: string
+          id?: string
+          status?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+          version: string
+        }
+        Update: {
+          approved_at?: string | null
+          approved_by?: string | null
+          approved_by_name?: string | null
+          change_notes?: string | null
+          created_at?: string
+          document_id?: string
+          file_size?: number
+          file_url?: string
+          id?: string
+          status?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_versions_document_id_fkey"
+            columns: ["document_id"]
+            isOneToOne: false
+            referencedRelation: "documents"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      documents: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          file_size: number
+          file_type: string
+          file_url: string
+          folder_id: string | null
+          id: string
+          is_deleted: boolean | null
+          is_locked: boolean | null
+          is_starred: boolean | null
+          locked_by: string | null
+          metadata: Json | null
+          name: string
+          project_id: string
+          status: string
+          updated_at: string
+          uploaded_by: string | null
+          uploaded_by_name: string | null
+          version: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          file_size?: number
+          file_type?: string
+          file_url: string
+          folder_id?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          is_locked?: boolean | null
+          is_starred?: boolean | null
+          locked_by?: string | null
+          metadata?: Json | null
+          name: string
+          project_id: string
+          status?: string
+          updated_at?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+          version?: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          file_size?: number
+          file_type?: string
+          file_url?: string
+          folder_id?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          is_locked?: boolean | null
+          is_starred?: boolean | null
+          locked_by?: string | null
+          metadata?: Json | null
+          name?: string
+          project_id?: string
+          status?: string
+          updated_at?: string
+          uploaded_by?: string | null
+          uploaded_by_name?: string | null
+          version?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "documents_folder_id_fkey"
+            columns: ["folder_id"]
+            isOneToOne: false
+            referencedRelation: "document_folders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "documents_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_accounts: {
         Row: {
           account_type: string

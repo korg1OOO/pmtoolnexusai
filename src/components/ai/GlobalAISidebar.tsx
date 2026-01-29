@@ -34,6 +34,7 @@ import { PageContextPanel, getSuggestedQuestions, getViewContext } from './PageC
 import { IntentModeToggle, type IntentMode } from './IntentModeToggle';
 import { ClarifyingQuestion, type ClarifyingQuestionData } from './ClarifyingQuestion';
 import { ContextSelector, formatContextsForAI, type ContextItem } from './ContextSelector';
+import { ChatAttachments, AttachmentPreviewBar, VoiceInputButton, type ChatAttachment } from './ChatAttachments';
 import { ROLE_DISPLAY_NAMES, type ProjectRole, type AIAction } from '@/types/ai-agents';
 import { toast } from 'sonner';
 
@@ -60,6 +61,7 @@ export function GlobalAISidebar({
   const [clarifyingQuestion, setClarifyingQuestion] = useState<ClarifyingQuestionData | null>(null);
   const [showContext, setShowContext] = useState(true);
   const [selectedContexts, setSelectedContexts] = useState<ContextItem[]>([]);
+  const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -138,7 +140,7 @@ export function GlobalAISidebar({
   }, [messages.length]);
 
   const handleSend = async () => {
-    if (!input.trim() || isSending) return;
+    if ((!input.trim() && attachments.length === 0) || isSending) return;
     const message = input;
     setInput('');
     
@@ -148,7 +150,19 @@ export function GlobalAISidebar({
       : '[Action Mode] ';
     const contextString = formatContextsForAI(selectedContexts);
     
-    await sendMessage(contextString + modePrefix + message);
+    // Include attachment info in the message
+    let attachmentInfo = '';
+    if (attachments.length > 0) {
+      const attachmentNames = attachments.map(a => `${a.name} (${a.type})`).join(', ');
+      attachmentInfo = `[Attachments: ${attachmentNames}] `;
+      setAttachments([]); // Clear attachments after sending
+    }
+    
+    await sendMessage(contextString + attachmentInfo + modePrefix + message);
+  };
+
+  const handleVoiceTranscript = (text: string) => {
+    setInput(prev => prev ? `${prev} ${text}` : text);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -476,27 +490,47 @@ export function GlobalAISidebar({
                 />
               </div>
 
+              {/* Attachment preview bar */}
+              <AttachmentPreviewBar
+                attachments={attachments}
+                onRemove={(id) => setAttachments(attachments.filter(a => a.id !== id))}
+              />
+
               <div className="p-3 pt-1 flex gap-2">
-                <Textarea
-                  ref={textareaRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder={
-                    intentMode === 'plan'
-                      ? "Ask about your project..."
-                      : "What would you like to do?"
-                  }
-                  className="min-h-[60px] max-h-[120px] resize-none text-sm"
-                  disabled={isSending}
-                />
+                <div className="flex-1 flex flex-col gap-1">
+                  <Textarea
+                    ref={textareaRef}
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder={
+                      intentMode === 'plan'
+                        ? "Ask about your project..."
+                        : "What would you like to do?"
+                    }
+                    className="min-h-[60px] max-h-[120px] resize-none text-sm"
+                    disabled={isSending}
+                  />
+                  {/* Attachment and voice buttons */}
+                  <div className="flex items-center gap-1">
+                    <ChatAttachments
+                      attachments={attachments}
+                      onAttachmentsChange={setAttachments}
+                      disabled={isSending}
+                    />
+                    <VoiceInputButton
+                      onTranscript={handleVoiceTranscript}
+                      disabled={isSending}
+                    />
+                  </div>
+                </div>
                 <div className="flex flex-col gap-2">
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
                         size="icon"
                         onClick={handleSend}
-                        disabled={!input.trim() || isSending}
+                        disabled={(!input.trim() && attachments.length === 0) || isSending}
                         className="h-9 w-9"
                       >
                         {isSending ? (

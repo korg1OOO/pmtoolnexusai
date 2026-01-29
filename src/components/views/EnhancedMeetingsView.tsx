@@ -27,6 +27,8 @@ import {
   Link2,
   Upload,
   Loader2,
+  Repeat,
+  Edit,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -38,7 +40,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { MeetingAISidebar } from '@/components/ai/MeetingAISidebar';
 import { LinkDialog, LinkableItem } from '@/components/linking/LinkDialog';
-import { MeetingCreationDialog, TranscriptUploadDialog } from '@/components/meetings';
+import { MeetingCreationDialog, TranscriptUploadDialog, RecurringEditDialog, MeetingEditDialog } from '@/components/meetings';
 import { useMeetings, MeetingWithRelations, CreateMeetingInput, CreateParticipantInput, CreateAgendaItemInput } from '@/hooks/useMeetings';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { supabase } from '@/integrations/supabase/client';
@@ -68,6 +70,10 @@ function mapMeetingToDisplay(meeting: MeetingWithRelations) {
       videoAvailable: meeting.video_available || false,
       transcriptAvailable: meeting.transcript_available || false,
     },
+    // Recurring meeting info
+    isRecurring: !!meeting.recurring_parent_id || !!meeting.recurring_schedule,
+    recurringSchedule: meeting.recurring_schedule,
+    recurringParentId: meeting.recurring_parent_id,
     purpose: {
       type: meeting.purpose_type || 'status-update',
       description: meeting.purpose_description || '',
@@ -179,6 +185,12 @@ export function EnhancedMeetingsView() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showTranscriptDialog, setShowTranscriptDialog] = useState(false);
   const [isGeneratingMoM, setIsGeneratingMoM] = useState(false);
+  
+  // Edit dialog states
+  const [showRecurringEditDialog, setShowRecurringEditDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editMode, setEditMode] = useState<'single' | 'all'>('single');
+  const [meetingToEdit, setMeetingToEdit] = useState<MeetingWithRelations | null>(null);
 
   // Map meetings to display format
   const displayMeetings = useMemo(() => meetings.map(mapMeetingToDisplay), [meetings]);
@@ -263,6 +275,56 @@ export function EnhancedMeetingsView() {
     } finally {
       setIsGeneratingMoM(false);
     }
+  };
+
+  // Handle edit button click
+  const handleEditClick = (meeting: ReturnType<typeof mapMeetingToDisplay>) => {
+    const dbMeeting = meetings.find((m) => m.id === meeting.id);
+    if (!dbMeeting) return;
+    
+    setMeetingToEdit(dbMeeting);
+    
+    // Check if this is a recurring meeting
+    if (meeting.isRecurring) {
+      setShowRecurringEditDialog(true);
+    } else {
+      setEditMode('single');
+      setShowEditDialog(true);
+    }
+  };
+
+  const handleEditSingle = () => {
+    setEditMode('single');
+    setShowEditDialog(true);
+  };
+
+  const handleEditAll = () => {
+    setEditMode('all');
+    setShowEditDialog(true);
+  };
+
+  const handleSaveEdit = async (id: string, updates: Record<string, unknown>) => {
+    if (editMode === 'all' && meetingToEdit?.recurring_parent_id) {
+      // Update all instances in the series
+      const parentId = meetingToEdit.recurring_parent_id || id;
+      
+      // Update parent meeting
+      await updateMeeting(parentId, updates);
+      
+      // Update all child instances (excluding date for 'all' edit)
+      const { date, ...updatesWithoutDate } = updates;
+      const childMeetings = meetings.filter((m) => m.recurring_parent_id === parentId);
+      for (const child of childMeetings) {
+        await updateMeeting(child.id, updatesWithoutDate);
+      }
+      
+      toast.success(`Updated ${childMeetings.length + 1} meetings in series`);
+    } else {
+      // Update single instance
+      await updateMeeting(id, updates);
+    }
+    
+    setMeetingToEdit(null);
   };
 
   const getCaptureIcon = (mode: string) => {
@@ -359,12 +421,19 @@ export function EnhancedMeetingsView() {
                     whileTap={{ scale: 0.99 }}
                     onClick={() => setSelectedMeetingId(meeting.id)}
                     className={cn(
-                      'p-3 rounded-lg border cursor-pointer transition-all',
+                      'p-3 rounded-lg border cursor-pointer transition-all group',
                       selectedMeeting?.id === meeting.id ? 'bg-primary/10 border-primary' : 'hover:bg-muted/50'
                     )}
                   >
                     <div className="flex items-start gap-3">
                       <div className="flex flex-col items-center bg-muted rounded-lg p-2 min-w-[45px]">
+                        {meeting.isRecurring && (
+                          <div className="absolute -top-1 -right-1">
+                            <Badge variant="outline" className="h-4 px-1 text-[10px] bg-background">
+                              <Repeat className="h-2.5 w-2.5" />
+                            </Badge>
+                          </div>
+                        )}
                         <span className="text-xs text-muted-foreground">
                           {new Date(meeting.date).toLocaleDateString('en-US', { month: 'short' })}
                         </span>
@@ -373,7 +442,21 @@ export function EnhancedMeetingsView() {
 
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 mb-1">
+                          {meeting.isRecurring && (
+                            <Repeat className="h-3 w-3 text-primary shrink-0" />
+                          )}
                           <h3 className="font-medium text-sm truncate">{meeting.title}</h3>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-5 w-5 ml-auto opacity-0 group-hover:opacity-100 shrink-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleEditClick(meeting);
+                            }}
+                          >
+                            <Edit className="h-3 w-3" />
+                          </Button>
                         </div>
 
                         <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
@@ -1082,6 +1165,24 @@ export function EnhancedMeetingsView() {
           allowedTypes={['task', 'decision', 'risk', 'meeting']}
         />
       )}
+
+      {/* Recurring Edit Choice Dialog */}
+      <RecurringEditDialog
+        open={showRecurringEditDialog}
+        onOpenChange={setShowRecurringEditDialog}
+        onEditSingle={handleEditSingle}
+        onEditAll={handleEditAll}
+        meetingTitle={meetingToEdit?.title || ''}
+      />
+
+      {/* Meeting Edit Dialog */}
+      <MeetingEditDialog
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+        meeting={meetingToEdit}
+        onSave={handleSaveEdit}
+        editMode={editMode}
+      />
     </>
   );
 }

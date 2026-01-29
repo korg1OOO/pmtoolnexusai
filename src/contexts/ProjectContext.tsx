@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 
 export type Methodology = 'waterfall' | 'scrum' | 'kanban' | 'hybrid';
 
@@ -33,7 +34,7 @@ export interface ModuleVisibility {
 }
 
 export interface ProjectSettings {
-  id: string;
+  id: string | null;
   name: string;
   code: string;
   methodology: Methodology;
@@ -48,6 +49,8 @@ interface ProjectContextType {
   updateSettings: (settings: Partial<ProjectSettings>) => void;
   isModuleVisible: (module: keyof ModuleVisibility) => boolean;
   getDefaultModules: (methodology: Methodology) => ModuleVisibility;
+  loading: boolean;
+  selectProject: (projectId: string) => void;
 }
 
 const defaultModules: ModuleVisibility = {
@@ -109,9 +112,9 @@ const methodologyDefaults: Record<Methodology, Partial<ModuleVisibility>> = {
 };
 
 const defaultSettings: ProjectSettings = {
-  id: 'proj-001',
-  name: 'Enterprise Platform Migration',
-  code: 'EPM-2024',
+  id: null,
+  name: 'No Project Selected',
+  code: '',
   methodology: 'hybrid',
   modules: { ...defaultModules },
   defaultView: 'dashboard',
@@ -120,37 +123,109 @@ const defaultSettings: ProjectSettings = {
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
 
 const STORAGE_KEY = 'projectiq-settings';
+const SELECTED_PROJECT_KEY = 'projectiq-selected-project';
 
 export function ProjectProvider({ children }: { children: ReactNode }) {
-  const [settings, setSettings] = useState<ProjectSettings>(() => {
-    try {
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        return JSON.parse(stored);
-      }
-    } catch (e) {
-      console.error('Failed to load project settings:', e);
-    }
-    return defaultSettings;
-  });
+  const [settings, setSettings] = useState<ProjectSettings>(defaultSettings);
+  const [loading, setLoading] = useState(true);
 
+  // Load selected project on mount
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
-    } catch (e) {
-      console.error('Failed to save project settings:', e);
-    }
-  }, [settings]);
+    const loadProject = async () => {
+      try {
+        // First try to get stored project ID
+        const storedProjectId = localStorage.getItem(SELECTED_PROJECT_KEY);
+        
+        // Get the first available project or the stored one
+        let query = supabase.from('projects').select('*');
+        
+        if (storedProjectId) {
+          // Try to load the stored project first
+          const { data: storedProject } = await supabase
+            .from('projects')
+            .select('*')
+            .eq('id', storedProjectId)
+            .maybeSingle();
+          
+          if (storedProject) {
+            const methodology = (storedProject.methodology || 'hybrid') as Methodology;
+            setSettings({
+              id: storedProject.id,
+              name: storedProject.name,
+              code: storedProject.code,
+              methodology,
+              modules: getDefaultModulesInternal(methodology),
+              defaultView: methodology === 'waterfall' ? 'gantt' : methodology === 'scrum' ? 'sprints' : 'dashboard',
+            });
+            setLoading(false);
+            return;
+          }
+        }
+        
+        // Fall back to first available project
+        const { data: projects } = await query.order('created_at', { ascending: false }).limit(1);
+        
+        if (projects && projects.length > 0) {
+          const project = projects[0];
+          const methodology = (project.methodology || 'hybrid') as Methodology;
+          localStorage.setItem(SELECTED_PROJECT_KEY, project.id);
+          setSettings({
+            id: project.id,
+            name: project.name,
+            code: project.code,
+            methodology,
+            modules: getDefaultModulesInternal(methodology),
+            defaultView: methodology === 'waterfall' ? 'gantt' : methodology === 'scrum' ? 'sprints' : 'dashboard',
+          });
+        }
+      } catch (error) {
+        console.error('Failed to load project:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const getDefaultModules = (methodology: Methodology): ModuleVisibility => {
+    loadProject();
+  }, []);
+
+  const getDefaultModulesInternal = (methodology: Methodology): ModuleVisibility => {
     return {
       ...defaultModules,
       ...methodologyDefaults[methodology],
     };
   };
 
+  const getDefaultModules = (methodology: Methodology): ModuleVisibility => {
+    return getDefaultModulesInternal(methodology);
+  };
+
+  const selectProject = async (projectId: string) => {
+    try {
+      const { data: project, error } = await supabase
+        .from('projects')
+        .select('*')
+        .eq('id', projectId)
+        .single();
+
+      if (error) throw error;
+      
+      const methodology = (project.methodology || 'hybrid') as Methodology;
+      localStorage.setItem(SELECTED_PROJECT_KEY, project.id);
+      setSettings({
+        id: project.id,
+        name: project.name,
+        code: project.code,
+        methodology,
+        modules: getDefaultModulesInternal(methodology),
+        defaultView: methodology === 'waterfall' ? 'gantt' : methodology === 'scrum' ? 'sprints' : 'dashboard',
+      });
+    } catch (error) {
+      console.error('Failed to select project:', error);
+    }
+  };
+
   const updateMethodology = (methodology: Methodology) => {
-    const newModules = getDefaultModules(methodology);
+    const newModules = getDefaultModulesInternal(methodology);
     setSettings((prev) => ({
       ...prev,
       methodology,
@@ -189,6 +264,8 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
         updateSettings,
         isModuleVisible,
         getDefaultModules,
+        loading,
+        selectProject,
       }}
     >
       {children}

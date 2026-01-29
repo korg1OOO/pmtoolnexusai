@@ -57,8 +57,14 @@ export function useNotebooks() {
   const { settings } = useProjectContext();
   const projectId = settings?.id;
 
+  const isValidUuid = (id: string | null | undefined): boolean => {
+    if (!id) return false;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id);
+  };
+
   const fetchNotebooks = async () => {
-    if (!projectId) {
+    if (!projectId || !isValidUuid(projectId)) {
       setNotebooks([]);
       setLoading(false);
       return;
@@ -422,8 +428,14 @@ export function useAllPages(projectId: string | null) {
   const [allPages, setAllPages] = useState<(NotebookPage & { section_name?: string; notebook_name?: string })[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const isValidUuid = (id: string | null | undefined): boolean => {
+    if (!id) return false;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id);
+  };
+
   const fetchAllPages = async () => {
-    if (!projectId) {
+    if (!projectId || !isValidUuid(projectId)) {
       setAllPages([]);
       setLoading(false);
       return;

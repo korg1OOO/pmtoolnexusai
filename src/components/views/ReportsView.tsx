@@ -1,8 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { 
   BarChart3, 
-  Download,
   Filter,
   Calendar,
   FileText,
@@ -11,104 +10,267 @@ import {
   Activity,
   Clock,
   RefreshCw,
-  ChevronRight,
-  Eye
+  Plus,
+  Search,
+  Settings,
+  Users,
+  AlertTriangle,
+  DollarSign,
+  Target
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { KPICard } from '@/components/enterprise/KPICard';
-import { 
-  AreaChart, 
-  Area, 
-  BarChart, 
-  Bar, 
-  PieChart as RechartsPieChart, 
-  Pie, 
-  Cell, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer, 
-  Legend 
-} from 'recharts';
-
-interface Report {
-  id: string;
-  name: string;
-  type: 'status' | 'financial' | 'resource' | 'risk' | 'custom';
-  description: string;
-  lastGenerated: string;
-  frequency: 'daily' | 'weekly' | 'monthly' | 'on-demand';
-  icon: React.ElementType;
-}
+import { PDFExporter } from '@/components/common/PDFExporter';
+import {
+  ReportCard,
+  ReportPreview,
+  ReportCategories,
+  ScheduleReportDialog,
+  type Report,
+  type ReportCategory,
+} from '@/components/reports';
+import { toast } from 'sonner';
 
 const mockReports: Report[] = [
-  { id: 'rpt-1', name: 'Portfolio Status Report', type: 'status', description: 'Executive summary of all active projects', lastGenerated: '2024-03-25', frequency: 'weekly', icon: BarChart3 },
-  { id: 'rpt-2', name: 'Financial Summary', type: 'financial', description: 'Budget vs actuals across portfolios', lastGenerated: '2024-03-24', frequency: 'weekly', icon: TrendingUp },
-  { id: 'rpt-3', name: 'Resource Utilization', type: 'resource', description: 'Team capacity and allocation analysis', lastGenerated: '2024-03-25', frequency: 'daily', icon: Activity },
-  { id: 'rpt-4', name: 'Risk Register', type: 'risk', description: 'Active risks and mitigation status', lastGenerated: '2024-03-23', frequency: 'weekly', icon: FileText },
-  { id: 'rpt-5', name: 'Sprint Velocity', type: 'custom', description: 'Sprint-over-sprint velocity trends', lastGenerated: '2024-03-22', frequency: 'monthly', icon: PieChart },
-  { id: 'rpt-6', name: 'Milestone Tracker', type: 'status', description: 'Upcoming and overdue milestones', lastGenerated: '2024-03-25', frequency: 'daily', icon: Clock },
-];
+  // Status Reports
+  { 
+    id: 'rpt-portfolio-status', 
+    name: 'Portfolio Status Report', 
+    type: 'status', 
+    category: 'Status',
+    description: 'Executive summary of all active projects with health indicators', 
+    lastGenerated: '2026-01-29', 
+    frequency: 'weekly', 
+    icon: BarChart3,
+    isScheduled: true,
+    nextRun: '2026-02-03 09:00'
+  },
+  { 
+    id: 'rpt-sprint-status', 
+    name: 'Sprint Status Report', 
+    type: 'status', 
+    category: 'Status',
+    description: 'Current sprint progress, velocity, and burndown analysis', 
+    lastGenerated: '2026-01-29', 
+    frequency: 'daily', 
+    icon: Activity,
+    isScheduled: true,
+    nextRun: '2026-01-30 08:00'
+  },
+  { 
+    id: 'rpt-milestone-tracker', 
+    name: 'Milestone Tracker', 
+    type: 'status', 
+    category: 'Status',
+    description: 'Upcoming and overdue milestones across all projects', 
+    lastGenerated: '2026-01-28', 
+    frequency: 'weekly', 
+    icon: Target,
+    isScheduled: false
+  },
 
-const projectStatusData = [
-  { name: 'On Track', value: 5, color: 'hsl(var(--success))' },
-  { name: 'At Risk', value: 2, color: 'hsl(var(--warning))' },
-  { name: 'Critical', value: 1, color: 'hsl(var(--destructive))' },
-];
+  // Financial Reports
+  { 
+    id: 'rpt-financial-summary', 
+    name: 'Financial Summary', 
+    type: 'financial', 
+    category: 'Financial',
+    description: 'Budget vs actuals, burn rate, and financial forecasts', 
+    lastGenerated: '2026-01-28', 
+    frequency: 'weekly', 
+    icon: DollarSign,
+    isScheduled: true,
+    nextRun: '2026-02-04 09:00'
+  },
+  { 
+    id: 'rpt-evm-analysis', 
+    name: 'EVM Analysis Report', 
+    type: 'financial', 
+    category: 'Financial',
+    description: 'Earned Value Management metrics: SPI, CPI, EAC projections', 
+    lastGenerated: '2026-01-27', 
+    frequency: 'monthly', 
+    icon: TrendingUp,
+    isScheduled: true,
+    nextRun: '2026-02-01 09:00'
+  },
+  { 
+    id: 'rpt-burn-rate', 
+    name: 'Burn Rate Report', 
+    type: 'financial', 
+    category: 'Financial',
+    description: 'Resource spending rate and budget runway analysis', 
+    lastGenerated: '2026-01-29', 
+    frequency: 'daily', 
+    icon: Activity,
+    isScheduled: false
+  },
 
-const budgetTrendData = [
-  { month: 'Jan', budget: 2500000, actual: 2350000 },
-  { month: 'Feb', budget: 2700000, actual: 2680000 },
-  { month: 'Mar', budget: 2900000, actual: 3100000 },
-  { month: 'Apr', budget: 3100000, actual: 2950000 },
-  { month: 'May', budget: 3300000, actual: 3250000 },
-  { month: 'Jun', budget: 3500000, actual: 3400000 },
-];
+  // Resource Reports
+  { 
+    id: 'rpt-resource-utilization', 
+    name: 'Resource Utilization', 
+    type: 'resource', 
+    category: 'Resource',
+    description: 'Team capacity, allocation, and utilization metrics', 
+    lastGenerated: '2026-01-29', 
+    frequency: 'weekly', 
+    icon: Users,
+    isScheduled: true,
+    nextRun: '2026-02-03 09:00'
+  },
+  { 
+    id: 'rpt-capacity-planning', 
+    name: 'Capacity Planning', 
+    type: 'resource', 
+    category: 'Resource',
+    description: 'Future resource requirements and availability forecast', 
+    lastGenerated: '2026-01-25', 
+    frequency: 'monthly', 
+    icon: Users,
+    isScheduled: false
+  },
+  { 
+    id: 'rpt-skills-matrix', 
+    name: 'Skills Matrix', 
+    type: 'resource', 
+    category: 'Resource',
+    description: 'Team skills inventory and gap analysis', 
+    lastGenerated: '2026-01-20', 
+    frequency: 'on-demand', 
+    icon: Users,
+    isScheduled: false
+  },
 
-const velocityData = [
-  { sprint: 'S7', planned: 32, completed: 28 },
-  { sprint: 'S8', planned: 35, completed: 33 },
-  { sprint: 'S9', planned: 38, completed: 36 },
-  { sprint: 'S10', planned: 40, completed: 42 },
-  { sprint: 'S11', planned: 42, completed: 40 },
-  { sprint: 'S12', planned: 45, completed: 38 },
-];
+  // Risk Reports
+  { 
+    id: 'rpt-risk-register', 
+    name: 'Risk Register', 
+    type: 'risk', 
+    category: 'Risk',
+    description: 'Comprehensive risk register with mitigation status', 
+    lastGenerated: '2026-01-28', 
+    frequency: 'weekly', 
+    icon: AlertTriangle,
+    isScheduled: true,
+    nextRun: '2026-02-04 09:00'
+  },
+  { 
+    id: 'rpt-risk-assessment', 
+    name: 'Risk Assessment', 
+    type: 'risk', 
+    category: 'Risk',
+    description: 'Detailed risk analysis with probability and impact scoring', 
+    lastGenerated: '2026-01-26', 
+    frequency: 'monthly', 
+    icon: AlertTriangle,
+    isScheduled: false
+  },
+  { 
+    id: 'rpt-risk-trends', 
+    name: 'Risk Trends', 
+    type: 'risk', 
+    category: 'Risk',
+    description: 'Historical risk trends and pattern analysis', 
+    lastGenerated: '2026-01-22', 
+    frequency: 'monthly', 
+    icon: TrendingUp,
+    isScheduled: false
+  },
 
-const getTypeColor = (type: Report['type']) => {
-  switch (type) {
-    case 'status': return 'bg-primary/10 text-primary';
-    case 'financial': return 'bg-success/10 text-success';
-    case 'resource': return 'bg-warning/10 text-warning';
-    case 'risk': return 'bg-destructive/10 text-destructive';
-    case 'custom': return 'bg-muted text-foreground';
-  }
-};
+  // Custom Reports
+  { 
+    id: 'rpt-velocity', 
+    name: 'Sprint Velocity Analysis', 
+    type: 'custom', 
+    category: 'Custom',
+    description: 'Sprint-over-sprint velocity trends and predictions', 
+    lastGenerated: '2026-01-27', 
+    frequency: 'monthly', 
+    icon: PieChart,
+    isScheduled: false
+  },
+  { 
+    id: 'rpt-custom-dashboard', 
+    name: 'Executive Dashboard Export', 
+    type: 'custom', 
+    category: 'Custom',
+    description: 'Custom executive summary with selected KPIs', 
+    lastGenerated: '2026-01-25', 
+    frequency: 'on-demand', 
+    icon: FileText,
+    isScheduled: false
+  },
+];
 
 export function ReportsView() {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<ReportCategory>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<ReportCategory, number> = {
+      all: mockReports.length,
+      status: 0,
+      financial: 0,
+      resource: 0,
+      risk: 0,
+      custom: 0,
+    };
+    mockReports.forEach((report) => {
+      counts[report.type]++;
+    });
+    return counts;
+  }, []);
+
+  const filteredReports = useMemo(() => {
+    return mockReports.filter((report) => {
+      const matchesCategory = selectedCategory === 'all' || report.type === selectedCategory;
+      const matchesSearch = report.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        report.description.toLowerCase().includes(searchQuery.toLowerCase());
+      return matchesCategory && matchesSearch;
+    });
+  }, [selectedCategory, searchQuery]);
+
+  const scheduledCount = mockReports.filter((r) => r.isScheduled).length;
+
+  const handleGenerate = (report: Report) => {
+    toast.success(`Generating "${report.name}"...`);
+    setSelectedReport(report);
+  };
+
+  const handleExport = (report: Report) => {
+    toast.success(`Exporting "${report.name}" to PDF...`);
+  };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 p-6" ref={contentRef}>
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-foreground">Reports & Analytics</h1>
-          <p className="text-sm text-muted-foreground mt-1">Generate insights and track project performance</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            Generate insights and track project performance across your portfolio
+          </p>
         </div>
         <div className="flex items-center gap-2">
+          <PDFExporter
+            title="Reports Overview"
+            filename="reports-overview"
+            contentRef={contentRef}
+            orientation="landscape"
+            variant="dropdown"
+          />
           <Button variant="outline" size="sm">
-            <Calendar className="h-4 w-4 mr-2" />
-            Date Range
-          </Button>
-          <Button variant="outline" size="sm">
-            <Filter className="h-4 w-4 mr-2" />
-            Filter
+            <Settings className="h-4 w-4 mr-2" />
+            Settings
           </Button>
           <Button size="sm">
-            <FileText className="h-4 w-4 mr-2" />
+            <Plus className="h-4 w-4 mr-2" />
             New Report
           </Button>
         </div>
@@ -117,25 +279,25 @@ export function ReportsView() {
       {/* KPI Cards */}
       <div className="grid grid-cols-4 gap-4">
         <KPICard 
-          title="Reports Generated" 
-          value="24" 
-          subtitle="This month" 
+          title="Total Reports" 
+          value={mockReports.length.toString()} 
+          subtitle="Available templates" 
           icon={FileText} 
           status="neutral" 
         />
         <KPICard 
           title="Scheduled Reports" 
-          value={mockReports.filter(r => r.frequency !== 'on-demand').length.toString()} 
+          value={scheduledCount.toString()} 
           subtitle="Auto-generated" 
           icon={Clock} 
-          status="neutral" 
+          status="success" 
         />
         <KPICard 
-          title="Data Sources" 
-          value="8" 
-          subtitle="Connected integrations" 
+          title="Generated This Month" 
+          value="47" 
+          subtitle="Reports created" 
           icon={Activity} 
-          status="success" 
+          status="neutral" 
         />
         <KPICard 
           title="Last Updated" 
@@ -146,154 +308,85 @@ export function ReportsView() {
         />
       </div>
 
-      <div className="grid grid-cols-3 gap-6">
-        {/* Reports List */}
-        <Card className="col-span-1">
-          <CardHeader>
-            <CardTitle>Available Reports</CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
-            <div className="divide-y divide-border">
-              {mockReports.map((report) => {
-                const Icon = report.icon;
-                return (
-                  <motion.button
-                    key={report.id}
-                    onClick={() => setSelectedReport(report)}
-                    className={`w-full p-4 text-left hover:bg-muted/50 transition-colors ${
-                      selectedReport?.id === report.id ? 'bg-muted/50' : ''
-                    }`}
-                    whileHover={{ x: 4 }}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={`p-2 rounded-lg ${getTypeColor(report.type)}`}>
-                        <Icon className="h-4 w-4" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <h4 className="font-medium text-foreground truncate">{report.name}</h4>
-                        <p className="text-xs text-muted-foreground truncate">{report.description}</p>
-                        <div className="flex items-center gap-2 mt-2">
-                          <Badge variant="outline" className="text-xs">{report.frequency}</Badge>
-                          <span className="text-xs text-muted-foreground">Last: {report.lastGenerated}</span>
-                        </div>
-                      </div>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                    </div>
-                  </motion.button>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Dashboard Preview */}
-        <div className="col-span-2 space-y-6">
-          {/* Project Status Pie Chart */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Project Health Distribution</CardTitle>
-                <div className="flex gap-2">
-                  <Button variant="ghost" size="sm">
-                    <Eye className="h-4 w-4 mr-2" />
-                    Preview
-                  </Button>
-                  <Button variant="outline" size="sm">
-                    <Download className="h-4 w-4 mr-2" />
-                    Export
-                  </Button>
-                </div>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={200}>
-                <RechartsPieChart>
-                  <Pie
-                    data={projectStatusData}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="value"
-                  >
-                    {projectStatusData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </RechartsPieChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Budget Trend */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Budget vs Actuals</CardTitle>
-                <Button variant="outline" size="sm">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={budgetTrendData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis dataKey="month" className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                  <YAxis className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} tickFormatter={(value) => `$${value / 1000000}M`} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))', 
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
-                    }} 
-                    formatter={(value: number) => [`$${(value / 1000000).toFixed(2)}M`, '']}
-                  />
-                  <Area type="monotone" dataKey="budget" stackId="1" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.3} name="Budget" />
-                  <Area type="monotone" dataKey="actual" stackId="2" stroke="hsl(var(--success))" fill="hsl(var(--success))" fillOpacity={0.3} name="Actual" />
-                  <Legend />
-                </AreaChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
-
-          {/* Sprint Velocity */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>Sprint Velocity</CardTitle>
-                <Button variant="outline" size="sm">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={velocityData}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                  <XAxis dataKey="sprint" className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                  <YAxis className="text-xs" tick={{ fill: 'hsl(var(--muted-foreground))' }} />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--card))', 
-                      border: '1px solid hsl(var(--border))',
-                      borderRadius: '8px'
-                    }} 
-                  />
-                  <Bar dataKey="planned" fill="hsl(var(--muted-foreground))" name="Planned" radius={[4, 4, 0, 0]} />
-                  <Bar dataKey="completed" fill="hsl(var(--primary))" name="Completed" radius={[4, 4, 0, 0]} />
-                  <Legend />
-                </BarChart>
-              </ResponsiveContainer>
-            </CardContent>
-          </Card>
+      {/* Category Filter */}
+      <div className="flex items-center justify-between">
+        <ReportCategories
+          selectedCategory={selectedCategory}
+          onCategoryChange={setSelectedCategory}
+          counts={categoryCounts}
+        />
+        <div className="relative w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Search reports..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-9"
+          />
         </div>
       </div>
+
+      {/* Main Content Grid */}
+      <div className="grid grid-cols-5 gap-6">
+        {/* Reports List */}
+        <div className="col-span-2 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-medium text-foreground">
+              {filteredReports.length} Reports
+            </h3>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                if (selectedReport) {
+                  setScheduleDialogOpen(true);
+                } else {
+                  toast.error('Select a report first');
+                }
+              }}
+            >
+              <Calendar className="h-4 w-4 mr-2" />
+              Schedule
+            </Button>
+          </div>
+          <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
+            {filteredReports.map((report) => (
+              <ReportCard
+                key={report.id}
+                report={report}
+                isSelected={selectedReport?.id === report.id}
+                onSelect={() => setSelectedReport(report)}
+                onGenerate={() => handleGenerate(report)}
+                onExport={() => handleExport(report)}
+              />
+            ))}
+            {filteredReports.length === 0 && (
+              <Card className="p-8 text-center">
+                <p className="text-muted-foreground">No reports found</p>
+              </Card>
+            )}
+          </div>
+        </div>
+
+        {/* Report Preview */}
+        <div className="col-span-3">
+          <ReportPreview
+            report={selectedReport}
+            onRefresh={() => {
+              if (selectedReport) {
+                toast.success('Refreshing report data...');
+              }
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Schedule Dialog */}
+      <ScheduleReportDialog
+        report={selectedReport}
+        open={scheduleDialogOpen}
+        onOpenChange={setScheduleDialogOpen}
+      />
     </div>
   );
 }

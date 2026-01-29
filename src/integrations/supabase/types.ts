@@ -425,6 +425,80 @@ export type Database = {
           },
         ]
       }
+      decisions: {
+        Row: {
+          alternatives: Json | null
+          context: string | null
+          created_at: string
+          date: string | null
+          decision: string
+          id: string
+          impact: string | null
+          key: string | null
+          linked_items: Json | null
+          linked_meetings: Json | null
+          linked_risks: Json | null
+          linked_tasks: Json | null
+          owner_id: string | null
+          owner_name: string | null
+          project_id: string | null
+          status: string | null
+          tags: Json | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          alternatives?: Json | null
+          context?: string | null
+          created_at?: string
+          date?: string | null
+          decision: string
+          id?: string
+          impact?: string | null
+          key?: string | null
+          linked_items?: Json | null
+          linked_meetings?: Json | null
+          linked_risks?: Json | null
+          linked_tasks?: Json | null
+          owner_id?: string | null
+          owner_name?: string | null
+          project_id?: string | null
+          status?: string | null
+          tags?: Json | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          alternatives?: Json | null
+          context?: string | null
+          created_at?: string
+          date?: string | null
+          decision?: string
+          id?: string
+          impact?: string | null
+          key?: string | null
+          linked_items?: Json | null
+          linked_meetings?: Json | null
+          linked_risks?: Json | null
+          linked_tasks?: Json | null
+          owner_id?: string | null
+          owner_name?: string | null
+          project_id?: string | null
+          status?: string | null
+          tags?: Json | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "decisions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       document_approvers: {
         Row: {
           comment: string | null

@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { toast } from 'sonner';
 
-export type ItemType = 'epic' | 'story' | 'task' | 'bug' | 'tech-debt' | 'feature' | 'enhancement' | 'technical-debt';
+export type ItemType = 'epic' | 'story' | 'task' | 'bug' | 'tech-debt';
 export type BacklogStatus = 'todo' | 'in-progress' | 'review' | 'done';
 export type BacklogPriority = 'critical' | 'high' | 'medium' | 'low';
 export type PriorityLevel = BacklogPriority;
@@ -39,18 +39,19 @@ export function useBacklogItems() {
 
   const generateKey = () => `BL-${String(items.length + 1).padStart(3, '0')}`;
 
-  const createItem = async (input: BacklogItemInput) => {
+  const createItem = async (input: BacklogItemInput): Promise<BacklogItem | null> => {
     if (!projectId) { toast.error('No project selected'); return null; }
     try {
       const key = generateKey();
       const { data, error: e } = await supabase.from('backlog_items').insert({ project_id: projectId, key, title: input.title, description: input.description || null, type: input.type || 'story', priority: input.priority || 'medium', story_points: input.story_points || null, assignee_name: input.assignee_name || null, labels: input.labels || [], epic_id: input.epic_id || null, sprint_id: input.sprint_id || null, status: input.status || 'todo', sort_order: items.length }).select().single();
       if (e) throw e;
-      toast.success('Backlog item created'); return data;
+      const item: BacklogItem = { ...data, type: data.type as ItemType, priority: data.priority as BacklogPriority, status: data.status as BacklogStatus, labels: (Array.isArray(data.labels) ? data.labels : []).map(String), sort_order: data.sort_order ?? 0 };
+      toast.success('Backlog item created'); return item;
     } catch { toast.error('Failed to create backlog item'); return null; }
   };
 
   const updateItem = async (id: string, updates: Partial<BacklogItemInput>) => {
-    try { const { error: e } = await supabase.from('backlog_items').update(updates).eq('id', id); if (e) throw e; toast.success('Item updated'); return true; } catch { toast.error('Failed to update item'); return false; }
+    try { const { error: e } = await supabase.from('backlog_items').update(updates as any).eq('id', id); if (e) throw e; toast.success('Item updated'); return true; } catch { toast.error('Failed to update item'); return false; }
   };
 
   const moveToSprint = async (id: string, sprintId: string | null) => updateItem(id, { sprint_id: sprintId } as any);

@@ -35,13 +35,14 @@ export function useActions() {
     return () => { supabase.removeChannel(channel); };
   }, [projectId, fetchActions]);
 
-  const createAction = async (input: ActionInput) => {
+  const createAction = async (input: ActionInput): Promise<Action | null> => {
     if (!projectId) { toast.error('No project selected'); return null; }
     try {
       const now = new Date().toISOString();
       const { data, error: e } = await supabase.from('actions').insert({ project_id: projectId, title: input.title, description: input.description || null, priority: input.priority || 'medium', status: input.status || 'pending', owner_name: input.owner_name || null, created_by_name: input.created_by_name || null, due_date: input.due_date || null, progress: input.progress || 0, notes: input.notes || null, source_type: input.source_type || 'manual', source_id: input.source_id || null, source_title: input.source_title || null, tags: input.tags || [], sla_target_hours: input.sla_target_hours || null, sla_started_at: input.sla_target_hours ? now : null, history: [{ timestamp: now, user: input.created_by_name || 'System', action: 'Created action' }] }).select().single();
       if (e) throw e;
-      toast.success('Action created'); return data;
+      const action: Action = { ...data, priority: data.priority as ActionPriority, status: data.status as ActionStatus, linked_items: Array.isArray(data.linked_items) ? data.linked_items : [], dependencies: Array.isArray(data.dependencies) ? data.dependencies : [], tags: (Array.isArray(data.tags) ? data.tags : []).map(String), history: Array.isArray(data.history) ? data.history : [] };
+      toast.success('Action created'); return action;
     } catch { toast.error('Failed to create action'); return null; }
   };
 

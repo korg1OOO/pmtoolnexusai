@@ -35,12 +35,13 @@ export function useRisks() {
     return () => { supabase.removeChannel(channel); };
   }, [projectId, fetchRisks]);
 
-  const createRisk = async (input: RiskInput) => {
+  const createRisk = async (input: RiskInput): Promise<Risk | null> => {
     if (!projectId) { toast.error('No project selected'); return null; }
     try {
       const { data, error: e } = await supabase.from('risks').insert({ project_id: projectId, title: input.title, description: input.description || null, category: input.category || null, probability: input.probability || 'medium', impact: input.impact || 'medium', status: input.status || 'identified', owner_name: input.owner_name || null, mitigation_plan: input.mitigation_plan || null, contingency_plan: input.contingency_plan || null, triggers: input.triggers || null, due_date: input.due_date || null }).select().single();
       if (e) throw e;
-      toast.success('Risk created'); return data;
+      const risk: Risk = { ...data, probability: data.probability as RiskLevel, impact: data.impact as RiskLevel, status: data.status as RiskStatus, linked_items: Array.isArray(data.linked_items) ? data.linked_items : [] };
+      toast.success('Risk created'); return risk;
     } catch { toast.error('Failed to create risk'); return null; }
   };
 

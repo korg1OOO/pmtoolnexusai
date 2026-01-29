@@ -84,13 +84,14 @@ const getStatusColor = (status: IssueStatus): "secondary" | "info" | "warning" |
   }
 };
 
-const getTypeIcon = (type: IssueType) => {
+const getTypeIcon = (type: string) => {
   switch (type) {
     case 'bug': return Bug;
     case 'blocker': return AlertCircle;
     case 'impediment': return AlertTriangle;
     case 'defect': return AlertCircle;
     case 'incident': return Zap;
+    default: return Bug;
   }
 };
 

@@ -57,10 +57,12 @@ import { toast } from 'sonner';
 
 const getTypeColor = (type: ItemType) => {
   switch (type) {
-    case 'feature': return 'bg-primary/10 text-primary';
+    case 'story': return 'bg-primary/10 text-primary';
     case 'bug': return 'bg-destructive/10 text-destructive';
-    case 'enhancement': return 'bg-success/10 text-success';
-    case 'technical-debt': return 'bg-warning/10 text-warning';
+    case 'task': return 'bg-success/10 text-success';
+    case 'tech-debt': return 'bg-warning/10 text-warning';
+    case 'epic': return 'bg-purple-500/10 text-purple-500';
+    default: return 'bg-muted text-muted-foreground';
   }
 };
 
@@ -158,7 +160,7 @@ function AddItemDialog({ open, onOpenChange, onSubmit, epics }: AddItemDialogPro
   const [form, setForm] = useState<BacklogItemInput>({
     title: '',
     description: '',
-    type: 'feature',
+    type: 'story',
     priority: 'medium',
     story_points: 3,
   });
@@ -173,7 +175,7 @@ function AddItemDialog({ open, onOpenChange, onSubmit, epics }: AddItemDialogPro
     const result = await onSubmit(form);
     setLoading(false);
     if (result) {
-      setForm({ title: '', description: '', type: 'feature', priority: 'medium', story_points: 3 });
+      setForm({ title: '', description: '', type: 'story', priority: 'medium', story_points: 3 });
       onOpenChange(false);
     }
   };
@@ -303,10 +305,10 @@ export function BacklogView() {
   }, [filteredItems, epics]);
 
   const typeCounts = useMemo(() => ({
-    feature: items.filter(i => i.type === 'feature').length,
+    story: items.filter(i => i.type === 'story').length,
     bug: items.filter(i => i.type === 'bug').length,
-    enhancement: items.filter(i => i.type === 'enhancement').length,
-    technicalDebt: items.filter(i => i.type === 'technical-debt').length,
+    task: items.filter(i => i.type === 'task').length,
+    techDebt: items.filter(i => i.type === 'tech-debt').length,
   }), [items]);
 
   const toggleEpic = (epicId: string) => {
@@ -395,9 +397,9 @@ export function BacklogView() {
           status="neutral" 
         />
         <KPICard 
-          title="Features" 
-          value={typeCounts.feature.toString()} 
-          subtitle="New functionality" 
+          title="Stories" 
+          value={typeCounts.story.toString()} 
+          subtitle="User stories" 
           icon={Zap} 
           status="neutral" 
         />

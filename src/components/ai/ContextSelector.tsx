@@ -62,6 +62,7 @@ interface ContextSelectorProps {
   selectedContexts: ContextItem[];
   onContextChange: (contexts: ContextItem[]) => void;
   currentView: string;
+  compact?: boolean;
 }
 
 // Available pages/modules
@@ -91,7 +92,7 @@ const AVAILABLE_PAGES: ContextItem[] = [
   { id: 'team-chat', type: 'page', label: 'Team Chat', icon: <MessageSquare className="h-4 w-4" />, description: 'Team collaboration' },
 ];
 
-export function ContextSelector({ selectedContexts, onContextChange, currentView }: ContextSelectorProps) {
+export function ContextSelector({ selectedContexts, onContextChange, currentView, compact = false }: ContextSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [showTextInput, setShowTextInput] = useState(false);
   const [customText, setCustomText] = useState('');
@@ -156,6 +157,96 @@ export function ContextSelector({ selectedContexts, onContextChange, currentView
   React.useEffect(() => {
     hasAutoAddedRef.current = false;
   }, [currentView]);
+
+  // Compact mode: Just show a button to add more context
+  if (compact) {
+    return (
+      <Popover open={isOpen} onOpenChange={setIsOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="ghost" size="sm" className="h-5 px-2 text-xs gap-1">
+            <Plus className="h-3 w-3" />
+            Add
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-72 p-0" align="start">
+          <Command>
+            <CommandInput placeholder="Search pages..." />
+            <div className="flex items-center justify-between px-2 py-1.5 border-b">
+              <Button variant="ghost" size="sm" className="text-xs h-6" onClick={handleSelectAll}>
+                Select All
+              </Button>
+              <Button variant="ghost" size="sm" className="text-xs h-6" onClick={handleClearPages}>
+                Clear
+              </Button>
+            </div>
+            <CommandList>
+              <CommandEmpty>No pages found.</CommandEmpty>
+              <CommandGroup heading="Pages">
+                <ScrollArea className="h-48">
+                  {AVAILABLE_PAGES.map((page) => (
+                    <CommandItem
+                      key={page.id}
+                      onSelect={() => handlePageToggle(page)}
+                      className="cursor-pointer"
+                    >
+                      <div className={cn(
+                        "flex items-center justify-center w-4 h-4 mr-2 border rounded",
+                        selectedPageIds.includes(page.id)
+                          ? "bg-primary border-primary text-primary-foreground"
+                          : "border-muted-foreground"
+                      )}>
+                        {selectedPageIds.includes(page.id) && (
+                          <Check className="h-3 w-3" />
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2 flex-1">
+                        {page.icon}
+                        <span className="text-sm">{page.label}</span>
+                      </div>
+                    </CommandItem>
+                  ))}
+                </ScrollArea>
+              </CommandGroup>
+              <Separator />
+              <CommandGroup heading="Custom Text">
+                {showTextInput ? (
+                  <div className="p-2 space-y-2">
+                    <Textarea
+                      placeholder="Add custom context..."
+                      value={customText}
+                      onChange={(e) => setCustomText(e.target.value)}
+                      className="min-h-[60px] text-xs resize-none"
+                    />
+                    <div className="flex gap-2">
+                      <Button size="sm" className="flex-1 text-xs" onClick={handleAddCustomText}>
+                        Add
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="text-xs"
+                        onClick={() => {
+                          setShowTextInput(false);
+                          setCustomText('');
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                ) : (
+                  <CommandItem onSelect={() => setShowTextInput(true)} className="cursor-pointer">
+                    <Plus className="h-3 w-3 mr-2" />
+                    Add custom text
+                  </CommandItem>
+                )}
+              </CommandGroup>
+            </CommandList>
+          </Command>
+        </PopoverContent>
+      </Popover>
+    );
+  }
 
   return (
     <Collapsible open={isExpanded} onOpenChange={setIsExpanded}>

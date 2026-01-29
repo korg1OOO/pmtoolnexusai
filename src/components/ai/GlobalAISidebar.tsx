@@ -448,15 +448,35 @@ export function GlobalAISidebar({
             </ScrollArea>
 
             {/* Input Area */}
-            <div className="p-4 border-t bg-muted/20 space-y-3">
-              {/* Context Selector */}
-              <ContextSelector
-                selectedContexts={selectedContexts}
-                onContextChange={setSelectedContexts}
-                currentView={currentView}
-              />
+            <div className="border-t bg-muted/20">
+              {/* Context Attachment Bar - Compact inline display */}
+              <div className="px-3 pt-2 pb-1 flex items-center gap-2 flex-wrap">
+                <span className="text-xs text-muted-foreground">Context:</span>
+                {selectedContexts.map((ctx) => (
+                  <Badge
+                    key={ctx.id}
+                    variant="secondary"
+                    className="gap-1 pr-1 text-xs h-5"
+                  >
+                    {ctx.type === 'page' ? ctx.icon : <Lightbulb className="h-3 w-3" />}
+                    <span className="max-w-[60px] truncate">{ctx.label}</span>
+                    <button
+                      onClick={() => setSelectedContexts(selectedContexts.filter(c => c.id !== ctx.id))}
+                      className="ml-0.5 hover:bg-muted rounded p-0.5"
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </button>
+                  </Badge>
+                ))}
+                <ContextSelector
+                  selectedContexts={selectedContexts}
+                  onContextChange={setSelectedContexts}
+                  currentView={currentView}
+                  compact
+                />
+              </div>
 
-              <div className="flex gap-2">
+              <div className="p-3 pt-1 flex gap-2">
                 <Textarea
                   ref={textareaRef}
                   value={input}
@@ -464,30 +484,45 @@ export function GlobalAISidebar({
                   onKeyDown={handleKeyDown}
                   placeholder={
                     intentMode === 'plan'
-                      ? "Ask a question about your project..."
-                      : "What would you like me to do?"
+                      ? "Ask about your project..."
+                      : "What would you like to do?"
                   }
-                  className="min-h-[44px] max-h-32 resize-none"
-                  disabled={isSending || !projectId}
+                  className="min-h-[60px] max-h-[120px] resize-none text-sm"
+                  disabled={isSending}
                 />
-                <Button
-                  size="icon"
-                  className="h-11 w-11 shrink-0"
-                  onClick={handleSend}
-                  disabled={!input.trim() || isSending || !projectId}
-                >
-                  {isSending ? (
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Send className="h-4 w-4" />
-                  )}
-                </Button>
+                <div className="flex flex-col gap-2">
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        size="icon"
+                        onClick={handleSend}
+                        disabled={!input.trim() || isSending}
+                        className="h-9 w-9"
+                      >
+                        {isSending ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Send className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Send message</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={handleNewChat}
+                        className="h-9 w-9"
+                      >
+                        <Plus className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>New chat</TooltipContent>
+                  </Tooltip>
+                </div>
               </div>
-              {!projectId && (
-                <p className="text-xs text-muted-foreground mt-2 text-center">
-                  Select a project to start chatting
-                </p>
-              )}
             </div>
           </motion.div>
         )}
@@ -495,12 +530,12 @@ export function GlobalAISidebar({
 
       {/* Action Confirmation Dialog */}
       <ActionConfirmDialog
+        action={pendingAction}
         open={!!pendingAction}
         onOpenChange={(open) => !open && setPendingAction(null)}
-        action={pendingAction}
+        isLoading={isActionLoading}
         onConfirm={handleConfirmAction}
         onCancel={handleCancelAction}
-        isLoading={isActionLoading}
       />
     </>
   );

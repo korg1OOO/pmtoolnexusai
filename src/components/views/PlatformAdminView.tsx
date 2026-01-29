@@ -23,6 +23,7 @@ import {
   Eye,
   Edit,
   Trash2,
+  Bot,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -39,6 +40,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { AIProviderSettings } from '@/components/admin/AIProviderSettings';
 
 interface User {
   id: string;
@@ -159,6 +161,10 @@ export function PlatformAdminView() {
             <TabsTrigger value="organizations" className="gap-2">
               <Building2 className="h-4 w-4" />
               Organizations
+            </TabsTrigger>
+            <TabsTrigger value="ai-platform" className="gap-2">
+              <Bot className="h-4 w-4" />
+              AI Platform
             </TabsTrigger>
             <TabsTrigger value="security" className="gap-2">
               <Shield className="h-4 w-4" />
@@ -320,6 +326,11 @@ export function PlatformAdminView() {
                 </Card>
               ))}
             </div>
+          </TabsContent>
+
+          {/* AI Platform Tab */}
+          <TabsContent value="ai-platform">
+            <AIProviderSettings />
           </TabsContent>
 
           {/* Security Tab */}

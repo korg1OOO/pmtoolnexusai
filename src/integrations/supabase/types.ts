@@ -55,6 +55,666 @@ export type Database = {
           },
         ]
       }
+      meeting_action_items: {
+        Row: {
+          ai_confidence: number | null
+          blocked_by: Json | null
+          completed_at: string | null
+          created_at: string
+          deferral_count: number | null
+          dependencies: Json | null
+          description: string | null
+          due_date: string | null
+          id: string
+          linked_task_id: string | null
+          meeting_id: string
+          original_due_date: string | null
+          owner_name: string
+          owner_user_id: string | null
+          priority: string | null
+          source: string | null
+          status: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          ai_confidence?: number | null
+          blocked_by?: Json | null
+          completed_at?: string | null
+          created_at?: string
+          deferral_count?: number | null
+          dependencies?: Json | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          linked_task_id?: string | null
+          meeting_id: string
+          original_due_date?: string | null
+          owner_name: string
+          owner_user_id?: string | null
+          priority?: string | null
+          source?: string | null
+          status?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          ai_confidence?: number | null
+          blocked_by?: Json | null
+          completed_at?: string | null
+          created_at?: string
+          deferral_count?: number | null
+          dependencies?: Json | null
+          description?: string | null
+          due_date?: string | null
+          id?: string
+          linked_task_id?: string | null
+          meeting_id?: string
+          original_due_date?: string | null
+          owner_name?: string
+          owner_user_id?: string | null
+          priority?: string | null
+          source?: string | null
+          status?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_action_items_linked_task_id_fkey"
+            columns: ["linked_task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "meeting_action_items_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_agenda_items: {
+        Row: {
+          actual_duration_minutes: number | null
+          created_at: string
+          description: string | null
+          duration_minutes: number | null
+          id: string
+          meeting_id: string
+          notes: string | null
+          presenter_id: string | null
+          presenter_name: string | null
+          sort_order: number | null
+          status: string | null
+          title: string
+        }
+        Insert: {
+          actual_duration_minutes?: number | null
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          meeting_id: string
+          notes?: string | null
+          presenter_id?: string | null
+          presenter_name?: string | null
+          sort_order?: number | null
+          status?: string | null
+          title: string
+        }
+        Update: {
+          actual_duration_minutes?: number | null
+          created_at?: string
+          description?: string | null
+          duration_minutes?: number | null
+          id?: string
+          meeting_id?: string
+          notes?: string | null
+          presenter_id?: string | null
+          presenter_name?: string | null
+          sort_order?: number | null
+          status?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_agenda_items_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_conflicts: {
+        Row: {
+          ai_confidence: number | null
+          conflict_type: string | null
+          created_at: string
+          description: string
+          id: string
+          meeting_id: string
+          parties: Json | null
+          resolved: boolean | null
+          resolved_at: string | null
+          severity: string | null
+          suggested_resolution: string | null
+        }
+        Insert: {
+          ai_confidence?: number | null
+          conflict_type?: string | null
+          created_at?: string
+          description: string
+          id?: string
+          meeting_id: string
+          parties?: Json | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          severity?: string | null
+          suggested_resolution?: string | null
+        }
+        Update: {
+          ai_confidence?: number | null
+          conflict_type?: string | null
+          created_at?: string
+          description?: string
+          id?: string
+          meeting_id?: string
+          parties?: Json | null
+          resolved?: boolean | null
+          resolved_at?: string | null
+          severity?: string | null
+          suggested_resolution?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_conflicts_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_decisions: {
+        Row: {
+          ai_confidence: number | null
+          approved_by: Json | null
+          created_at: string
+          decision_type: string | null
+          description: string
+          id: string
+          impact: string | null
+          implemented: boolean | null
+          implemented_at: string | null
+          linked_risks: Json | null
+          linked_tasks: Json | null
+          made_by: string | null
+          made_by_user_id: string | null
+          meeting_id: string
+          source: string | null
+          timestamp_in_meeting: string | null
+        }
+        Insert: {
+          ai_confidence?: number | null
+          approved_by?: Json | null
+          created_at?: string
+          decision_type?: string | null
+          description: string
+          id?: string
+          impact?: string | null
+          implemented?: boolean | null
+          implemented_at?: string | null
+          linked_risks?: Json | null
+          linked_tasks?: Json | null
+          made_by?: string | null
+          made_by_user_id?: string | null
+          meeting_id: string
+          source?: string | null
+          timestamp_in_meeting?: string | null
+        }
+        Update: {
+          ai_confidence?: number | null
+          approved_by?: Json | null
+          created_at?: string
+          decision_type?: string | null
+          description?: string
+          id?: string
+          impact?: string | null
+          implemented?: boolean | null
+          implemented_at?: string | null
+          linked_risks?: Json | null
+          linked_tasks?: Json | null
+          made_by?: string | null
+          made_by_user_id?: string | null
+          meeting_id?: string
+          source?: string | null
+          timestamp_in_meeting?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_decisions_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_notes: {
+        Row: {
+          content: string
+          created_at: string
+          id: string
+          meeting_id: string
+          note_type: string | null
+          timestamp_in_meeting: string | null
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          id?: string
+          meeting_id: string
+          note_type?: string | null
+          timestamp_in_meeting?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          id?: string
+          meeting_id?: string
+          note_type?: string | null
+          timestamp_in_meeting?: string | null
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_notes_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_participants: {
+        Row: {
+          attendance_status: string | null
+          attended: boolean | null
+          created_at: string
+          email: string | null
+          id: string
+          interest_level: string | null
+          join_time: string | null
+          leave_time: string | null
+          meeting_id: string
+          name: string
+          power_level: string | null
+          role: string
+          speaking_time_seconds: number | null
+          user_id: string | null
+        }
+        Insert: {
+          attendance_status?: string | null
+          attended?: boolean | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          interest_level?: string | null
+          join_time?: string | null
+          leave_time?: string | null
+          meeting_id: string
+          name: string
+          power_level?: string | null
+          role?: string
+          speaking_time_seconds?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          attendance_status?: string | null
+          attended?: boolean | null
+          created_at?: string
+          email?: string | null
+          id?: string
+          interest_level?: string | null
+          join_time?: string | null
+          leave_time?: string | null
+          meeting_id?: string
+          name?: string
+          power_level?: string | null
+          role?: string
+          speaking_time_seconds?: number | null
+          user_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_participants_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_risks: {
+        Row: {
+          ai_confidence: number | null
+          category: string | null
+          created_at: string
+          description: string | null
+          id: string
+          impact: string | null
+          meeting_id: string
+          probability: string | null
+          source: string | null
+          suggested_mitigation: string | null
+          title: string
+        }
+        Insert: {
+          ai_confidence?: number | null
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          impact?: string | null
+          meeting_id: string
+          probability?: string | null
+          source?: string | null
+          suggested_mitigation?: string | null
+          title: string
+        }
+        Update: {
+          ai_confidence?: number | null
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          impact?: string | null
+          meeting_id?: string
+          probability?: string | null
+          source?: string | null
+          suggested_mitigation?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_risks_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meeting_scope_changes: {
+        Row: {
+          ai_confidence: number | null
+          approved: boolean | null
+          approved_at: string | null
+          approved_by: string | null
+          change_type: string
+          created_at: string
+          description: string
+          id: string
+          impact_area: string | null
+          magnitude: string | null
+          meeting_id: string
+          requires_approval: boolean | null
+        }
+        Insert: {
+          ai_confidence?: number | null
+          approved?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          change_type: string
+          created_at?: string
+          description: string
+          id?: string
+          impact_area?: string | null
+          magnitude?: string | null
+          meeting_id: string
+          requires_approval?: boolean | null
+        }
+        Update: {
+          ai_confidence?: number | null
+          approved?: boolean | null
+          approved_at?: string | null
+          approved_by?: string | null
+          change_type?: string
+          created_at?: string
+          description?: string
+          id?: string
+          impact_area?: string | null
+          magnitude?: string | null
+          meeting_id?: string
+          requires_approval?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_scope_changes_meeting_id_fkey"
+            columns: ["meeting_id"]
+            isOneToOne: false
+            referencedRelation: "meetings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      meetings: {
+        Row: {
+          ai_confidence: number | null
+          ai_key_topics: Json | null
+          ai_next_steps: Json | null
+          ai_processed_at: string | null
+          ai_sentiment: Json | null
+          ai_summary: string | null
+          audio_available: boolean | null
+          budget_authority: number | null
+          capture_confidence: string | null
+          capture_mode: string | null
+          created_at: string
+          created_by: string | null
+          date: string
+          decision_scope_type: string | null
+          description: string | null
+          duration_minutes: number | null
+          end_time: string | null
+          expected_outcomes: Json | null
+          id: string
+          linked_risks: Json | null
+          linked_workstreams: Json | null
+          location: string | null
+          meeting_link: string | null
+          meeting_type: string
+          mom_approved: boolean | null
+          mom_approved_at: string | null
+          mom_approved_by: string | null
+          mom_content: string | null
+          mom_generated: boolean | null
+          mom_template_id: string | null
+          project_id: string | null
+          purpose_description: string | null
+          purpose_type: string | null
+          recording_url: string | null
+          required_quorum: number | null
+          resource_authority: boolean | null
+          scope_change_authority: boolean | null
+          source_type: string | null
+          start_time: string
+          status: string
+          success_criteria: Json | null
+          title: string
+          transcript_available: boolean | null
+          transcript_text: string | null
+          updated_at: string
+          video_available: boolean | null
+        }
+        Insert: {
+          ai_confidence?: number | null
+          ai_key_topics?: Json | null
+          ai_next_steps?: Json | null
+          ai_processed_at?: string | null
+          ai_sentiment?: Json | null
+          ai_summary?: string | null
+          audio_available?: boolean | null
+          budget_authority?: number | null
+          capture_confidence?: string | null
+          capture_mode?: string | null
+          created_at?: string
+          created_by?: string | null
+          date: string
+          decision_scope_type?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          end_time?: string | null
+          expected_outcomes?: Json | null
+          id?: string
+          linked_risks?: Json | null
+          linked_workstreams?: Json | null
+          location?: string | null
+          meeting_link?: string | null
+          meeting_type?: string
+          mom_approved?: boolean | null
+          mom_approved_at?: string | null
+          mom_approved_by?: string | null
+          mom_content?: string | null
+          mom_generated?: boolean | null
+          mom_template_id?: string | null
+          project_id?: string | null
+          purpose_description?: string | null
+          purpose_type?: string | null
+          recording_url?: string | null
+          required_quorum?: number | null
+          resource_authority?: boolean | null
+          scope_change_authority?: boolean | null
+          source_type?: string | null
+          start_time: string
+          status?: string
+          success_criteria?: Json | null
+          title: string
+          transcript_available?: boolean | null
+          transcript_text?: string | null
+          updated_at?: string
+          video_available?: boolean | null
+        }
+        Update: {
+          ai_confidence?: number | null
+          ai_key_topics?: Json | null
+          ai_next_steps?: Json | null
+          ai_processed_at?: string | null
+          ai_sentiment?: Json | null
+          ai_summary?: string | null
+          audio_available?: boolean | null
+          budget_authority?: number | null
+          capture_confidence?: string | null
+          capture_mode?: string | null
+          created_at?: string
+          created_by?: string | null
+          date?: string
+          decision_scope_type?: string | null
+          description?: string | null
+          duration_minutes?: number | null
+          end_time?: string | null
+          expected_outcomes?: Json | null
+          id?: string
+          linked_risks?: Json | null
+          linked_workstreams?: Json | null
+          location?: string | null
+          meeting_link?: string | null
+          meeting_type?: string
+          mom_approved?: boolean | null
+          mom_approved_at?: string | null
+          mom_approved_by?: string | null
+          mom_content?: string | null
+          mom_generated?: boolean | null
+          mom_template_id?: string | null
+          project_id?: string | null
+          purpose_description?: string | null
+          purpose_type?: string | null
+          recording_url?: string | null
+          required_quorum?: number | null
+          resource_authority?: boolean | null
+          scope_change_authority?: boolean | null
+          source_type?: string | null
+          start_time?: string
+          status?: string
+          success_criteria?: Json | null
+          title?: string
+          transcript_available?: boolean | null
+          transcript_text?: string | null
+          updated_at?: string
+          video_available?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meetings_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      mom_templates: {
+        Row: {
+          approval_workflow: Json | null
+          created_at: string
+          created_by: string | null
+          formatting: Json | null
+          id: string
+          is_default: boolean | null
+          name: string
+          organization: string | null
+          project_id: string | null
+          sections: Json | null
+          updated_at: string
+          version: number | null
+        }
+        Insert: {
+          approval_workflow?: Json | null
+          created_at?: string
+          created_by?: string | null
+          formatting?: Json | null
+          id?: string
+          is_default?: boolean | null
+          name: string
+          organization?: string | null
+          project_id?: string | null
+          sections?: Json | null
+          updated_at?: string
+          version?: number | null
+        }
+        Update: {
+          approval_workflow?: Json | null
+          created_at?: string
+          created_by?: string | null
+          formatting?: Json | null
+          id?: string
+          is_default?: boolean | null
+          name?: string
+          organization?: string | null
+          project_id?: string | null
+          sections?: Json | null
+          updated_at?: string
+          version?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "mom_templates_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_baselines: {
         Row: {
           baseline_date: string

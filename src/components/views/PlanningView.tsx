@@ -25,6 +25,7 @@ import { AuthDialog } from '@/components/auth/AuthDialog';
 import { CalendarDialog } from '@/components/planning/CalendarDialog';
 import { ResourceSheet } from '@/components/resources/ResourceSheet';
 import { ResourceUsageView } from '@/components/resources/ResourceUsageView';
+import { ProjectChat } from '@/components/collaboration/ProjectChat';
 import { useAuth } from '@/hooks/useAuth';
 import { useProjects, useCreateProject, Project } from '@/hooks/useProjects';
 import { useTasks, useCreateTask } from '@/hooks/useTasks';
@@ -77,6 +78,7 @@ export function PlanningView() {
   const [showAuthDialog, setShowAuthDialog] = useState(false);
   const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
   const [showCalendarDialog, setShowCalendarDialog] = useState(false);
+  const [showChat, setShowChat] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null);
   const [selectedCalendarId, setSelectedCalendarId] = useState<string | null>(null);
   const [newProjectName, setNewProjectName] = useState('');
@@ -394,6 +396,15 @@ export function PlanningView() {
             )}
             Calculate CPM
           </Button>
+
+          {/* Chat Button */}
+          {selectedProjectId && (
+            <ProjectChat 
+              projectId={selectedProjectId} 
+              isOpen={showChat} 
+              onToggle={() => setShowChat(!showChat)} 
+            />
+          )}
 
           {/* User Menu */}
           <DropdownMenu>

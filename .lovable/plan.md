@@ -1,242 +1,246 @@
 
 
-# Enhanced Morning Briefing with AI-Powered Insights
+## Dashboard Consolidation & Reports Enhancement Plan
 
-## Overview
-
-Transform the Morning Briefing into a comprehensive AI-powered daily intelligence center where users can customize which sections to display and generate real-time insights across all project dimensions by clicking the refresh button.
+Based on my analysis of the codebase, here's a comprehensive strategy addressing your questions and implementation plan.
 
 ---
 
-## Architecture Recommendation: Keep Separate Views
+## Part 1: Dashboard Consolidation Recommendation
 
-Based on analysis of the existing codebase, I recommend maintaining **separate but complementary** views:
+### Current State Analysis
 
-| View | Purpose | Primary Use Case |
-|------|---------|------------------|
-| **Dashboard** | Real-time operational status with KPIs | Day-to-day monitoring |
-| **Morning Briefing** | AI-curated daily intelligence digest | PM's "start of day" review |
-| **Reports** | On-demand analytical reports for export | Stakeholder communication |
-| **Executive Dashboard** | Strategic portfolio overview | C-level, steering committee |
+| Dashboard | Purpose | Key Components |
+|-----------|---------|----------------|
+| **Dashboard** | Day-to-day project status | KPIs, progress ring, budget overview, active risks, in-progress work |
+| **Morning Briefing** | AI-powered daily digest | Flexible grid with 14 customizable sections, AI insights, alerts |
+| **Strategic Dashboard** | Long-term strategy & AI analysis | Business case, AI risk discovery, value engineering, stakeholder map |
+| **Executive Dashboard** | High-level portfolio metrics | Portfolio KPIs, budget trends, program performance, health distribution |
 
-**Reasoning**: Each view serves a distinct mental model and workflow. Morning Briefing is unique in being AI-generated, personalized, and action-oriented for starting the workday.
+### Recommendation: Unified Intelligence Hub
 
----
+**Keep all dashboards but consolidate access via a Dashboard Selector dropdown.** Here's why:
 
-## Information Sections to Include
+1. **Morning Briefing** is unique - it's a personalized, customizable daily digest with AI generation
+2. **Strategic Dashboard** serves a distinct purpose - project intake quality and value engineering
+3. **Executive Dashboard** is portfolio-level, while Dashboard is project-level
+4. They serve different audiences and use cases
 
-### Core Sections (Always Available)
-1. **Critical Alerts & Notifications** - Urgent items requiring immediate attention
-2. **Today's Focus Areas** - Priority tasks and activities for the day
+### Proposed Architecture
 
-### AI-Generated Sections (New)
-3. **AI Insights & Predictions** - Schedule forecasts, bottleneck warnings, pattern recognition
-4. **Budget & Financial Analysis** - Burn rate, CV/SV, forecast to completion
-5. **Expected Profit/Loss Forecast** - AI-calculated projection based on resource burn
-6. **Schedule Slippage Analysis** - Tasks slipping from baseline, critical path changes
-7. **Risk Assessment & Mitigations** - Escalated risks, AI-suggested mitigations
-8. **Actions Due / SLA Status** - Overdue actions with breach indicators
-9. **Open Issues Summary** - Issues by severity with trending
-10. **Recent Decisions** - Decisions made and pending
-11. **Today's Meetings** - Calendar for the day
-12. **Team Availability** - Member status and workload
-
-### Additional Suggested Sections
-13. **Communication Intelligence** - Email/chat patterns, sentiment analysis
-14. **Milestone Tracker** - Upcoming/at-risk milestones
-15. **Resource Utilization** - Team capacity heatmap
-
----
-
-## User Customization Features
-
-### Settings Panel
-Users can:
-- Toggle sections on/off via checkboxes
-- Drag sections to reorder display priority
-- Save preferences per project
-- Reset to default configuration
-
-### Refresh Behavior
-When user clicks "Refresh Briefing":
-- All enabled sections regenerate with latest data
-- AI-powered sections call the backend for fresh analysis
-- Shows loading skeleton while generating
-- Displays last refresh timestamp
+```text
++------------------------------------------+
+|  Dashboard (default entry point)         |
+|  +------------------------------------+  |
+|  |  [Dropdown: Dashboard Views ▼]     |  |
+|  |   - Project Dashboard (current)    |  |
+|  |   - Executive Dashboard            |  |
+|  |   - Strategic Dashboard            |  |
+|  +------------------------------------+  |
+|                                          |
+|  Morning Briefing stays separate         |
+|  (unique AI-powered daily digest flow)   |
++------------------------------------------+
+```
 
 ---
 
-## Technical Implementation
+## Part 2: Project Timeline Overlap Fix
+
+**Issue identified:** The `ProgramTimelineView.tsx` (806 lines) has overlapping elements in the timeline bars.
+
+**Root cause:** Bar positioning calculations don't account for concurrent projects within programs properly.
+
+**Fix approach:**
+- Add vertical stacking logic for overlapping date ranges
+- Implement swimlane separation within program groups
+- Add collision detection for milestone markers
+
+---
+
+## Part 3: Reports Page Enhancement
+
+**Current state:** Basic `ReportsView.tsx` with 6 mock reports and 3 sample charts.
+
+**Proposed enhancement:**
+
+### Report Categories
+- **Status Reports**: Portfolio, Project, Sprint
+- **Financial Reports**: Budget, EVM, Burn Rate
+- **Resource Reports**: Utilization, Capacity, Skills
+- **Risk Reports**: Register, Assessment, Trends
+- **Custom Reports**: User-defined
+
+### Key Features
+- Report templates with scheduling (daily/weekly/monthly)
+- Real-time generation from project data
+- Export options (PDF, Excel, PowerPoint)
+- Report history and versioning
+- Sharing and distribution lists
+
+---
+
+## Part 4: PDF Export Feature
+
+### Scope
+Export capabilities for:
+- All dashboards (Dashboard, Morning Briefing, Strategic, Executive)
+- All reports from Reports page
+- Individual components/sections
+
+### Technical Approach
+1. **Client-side rendering**: Use `html2canvas` + `jspdf` for quick exports
+2. **Server-side rendering (recommended)**: Edge function using Puppeteer/Playwright for higher quality
+
+### Export Options
+- Single page or multi-page PDF
+- Include/exclude sections
+- Date range selection for data
+- Branding/watermark options
+
+---
+
+## Part 5: Presentation Module - Dashboard Component Embedding
+
+This is the most complex feature. Here's the architecture:
+
+### Concept: "Live Data Slides"
+
+```text
++--------------------------------------------+
+|  Presentation Slide                        |
+|  +--------------------------------------+  |
+|  |  Embedded Dashboard Component        |  |
+|  |  (e.g., Project Health Chart)        |  |
+|  |                                      |  |
+|  |  [🔄 Refresh] [📌 Snapshot Mode]     |  |
+|  |                                      |  |
+|  |  Data as of: 2026-01-29 10:30 AM     |  |
+|  +--------------------------------------+  |
++--------------------------------------------+
+```
+
+### Key Behaviors
+1. **Active Presentation**: Components refresh on-demand when opened
+2. **Inactive Presentations**: Data frozen at last saved state (snapshot)
+3. **Manual Refresh**: User clicks to update specific components
+4. **Bulk Refresh**: "Refresh All" updates all live components in active presentation
+
+### Data Model
+
+```text
+slides table:
+  - id
+  - presentation_id
+  - embedded_components: JSON
+    [
+      {
+        componentId: "budget-trend-chart",
+        componentType: "dashboard-widget",
+        sourceModule: "executive-dashboard",
+        position: { x, y, width, height },
+        dataSnapshot: { ... frozen data ... },
+        snapshotAt: timestamp,
+        isLive: boolean
+      }
+    ]
+```
+
+### Component Registry
+Create an embeddable component registry that catalogs:
+- All charts from dashboards
+- All briefing sections
+- All report visualizations
+- Custom metrics widgets
+
+---
+
+## Implementation Plan
+
+### Phase 1: Foundation (Reports + PDF Export)
+
+**Tasks:**
+1. Create embeddable component registry system
+2. Build enhanced Reports page with categories, templates, and scheduling
+3. Implement PDF export edge function
+4. Add export buttons to all dashboards
+5. Create print-optimized CSS stylesheets
+
+### Phase 2: Dashboard Consolidation
+
+**Tasks:**
+1. Create `DashboardSwitcher` dropdown component
+2. Unify Dashboard, Executive, and Strategic under single entry point
+3. Add "Open in" quick-access from Morning Briefing to relevant dashboards
+4. Fix Project Timeline overlap issues
+
+### Phase 3: Presentation Embedding
+
+**Tasks:**
+1. Extend slides schema for embedded components
+2. Create `ComponentPicker` dialog for inserting dashboard widgets
+3. Build `EmbeddedComponent` wrapper with refresh controls
+4. Implement data snapshot vs live toggle
+5. Add "active presentation" tracking for selective refresh
+6. Create component refresh queue/management system
+
+---
+
+## Technical Specifications
+
+### New Files to Create
+
+| File | Purpose |
+|------|---------|
+| `src/lib/embeddableComponents.ts` | Component registry with metadata |
+| `src/components/common/PDFExporter.tsx` | Reusable PDF export wrapper |
+| `src/components/presentations/ComponentPicker.tsx` | Dialog for selecting embeddable components |
+| `src/components/presentations/EmbeddedDashboardWidget.tsx` | Wrapper for embedded live widgets |
+| `src/components/views/DashboardHub.tsx` | Unified dashboard with view switcher |
+| `supabase/functions/generate-pdf/index.ts` | Server-side PDF generation |
 
 ### Database Changes
 
-**New Table: `briefing_preferences`**
-```text
-Columns:
-- id: UUID (primary key)
-- user_id: UUID (references auth.users)
-- project_id: UUID (references projects)
-- enabled_sections: JSONB (array of section IDs)
-- section_order: JSONB (ordered array of section IDs)
-- created_at: TIMESTAMPTZ
-- updated_at: TIMESTAMPTZ
-- UNIQUE constraint on (user_id, project_id)
+```sql
+-- Add embedded components support to slides
+ALTER TABLE slides ADD COLUMN embedded_components JSONB DEFAULT '[]';
+
+-- Add active presentation tracking
+CREATE TABLE active_presentations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES auth.users(id),
+  presentation_id UUID REFERENCES presentations(id),
+  activated_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(user_id)
+);
 ```
 
-RLS policies will ensure users can only access their own preferences.
+### Edge Function for PDF Export
 
-### New Edge Function: `morning-briefing-generate`
-
-This function will:
-1. Accept project ID and enabled sections
-2. Aggregate data from: tasks, risks, issues, actions, meetings, resources, financials
-3. Build comprehensive AI prompt with project context
-4. Call Lovable AI (Gemini) for insight generation
-5. Return structured briefing data with all sections
-
-### New Frontend Components
-
-```text
-src/components/briefing/
-├── BriefingSettingsPanel.tsx    # Settings popover for section toggles
-├── BriefingSectionCard.tsx      # Reusable collapsible section card
-├── sections/
-│   ├── CriticalAlertsSection.tsx
-│   ├── AIInsightsSection.tsx
-│   ├── BudgetAnalysisSection.tsx
-│   ├── ProfitLossSection.tsx
-│   ├── ScheduleSlippageSection.tsx
-│   ├── RiskAssessmentSection.tsx
-│   ├── ActionsSection.tsx
-│   ├── IssuesSection.tsx
-│   ├── DecisionsSection.tsx
-│   ├── MeetingsSection.tsx
-│   ├── TeamAvailabilitySection.tsx
-│   └── CommunicationSection.tsx
-├── hooks/
-│   └── useBriefingPreferences.ts  # CRUD for user preferences
-└── types.ts                       # Briefing types and interfaces
+```typescript
+// supabase/functions/generate-pdf/index.ts
+// Uses Puppeteer to render dashboards/reports as PDF
+// Accepts: component IDs, date range, export options
+// Returns: PDF blob or signed URL
 ```
 
-### Modified Files
+---
 
-**`src/components/views/MorningBriefingView.tsx`**
-- Add settings panel toggle in header
-- Integrate preferences hook for section visibility
-- Dynamic section rendering based on user preferences
-- Connect to edge function for AI generation on refresh
-- Add loading states for each section
+## Summary of Recommendations
+
+| Question | Recommendation |
+|----------|----------------|
+| Keep Strategic + Morning Briefing? | **Yes** - different purposes (strategy vs daily ops) |
+| Merge Executive + Strategic? | **No** - Executive is portfolio-level, Strategic is project-level |
+| Dashboard dropdown? | **Yes** - unify Dashboard/Executive/Strategic access |
+| Morning Briefing separate? | **Yes** - unique AI-powered daily workflow |
 
 ---
 
-## AI-Powered Analysis Details
+## Dependencies & Considerations
 
-### Expected Profit/Loss Calculation
-AI considers:
-- Current resource burn rate (hours * hourly rate)
-- Remaining work estimate based on incomplete tasks
-- Historical velocity from completed tasks
-- Risk-adjusted scenarios (optimistic/likely/pessimistic)
-
-### Schedule Slippage Analysis
-AI identifies:
-- Tasks where actual dates deviate from baseline
-- Critical path changes since last check
-- Milestone risk indicators
-- Dependencies causing cascading delays
-
-### Risk Assessment
-AI provides:
-- Newly identified risks based on project patterns
-- Escalation recommendations for existing risks
-- Auto-generated mitigation suggestions
-- Risk score trending over time
-
----
-
-## UI/UX Design
-
-### Settings Panel Layout
-```text
-┌─────────────────────────────────────────────────────────────┐
-│ ⚙ Customize Your Briefing                        [Save] [X] │
-├─────────────────────────────────────────────────────────────┤
-│ Select sections to include:                                  │
-│                                                              │
-│ ☑ Critical Alerts      ☑ AI Insights       ☑ Budget         │
-│ ☑ Profit/Loss          ☑ Schedule          ☑ Risks          │
-│ ☑ Actions              ☑ Issues            ☑ Decisions      │
-│ ☑ Meetings             ☑ Team Status       ☐ Communications │
-│                                                              │
-│ Drag to reorder:                                            │
-│ ≡ Critical Alerts                                            │
-│ ≡ AI Insights                                               │
-│ ≡ Budget Analysis                                           │
-│ ...                                                          │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Section Card Design
-Each section will be a collapsible card with:
-- Section icon and title
-- "View Details" link to full view
-- AI confidence indicator (where applicable)
-- Refresh indicator when loading
-
----
-
-## Implementation Phases
-
-### Phase 1: Core Infrastructure
-1. Create database table for preferences
-2. Create `useBriefingPreferences` hook
-3. Create `BriefingSettingsPanel` component
-4. Update `MorningBriefingView` with settings integration
-
-### Phase 2: Section Components
-1. Create reusable `BriefingSectionCard` component
-2. Implement individual section components
-3. Add dynamic rendering based on preferences
-
-### Phase 3: AI Integration
-1. Create `morning-briefing-generate` edge function
-2. Connect refresh button to trigger AI generation
-3. Add loading states and error handling
-4. Implement caching for performance
-
-### Phase 4: Polish
-1. Add drag-and-drop for section reordering
-2. Implement section animations
-3. Add tooltips and help text
-4. Mobile-responsive adjustments
-
----
-
-## Default Section Order
-
-1. Critical Alerts
-2. AI Insights & Predictions
-3. Expected Profit/Loss Forecast
-4. Schedule Slippage Analysis
-5. Budget & Financial Analysis
-6. Risk Assessment
-7. Actions Due
-8. Issues Summary
-9. Today's Meetings
-10. Recent Decisions
-11. Team Availability
-12. Communication Intelligence (disabled by default)
-
----
-
-## Summary
-
-This enhancement transforms Morning Briefing into a powerful, personalized daily intelligence tool that:
-
-- Provides comprehensive AI-generated insights across all project dimensions
-- Allows complete customization of visible sections and their order
-- Persists user preferences per project in the database
-- Refreshes on-demand with latest AI analysis
-- Links seamlessly to detailed views for drill-down investigation
-- Maintains separation from other dashboard views for focused workflows
+1. **PDF Export**: Consider `@react-pdf/renderer` for complex layouts or edge function for server-side
+2. **Component Embedding**: Requires careful state management for live vs snapshot data
+3. **Active Presentation Tracking**: Real-time subscription to refresh only when needed
+4. **Performance**: Lazy-load embedded components, cache data snapshots
 

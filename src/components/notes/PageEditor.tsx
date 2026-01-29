@@ -3,30 +3,8 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover';
-import {
-  Bold,
-  Italic,
-  Underline,
-  Strikethrough,
-  Heading1,
-  Heading2,
-  List,
-  ListOrdered,
-  CheckSquare,
-  Code2,
-  Quote,
-  Link2,
-  Image,
-  Table2,
-  AtSign,
-  Hash,
   Sparkles,
   Save,
   MoreHorizontal,
@@ -38,6 +16,7 @@ import {
 } from 'lucide-react';
 import type { NotebookPage } from '@/hooks/useNotebooks';
 import { formatDistanceToNow } from 'date-fns';
+import { RichTextEditor } from './RichTextEditor';
 
 interface PageEditorProps {
   page: NotebookPage | null;
@@ -52,18 +31,15 @@ export function PageEditor({ page, onUpdate, allPages, onNavigateToPage }: PageE
   const [tags, setTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState('');
   const [showTagInput, setShowTagInput] = useState(false);
-  const [showLinkPicker, setShowLinkPicker] = useState(false);
-  const [linkSearch, setLinkSearch] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const contentRef = useRef<HTMLTextAreaElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Reset state when page changes
   useEffect(() => {
     if (page) {
       setTitle(page.title);
-      setContent(page.content);
+      setContent(page.content || '');
       setTags(page.tags || []);
       setLastSaved(new Date(page.updated_at));
     }
@@ -107,42 +83,6 @@ export function PageEditor({ page, onUpdate, allPages, onNavigateToPage }: PageE
     };
   }, [title, content, tags]);
 
-  const insertMarkdown = (prefix: string, suffix: string = '') => {
-    const textarea = contentRef.current;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selectedText = content.substring(start, end);
-    const newContent = content.substring(0, start) + prefix + selectedText + suffix + content.substring(end);
-    
-    setContent(newContent);
-    
-    // Restore cursor position
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + prefix.length, end + prefix.length);
-    }, 0);
-  };
-
-  const insertWikiLink = (pageTitle: string) => {
-    const textarea = contentRef.current;
-    if (!textarea) return;
-
-    const start = textarea.selectionStart;
-    const link = `[[${pageTitle}]]`;
-    const newContent = content.substring(0, start) + link + content.substring(start);
-    
-    setContent(newContent);
-    setShowLinkPicker(false);
-    setLinkSearch('');
-    
-    setTimeout(() => {
-      textarea.focus();
-      textarea.setSelectionRange(start + link.length, start + link.length);
-    }, 0);
-  };
-
   const handleAddTag = () => {
     if (newTag && !tags.includes(newTag)) {
       setTags([...tags, newTag]);
@@ -153,22 +93,6 @@ export function PageEditor({ page, onUpdate, allPages, onNavigateToPage }: PageE
 
   const handleRemoveTag = (tag: string) => {
     setTags(tags.filter(t => t !== tag));
-  };
-
-  const filteredPages = allPages.filter(p => 
-    p.id !== page?.id && 
-    p.title.toLowerCase().includes(linkSearch.toLowerCase())
-  );
-
-  // Render content with clickable wiki links
-  const handleContentClick = (e: React.MouseEvent) => {
-    const target = e.target as HTMLElement;
-    if (target.dataset.wikilink && onNavigateToPage) {
-      const linkedPage = allPages.find(p => p.title === target.dataset.wikilink);
-      if (linkedPage) {
-        onNavigateToPage(linkedPage.id);
-      }
-    }
   };
 
   if (!page) {
@@ -185,86 +109,8 @@ export function PageEditor({ page, onUpdate, allPages, onNavigateToPage }: PageE
 
   return (
     <div className="flex-1 flex flex-col bg-background min-w-0 h-full">
-      {/* Toolbar */}
+      {/* Top Bar */}
       <div className="flex items-center justify-between p-3 border-b border-border shrink-0">
-        <div className="flex items-center gap-1">
-          <Button variant="ghost" size="iconSm" onClick={() => insertMarkdown('**', '**')} title="Bold (Ctrl+B)">
-            <Bold className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="iconSm" onClick={() => insertMarkdown('*', '*')} title="Italic (Ctrl+I)">
-            <Italic className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="iconSm" onClick={() => insertMarkdown('~~', '~~')}>
-            <Strikethrough className="h-4 w-4" />
-          </Button>
-          <div className="w-px h-4 bg-border mx-1" />
-          <Button variant="ghost" size="iconSm" onClick={() => insertMarkdown('# ')} title="Heading 1">
-            <Heading1 className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="iconSm" onClick={() => insertMarkdown('## ')} title="Heading 2">
-            <Heading2 className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="iconSm" onClick={() => insertMarkdown('> ')}>
-            <Quote className="h-4 w-4" />
-          </Button>
-          <div className="w-px h-4 bg-border mx-1" />
-          <Button variant="ghost" size="iconSm" onClick={() => insertMarkdown('- ')}>
-            <List className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="iconSm" onClick={() => insertMarkdown('1. ')}>
-            <ListOrdered className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="iconSm" onClick={() => insertMarkdown('- [ ] ')}>
-            <CheckSquare className="h-4 w-4" />
-          </Button>
-          <div className="w-px h-4 bg-border mx-1" />
-          <Button variant="ghost" size="iconSm" onClick={() => insertMarkdown('`', '`')}>
-            <Code2 className="h-4 w-4" />
-          </Button>
-          
-          <Popover open={showLinkPicker} onOpenChange={setShowLinkPicker}>
-            <PopoverTrigger asChild>
-              <Button variant="ghost" size="iconSm" title="Insert Link [[]]">
-                <Link2 className="h-4 w-4" />
-              </Button>
-            </PopoverTrigger>
-            <PopoverContent className="w-72 p-0" align="start">
-              <div className="p-2 border-b border-border">
-                <Input
-                  placeholder="Search pages to link..."
-                  value={linkSearch}
-                  onChange={(e) => setLinkSearch(e.target.value)}
-                  className="h-8 text-sm"
-                  autoFocus
-                />
-              </div>
-              <ScrollArea className="max-h-48">
-                <div className="p-1">
-                  {filteredPages.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center py-4">
-                      No pages found
-                    </p>
-                  ) : (
-                    filteredPages.map(p => (
-                      <button
-                        key={p.id}
-                        onClick={() => insertWikiLink(p.title)}
-                        className="w-full text-left px-2 py-1.5 rounded text-sm hover:bg-accent transition-colors"
-                      >
-                        {p.title}
-                      </button>
-                    ))
-                  )}
-                </div>
-              </ScrollArea>
-            </PopoverContent>
-          </Popover>
-          
-          <Button variant="ghost" size="iconSm" title="Mention @">
-            <AtSign className="h-4 w-4" />
-          </Button>
-        </div>
-
         <div className="flex items-center gap-2">
           {isSaving ? (
             <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -277,6 +123,9 @@ export function PageEditor({ page, onUpdate, allPages, onNavigateToPage }: PageE
               Saved {formatDistanceToNow(lastSaved, { addSuffix: true })}
             </span>
           )}
+        </div>
+        
+        <div className="flex items-center gap-2">
           <Button variant="ghost" size="sm" className="gap-2">
             <Sparkles className="h-4 w-4 text-primary" />
             AI Assist
@@ -342,13 +191,11 @@ export function PageEditor({ page, onUpdate, allPages, onNavigateToPage }: PageE
             )}
           </div>
 
-          {/* Content */}
-          <Textarea
-            ref={contentRef}
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
-            placeholder="Start writing... Use **bold**, *italic*, [[wiki links]], @mentions, and more."
-            className="min-h-[500px] border-none shadow-none px-0 resize-none focus-visible:ring-0 bg-transparent text-base leading-relaxed"
+          {/* Rich Text Editor */}
+          <RichTextEditor
+            content={content}
+            onChange={setContent}
+            placeholder="Start writing... Use the toolbar above to format your text."
           />
         </div>
       </ScrollArea>

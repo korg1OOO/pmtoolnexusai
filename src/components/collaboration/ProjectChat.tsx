@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { MessageCircle, Send, X, Bell, BellOff } from 'lucide-react';
+import { MessageCircle, Send, X, Bell, BellOff, Pin } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -13,6 +13,9 @@ import { MentionInput } from '@/components/chat/MentionInput';
 import { ChatAttachmentButton, AttachmentPreview, AttachmentDisplay, AttachmentData } from '@/components/chat/ChatAttachment';
 import { MessageReactions, Reaction, QuickReactionPicker } from '@/components/chat/MessageReactions';
 import { TypingIndicator } from '@/components/chat/TypingIndicator';
+import { PinnedMessages, PinnedMessage, PinMessageButton } from '@/components/chat/PinnedMessages';
+import { ReadReceipts, ReadReceipt, useReadReceipts } from '@/components/chat/ReadReceipts';
+import { ReplyPreview, ReplyButton, ParentMessagePreview, ThreadIndicator, getReplyCount, getLastReplyTime, ThreadMessage } from '@/components/chat/MessageThread';
 import { useChatPresence } from '@/hooks/useChatPresence';
 import { useMentionNotifications } from '@/hooks/useMentionNotifications';
 
@@ -28,6 +31,11 @@ interface ChatMessage {
   attachment_type?: string | null;
   attachment_size?: number | null;
   reactions?: Reaction[] | null;
+  is_pinned?: boolean;
+  pinned_at?: string | null;
+  pinned_by?: string | null;
+  read_by?: ReadReceipt[] | null;
+  reply_to?: string | null;
 }
 
 interface ProjectChatProps {
@@ -90,7 +98,9 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
   const [unreadCount, setUnreadCount] = useState(0);
   const [pendingAttachment, setPendingAttachment] = useState<AttachmentData | null>(null);
   const [notificationsEnabled, setNotificationsEnabled] = useState(true);
+  const [replyingTo, setReplyingTo] = useState<ChatMessage | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   
   // Chat presence for typing indicators
   const { typingUsers, startTyping, stopTyping } = useChatPresence(projectId);
@@ -99,6 +109,9 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
   const { processMessage, requestPermission, hasPermission } = useMentionNotifications({
     enabled: notificationsEnabled,
   });
+
+  // Read receipts hook
+  const { markAsRead } = useReadReceipts();
 
   // Fetch initial messages
   useEffect(() => {
@@ -117,10 +130,11 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
         return;
       }
 
-      // Parse reactions from JSON
+      // Parse reactions and read_by from JSON
       const parsedMessages = (data || []).map(msg => ({
         ...msg,
         reactions: Array.isArray(msg.reactions) ? (msg.reactions as unknown as Reaction[]) : [],
+        read_by: Array.isArray(msg.read_by) ? (msg.read_by as unknown as ReadReceipt[]) : [],
       }));
       setMessages(parsedMessages);
     };
@@ -144,7 +158,11 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
         },
         (payload) => {
           const newMsg = payload.new as ChatMessage;
-          setMessages((prev) => [...prev, newMsg]);
+          setMessages((prev) => [...prev, {
+            ...newMsg,
+            reactions: Array.isArray(newMsg.reactions) ? newMsg.reactions : [],
+            read_by: Array.isArray(newMsg.read_by) ? newMsg.read_by : [],
+          }]);
           
           // Check for @mentions and show notification
           processMessage(
@@ -182,7 +200,11 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
         },
         (payload) => {
           const updatedMsg = payload.new as ChatMessage;
-          setMessages((prev) => prev.map((m) => m.id === updatedMsg.id ? updatedMsg : m));
+          setMessages((prev) => prev.map((m) => m.id === updatedMsg.id ? {
+            ...updatedMsg,
+            reactions: Array.isArray(updatedMsg.reactions) ? updatedMsg.reactions : [],
+            read_by: Array.isArray(updatedMsg.read_by) ? updatedMsg.read_by : [],
+          } : m));
         }
       )
       .subscribe();
@@ -199,12 +221,41 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
     }
   }, [messages]);
 
-  // Clear unread when opening
+  // Clear unread when opening and mark messages as read
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && user) {
       setUnreadCount(0);
+      
+      // Mark unread messages as read
+      const markMessagesAsRead = async () => {
+        const unreadMessages = messages.filter(
+          m => m.user_id !== user.id && 
+          !(m.read_by || []).some(r => r.userId === user.id)
+        );
+        
+        for (const msg of unreadMessages) {
+          await updateReadReceipts(msg.id, [
+            ...(msg.read_by || []),
+            { userId: user.id, userEmail: user.email || '', readAt: new Date().toISOString() }
+          ]);
+        }
+      };
+      
+      markMessagesAsRead();
     }
-  }, [isOpen]);
+  }, [isOpen, user, messages.length]);
+
+  // Update read receipts in database
+  const updateReadReceipts = async (messageId: string, receipts: ReadReceipt[]) => {
+    const { error } = await supabase
+      .from('project_messages')
+      .update({ read_by: JSON.parse(JSON.stringify(receipts)) })
+      .eq('id', messageId);
+    
+    if (error) {
+      console.error('Error updating read receipts:', error);
+    }
+  };
 
   const handleSendMessage = async () => {
     if ((!newMessage.trim() && !pendingAttachment) || !user || !projectId) return;
@@ -219,6 +270,7 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
       attachment_name: pendingAttachment?.name || null,
       attachment_type: pendingAttachment?.type || null,
       attachment_size: pendingAttachment?.size || null,
+      reply_to: replyingTo?.id || null,
     });
 
     if (error) {
@@ -227,6 +279,7 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
     } else {
       setNewMessage('');
       setPendingAttachment(null);
+      setReplyingTo(null);
     }
     setIsLoading(false);
     stopTyping();
@@ -244,6 +297,27 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
     }
   };
 
+  // Pin/unpin message
+  const handleTogglePin = async (messageId: string, isPinned: boolean) => {
+    if (!user) return;
+    
+    const { error } = await supabase
+      .from('project_messages')
+      .update({
+        is_pinned: !isPinned,
+        pinned_at: !isPinned ? new Date().toISOString() : null,
+        pinned_by: !isPinned ? user.id : null,
+      })
+      .eq('id', messageId);
+    
+    if (error) {
+      console.error('Error toggling pin:', error);
+      toast.error('Failed to pin message');
+    } else {
+      toast.success(isPinned ? 'Message unpinned' : 'Message pinned');
+    }
+  };
+
   // Add reaction to message
   const handleAddReaction = async (messageId: string, emoji: string) => {
     if (!user) return;
@@ -256,14 +330,12 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
     
     let newReactions: Reaction[];
     if (existingReaction) {
-      // Add user to existing reaction
       newReactions = currentReactions.map(r => 
         r.emoji === emoji
           ? { ...r, users: [...r.users, { id: user.id, email: user.email || '' }] }
           : r
       );
     } else {
-      // Create new reaction
       newReactions = [...currentReactions, {
         emoji,
         users: [{ id: user.id, email: user.email || '' }]
@@ -325,6 +397,18 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
     toast.success(notificationsEnabled ? 'Notifications disabled' : 'Notifications enabled');
   };
 
+  // Jump to a specific message
+  const handleJumpToMessage = (messageId: string) => {
+    const messageEl = messageRefs.current.get(messageId);
+    if (messageEl) {
+      messageEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      messageEl.classList.add('bg-primary/10');
+      setTimeout(() => {
+        messageEl.classList.remove('bg-primary/10');
+      }, 2000);
+    }
+  };
+
   // Render message content with @mention highlighting
   const renderMessageContent = (content: string) => {
     const parts = content.split(/(@\w+(?:\s\w+)?)/g);
@@ -340,11 +424,25 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
     });
   };
 
+  // Get pinned messages
+  const pinnedMessages: PinnedMessage[] = messages
+    .filter((m): m is ChatMessage & { is_pinned: true; pinned_at: string } => 
+      m.is_pinned === true && !!m.pinned_at
+    )
+    .sort((a, b) => new Date(b.pinned_at).getTime() - new Date(a.pinned_at).getTime())
+    .map(m => ({
+      id: m.id,
+      content: m.content,
+      user_email: m.user_email,
+      pinned_at: m.pinned_at,
+      created_at: m.created_at,
+    }));
+
   // Group messages by sender for cleaner UI
   const groupedMessages = messages.reduce((acc, msg, index) => {
     const prevMsg = messages[index - 1];
     const isNewGroup = !prevMsg || prevMsg.user_id !== msg.user_id || 
-      new Date(msg.created_at).getTime() - new Date(prevMsg.created_at).getTime() > 300000; // 5 min gap
+      new Date(msg.created_at).getTime() - new Date(prevMsg.created_at).getTime() > 300000;
     
     if (isNewGroup) {
       acc.push([msg]);
@@ -353,6 +451,12 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
     }
     return acc;
   }, [] as ChatMessage[][]);
+
+  // Find parent message for replies
+  const getParentMessage = (replyToId: string | null | undefined): ChatMessage | undefined => {
+    if (!replyToId) return undefined;
+    return messages.find(m => m.id === replyToId);
+  };
 
   return (
     <>
@@ -407,6 +511,14 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
             </div>
           </div>
 
+          {/* Pinned Messages */}
+          <PinnedMessages
+            messages={pinnedMessages}
+            onUnpin={(id) => handleTogglePin(id, true)}
+            onJumpToMessage={handleJumpToMessage}
+            canManagePins={!!user}
+          />
+
           {/* Messages */}
           <ScrollArea className="flex-1 p-3" ref={scrollRef}>
             {messages.length === 0 ? (
@@ -442,43 +554,93 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
                             {group[0].user_email.split('@')[0]}
                           </span>
                         )}
-                        {group.map((msg) => (
-                          <div key={msg.id} className="group relative">
-                            <div
-                              className={cn(
-                                'px-3 py-2 rounded-lg text-sm max-w-[220px] break-words',
-                                isOwnMessage
-                                  ? 'bg-primary text-primary-foreground'
-                                  : 'bg-muted'
-                              )}
+                        {group.map((msg) => {
+                          const parentMessage = getParentMessage(msg.reply_to);
+                          const replyCount = getReplyCount(msg.id, messages as ThreadMessage[]);
+                          const lastReplyTime = getLastReplyTime(msg.id, messages as ThreadMessage[]);
+                          
+                          return (
+                            <div 
+                              key={msg.id} 
+                              className="group relative transition-colors rounded"
+                              ref={(el) => {
+                                if (el) messageRefs.current.set(msg.id, el);
+                              }}
                             >
-                              {renderMessageContent(msg.content)}
-                              {msg.attachment_url && msg.attachment_name && msg.attachment_type && (
-                                <AttachmentDisplay
-                                  url={msg.attachment_url}
-                                  name={msg.attachment_name}
-                                  type={msg.attachment_type}
-                                  size={msg.attachment_size || 0}
+                              {/* Parent message preview for replies */}
+                              {msg.reply_to && (
+                                <ParentMessagePreview
+                                  parentMessage={parentMessage}
+                                  onJumpToMessage={handleJumpToMessage}
                                 />
                               )}
-                            </div>
-                            {/* Quick reaction picker on hover */}
-                            <QuickReactionPicker
-                              onSelect={(emoji) => handleAddReaction(msg.id, emoji)}
-                              className={isOwnMessage ? 'left-0 right-auto' : 'right-0'}
-                            />
-                            {/* Reactions display */}
-                            {msg.reactions && msg.reactions.length > 0 && (
-                              <MessageReactions
-                                reactions={msg.reactions}
-                                currentUserId={user?.id}
-                                onAddReaction={(emoji) => handleAddReaction(msg.id, emoji)}
-                                onRemoveReaction={(emoji) => handleRemoveReaction(msg.id, emoji)}
+                              
+                              <div
+                                className={cn(
+                                  'px-3 py-2 rounded-lg text-sm max-w-[220px] break-words',
+                                  isOwnMessage
+                                    ? 'bg-primary text-primary-foreground'
+                                    : 'bg-muted'
+                                )}
+                              >
+                                {renderMessageContent(msg.content)}
+                                {msg.attachment_url && msg.attachment_name && msg.attachment_type && (
+                                  <AttachmentDisplay
+                                    url={msg.attachment_url}
+                                    name={msg.attachment_name}
+                                    type={msg.attachment_type}
+                                    size={msg.attachment_size || 0}
+                                  />
+                                )}
+                              </div>
+                              
+                              {/* Action buttons on hover */}
+                              <div className={cn(
+                                "absolute top-0 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity",
+                                isOwnMessage ? "left-0 -translate-x-full pr-1" : "right-0 translate-x-full pl-1"
+                              )}>
+                                <ReplyButton onReply={() => setReplyingTo(msg)} />
+                                <PinMessageButton
+                                  isPinned={msg.is_pinned || false}
+                                  onTogglePin={() => handleTogglePin(msg.id, msg.is_pinned || false)}
+                                />
+                                <QuickReactionPicker
+                                  onSelect={(emoji) => handleAddReaction(msg.id, emoji)}
+                                />
+                              </div>
+                              
+                              {/* Reactions display */}
+                              {msg.reactions && msg.reactions.length > 0 && (
+                                <MessageReactions
+                                  reactions={msg.reactions}
+                                  currentUserId={user?.id}
+                                  onAddReaction={(emoji) => handleAddReaction(msg.id, emoji)}
+                                  onRemoveReaction={(emoji) => handleRemoveReaction(msg.id, emoji)}
+                                  isOwnMessage={isOwnMessage}
+                                />
+                              )}
+                              
+                              {/* Thread indicator */}
+                              {replyCount > 0 && (
+                                <ThreadIndicator
+                                  replyCount={replyCount}
+                                  lastReplyTime={lastReplyTime}
+                                  onClick={() => {
+                                    // Find and scroll to first reply
+                                    const firstReply = messages.find(m => m.reply_to === msg.id);
+                                    if (firstReply) handleJumpToMessage(firstReply.id);
+                                  }}
+                                />
+                              )}
+                              
+                              {/* Read receipts for own messages */}
+                              <ReadReceipts
+                                receipts={msg.read_by || []}
                                 isOwnMessage={isOwnMessage}
                               />
-                            )}
-                          </div>
-                        ))}
+                            </div>
+                          );
+                        })}
                         <span className="text-[10px] text-muted-foreground ml-1">
                           {formatMessageTime(group[group.length - 1].created_at)}
                         </span>
@@ -498,6 +660,14 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
 
           {/* Input */}
           <div className="p-3 border-t space-y-2">
+            {/* Reply preview */}
+            {replyingTo && (
+              <ReplyPreview
+                replyingTo={replyingTo}
+                onCancel={() => setReplyingTo(null)}
+              />
+            )}
+            
             {/* Pending attachment preview */}
             {pendingAttachment && (
               <AttachmentPreview

@@ -33,6 +33,7 @@ import { ActionConfirmDialog } from './ActionConfirmDialog';
 import { PageContextPanel, getSuggestedQuestions, getViewContext } from './PageContextPanel';
 import { IntentModeToggle, type IntentMode } from './IntentModeToggle';
 import { ClarifyingQuestion, type ClarifyingQuestionData } from './ClarifyingQuestion';
+import { ContextSelector, formatContextsForAI, type ContextItem } from './ContextSelector';
 import { ROLE_DISPLAY_NAMES, type ProjectRole, type AIAction } from '@/types/ai-agents';
 import { toast } from 'sonner';
 
@@ -58,6 +59,7 @@ export function GlobalAISidebar({
   const [intentMode, setIntentMode] = useState<IntentMode>('plan');
   const [clarifyingQuestion, setClarifyingQuestion] = useState<ClarifyingQuestionData | null>(null);
   const [showContext, setShowContext] = useState(true);
+  const [selectedContexts, setSelectedContexts] = useState<ContextItem[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -141,12 +143,12 @@ export function GlobalAISidebar({
     setInput('');
     
     // Include context in the message
-    const contextPrefix = intentMode === 'plan' 
+    const modePrefix = intentMode === 'plan' 
       ? '[Plan Mode] ' 
       : '[Action Mode] ';
-    const viewPrefix = `[Context: ${viewContext.title}] `;
+    const contextString = formatContextsForAI(selectedContexts);
     
-    await sendMessage(viewPrefix + contextPrefix + message);
+    await sendMessage(contextString + modePrefix + message);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -446,7 +448,14 @@ export function GlobalAISidebar({
             </ScrollArea>
 
             {/* Input Area */}
-            <div className="p-4 border-t bg-muted/20">
+            <div className="p-4 border-t bg-muted/20 space-y-3">
+              {/* Context Selector */}
+              <ContextSelector
+                selectedContexts={selectedContexts}
+                onContextChange={setSelectedContexts}
+                currentView={currentView}
+              />
+
               <div className="flex gap-2">
                 <Textarea
                   ref={textareaRef}

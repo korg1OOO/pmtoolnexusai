@@ -152,6 +152,7 @@ const mockAIInsights = [
 export function MorningBriefingView() {
   const { toast } = useToast();
   const [lastUpdated, setLastUpdated] = useState(new Date());
+  const [isCustomizing, setIsCustomizing] = useState(false);
   
   // Local preferences state for when user is not authenticated
   const [localEnabledSections, setLocalEnabledSections] = useState<BriefingSectionId[]>(
@@ -331,6 +332,8 @@ export function MorningBriefingView() {
               onSave={handleSavePreferences}
               onReset={handleReset}
               saving={saving}
+              isCustomizing={isCustomizing}
+              onToggleCustomizing={() => setIsCustomizing(prev => !prev)}
             />
             <Button variant="default" onClick={handleRefresh} disabled={isGenerating}>
               <RefreshCw className={cn('h-4 w-4 mr-2', isGenerating && 'animate-spin')} />
@@ -350,6 +353,7 @@ export function MorningBriefingView() {
               isGenerating={isGenerating}
               lastUpdated={lastUpdated}
               onRefresh={handleRefresh}
+              isCustomizing={isCustomizing}
             />
           ) : (
             <div className="text-center py-12 text-muted-foreground">

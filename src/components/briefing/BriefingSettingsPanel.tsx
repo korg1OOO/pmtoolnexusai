@@ -21,6 +21,8 @@ interface BriefingSettingsPanelProps {
   onSave: () => void;
   onReset: () => void;
   saving?: boolean;
+  isCustomizing: boolean;
+  onToggleCustomizing: () => void;
 }
 
 export function BriefingSettingsPanel({
@@ -31,6 +33,8 @@ export function BriefingSettingsPanel({
   onSave,
   onReset,
   saving = false,
+  isCustomizing,
+  onToggleCustomizing,
 }: BriefingSettingsPanelProps) {
   const [open, setOpen] = React.useState(false);
   const [draggedItem, setDraggedItem] = React.useState<BriefingSectionId | null>(null);
@@ -64,13 +68,23 @@ export function BriefingSettingsPanel({
   };
 
   return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button variant="outline" size="sm" className="gap-2">
-          <Settings className="h-4 w-4" />
-          Customize
-        </Button>
-      </PopoverTrigger>
+    <div className="flex items-center gap-2">
+      <Button 
+        variant={isCustomizing ? "default" : "outline"} 
+        size="sm" 
+        className="gap-2"
+        onClick={onToggleCustomizing}
+      >
+        <Settings className="h-4 w-4" />
+        {isCustomizing ? "Done Customizing" : "Customize Layout"}
+      </Button>
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button variant="outline" size="sm" className="gap-2">
+            <Settings className="h-4 w-4" />
+            Sections
+          </Button>
+        </PopoverTrigger>
       <PopoverContent className="w-96" align="end">
         <div className="space-y-4">
           <div className="flex items-center justify-between">
@@ -177,5 +191,6 @@ export function BriefingSettingsPanel({
         </div>
       </PopoverContent>
     </Popover>
+    </div>
   );
 }

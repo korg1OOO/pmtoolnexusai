@@ -15,9 +15,10 @@ interface TopBarProps {
   projectCode?: string;
   className?: string;
   onCreateProject?: () => void;
+  onOpenChat?: () => void;
 }
 
-export function TopBar({ projectName, projectCode, className, onCreateProject }: TopBarProps) {
+export function TopBar({ projectName, projectCode, className, onCreateProject, onOpenChat }: TopBarProps) {
   const [showNotifications, setShowNotifications] = useState(false);
   const { users } = usePresenceContext();
 
@@ -49,7 +50,7 @@ export function TopBar({ projectName, projectCode, className, onCreateProject }:
         <Button variant="ghost" size="iconSm"><LayoutGrid className="h-4 w-4" /></Button>
         <ThemeToggle />
         <NotificationCenter />
-        <Button variant="ghost" size="iconSm"><MessageSquare className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="iconSm" onClick={onOpenChat} title="Team Chat"><MessageSquare className="h-4 w-4" /></Button>
         <Button variant="ghost" size="iconSm"><HelpCircle className="h-4 w-4" /></Button>
         <div className="w-px h-6 bg-border mx-2" />
         <DropdownMenu>

@@ -36,6 +36,7 @@ export function AppShell({ children, activeView, onViewChange }: AppShellProps) 
               projectName={mockProject.name}
               projectCode={mockProject.code}
               onCreateProject={() => onViewChange('create-project')}
+              onOpenChat={() => onViewChange('team-chat')}
             />
             <main className="flex-1 overflow-auto">
               {children}

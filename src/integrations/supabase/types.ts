@@ -69,7 +69,13 @@ export type Database = {
           imap_username: string
           is_active: boolean
           last_sync_at: string | null
+          oauth_access_token: string | null
+          oauth_client_id: string | null
+          oauth_client_secret: string | null
+          oauth_refresh_token: string | null
+          oauth_token_expires_at: string | null
           project_id: string | null
+          provider_type: string | null
           smtp_encryption: string | null
           smtp_host: string | null
           smtp_password: string | null
@@ -93,7 +99,13 @@ export type Database = {
           imap_username: string
           is_active?: boolean
           last_sync_at?: string | null
+          oauth_access_token?: string | null
+          oauth_client_id?: string | null
+          oauth_client_secret?: string | null
+          oauth_refresh_token?: string | null
+          oauth_token_expires_at?: string | null
           project_id?: string | null
+          provider_type?: string | null
           smtp_encryption?: string | null
           smtp_host?: string | null
           smtp_password?: string | null
@@ -117,7 +129,13 @@ export type Database = {
           imap_username?: string
           is_active?: boolean
           last_sync_at?: string | null
+          oauth_access_token?: string | null
+          oauth_client_id?: string | null
+          oauth_client_secret?: string | null
+          oauth_refresh_token?: string | null
+          oauth_token_expires_at?: string | null
           project_id?: string | null
+          provider_type?: string | null
           smtp_encryption?: string | null
           smtp_host?: string | null
           smtp_password?: string | null

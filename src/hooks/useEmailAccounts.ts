@@ -163,14 +163,30 @@ export function useEmailAccounts(projectId?: string | null) {
   const syncAccount = useCallback(
     async (id: string): Promise<boolean> => {
       try {
+        // Get account to determine provider type
+        const account = accounts.find((a) => a.id === id);
+        if (!account) {
+          throw new Error('Account not found');
+        }
+
         // Update status to syncing
         await supabase
           .from('email_accounts')
           .update({ sync_status: 'syncing' })
           .eq('id', id);
 
-        // Call the sync edge function
-        const response = await supabase.functions.invoke('email-sync', {
+        // Determine which sync function to call based on provider type
+        const providerType = (account as any).provider_type || 'imap';
+        let functionName = 'email-sync';
+        
+        if (providerType === 'gmail') {
+          functionName = 'gmail-sync';
+        } else if (providerType === 'microsoft') {
+          functionName = 'microsoft-sync';
+        }
+
+        // Call the appropriate sync edge function
+        const response = await supabase.functions.invoke(functionName, {
           body: { accountId: id },
         });
 
@@ -185,7 +201,7 @@ export function useEmailAccounts(projectId?: string | null) {
         return false;
       }
     },
-    [fetchAccounts]
+    [accounts, fetchAccounts]
   );
 
   const testConnection = useCallback(

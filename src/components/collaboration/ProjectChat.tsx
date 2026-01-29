@@ -1,15 +1,20 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { cn } from '@/lib/utils';
-import { MessageCircle, Send, X, ChevronDown, Smile } from 'lucide-react';
+import { MessageCircle, Send, X, Bell, BellOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { format, isToday, isYesterday } from 'date-fns';
 import { toast } from 'sonner';
 import { MentionInput } from '@/components/chat/MentionInput';
 import { ChatAttachmentButton, AttachmentPreview, AttachmentDisplay, AttachmentData } from '@/components/chat/ChatAttachment';
+import { MessageReactions, Reaction, QuickReactionPicker } from '@/components/chat/MessageReactions';
+import { TypingIndicator } from '@/components/chat/TypingIndicator';
+import { useChatPresence } from '@/hooks/useChatPresence';
+import { useMentionNotifications } from '@/hooks/useMentionNotifications';
 
 interface ChatMessage {
   id: string;
@@ -22,6 +27,7 @@ interface ChatMessage {
   attachment_name?: string | null;
   attachment_type?: string | null;
   attachment_size?: number | null;
+  reactions?: Reaction[] | null;
 }
 
 interface ProjectChatProps {
@@ -83,7 +89,16 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
   const [pendingAttachment, setPendingAttachment] = useState<AttachmentData | null>(null);
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+  
+  // Chat presence for typing indicators
+  const { typingUsers, startTyping, stopTyping } = useChatPresence(projectId);
+  
+  // Mention notifications
+  const { processMessage, requestPermission, hasPermission } = useMentionNotifications({
+    enabled: notificationsEnabled,
+  });
 
   // Fetch initial messages
   useEffect(() => {
@@ -102,7 +117,12 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
         return;
       }
 
-      setMessages((data as ChatMessage[]) || []);
+      // Parse reactions from JSON
+      const parsedMessages = (data || []).map(msg => ({
+        ...msg,
+        reactions: Array.isArray(msg.reactions) ? (msg.reactions as unknown as Reaction[]) : [],
+      }));
+      setMessages(parsedMessages);
     };
 
     fetchMessages();
@@ -126,6 +146,14 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
           const newMsg = payload.new as ChatMessage;
           setMessages((prev) => [...prev, newMsg]);
           
+          // Check for @mentions and show notification
+          processMessage(
+            newMsg.content,
+            newMsg.user_email.split('@')[0],
+            newMsg.user_id,
+            () => onToggle() // Open chat when notification clicked
+          );
+          
           // Increment unread if chat is closed
           if (!isOpen && newMsg.user_id !== user?.id) {
             setUnreadCount((prev) => prev + 1);
@@ -144,12 +172,25 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
           setMessages((prev) => prev.filter((m) => m.id !== payload.old.id));
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'project_messages',
+          filter: `project_id=eq.${projectId}`,
+        },
+        (payload) => {
+          const updatedMsg = payload.new as ChatMessage;
+          setMessages((prev) => prev.map((m) => m.id === updatedMsg.id ? updatedMsg : m));
+        }
+      )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [projectId, isOpen, user?.id]);
+  }, [projectId, isOpen, user?.id, processMessage, onToggle]);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -188,10 +229,100 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
       setPendingAttachment(null);
     }
     setIsLoading(false);
+    stopTyping();
   };
 
   const handleSubmit = () => {
     handleSendMessage();
+  };
+
+  // Handle input changes with typing indicator
+  const handleInputChange = (value: string) => {
+    setNewMessage(value);
+    if (value.trim()) {
+      startTyping();
+    }
+  };
+
+  // Add reaction to message
+  const handleAddReaction = async (messageId: string, emoji: string) => {
+    if (!user) return;
+    
+    const message = messages.find(m => m.id === messageId);
+    if (!message) return;
+    
+    const currentReactions: Reaction[] = message.reactions || [];
+    const existingReaction = currentReactions.find(r => r.emoji === emoji);
+    
+    let newReactions: Reaction[];
+    if (existingReaction) {
+      // Add user to existing reaction
+      newReactions = currentReactions.map(r => 
+        r.emoji === emoji
+          ? { ...r, users: [...r.users, { id: user.id, email: user.email || '' }] }
+          : r
+      );
+    } else {
+      // Create new reaction
+      newReactions = [...currentReactions, {
+        emoji,
+        users: [{ id: user.id, email: user.email || '' }]
+      }];
+    }
+    
+    const { error } = await supabase
+      .from('project_messages')
+      .update({ reactions: JSON.parse(JSON.stringify(newReactions)) })
+      .eq('id', messageId);
+    
+    if (error) {
+      console.error('Error adding reaction:', error);
+      toast.error('Failed to add reaction');
+    }
+  };
+
+  // Remove reaction from message
+  const handleRemoveReaction = async (messageId: string, emoji: string) => {
+    if (!user) return;
+    
+    const message = messages.find(m => m.id === messageId);
+    if (!message) return;
+    
+    const currentReactions: Reaction[] = message.reactions || [];
+    const newReactions = currentReactions
+      .map(r => {
+        if (r.emoji === emoji) {
+          return {
+            ...r,
+            users: r.users.filter(u => u.id !== user.id)
+          };
+        }
+        return r;
+      })
+      .filter(r => r.users.length > 0);
+    
+    const { error } = await supabase
+      .from('project_messages')
+      .update({ reactions: JSON.parse(JSON.stringify(newReactions)) })
+      .eq('id', messageId);
+    
+    if (error) {
+      console.error('Error removing reaction:', error);
+      toast.error('Failed to remove reaction');
+    }
+  };
+
+  // Toggle notifications
+  const handleToggleNotifications = async () => {
+    if (!notificationsEnabled && !hasPermission) {
+      const granted = await requestPermission();
+      if (!granted) {
+        toast.error('Notification permission denied');
+        return;
+      }
+    }
+    setNotificationsEnabled(!notificationsEnabled);
+    toast.success(notificationsEnabled ? 'Notifications disabled' : 'Notifications enabled');
   };
 
   // Render message content with @mention highlighting
@@ -250,9 +381,30 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
               <MessageCircle className="h-4 w-4 text-primary" />
               <span className="font-medium text-sm">Project Chat</span>
             </div>
-            <Button variant="ghost" size="iconSm" onClick={onToggle}>
-              <X className="h-4 w-4" />
-            </Button>
+            <div className="flex items-center gap-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="ghost" 
+                    size="iconSm" 
+                    onClick={handleToggleNotifications}
+                    className={notificationsEnabled ? '' : 'text-muted-foreground'}
+                  >
+                    {notificationsEnabled ? (
+                      <Bell className="h-4 w-4" />
+                    ) : (
+                      <BellOff className="h-4 w-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  {notificationsEnabled ? 'Disable @mention notifications' : 'Enable @mention notifications'}
+                </TooltipContent>
+              </Tooltip>
+              <Button variant="ghost" size="iconSm" onClick={onToggle}>
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
 
           {/* Messages */}
@@ -291,22 +443,38 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
                           </span>
                         )}
                         {group.map((msg) => (
-                          <div
-                            key={msg.id}
-                            className={cn(
-                              'px-3 py-2 rounded-lg text-sm max-w-[220px] break-words',
-                              isOwnMessage
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-muted'
-                            )}
-                          >
-                            {renderMessageContent(msg.content)}
-                            {msg.attachment_url && msg.attachment_name && msg.attachment_type && (
-                              <AttachmentDisplay
-                                url={msg.attachment_url}
-                                name={msg.attachment_name}
-                                type={msg.attachment_type}
-                                size={msg.attachment_size || 0}
+                          <div key={msg.id} className="group relative">
+                            <div
+                              className={cn(
+                                'px-3 py-2 rounded-lg text-sm max-w-[220px] break-words',
+                                isOwnMessage
+                                  ? 'bg-primary text-primary-foreground'
+                                  : 'bg-muted'
+                              )}
+                            >
+                              {renderMessageContent(msg.content)}
+                              {msg.attachment_url && msg.attachment_name && msg.attachment_type && (
+                                <AttachmentDisplay
+                                  url={msg.attachment_url}
+                                  name={msg.attachment_name}
+                                  type={msg.attachment_type}
+                                  size={msg.attachment_size || 0}
+                                />
+                              )}
+                            </div>
+                            {/* Quick reaction picker on hover */}
+                            <QuickReactionPicker
+                              onSelect={(emoji) => handleAddReaction(msg.id, emoji)}
+                              className={isOwnMessage ? 'left-0 right-auto' : 'right-0'}
+                            />
+                            {/* Reactions display */}
+                            {msg.reactions && msg.reactions.length > 0 && (
+                              <MessageReactions
+                                reactions={msg.reactions}
+                                currentUserId={user?.id}
+                                onAddReaction={(emoji) => handleAddReaction(msg.id, emoji)}
+                                onRemoveReaction={(emoji) => handleRemoveReaction(msg.id, emoji)}
+                                isOwnMessage={isOwnMessage}
                               />
                             )}
                           </div>
@@ -320,6 +488,12 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
                 })}
               </div>
             )}
+            
+            {/* Typing indicator */}
+            <TypingIndicator
+              typingUsers={typingUsers}
+              currentUserId={user?.id}
+            />
           </ScrollArea>
 
           {/* Input */}
@@ -340,7 +514,7 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
               <div className="flex-1 border rounded-md bg-background">
                 <MentionInput
                   value={newMessage}
-                  onChange={setNewMessage}
+                  onChange={handleInputChange}
                   onSubmit={handleSubmit}
                   placeholder="Type a message... Use @ to mention"
                   users={mockTeamMembers}

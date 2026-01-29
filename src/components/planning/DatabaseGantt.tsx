@@ -15,6 +15,9 @@ import {
   Target,
   Clock,
   ChevronDown,
+  Undo2,
+  Redo2,
+  Scale,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -32,13 +35,17 @@ import {
 import { 
   useResources, 
   useResourceAssignments,
+  useTaskResourceAssignments,
   useCreateResourceAssignment,
   useDeleteResourceAssignment,
   Resource,
   ResourceAssignment,
 } from '@/hooks/useResources';
-import { useCreateDependency, useDeleteDependency } from '@/hooks/useTasks';
+import { useCreateDependency, useDeleteDependency, useUpdateDependency } from '@/hooks/useTasks';
 import { useScheduleTrigger } from '@/hooks/useScheduleTrigger';
+import { useGanttHistory } from '@/hooks/useGanttHistory';
+import { useResourceLeveling } from '@/hooks/useResourceLeveling';
+import { DependencyContextMenu, DependencyType } from '@/components/planning/DependencyContextMenu';
 import {
   Dialog,
   DialogContent,
@@ -99,7 +106,19 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
   
   // Resource hooks for task info dialog
   const { data: resources = [] } = useResources(projectId);
+  const { data: allAssignments = [] } = useTaskResourceAssignments(projectId);
   const [selectedTaskAssignments, setSelectedTaskAssignments] = useState<ResourceAssignment[]>([]);
+  
+  // Undo/redo history
+  const history = useGanttHistory();
+  
+  // Resource leveling
+  const { levelResources, isLeveling } = useResourceLeveling(projectId);
+  
+  // Dependency mutations
+  const createDependency = useCreateDependency();
+  const deleteDependency = useDeleteDependency();
+  const updateDependency = useUpdateDependency();
   
   const [timeScale, setTimeScale] = useState<TimeScale>('week');
   const [showBaseline, setShowBaseline] = useState(false);
@@ -116,9 +135,6 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
   const [selectedTask, setSelectedTask] = useState<DbTask | null>(null);
   const [taskInfoOpen, setTaskInfoOpen] = useState(false);
   const ganttRef = useRef<HTMLDivElement>(null);
-  
-  // Dependency creation mutation
-  const createDependency = useCreateDependency();
 
   // Build hierarchical structure
   const visibleTasks = useMemo(() => {
@@ -488,11 +504,209 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
     setBaselineName('');
   };
 
+  // Undo handler
+  const handleUndo = useCallback(async () => {
+    const action = history.popUndo();
+    if (!action) return;
+    
+    history.setIsUndoing(true);
+    try {
+      switch (action.type) {
+        case 'task-move':
+        case 'task-resize':
+          if (action.data.taskId && action.data.before) {
+            const taskBefore = action.data.before as Partial<DbTask>;
+            await updateTask.mutateAsync({
+              id: action.data.taskId,
+              project_id: projectId,
+              start_date: taskBefore.start_date,
+              end_date: taskBefore.end_date,
+              duration: taskBefore.duration,
+            });
+          }
+          break;
+        case 'dependency-create':
+          if (action.data.dependencyId) {
+            await deleteDependency.mutateAsync({
+              dependencyId: action.data.dependencyId,
+              projectId,
+            });
+          }
+          break;
+        case 'dependency-delete':
+          if (action.data.before) {
+            const dep = action.data.before as Partial<DbDependency>;
+            await createDependency.mutateAsync({
+              dependency: {
+                task_id: dep.task_id!,
+                predecessor_id: dep.predecessor_id!,
+                type: dep.type!,
+                lag: dep.lag || 0,
+              },
+              projectId,
+            });
+          }
+          break;
+        case 'dependency-update':
+          if (action.data.dependencyId && action.data.before) {
+            const before = action.data.before as Partial<DbDependency>;
+            await updateDependency.mutateAsync({
+              dependencyId: action.data.dependencyId,
+              projectId,
+              updates: { type: before.type, lag: before.lag },
+            });
+          }
+          break;
+      }
+      toast.success('Undone');
+    } catch (error) {
+      toast.error('Undo failed');
+    } finally {
+      history.setIsUndoing(false);
+    }
+  }, [history, updateTask, createDependency, deleteDependency, updateDependency, projectId]);
+
+  // Redo handler
+  const handleRedo = useCallback(async () => {
+    const action = history.popRedo();
+    if (!action) return;
+    
+    history.setIsUndoing(true);
+    try {
+      switch (action.type) {
+        case 'task-move':
+        case 'task-resize':
+          if (action.data.taskId && action.data.after) {
+            const taskAfter = action.data.after as Partial<DbTask>;
+            await updateTask.mutateAsync({
+              id: action.data.taskId,
+              project_id: projectId,
+              start_date: taskAfter.start_date,
+              end_date: taskAfter.end_date,
+              duration: taskAfter.duration,
+            });
+          }
+          break;
+        case 'dependency-create':
+          if (action.data.after) {
+            const dep = action.data.after as Partial<DbDependency>;
+            await createDependency.mutateAsync({
+              dependency: {
+                task_id: dep.task_id!,
+                predecessor_id: dep.predecessor_id!,
+                type: dep.type!,
+                lag: dep.lag || 0,
+              },
+              projectId,
+            });
+          }
+          break;
+        case 'dependency-delete':
+          if (action.data.dependencyId) {
+            await deleteDependency.mutateAsync({
+              dependencyId: action.data.dependencyId,
+              projectId,
+            });
+          }
+          break;
+        case 'dependency-update':
+          if (action.data.dependencyId && action.data.after) {
+            const after = action.data.after as Partial<DbDependency>;
+            await updateDependency.mutateAsync({
+              dependencyId: action.data.dependencyId,
+              projectId,
+              updates: { type: after.type, lag: after.lag },
+            });
+          }
+          break;
+      }
+      toast.success('Redone');
+    } catch (error) {
+      toast.error('Redo failed');
+    } finally {
+      history.setIsUndoing(false);
+    }
+  }, [history, updateTask, createDependency, deleteDependency, updateDependency, projectId]);
+
+  // Resource leveling handler
+  const handleResourceLeveling = () => {
+    levelResources({ tasks, assignments: allAssignments, resources });
+  };
+
+  // Dependency context menu handlers
+  const handleUpdateDependencyType = async (dependencyId: string, type: DependencyType) => {
+    const dep = dependencies.find(d => d.id === dependencyId);
+    if (!dep) return;
+    
+    history.recordDependencyUpdate(dependencyId, { type: dep.type }, { type });
+    
+    await updateDependency.mutateAsync({
+      dependencyId,
+      projectId,
+      updates: { type },
+    });
+    triggerSchedule();
+  };
+
+  const handleUpdateDependencyLag = async (dependencyId: string, lag: number) => {
+    const dep = dependencies.find(d => d.id === dependencyId);
+    if (!dep) return;
+    
+    history.recordDependencyUpdate(dependencyId, { lag: dep.lag }, { lag });
+    
+    await updateDependency.mutateAsync({
+      dependencyId,
+      projectId,
+      updates: { lag },
+    });
+    triggerSchedule();
+  };
+
+  const handleDeleteDependency = async (dependencyId: string) => {
+    const dep = dependencies.find(d => d.id === dependencyId);
+    if (!dep) return;
+    
+    history.recordDependencyDelete(dependencyId, dep);
+    
+    await deleteDependency.mutateAsync({
+      dependencyId,
+      projectId,
+    });
+    triggerSchedule();
+  };
+
+  // Keyboard shortcuts for undo/redo
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) {
+          handleRedo();
+        } else {
+          handleUndo();
+        }
+      } else if ((e.ctrlKey || e.metaKey) && e.key === 'y') {
+        e.preventDefault();
+        handleRedo();
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [handleUndo, handleRedo]);
+
   // Calculate dependency lines
   const dependencyLines = useMemo(() => {
     if (!showDependencies) return [];
     
-    const lines: { from: DbTask; to: DbTask; fromIndex: number; toIndex: number; type: string }[] = [];
+    const lines: { 
+      dependency: DbDependency;
+      from: DbTask; 
+      to: DbTask; 
+      fromIndex: number; 
+      toIndex: number; 
+      type: string;
+    }[] = [];
     
     visibleTasks.forEach((task, toIndex) => {
       const taskDeps = dependencies.filter(d => d.task_id === task.id);
@@ -500,7 +714,14 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
         const fromTask = visibleTasks.find(t => t.id === dep.predecessor_id);
         if (fromTask) {
           const fromIndex = visibleTasks.indexOf(fromTask);
-          lines.push({ from: fromTask, to: task, fromIndex, toIndex, type: dep.type });
+          lines.push({ 
+            dependency: dep,
+            from: fromTask, 
+            to: task, 
+            fromIndex, 
+            toIndex, 
+            type: dep.type 
+          });
         }
       });
     });
@@ -545,6 +766,33 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
               {scale.label}
             </Button>
           ))}
+          <div className="w-px h-6 bg-border mx-2" />
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="iconSm"
+                onClick={handleUndo}
+                disabled={!history.canUndo}
+              >
+                <Undo2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Undo (Ctrl+Z)</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="ghost" 
+                size="iconSm"
+                onClick={handleRedo}
+                disabled={!history.canRedo}
+              >
+                <Redo2 className="h-4 w-4" />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Redo (Ctrl+Y)</TooltipContent>
+          </Tooltip>
           <div className="w-px h-6 bg-border mx-2" />
           <Button variant="ghost" size="iconSm">
             <ZoomOut className="h-4 w-4" />
@@ -591,6 +839,25 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button 
+                variant="outline" 
+                size="sm"
+                onClick={handleResourceLeveling}
+                disabled={isLeveling}
+              >
+                {isLeveling ? (
+                  <Loader2 className="h-4 w-4 mr-1 animate-spin" />
+                ) : (
+                  <Scale className="h-4 w-4 mr-1" />
+                )}
+                Level Resources
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>Resolve over-allocations by delaying lower-priority tasks</TooltipContent>
+          </Tooltip>
           
           <Button variant="outline" size="sm" onClick={() => setBaselineDialogOpen(true)}>
             Save Baseline
@@ -698,72 +965,115 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                   )}
                 </div>
 
-                {/* Dependency Lines SVG */}
-                <svg
-                  className="absolute inset-0 pointer-events-none"
+                {/* Dependency Lines - Interactive */}
+                <div 
+                  className="absolute inset-0"
                   style={{ width: totalWidth, height: visibleTasks.length * 40 }}
                 >
-                  {dependencyLines.map((line, i) => {
-                    const fromStyle = getBarStyle(line.from);
-                    const toStyle = getBarStyle(line.to);
-                    const fromX = parseFloat(fromStyle.left) + parseFloat(fromStyle.width);
-                    const toX = parseFloat(toStyle.left);
-                    const fromY = line.fromIndex * 40 + 20;
-                    const toY = line.toIndex * 40 + 20;
-                    
-                    const midX = Math.min(fromX + 2, toX - 2);
-                    
-                    return (
-                      <g key={i}>
-                        <path
-                          d={`M ${(fromX / 100) * totalWidth} ${fromY} 
-                              L ${(midX / 100) * totalWidth + 10} ${fromY}
-                              L ${(midX / 100) * totalWidth + 10} ${toY}
-                              L ${(toX / 100) * totalWidth} ${toY}`}
-                          fill="none"
-                          stroke="hsl(var(--muted-foreground))"
-                          strokeWidth="1"
-                          strokeDasharray="4 2"
-                          opacity="0.5"
-                        />
-                        <circle
-                          cx={(toX / 100) * totalWidth}
-                          cy={toY}
-                          r="3"
-                          fill="hsl(var(--muted-foreground))"
-                          opacity="0.5"
-                        />
-                      </g>
-                    );
-                  })}
-                  
-                  {/* Link dragging line */}
-                  {linkDragging && (
-                    <g>
-                      <line
-                        x1={linkDragging.startX}
-                        y1={linkDragging.startY}
-                        x2={linkDragging.currentX}
-                        y2={linkDragging.currentY}
-                        stroke="hsl(var(--primary))"
-                        strokeWidth="2"
-                        strokeDasharray="4 2"
-                      />
-                      <circle
-                        cx={linkDragging.startX}
-                        cy={linkDragging.startY}
-                        r="4"
-                        fill="hsl(var(--primary))"
-                      />
-                      <circle
-                        cx={linkDragging.currentX}
-                        cy={linkDragging.currentY}
-                        r="4"
-                        fill={linkTargetTask ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))"}
-                      />
-                    </g>
-                  )}
-                </svg>
+                  <svg
+                    className="absolute inset-0"
+                    style={{ width: totalWidth, height: visibleTasks.length * 40 }}
+                  >
+                    {dependencyLines.map((line, i) => {
+                      const fromStyle = getBarStyle(line.from);
+                      const toStyle = getBarStyle(line.to);
+                      const fromX = parseFloat(fromStyle.left) + parseFloat(fromStyle.width);
+                      const toX = parseFloat(toStyle.left);
+                      const fromY = line.fromIndex * 40 + 20;
+                      const toY = line.toIndex * 40 + 20;
+                      
+                      const midX = Math.min(fromX + 2, toX - 2);
+                      const pathD = `M ${(fromX / 100) * totalWidth} ${fromY} 
+                                    L ${(midX / 100) * totalWidth + 10} ${fromY}
+                                    L ${(midX / 100) * totalWidth + 10} ${toY}
+                                    L ${(toX / 100) * totalWidth} ${toY}`;
+                      
+                      return (
+                        <DependencyContextMenu
+                          key={i}
+                          dependency={line.dependency}
+                          predecessorName={line.from.name}
+                          successorName={line.to.name}
+                          onUpdateType={handleUpdateDependencyType}
+                          onUpdateLag={handleUpdateDependencyLag}
+                          onDelete={handleDeleteDependency}
+                        >
+                          <g className="cursor-pointer group">
+                            {/* Invisible thick path for easier clicking */}
+                            <path
+                              d={pathD}
+                              fill="none"
+                              stroke="transparent"
+                              strokeWidth="10"
+                              className="cursor-pointer"
+                            />
+                            {/* Visible path */}
+                            <path
+                              d={pathD}
+                              fill="none"
+                              stroke="hsl(var(--muted-foreground))"
+                              strokeWidth="1.5"
+                              strokeDasharray="4 2"
+                              className="group-hover:stroke-primary transition-colors"
+                              opacity="0.6"
+                            />
+                            {/* Arrow circle */}
+                            <circle
+                              cx={(toX / 100) * totalWidth}
+                              cy={toY}
+                              r="4"
+                              fill="hsl(var(--muted-foreground))"
+                              className="group-hover:fill-primary transition-colors"
+                              opacity="0.6"
+                            />
+                            {/* Type label on hover */}
+                            <text
+                              x={(midX / 100) * totalWidth + 10}
+                              y={(fromY + toY) / 2 - 6}
+                              fontSize="10"
+                              fill="hsl(var(--muted-foreground))"
+                              className="opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+                              textAnchor="middle"
+                            >
+                              {line.type}
+                              {line.dependency.lag !== 0 && ` ${line.dependency.lag > 0 ? '+' : ''}${line.dependency.lag}d`}
+                            </text>
+                          </g>
+                        </DependencyContextMenu>
+                      );
+                    })}
+                  </svg>
+                </div>
+                
+                {/* Link dragging line SVG */}
+                {linkDragging && (
+                  <svg
+                    className="absolute inset-0 pointer-events-none z-20"
+                    style={{ width: totalWidth, height: visibleTasks.length * 40 }}
+                  >
+                    <line
+                      x1={linkDragging.startX}
+                      y1={linkDragging.startY}
+                      x2={linkDragging.currentX}
+                      y2={linkDragging.currentY}
+                      stroke="hsl(var(--primary))"
+                      strokeWidth="2"
+                      strokeDasharray="4 2"
+                    />
+                    <circle
+                      cx={linkDragging.startX}
+                      cy={linkDragging.startY}
+                      r="4"
+                      fill="hsl(var(--primary))"
+                    />
+                    <circle
+                      cx={linkDragging.currentX}
+                      cy={linkDragging.currentY}
+                      r="4"
+                      fill={linkTargetTask ? "hsl(var(--primary))" : "hsl(var(--muted-foreground))"}
+                    />
+                  </svg>
+                )}
 
                 {/* Task Bars */}
                 <TooltipProvider>

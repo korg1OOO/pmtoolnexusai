@@ -344,6 +344,39 @@ export function useDeleteDependency() {
   });
 }
 
+export function useUpdateDependency() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ 
+      dependencyId, 
+      projectId,
+      updates 
+    }: { 
+      dependencyId: string; 
+      projectId: string;
+      updates: { type?: 'FS' | 'SS' | 'FF' | 'SF'; lag?: number };
+    }) => {
+      const { data, error } = await supabase
+        .from('task_dependencies')
+        .update(updates)
+        .eq('id', dependencyId)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return { data, projectId };
+    },
+    onSuccess: (result) => {
+      queryClient.invalidateQueries({ queryKey: ['dependencies', result.projectId] });
+      toast.success('Dependency updated');
+    },
+    onError: (error) => {
+      toast.error('Failed to update dependency: ' + error.message);
+    },
+  });
+}
+
 export function useCreateBaseline() {
   const queryClient = useQueryClient();
 

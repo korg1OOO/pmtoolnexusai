@@ -33,8 +33,10 @@ import {
   Users,
   Target,
   Lightbulb,
+  Table2,
 } from 'lucide-react';
 import type { Notebook, NotebookSection } from '@/hooks/useNotebooks';
+import type { NotebookSpreadsheet } from '@/hooks/useSpreadsheets';
 
 const iconMap: Record<string, React.ElementType> = {
   'book-open': BookOpen,
@@ -60,43 +62,58 @@ const colorMap: Record<string, string> = {
 interface NotebookSidebarProps {
   notebooks: Notebook[];
   sections: NotebookSection[];
+  spreadsheets: NotebookSpreadsheet[];
   selectedNotebookId: string | null;
   selectedSectionId: string | null;
+  selectedSpreadsheetId: string | null;
   onSelectNotebook: (id: string) => void;
   onSelectSection: (id: string) => void;
+  onSelectSpreadsheet: (id: string) => void;
   onCreateNotebook: (name: string, icon: string, color: string) => Promise<Notebook | null>;
   onUpdateNotebook: (id: string, updates: Partial<Notebook>) => void;
   onDeleteNotebook: (id: string) => void;
   onCreateSection: (name: string) => Promise<NotebookSection | null>;
   onUpdateSection: (id: string, updates: Partial<NotebookSection>) => void;
   onDeleteSection: (id: string) => void;
+  onCreateSpreadsheet: (name: string) => Promise<NotebookSpreadsheet | null>;
+  onUpdateSpreadsheet: (id: string, updates: Partial<NotebookSpreadsheet>) => void;
+  onDeleteSpreadsheet: (id: string) => void;
   totalPages: number;
 }
 
 export function NotebookSidebar({
   notebooks,
   sections,
+  spreadsheets,
   selectedNotebookId,
   selectedSectionId,
+  selectedSpreadsheetId,
   onSelectNotebook,
   onSelectSection,
+  onSelectSpreadsheet,
   onCreateNotebook,
   onUpdateNotebook,
   onDeleteNotebook,
   onCreateSection,
   onUpdateSection,
   onDeleteSection,
+  onCreateSpreadsheet,
+  onUpdateSpreadsheet,
+  onDeleteSpreadsheet,
   totalPages,
 }: NotebookSidebarProps) {
   const [expandedNotebooks, setExpandedNotebooks] = useState<string[]>([]);
   const [showNewNotebook, setShowNewNotebook] = useState(false);
   const [showNewSection, setShowNewSection] = useState(false);
+  const [showNewSpreadsheet, setShowNewSpreadsheet] = useState(false);
   const [newNotebookName, setNewNotebookName] = useState('');
   const [newNotebookIcon, setNewNotebookIcon] = useState('book-open');
   const [newNotebookColor, setNewNotebookColor] = useState('blue');
   const [newSectionName, setNewSectionName] = useState('');
+  const [newSpreadsheetName, setNewSpreadsheetName] = useState('');
   const [editingNotebook, setEditingNotebook] = useState<Notebook | null>(null);
   const [editingSection, setEditingSection] = useState<NotebookSection | null>(null);
+  const [editingSpreadsheet, setEditingSpreadsheet] = useState<NotebookSpreadsheet | null>(null);
 
   const toggleNotebook = (id: string) => {
     setExpandedNotebooks(prev =>
@@ -125,10 +142,15 @@ export function NotebookSidebar({
     }
   };
 
-  const notebookSections = sections.filter(s => 
-    notebooks.find(n => n.id === selectedNotebookId)?.id === 
-    sections.find(sec => sec.id === s.id)?.notebook_id
-  );
+  const handleCreateSpreadsheet = async () => {
+    if (!newSpreadsheetName.trim()) return;
+    const spreadsheet = await onCreateSpreadsheet(newSpreadsheetName);
+    if (spreadsheet) {
+      setNewSpreadsheetName('');
+      setShowNewSpreadsheet(false);
+      onSelectSpreadsheet(spreadsheet.id);
+    }
+  };
 
   return (
     <div className="w-64 border-r border-border bg-sidebar flex flex-col h-full">
@@ -148,6 +170,7 @@ export function NotebookSidebar({
             const Icon = iconMap[notebook.icon] || BookOpen;
             const isExpanded = expandedNotebooks.includes(notebook.id);
             const notebookSections = sections.filter(s => s.notebook_id === notebook.id);
+            const notebookSpreadsheets = spreadsheets.filter(s => s.notebook_id === notebook.id);
 
             return (
               <div key={notebook.id}>
@@ -168,7 +191,9 @@ export function NotebookSidebar({
                     </motion.div>
                     <Icon className={cn('h-4 w-4', colorMap[notebook.color] || 'text-primary')} />
                     <span className="font-medium truncate">{notebook.name}</span>
-                    <span className="ml-auto text-xs text-muted-foreground">{notebookSections.length}</span>
+                    <span className="ml-auto text-xs text-muted-foreground">
+                      {notebookSections.length + notebookSpreadsheets.length}
+                    </span>
                   </button>
 
                   <DropdownMenu>
@@ -186,9 +211,17 @@ export function NotebookSidebar({
                         onSelectNotebook(notebook.id);
                         setShowNewSection(true);
                       }}>
-                        <Plus className="h-4 w-4 mr-2" />
-                        Add Section
+                        <FolderOpen className="h-4 w-4 mr-2" />
+                        Add Section (Pages)
                       </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => {
+                        onSelectNotebook(notebook.id);
+                        setShowNewSpreadsheet(true);
+                      }}>
+                        <Table2 className="h-4 w-4 mr-2" />
+                        Add Spreadsheet
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
                       <DropdownMenuItem onClick={() => setEditingNotebook(notebook)}>
                         <Pencil className="h-4 w-4 mr-2" />
                         Rename
@@ -213,6 +246,7 @@ export function NotebookSidebar({
                       exit={{ opacity: 0, height: 0 }}
                       className="ml-4 pl-3 border-l border-border mt-1 space-y-1"
                     >
+                      {/* Sections (for Pages) */}
                       {notebookSections.map(section => (
                         <div key={section.id} className="flex items-center gap-1 group">
                           <button
@@ -255,9 +289,52 @@ export function NotebookSidebar({
                         </div>
                       ))}
 
-                      {notebookSections.length === 0 && (
+                      {/* Spreadsheets */}
+                      {notebookSpreadsheets.map(spreadsheet => (
+                        <div key={spreadsheet.id} className="flex items-center gap-1 group">
+                          <button
+                            onClick={() => onSelectSpreadsheet(spreadsheet.id)}
+                            className={cn(
+                              'flex-1 flex items-center gap-2 px-2 py-1.5 rounded-md text-sm',
+                              'hover:bg-accent/50 transition-colors',
+                              selectedSpreadsheetId === spreadsheet.id && 'bg-accent text-accent-foreground'
+                            )}
+                          >
+                            <Table2 className="h-3.5 w-3.5 text-green-500" />
+                            <span className="truncate">{spreadsheet.name}</span>
+                          </button>
+
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="iconSm"
+                                className="h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                              >
+                                <MoreHorizontal className="h-3 w-3" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => setEditingSpreadsheet(spreadsheet)}>
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Rename
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                className="text-destructive"
+                                onClick={() => onDeleteSpreadsheet(spreadsheet.id)}
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
+                      ))}
+
+                      {notebookSections.length === 0 && notebookSpreadsheets.length === 0 && (
                         <p className="text-xs text-muted-foreground px-2 py-1">
-                          No sections yet
+                          No sections or spreadsheets
                         </p>
                       )}
                     </motion.div>
@@ -360,10 +437,38 @@ export function NotebookSidebar({
               placeholder="New Section"
               autoFocus
             />
+            <p className="text-xs text-muted-foreground mt-2">
+              Sections contain pages with rich text notes.
+            </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowNewSection(false)}>Cancel</Button>
             <Button onClick={handleCreateSection}>Create</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* New Spreadsheet Dialog */}
+      <Dialog open={showNewSpreadsheet} onOpenChange={setShowNewSpreadsheet}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Spreadsheet</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <label className="text-sm font-medium">Spreadsheet Name</label>
+            <Input
+              value={newSpreadsheetName}
+              onChange={(e) => setNewSpreadsheetName(e.target.value)}
+              placeholder="My Spreadsheet"
+              autoFocus
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              Spreadsheets contain multiple sheets with tabular data.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowNewSpreadsheet(false)}>Cancel</Button>
+            <Button onClick={handleCreateSpreadsheet}>Create</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -414,6 +519,32 @@ export function NotebookSidebar({
               if (editingSection) {
                 onUpdateSection(editingSection.id, { name: editingSection.name });
                 setEditingSection(null);
+              }
+            }}>Save</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Spreadsheet Dialog */}
+      <Dialog open={!!editingSpreadsheet} onOpenChange={() => setEditingSpreadsheet(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Rename Spreadsheet</DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <Input
+              value={editingSpreadsheet?.name || ''}
+              onChange={(e) => setEditingSpreadsheet(prev => prev ? { ...prev, name: e.target.value } : null)}
+              placeholder="Spreadsheet name"
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditingSpreadsheet(null)}>Cancel</Button>
+            <Button onClick={() => {
+              if (editingSpreadsheet) {
+                onUpdateSpreadsheet(editingSpreadsheet.id, { name: editingSpreadsheet.name });
+                setEditingSpreadsheet(null);
               }
             }}>Save</Button>
           </DialogFooter>

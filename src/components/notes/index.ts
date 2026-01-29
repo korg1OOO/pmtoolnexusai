@@ -3,3 +3,4 @@ export { PageList } from './PageList';
 export { PageEditor } from './PageEditor';
 export { BacklinksSidebar } from './BacklinksSidebar';
 export { RichTextEditor } from './RichTextEditor';
+export { SpreadsheetEditor } from './SpreadsheetEditor';

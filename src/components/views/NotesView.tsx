@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { NotebookSidebar, PageList, PageEditor, BacklinksSidebar } from '@/components/notes';
+import { NotebookSidebar, PageList, PageEditor, BacklinksSidebar, SpreadsheetEditor } from '@/components/notes';
 import { useNotebooks, useSections, usePages, useAllPages, usePageLinks } from '@/hooks/useNotebooks';
+import { useSpreadsheets } from '@/hooks/useSpreadsheets';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import type { NotebookPage } from '@/hooks/useNotebooks';
+
+type ViewMode = 'pages' | 'spreadsheet';
 
 export function NotesView() {
   const { settings } = useProjectContext();
@@ -10,10 +13,13 @@ export function NotesView() {
   
   const [selectedNotebookId, setSelectedNotebookId] = useState<string | null>(null);
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(null);
+  const [selectedSpreadsheetId, setSelectedSpreadsheetId] = useState<string | null>(null);
   const [selectedPage, setSelectedPage] = useState<NotebookPage | null>(null);
+  const [viewMode, setViewMode] = useState<ViewMode>('pages');
 
   const { notebooks, loading: notebooksLoading, createNotebook, updateNotebook, deleteNotebook } = useNotebooks();
   const { sections, loading: sectionsLoading, createSection, updateSection, deleteSection } = useSections(selectedNotebookId);
+  const { spreadsheets, loading: spreadsheetsLoading, createSpreadsheet, updateSpreadsheet, deleteSpreadsheet } = useSpreadsheets(selectedNotebookId);
   const { pages, loading: pagesLoading, createPage, updatePage, deletePage } = usePages(selectedSectionId);
   const { allPages, loading: allPagesLoading } = useAllPages(projectId);
   const { outgoingLinks, incomingLinks } = usePageLinks(selectedPage?.id || null);
@@ -29,34 +35,41 @@ export function NotesView() {
   useEffect(() => {
     if (sections.length > 0 && selectedNotebookId) {
       const firstSection = sections.find(s => s.notebook_id === selectedNotebookId);
-      if (firstSection) {
+      if (firstSection && !selectedSpreadsheetId) {
         setSelectedSectionId(firstSection.id);
+        setViewMode('pages');
       }
     }
   }, [sections, selectedNotebookId]);
 
   // Auto-select first page when section changes
   useEffect(() => {
-    if (pages.length > 0) {
+    if (pages.length > 0 && viewMode === 'pages') {
       setSelectedPage(pages[0]);
-    } else {
+    } else if (viewMode === 'pages') {
       setSelectedPage(null);
     }
-  }, [pages]);
+  }, [pages, viewMode]);
 
   const handleSelectNotebook = (id: string) => {
     setSelectedNotebookId(id);
-    // Reset section selection when notebook changes
-    const notebookSections = sections.filter(s => s.notebook_id === id);
-    if (notebookSections.length > 0) {
-      setSelectedSectionId(notebookSections[0].id);
-    } else {
-      setSelectedSectionId(null);
-    }
+    // Reset selections when notebook changes
+    setSelectedSectionId(null);
+    setSelectedSpreadsheetId(null);
+    setSelectedPage(null);
   };
 
   const handleSelectSection = (id: string) => {
     setSelectedSectionId(id);
+    setSelectedSpreadsheetId(null);
+    setViewMode('pages');
+  };
+
+  const handleSelectSpreadsheet = (id: string) => {
+    setSelectedSpreadsheetId(id);
+    setSelectedSectionId(null);
+    setSelectedPage(null);
+    setViewMode('spreadsheet');
   };
 
   const handleSelectPage = (page: NotebookPage) => {
@@ -79,6 +92,8 @@ export function NotesView() {
       if (section) {
         setSelectedNotebookId(section.notebook_id);
         setSelectedSectionId(section.id);
+        setSelectedSpreadsheetId(null);
+        setViewMode('pages');
         // Set the page directly since pages might not be loaded yet
         setSelectedPage(page as NotebookPage);
       }
@@ -86,13 +101,12 @@ export function NotesView() {
   }, [allPages, sections]);
 
   const currentSection = sections.find(s => s.id === selectedSectionId);
+  const currentSpreadsheet = spreadsheets.find(s => s.id === selectedSpreadsheetId);
   const totalPages = allPages.length;
 
-  // Get all pages for the current notebook (for section view)
-  const allNotebookSections = sections.filter(s => 
-    notebooks.find(n => n.id === selectedNotebookId)?.id === s.notebook_id || 
-    s.notebook_id === selectedNotebookId
-  );
+  // Get all sections for the current notebook
+  const allNotebookSections = sections.filter(s => s.notebook_id === selectedNotebookId);
+  const allNotebookSpreadsheets = spreadsheets.filter(s => s.notebook_id === selectedNotebookId);
 
   return (
     <div className="h-full flex overflow-hidden">
@@ -100,47 +114,61 @@ export function NotesView() {
       <NotebookSidebar
         notebooks={notebooks}
         sections={allNotebookSections}
+        spreadsheets={allNotebookSpreadsheets}
         selectedNotebookId={selectedNotebookId}
         selectedSectionId={selectedSectionId}
+        selectedSpreadsheetId={selectedSpreadsheetId}
         onSelectNotebook={handleSelectNotebook}
         onSelectSection={handleSelectSection}
+        onSelectSpreadsheet={handleSelectSpreadsheet}
         onCreateNotebook={createNotebook}
         onUpdateNotebook={updateNotebook}
         onDeleteNotebook={deleteNotebook}
         onCreateSection={createSection}
         onUpdateSection={updateSection}
         onDeleteSection={deleteSection}
+        onCreateSpreadsheet={createSpreadsheet}
+        onUpdateSpreadsheet={updateSpreadsheet}
+        onDeleteSpreadsheet={deleteSpreadsheet}
         totalPages={totalPages}
       />
 
-      {/* Page List */}
-      <PageList
-        pages={pages}
-        selectedPageId={selectedPage?.id || null}
-        sectionName={currentSection?.name || 'Pages'}
-        onSelectPage={handleSelectPage}
-        onCreatePage={handleCreatePage}
-        onUpdatePage={updatePage}
-        onDeletePage={deletePage}
-        loading={pagesLoading}
-      />
+      {/* Content Area - either Page List + Editor or Spreadsheet Editor */}
+      {viewMode === 'pages' ? (
+        <>
+          {/* Page List */}
+          <PageList
+            pages={pages}
+            selectedPageId={selectedPage?.id || null}
+            sectionName={currentSection?.name || 'Pages'}
+            onSelectPage={handleSelectPage}
+            onCreatePage={handleCreatePage}
+            onUpdatePage={updatePage}
+            onDeletePage={deletePage}
+            loading={pagesLoading}
+          />
 
-      {/* Page Editor */}
-      <PageEditor
-        page={selectedPage}
-        onUpdate={updatePage}
-        allPages={allPages.map(p => ({ id: p.id, title: p.title }))}
-        onNavigateToPage={handleNavigateToPage}
-      />
+          {/* Page Editor */}
+          <PageEditor
+            page={selectedPage}
+            onUpdate={updatePage}
+            allPages={allPages.map(p => ({ id: p.id, title: p.title }))}
+            onNavigateToPage={handleNavigateToPage}
+          />
 
-      {/* Backlinks Sidebar */}
-      <BacklinksSidebar
-        currentPage={selectedPage}
-        outgoingLinks={outgoingLinks}
-        incomingLinks={incomingLinks}
-        allPages={allPages.map(p => ({ id: p.id, title: p.title, tags: p.tags }))}
-        onNavigateToPage={handleNavigateToPage}
-      />
+          {/* Backlinks Sidebar */}
+          <BacklinksSidebar
+            currentPage={selectedPage}
+            outgoingLinks={outgoingLinks}
+            incomingLinks={incomingLinks}
+            allPages={allPages.map(p => ({ id: p.id, title: p.title, tags: p.tags }))}
+            onNavigateToPage={handleNavigateToPage}
+          />
+        </>
+      ) : (
+        /* Spreadsheet Editor */
+        <SpreadsheetEditor spreadsheet={currentSpreadsheet || null} />
+      )}
     </div>
   );
 }

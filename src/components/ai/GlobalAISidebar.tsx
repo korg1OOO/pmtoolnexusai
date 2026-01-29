@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   Bot, 
@@ -15,24 +15,19 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useAIChat } from '@/hooks/useAIChat';
 import { useUserRole } from '@/hooks/useUserRole';
 import { ChatMessage } from './ChatMessage';
 import { AgentIndicator } from './AgentIndicator';
-import { ROLE_DISPLAY_NAMES, type ProjectRole } from '@/types/ai-agents';
+import { ActionConfirmDialog } from './ActionConfirmDialog';
+import { ROLE_DISPLAY_NAMES, type ProjectRole, type AIAction } from '@/types/ai-agents';
+import { toast } from 'sonner';
 
 interface GlobalAISidebarProps {
   isOpen: boolean;
@@ -49,6 +44,8 @@ export function GlobalAISidebar({
 }: GlobalAISidebarProps) {
   const [input, setInput] = useState('');
   const [showHistory, setShowHistory] = useState(false);
+  const [pendingAction, setPendingAction] = useState<AIAction | null>(null);
+  const [isActionLoading, setIsActionLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -66,6 +63,32 @@ export function GlobalAISidebar({
     selectConversation,
     deleteConversation,
   } = useAIChat({ projectId });
+
+  // Handle action confirmation from chat messages
+  const handleActionRequest = useCallback((action: AIAction) => {
+    setPendingAction(action);
+  }, []);
+
+  const handleConfirmAction = useCallback(async () => {
+    if (!pendingAction) return;
+    
+    setIsActionLoading(true);
+    try {
+      // Send confirmation message to AI
+      await sendMessage(`Confirmed: ${pendingAction.description}`);
+      toast.success('Action confirmed and executed');
+    } catch (error) {
+      toast.error('Failed to execute action');
+    } finally {
+      setIsActionLoading(false);
+      setPendingAction(null);
+    }
+  }, [pendingAction, sendMessage]);
+
+  const handleCancelAction = useCallback(() => {
+    setPendingAction(null);
+    toast.info('Action cancelled');
+  }, []);
 
   // Auto-scroll to bottom on new messages
   useEffect(() => {
@@ -295,6 +318,7 @@ export function GlobalAISidebar({
                     <ChatMessage
                       key={message.id}
                       message={message}
+                      onActionRequest={handleActionRequest}
                     />
                   ))}
                   
@@ -354,6 +378,16 @@ export function GlobalAISidebar({
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* Action Confirmation Dialog */}
+      <ActionConfirmDialog
+        open={!!pendingAction}
+        onOpenChange={(open) => !open && setPendingAction(null)}
+        action={pendingAction}
+        onConfirm={handleConfirmAction}
+        onCancel={handleCancelAction}
+        isLoading={isActionLoading}
+      />
     </>
   );
 }

@@ -56,6 +56,16 @@ export interface PresentationSlide {
   shapes: SlideShape[];
   images: SlideImage[];
   charts: SlideChart[];
+  embedded_components?: Array<{
+    id: string;
+    componentId: string;
+    componentType: string;
+    sourceModule: string;
+    position: { x: number; y: number; width: number; height: number };
+    dataSnapshot: Record<string, unknown> | null;
+    snapshotAt: string | null;
+    isLive: boolean;
+  }>;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -74,6 +84,7 @@ interface RawSlide {
   shapes: Json;
   images: Json;
   charts: Json;
+  embedded_components: Json;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -87,6 +98,7 @@ const parseSlide = (raw: RawSlide): PresentationSlide => ({
   shapes: (Array.isArray(raw.shapes) ? raw.shapes : []) as unknown as SlideShape[],
   images: (Array.isArray(raw.images) ? raw.images : []) as unknown as SlideImage[],
   charts: (Array.isArray(raw.charts) ? raw.charts : []) as unknown as SlideChart[],
+  embedded_components: (Array.isArray(raw.embedded_components) ? raw.embedded_components : []) as unknown as PresentationSlide['embedded_components'],
 });
 
 export function useSlides(presentationId: string | undefined) {

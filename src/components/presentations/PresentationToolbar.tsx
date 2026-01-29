@@ -3,6 +3,8 @@ import { Editor } from '@tiptap/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
+import { ShapeLibrary } from './ShapeLibrary';
+import type { SlideShape } from '@/hooks/useSlides';
 import {
   Popover,
   PopoverContent,
@@ -59,7 +61,7 @@ interface PresentationToolbarProps {
   onExport: () => void;
   onShare: () => void;
   onInsertImage: () => void;
-  onInsertShape: () => void;
+  onInsertShape: (shape: Omit<SlideShape, 'id'>) => void;
   onInsertChart: () => void;
   onInsertComponent?: () => void;
   onRefreshComponents?: () => void;
@@ -327,9 +329,14 @@ export function PresentationToolbar({
         <Button variant="ghost" size="iconSm" onClick={insertTable}>
           <Table className="h-4 w-4" />
         </Button>
-        <Button variant="ghost" size="iconSm" onClick={onInsertShape}>
-          <Shapes className="h-4 w-4" />
-        </Button>
+        <ShapeLibrary 
+          trigger={
+            <Button variant="ghost" size="iconSm">
+              <Shapes className="h-4 w-4" />
+            </Button>
+          }
+          onInsertShape={onInsertShape}
+        />
         <Button variant="ghost" size="iconSm" onClick={onInsertChart}>
           <BarChart3 className="h-4 w-4" />
         </Button>

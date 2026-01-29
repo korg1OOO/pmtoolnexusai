@@ -1,531 +1,548 @@
 
-
-# Presentations Module - Full Implementation (Enhanced)
+# Multi-Agent AI System with Orchestrator Pattern
 
 ## Overview
-Transform the existing static Presentations module into a fully functional Canva/PowerPoint-style slide builder with database persistence, WYSIWYG TipTap rich text editing, comprehensive toolbar, folder organization, collaboration, and advanced features.
+Transform the existing standalone AI agents (PM Coach, Strategic AI, Meeting AI, Communication AI, Morning Briefing) into a unified, fully operational multi-agent system. Users interact with a single "AI Assistant" interface while the backend Orchestrator intelligently routes requests to specialized agents based on intent detection and RBAC permissions.
 
 ---
 
-## Visual Design
+## Architecture Design
 
-### Main Toolbar (Top Bar)
+### Hub-and-Spoke Pattern
+
 ```text
-+-----------------------------------------------------------------------------------------------+
-| [New] [Open] [Save] | Title Input | [B] [I] [U] [S] | [H1] [H2] | [Left] [Center] [Right]     |
-|                     |             | [List] [Ordered] | [Link] [Image] [Table] | [Undo] [Redo] |
-|                     |             | [Text Color] [BG Color] | [Shapes] | [Chart] |            |
-|                     |             | [Present] [Export PDF] [Share] | [Collab: 2 users]        |
-+-----------------------------------------------------------------------------------------------+
++------------------+
+|   User (Chat)    |
++--------+---------+
+         |
+         v
++--------+---------+
+|   GlobalAI       |  <-- Single Frontend Interface
+|   Sidebar        |      (Unified Chat Experience)
++--------+---------+
+         |
+         v
++--------+---------+
+|   MainAgent      |  <-- Orchestrator Edge Function
+|   (Router)       |      Intent Classification + RBAC
++--------+---------+
+         |
+    +----+----+----+----+----+----+----+
+    |    |    |    |    |    |    |    |
+    v    v    v    v    v    v    v    v
+  +---+ +---+ +---+ +---+ +---+ +---+ +---+
+  |Sch| |Fin| |Rsk| |Mtg| |Com| |Res| |Doc|
+  +---+ +---+ +---+ +---+ +---+ +---+ +---+
+
+  Specialized Agents (Sub-functions in Orchestrator)
 ```
 
-### Layout Structure (3-Column with Enhanced Sidebar)
-```text
-+----------------------+-----------------------------+----------------+
-|   PRESENTATIONS      |      Editable Canvas        | Properties     |
-|   & FOLDERS          |   (TipTap WYSIWYG Editor)   |   Panel        |
-|                      |                             |                |
-|  > Folder 1          |  +----------------------+   | Slide Master   |
-|    - Presentation A  |  |   Click to edit...   |   | Template       |
-|  > Folder 2          |  |                      |   | Theme Colors   |
-|    - Presentation B  |  |   [Rich Text Here]   |   | Background     |
-|  [+ New Folder]      |  |   [Image] [Shape]    |   | Transitions    |
-|                      |  +----------------------+   | Linked Data    |
-|  ------------------- |                             |                |
-|  SLIDES              |  Speaker Notes:             | Insert Options |
-|  [1] Slide 1         |  +----------------------+   |                |
-|  [2] Slide 2         |  | Hidden notes here... |   | Version History|
-|  [3] Slide 3         |  +----------------------+   |                |
-|  [+ Add Slide]       |                             | Collaborators  |
-+----------------------+-----------------------------+----------------+
+---
+
+## Database Schema Changes
+
+### New Tables
+
+**Table: `user_roles` (RBAC)**
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| user_id | UUID | FK to auth.users |
+| project_id | UUID | FK to projects |
+| role | ENUM | admin, pm, lead, developer, analyst, viewer |
+| created_at | TIMESTAMP | |
+
+**Table: `ai_conversations`**
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| project_id | UUID | FK to projects |
+| user_id | UUID | User who initiated |
+| title | TEXT | Conversation title |
+| created_at | TIMESTAMP | |
+| updated_at | TIMESTAMP | |
+
+**Table: `ai_messages`**
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| conversation_id | UUID | FK to ai_conversations |
+| role | TEXT | user, assistant, system |
+| content | TEXT | Message content |
+| agent_type | TEXT | Which agent responded |
+| metadata | JSONB | Additional data (intents, actions) |
+| created_at | TIMESTAMP | |
+
+**Table: `ai_agent_logs`**
+| Column | Type | Description |
+|--------|------|-------------|
+| id | UUID | Primary key |
+| conversation_id | UUID | FK to ai_conversations |
+| agent_type | TEXT | scheduler, finance, risk, etc. |
+| input_data | JSONB | Data sent to agent |
+| output_data | JSONB | Agent response |
+| execution_time_ms | INTEGER | Performance tracking |
+| success | BOOLEAN | |
+| error_message | TEXT | If failed |
+| created_at | TIMESTAMP | |
+
+---
+
+## Permission Model (RBAC)
+
+### Role Permissions Matrix
+
+| Permission | Admin | PM | Lead | Dev | Analyst | Viewer |
+|------------|-------|-----|------|-----|---------|--------|
+| SCHEDULE_EDIT | Yes | Yes | Yes | No | No | No |
+| FINANCE_VIEW | Yes | Yes | No | No | No | No |
+| FINANCE_EDIT | Yes | Yes | No | No | No | No |
+| RISK_MANAGE | Yes | Yes | Yes | No | No | No |
+| TEAM_MANAGE | Yes | Yes | Yes | No | No | No |
+| MEETING_MANAGE | Yes | Yes | Yes | Yes | Yes | No |
+| DOC_GENERATE | Yes | Yes | Yes | Yes | Yes | No |
+| VIEW_ALL | Yes | Yes | Yes | Yes | Yes | Yes |
+
+### Agent-Permission Mapping
+
+```typescript
+const AGENT_PERMISSIONS = {
+  'scheduler': ['SCHEDULE_EDIT'],
+  'finance': ['FINANCE_VIEW', 'FINANCE_EDIT'],
+  'risk': ['RISK_MANAGE', 'VIEW_ALL'],
+  'assignment': ['TEAM_MANAGE'],
+  'meeting': ['MEETING_MANAGE'],
+  'document': ['DOC_GENERATE'],
+  'insight': ['VIEW_ALL'],
+  'briefing': ['VIEW_ALL'],
+  'strategic': ['VIEW_ALL', 'RISK_MANAGE'],
+  'communication': ['VIEW_ALL'],
+};
 ```
+
+---
+
+## Specialized Agents
+
+### 1. SchedulerAgent
+- **Purpose**: Handle schedule changes, date adjustments, critical path analysis
+- **Capabilities**: Move tasks, adjust dependencies, calculate impact, auto-schedule
+- **Data Access**: Tasks, Dependencies, Calendars, Resources
+- **Required Permission**: `SCHEDULE_EDIT`
+
+### 2. FinanceAgent
+- **Purpose**: Budget analysis, cost forecasting, EVM calculations
+- **Capabilities**: Budget queries, variance analysis, invoice status, forecasting
+- **Data Access**: Budgets, Invoices, Time entries, Costs
+- **Required Permission**: `FINANCE_VIEW` or `FINANCE_EDIT`
+
+### 3. RiskAgent
+- **Purpose**: Risk identification, analysis, mitigation recommendations
+- **Capabilities**: Risk scoring, pattern detection, mitigation planning
+- **Data Access**: Risks, Issues, Historical patterns
+- **Required Permission**: `RISK_MANAGE`
+
+### 4. AssignmentAgent
+- **Purpose**: Resource allocation, workload balancing, team optimization
+- **Capabilities**: Auto-assign tasks, capacity analysis, skill matching
+- **Data Access**: Resources, Teams, Skills, Allocations
+- **Required Permission**: `TEAM_MANAGE`
+
+### 5. MeetingAgent
+- **Purpose**: Meeting intelligence, action extraction, MoM generation
+- **Capabilities**: Transcript analysis, decision extraction, follow-up tracking
+- **Data Access**: Meetings, Notes, Transcripts, Actions
+- **Required Permission**: `MEETING_MANAGE`
+
+### 6. DocumentAgent
+- **Purpose**: Generate reports, status updates, executive summaries
+- **Capabilities**: Report generation, template filling, narrative creation
+- **Data Access**: All project data (read-only for context)
+- **Required Permission**: `DOC_GENERATE`
+
+### 7. InsightAgent
+- **Purpose**: Project health analysis, predictions, recommendations
+- **Capabilities**: Trend analysis, velocity predictions, health scoring
+- **Data Access**: All project data (read-only)
+- **Required Permission**: `VIEW_ALL`
+
+### 8. StrategicAgent
+- **Purpose**: High-level strategic analysis, stakeholder insights
+- **Capabilities**: Value engineering, trade-off analysis, stakeholder mapping
+- **Data Access**: Strategic context, Business case, Stakeholders
+- **Required Permission**: `VIEW_ALL`
+
+### 9. CommunicationAgent
+- **Purpose**: Analyze communications for signals and patterns
+- **Capabilities**: Delay detection, scope creep signals, sentiment analysis
+- **Data Access**: Emails, Chat messages, Meeting notes
+- **Required Permission**: `VIEW_ALL`
 
 ---
 
 ## Technical Implementation
 
-### Phase 1: Database Schema
+### Phase 1: Database & RBAC Setup
 
-**New table `presentation_folders`:**
-| Column | Type | Description |
-|--------|------|-------------|
-| id | UUID | Primary key |
-| project_id | UUID | FK to projects |
-| parent_id | UUID | FK to self (nullable for root) |
-| name | TEXT | Folder name |
-| color | TEXT | Folder color/icon |
-| sort_order | INTEGER | Order in tree |
-| created_at | TIMESTAMP | |
-| updated_at | TIMESTAMP | |
+**Migration SQL:**
+```sql
+-- User roles enum and table
+CREATE TYPE public.project_role AS ENUM ('admin', 'pm', 'lead', 'developer', 'analyst', 'viewer');
 
-**New table `presentations`:**
-| Column | Type | Description |
-|--------|------|-------------|
-| id | UUID | Primary key |
-| project_id | UUID | FK to projects |
-| folder_id | UUID | FK to presentation_folders (nullable) |
-| title | TEXT | Presentation title |
-| template | TEXT | executive-status, steering-committee, etc. |
-| theme | JSONB | Theme configuration (colors, fonts, logo) |
-| slide_master | JSONB | Global slide styles (header, footer, fonts) |
-| transitions | JSONB | Default transition settings |
-| created_by | UUID | User who created |
-| created_by_name | TEXT | Cached user name |
-| is_shared | BOOLEAN | Shared with team |
-| version | INTEGER | Current version number |
-| created_at | TIMESTAMP | |
-| updated_at | TIMESTAMP | |
+CREATE TABLE public.user_roles (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL,
+  project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+  role project_role NOT NULL DEFAULT 'viewer',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  UNIQUE(user_id, project_id)
+);
 
-**New table `presentation_slides`:**
-| Column | Type | Description |
-|--------|------|-------------|
-| id | UUID | Primary key |
-| presentation_id | UUID | FK to presentations |
-| title | TEXT | Slide title |
-| template | TEXT | title, executive-summary, metrics, blank, etc. |
-| content | JSONB | Full slide content (heading, body, bullets, etc.) |
-| html_content | TEXT | TipTap HTML content for rich text |
-| speaker_notes | TEXT | Hidden speaker notes |
-| transition | JSONB | Slide-specific transition settings |
-| background | JSONB | Background settings (color, image) |
-| shapes | JSONB | Array of shape objects on slide |
-| images | JSONB | Array of image objects on slide |
-| charts | JSONB | Array of chart references |
-| sort_order | INTEGER | Order in presentation |
-| created_at | TIMESTAMP | |
-| updated_at | TIMESTAMP | |
+-- RLS and security definer function
+ALTER TABLE user_roles ENABLE ROW LEVEL SECURITY;
 
-**New table `presentation_versions`:**
-| Column | Type | Description |
-|--------|------|-------------|
-| id | UUID | Primary key |
-| presentation_id | UUID | FK to presentations |
-| version | INTEGER | Version number |
-| slides_snapshot | JSONB | Full snapshot of all slides |
-| change_notes | TEXT | Description of changes |
-| created_by | UUID | |
-| created_by_name | TEXT | |
-| created_at | TIMESTAMP | |
+CREATE OR REPLACE FUNCTION public.get_user_role(p_user_id UUID, p_project_id UUID)
+RETURNS project_role
+LANGUAGE sql STABLE SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT role FROM user_roles 
+  WHERE user_id = p_user_id AND project_id = p_project_id
+  LIMIT 1
+$$;
 
-**New table `presentation_collaborators`:**
-| Column | Type | Description |
-|--------|------|-------------|
-| id | UUID | Primary key |
-| presentation_id | UUID | FK to presentations |
-| user_id | UUID | Collaborator user |
-| user_name | TEXT | Cached user name |
-| user_email | TEXT | |
-| permission | TEXT | view, comment, edit |
-| cursor_position | JSONB | Real-time cursor position |
-| last_active | TIMESTAMP | |
-| created_at | TIMESTAMP | |
+-- AI conversations
+CREATE TABLE ai_conversations (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
+  user_id UUID NOT NULL,
+  title TEXT DEFAULT 'New Conversation',
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
+);
 
-**New storage bucket `presentation-assets`:**
-- For storing uploaded images
-- RLS policies for project-based access
+CREATE TABLE ai_messages (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  conversation_id UUID REFERENCES ai_conversations(id) ON DELETE CASCADE,
+  role TEXT NOT NULL CHECK (role IN ('user', 'assistant', 'system')),
+  content TEXT NOT NULL,
+  agent_type TEXT,
+  metadata JSONB DEFAULT '{}',
+  created_at TIMESTAMPTZ DEFAULT now()
+);
 
-**Enable realtime for all tables.**
+CREATE TABLE ai_agent_logs (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  conversation_id UUID REFERENCES ai_conversations(id) ON DELETE CASCADE,
+  agent_type TEXT NOT NULL,
+  input_data JSONB,
+  output_data JSONB,
+  execution_time_ms INTEGER,
+  success BOOLEAN DEFAULT true,
+  error_message TEXT,
+  created_at TIMESTAMPTZ DEFAULT now()
+);
 
-### Phase 2: New TipTap Extensions to Install
-
-```json
-{
-  "@tiptap/extension-text-align": "^2.x",
-  "@tiptap/extension-underline": "^2.x",
-  "@tiptap/extension-color": "^2.x",
-  "@tiptap/extension-text-style": "^2.x",
-  "@tiptap/extension-highlight": "^2.x",
-  "@tiptap/extension-image": "^2.x",
-  "@tiptap/extension-table": "^2.x",
-  "@tiptap/extension-table-row": "^2.x",
-  "@tiptap/extension-table-cell": "^2.x",
-  "@tiptap/extension-table-header": "^2.x"
-}
+-- Enable realtime
+ALTER PUBLICATION supabase_realtime ADD TABLE ai_messages;
 ```
 
-### Phase 3: Hooks & State Management
+### Phase 2: Orchestrator Edge Function
 
-**`usePresentationFolders.ts`:**
-- Folder tree management (mirroring useDocumentFolders pattern)
-- CRUD operations for folders
-- Nested folder navigation
-- Real-time subscriptions
+**File: `supabase/functions/ai-orchestrator/index.ts`**
 
-**`usePresentations.ts`:**
-- List all presentations for project (filterable by folder)
-- CRUD operations (create, update, delete)
-- Duplicate presentation
-- Move between folders
-- Real-time subscriptions
+Core responsibilities:
+1. **Intent Classification**: Determine which agent(s) to call
+2. **Permission Verification**: Check RBAC before delegation
+3. **Context Assembly**: Gather relevant data for the agent
+4. **Agent Delegation**: Call specialized agent logic
+5. **Response Synthesis**: Combine multi-agent responses
+6. **Streaming**: Support real-time response streaming
 
-**`useSlides.ts`:**
-- CRUD operations for slides within a presentation
-- Reorder slides (update sort_order)
-- Duplicate slide
-- Image upload integration
-- Shape management
-- Chart linking
-- Real-time subscriptions
+**Intent Categories:**
+```typescript
+const INTENT_CATEGORIES = [
+  'SCHEDULE_QUERY',      // "When is the deadline?"
+  'SCHEDULE_MODIFY',     // "Move the launch date"
+  'BUDGET_QUERY',        // "What's the budget status?"
+  'BUDGET_ANALYSIS',     // "Analyze cost overruns"
+  'RISK_QUERY',          // "What are the top risks?"
+  'RISK_ANALYZE',        // "Assess impact of delay"
+  'RESOURCE_QUERY',      // "Who is available?"
+  'RESOURCE_ASSIGN',     // "Assign tasks to team"
+  'MEETING_QUERY',       // "What was decided?"
+  'MEETING_GENERATE',    // "Create MoM"
+  'REPORT_GENERATE',     // "Generate status report"
+  'INSIGHT_REQUEST',     // "How is the project doing?"
+  'STRATEGIC_ANALYSIS',  // "Analyze trade-offs"
+  'COMMUNICATION_SCAN',  // "Any delay signals?"
+  'GENERAL_CHAT',        // General conversation
+];
+```
 
-**`usePresentationVersions.ts`:**
-- Create version snapshots
-- List version history
-- Restore to previous version
-- Compare versions
+### Phase 3: Specialized Agent Modules
 
-**`usePresentationCollaboration.ts`:**
-- Track active collaborators
-- Broadcast cursor positions
-- Lock editing regions
-- Conflict resolution
+Each agent is implemented as a module within the orchestrator with:
+- System prompt specific to its domain
+- Data fetching functions
+- Response formatting
+- Confidence scoring
 
-### Phase 4: UI Components
+**Example Agent Structure:**
+```typescript
+interface AgentInput {
+  query: string;
+  context: ProjectContext;
+  userRole: string;
+  conversationHistory: Message[];
+}
 
-**A. PresentationSidebar.tsx (Left Panel - Dual Purpose)**
-- **Upper Section: Folders & Presentations**
-  - Folder tree with nested navigation (same pattern as DocumentSidebar)
-  - Presentations listed under folders
-  - Quick access: All, Recent, Shared
-  - Create new folder/presentation buttons
-  - Drag-drop for moving presentations to folders
-  
-- **Lower Section: Slides**
-  - Draggable slide thumbnails
-  - Add slide button with template picker
-  - Right-click context menu (duplicate, delete, move)
-  - Visual indicator for selected slide
+interface AgentOutput {
+  response: string;
+  actions?: ActionItem[];
+  confidence: number;
+  metadata?: Record<string, any>;
+}
 
-**B. PresentationToolbar.tsx (Main Toolbar)**
-A comprehensive toolbar with:
-- **File Operations**: New Presentation, Open (dropdown), Save indicator, Auto-save toggle
-- **Presentation Title**: Editable input field
-- **Text Formatting**: Bold, Italic, Underline, Strikethrough
-- **Headings**: H1, H2, H3 dropdown
-- **Alignment**: Left, Center, Right, Justify
-- **Lists**: Bullet list, Numbered list
-- **Insert**: Link, Image (upload), Table, Shape library, Chart picker
-- **Colors**: Text color picker, Background/Highlight color picker
-- **History**: Undo, Redo
-- **Actions**: Present, Export PDF, Share
-- **Collaboration Indicator**: Shows active collaborators with avatars
+type AgentFunction = (input: AgentInput) => Promise<AgentOutput>;
+```
 
-**C. SlideEditor.tsx (WYSIWYG Canvas)**
-A TipTap-based rich text editor for slide content:
-- Full TipTap with all extensions
-- Large, slide-appropriate typography
-- Click to edit behavior
-- Auto-save on content change (debounced 1 second)
-- Image placeholders with drag-drop upload
-- Shape rendering layer
-- Chart embedding
+### Phase 4: Frontend - Global AI Sidebar
 
-**D. SpeakerNotesPanel.tsx (Collapsible Bottom Panel)**
-- Hidden by default, toggle to show
-- TipTap editor for notes (simpler formatting)
-- Linked to current slide
-- Visible only to presenter in presentation mode
+**File: `src/components/ai/GlobalAISidebar.tsx`**
 
-**E. SlidePropertiesPanel.tsx (Right Panel)**
-- **Slide Master**: Apply/edit global styles
-- **Template**: Switch slide template
-- **Theme**: Color picker for primary/accent colors
-- **Background**: Solid color, gradient, or image
-- **Transitions**: Animation type and duration
-- **Linked Artifacts**: Connect to project data
-- **Version History**: View/restore past versions
-- **Collaborators**: Manage sharing and see active users
+Features:
+- Single chat interface (replaces individual sidebars)
+- Conversation history
+- Real-time streaming responses
+- Action confirmation dialogs
+- Context indicators (which agent is responding)
+- Permission-aware UI (hide actions user can't perform)
 
-**F. ShapeLibrary.tsx (Modal/Popover)**
-Basic shapes with properties:
-- Rectangles, Rounded Rectangles, Circles, Ovals
-- Triangles, Arrows, Lines
-- Stars, Callouts
-- Each shape: fill color, stroke color, stroke width
-- Drag to position, resize handles
-- Layer ordering (bring forward, send back)
-
-**G. ChartPicker.tsx (Modal)**
-- Select from project charts/KPIs
-- Types: Bar, Line, Pie, Donut, Area
-- Live data from: Tasks progress, Budget, Sprint velocity, Risk counts
-- Auto-update when project data changes
-
-**H. ImageUploadHandler.tsx**
-- Drag-drop zone for images
-- Upload to presentation-assets bucket
-- Insert into TipTap as image node
-- Resize and position controls
-- Alt text support
-
-**I. PresentationListDialog.tsx**
-- Grid of existing presentations grouped by folder
-- Create new presentation button
-- Search/filter
-- Duplicate, Delete, Move actions
-
-**J. TransitionSettings.tsx**
-- Transition type: None, Fade, Slide, Zoom, Flip
-- Duration: 0.3s, 0.5s, 1s
-- Direction: Left, Right, Up, Down
-- Apply to single slide or all
-
-**K. SlideMasterEditor.tsx (Modal)**
-- Define global header/footer
-- Default fonts and sizes
-- Logo placement
-- Page numbering style
-- Apply to all existing slides option
-
-**L. PresentationVersionHistory.tsx**
-- List of saved versions with timestamps
-- Preview thumbnail
-- Restore button
-- Change notes display
-
-**M. CollaborationPanel.tsx**
-- List of active collaborators
-- Colored cursors on canvas
-- "User is editing..." indicators
-- Manage permissions
-
-### Phase 5: Presentation Mode Enhancements
-
-**Enhanced Full-Screen Presenter View:**
-- Main display: Current slide full-screen
-- Presenter view (optional second screen):
-  - Current slide
-  - Next slide preview
-  - Speaker notes
-  - Timer/clock
-  - Slide navigation
-- Keyboard controls: Arrow keys, Escape, F for fullscreen
-- Laser pointer simulation (mouse click shows dot)
-- Transition animations between slides
-
-### Phase 6: PDF Export (Edge Function)
-
-**`supabase/functions/presentation-export-pdf/index.ts`:**
-- Accept presentation ID
-- Fetch all slides
-- Generate PDF using server-side rendering
-- Return downloadable PDF URL
-- Handle images and charts
-
-### Phase 7: AI Generation
-
-**`supabase/functions/presentation-ai-generate/index.ts`:**
-- Accept prompt + project context
-- Use Lovable AI (google/gemini-3-flash-preview)
-- Generate slide content suggestions:
-  - Executive summary from project data
-  - Risk matrix from active risks
-  - Timeline from milestones
-  - Budget overview from financials
-- Return structured content to populate slides
+**UI Components:**
+```text
++----------------------------------+
+| AI Assistant            [Close] |
++----------------------------------+
+| Project: Cloud Migration        |
+| Your Role: Project Manager      |
++----------------------------------+
+| [New Chat] | History           |
++----------------------------------+
+| Conversation Messages           |
+|                                 |
+| User: Move launch to Friday    |
+|                                 |
+| Assistant (Scheduler):         |
+| I've analyzed the impact...    |
+| [Confirm Action] [Cancel]      |
+|                                 |
+| User: Check budget impact      |
+|                                 |
+| Assistant (Finance):           |
+| The extension will cost...     |
++----------------------------------+
+| [Type a message...] [Send]     |
++----------------------------------+
+```
 
 ---
 
 ## File Structure
 
 ### New Files to Create
+
 | File | Purpose |
 |------|---------|
-| `src/hooks/usePresentationFolders.ts` | Folder management |
-| `src/hooks/usePresentations.ts` | Presentation CRUD and real-time |
-| `src/hooks/useSlides.ts` | Slide CRUD and reordering |
-| `src/hooks/usePresentationVersions.ts` | Version history |
-| `src/hooks/usePresentationCollaboration.ts` | Real-time collaboration |
-| `src/components/presentations/PresentationSidebar.tsx` | Combined folders/slides panel |
-| `src/components/presentations/PresentationToolbar.tsx` | Main formatting toolbar |
-| `src/components/presentations/SlideEditor.tsx` | TipTap WYSIWYG editor for slides |
-| `src/components/presentations/SpeakerNotesPanel.tsx` | Hidden notes editor |
-| `src/components/presentations/SlidePropertiesPanel.tsx` | Right panel for properties |
-| `src/components/presentations/ShapeLibrary.tsx` | Basic shapes picker |
-| `src/components/presentations/ChartPicker.tsx` | Project chart integration |
-| `src/components/presentations/ImageUploadHandler.tsx` | Image drag-drop upload |
-| `src/components/presentations/PresentationListDialog.tsx` | Presentation manager |
-| `src/components/presentations/TransitionSettings.tsx` | Slide transitions |
-| `src/components/presentations/SlideMasterEditor.tsx` | Global slide styles |
-| `src/components/presentations/PresentationVersionHistory.tsx` | Version management |
-| `src/components/presentations/CollaborationPanel.tsx` | Real-time collab UI |
-| `src/components/presentations/SlideTemplateRenderer.tsx` | Template-specific rendering |
-| `src/components/presentations/PresenterView.tsx` | Full-screen presentation mode |
-| `supabase/functions/presentation-export-pdf/index.ts` | PDF generation |
-| `supabase/functions/presentation-ai-generate/index.ts` | AI content generation |
-| `supabase/migrations/xxx_presentations_schema.sql` | Database migration |
+| `supabase/functions/ai-orchestrator/index.ts` | Main orchestrator edge function |
+| `supabase/functions/ai-orchestrator/agents/scheduler.ts` | Scheduler agent logic |
+| `supabase/functions/ai-orchestrator/agents/finance.ts` | Finance agent logic |
+| `supabase/functions/ai-orchestrator/agents/risk.ts` | Risk agent logic |
+| `supabase/functions/ai-orchestrator/agents/assignment.ts` | Assignment agent logic |
+| `supabase/functions/ai-orchestrator/agents/meeting.ts` | Meeting agent logic |
+| `supabase/functions/ai-orchestrator/agents/document.ts` | Document agent logic |
+| `supabase/functions/ai-orchestrator/agents/insight.ts` | Insight agent logic |
+| `supabase/functions/ai-orchestrator/agents/strategic.ts` | Strategic agent logic |
+| `supabase/functions/ai-orchestrator/agents/communication.ts` | Communication agent logic |
+| `supabase/functions/ai-orchestrator/utils/intent-classifier.ts` | Intent classification logic |
+| `supabase/functions/ai-orchestrator/utils/permission-gate.ts` | RBAC verification |
+| `supabase/functions/ai-orchestrator/utils/context-builder.ts` | Data assembly |
+| `src/components/ai/GlobalAISidebar.tsx` | Unified AI chat interface |
+| `src/components/ai/ChatMessage.tsx` | Message display component |
+| `src/components/ai/ActionConfirmDialog.tsx` | Confirm destructive actions |
+| `src/components/ai/AgentIndicator.tsx` | Show which agent is active |
+| `src/hooks/useAIChat.ts` | Chat hook with streaming |
+| `src/hooks/useUserRole.ts` | Get user's project role |
+| `src/types/ai-agents.ts` | Type definitions |
 
 ### Files to Modify
+
 | File | Changes |
 |------|---------|
-| `src/components/views/PresentationsView.tsx` | Complete refactor to use new components |
-| `package.json` | Add new TipTap extensions |
+| `src/components/layout/AppShell.tsx` | Replace PMCoachSidebar with GlobalAISidebar |
+| `supabase/config.toml` | Add ai-orchestrator function config |
 
 ---
 
-## Feature Details
+## Key Implementation Details
 
-### Folders and Presentations Organization
-- Mirror the Document Center sidebar pattern
-- Folders can be nested (parent_id reference)
-- Presentations belong to folders (or root)
-- Drag-drop to reorganize
-- Quick filters: All, Recent, Shared with me
+### Intent Classification Prompt
 
-### Image Upload
-- Drag-drop images directly onto slide
-- Click "Insert Image" button
-- Upload to `presentation-assets` bucket
-- Automatic resizing/optimization
-- Stored as TipTap image nodes
-- Resize handles on selected images
+```text
+You are an intent classifier for a project management AI system.
 
-### Shape Library
-- Pre-defined SVG shapes
-- Stored in slide.shapes JSONB array
-- Properties: x, y, width, height, rotation, fill, stroke
-- Rendered as overlay on slide
-- Drag to move, handles to resize
-- Z-index management
+Given a user message, classify it into ONE of these categories:
+- SCHEDULE_QUERY: Questions about dates, timelines, milestones
+- SCHEDULE_MODIFY: Requests to change dates, move tasks, adjust dependencies
+- BUDGET_QUERY: Questions about costs, budget, spending
+- BUDGET_ANALYSIS: Requests for cost analysis, forecasting, variance
+- RISK_QUERY: Questions about risks, issues, blockers
+- RISK_ANALYZE: Requests for risk assessment, impact analysis
+- RESOURCE_QUERY: Questions about team, availability, workload
+- RESOURCE_ASSIGN: Requests to assign tasks, allocate resources
+- MEETING_QUERY: Questions about meetings, decisions, action items
+- MEETING_GENERATE: Requests to create MoM, summarize meetings
+- REPORT_GENERATE: Requests for reports, status updates, summaries
+- INSIGHT_REQUEST: General project health, predictions, recommendations
+- STRATEGIC_ANALYSIS: Trade-off analysis, value engineering, stakeholder insights
+- COMMUNICATION_SCAN: Check communications for patterns, signals
+- GENERAL_CHAT: General conversation, greetings, unclear intent
 
-### Charts Integration
-- Connect to project metrics
-- Bar chart: Task completion by phase
-- Line chart: Sprint velocity trend
-- Pie chart: Budget allocation
-- Donut chart: Risk distribution
-- Auto-refresh from live project data
+Also identify if the request:
+- Requires data modification (vs read-only)
+- Needs multi-agent coordination (multiple intents)
 
-### Speaker Notes
-- Text area below slide editor (collapsible)
-- Rich text with basic formatting
-- Visible only in presenter view
-- Stored in slide.speaker_notes column
+Output JSON: { "primary_intent": "...", "secondary_intents": [], "requires_modification": boolean }
+```
 
-### Transitions
-- Applied between slides during presentation
-- Types: Fade, Slide, Zoom, Flip, None
-- Duration: Short (0.3s), Medium (0.5s), Long (1s)
-- Direction for slide/zoom types
-- Per-slide or global setting
+### Permission Denial Response
 
-### Real-Time Collaboration
-- Track active editors via Supabase Realtime
-- Broadcast cursor positions (slide ID + x,y)
-- Show colored cursors for each collaborator
-- Lock indicator when someone is editing a slide
-- Conflict resolution: last-write-wins with notification
+When a user lacks permission:
+```text
+I understand you'd like to [ACTION], but I notice you have a [ROLE] role on this project. 
+This action requires [REQUIRED_PERMISSION] permission.
 
-### PDF Export
-- Edge function using puppeteer or similar
-- Render each slide to PDF page
-- Include transitions as notes
-- Handle embedded images
-- Option: Include speaker notes as separate pages
+What I can do instead:
+- [Alternative action 1 they CAN do]
+- [Alternative action 2 they CAN do]
 
-### Slide Master
-- Define header (logo, title)
-- Define footer (page number, date)
-- Default font family and sizes
-- Background template
-- Apply to new slides automatically
-- Option to apply to existing slides
+Would you like me to help with one of these, or should I request access on your behalf?
+```
 
-### Version History
-- Auto-save creates minor versions
-- Manual "Save Version" for milestones
-- Snapshots stored in presentation_versions table
-- Restore replaces current slides with snapshot
-- Compare view: side-by-side diff
+### Multi-Agent Response Synthesis
 
-### AI Generation
-- "Generate with AI" button
-- Options:
-  - Executive Summary (from project status)
-  - Risk Overview (from risk register)
-  - Timeline (from milestones/Gantt)
-  - Financial Summary (from budget)
-  - Custom prompt
-- AI returns structured content
-- User reviews and accepts/edits before inserting
+When multiple agents are needed:
+```text
+User: "Move the launch date to Friday and tell me the budget impact"
+
+Orchestrator Flow:
+1. Classify: SCHEDULE_MODIFY + BUDGET_ANALYSIS
+2. Check permissions for both
+3. Call SchedulerAgent → Get date change analysis
+4. Call FinanceAgent → Get budget impact
+5. Synthesize: Combine responses into coherent narrative
+```
 
 ---
 
-## User Workflows
+## Streaming Implementation
 
-### Creating a Presentation
-1. Click "New" in sidebar or toolbar
-2. Enter title and select folder
-3. Choose template or blank
-4. First slide auto-created
-5. Click canvas to start editing
+The orchestrator supports streaming for real-time UX:
 
-### Editing Slide Content
-1. Click anywhere on the slide canvas
-2. TipTap editor activates with cursor
-3. Use toolbar to format text (bold, italic, headings, etc.)
-4. Insert images, shapes, or charts via toolbar
-5. Changes auto-save after 1 second
-6. "Saved" indicator appears in toolbar
+```typescript
+// Backend streams SSE events
+// - intent_detected: Show which agent is being called
+// - agent_started: Indicate agent is processing
+// - content_delta: Stream response tokens
+// - action_proposed: Show actionable items
+// - complete: Signal end of response
+```
 
-### Adding Speaker Notes
-1. Toggle speaker notes panel (bottom)
-2. Enter notes for current slide
-3. Notes auto-save with slide
-4. View notes in presenter view
+---
 
-### Organizing Presentations
-1. Create folders in sidebar
-2. Drag presentations to folders
-3. Rename/delete via context menu
-4. Use quick filters for navigation
+## Security Considerations
 
-### Collaborating
-1. Click "Share" in toolbar
-2. Add collaborators by email
-3. Set permissions (view/edit)
-4. See active users in collaboration panel
-5. Real-time cursor visibility
-
-### Presenting
-1. Click "Present" button
-2. Full-screen mode with transitions
-3. Use arrow keys or click to navigate
-4. Press 'N' for presenter notes view
-5. Press Escape to exit
-
-### Exporting to PDF
-1. Click "Export PDF" in toolbar
-2. Choose options (include notes, one slide per page)
-3. Wait for generation (edge function)
-4. Download PDF file
-
-### AI Content Generation
-1. Click "AI Generate" button
-2. Select content type or enter custom prompt
-3. AI generates slide content
-4. Preview and edit suggestions
-5. Accept to insert into slide
+1. **Never expose agent routing logic to client** - All classification happens server-side
+2. **Double-check permissions before data modification** - Even if intent classified correctly
+3. **Audit log all agent actions** - Track what each agent did
+4. **Rate limiting** - Prevent abuse of AI calls
+5. **Data scoping** - Each agent only sees data it needs
+6. **Confirmation for destructive actions** - User must confirm schedule/budget changes
 
 ---
 
 ## Implementation Order
 
-1. **Database Migration**: Create all tables and storage bucket
-2. **Install TipTap Extensions**: Add new packages
-3. **Hooks**: usePresentationFolders, usePresentations, useSlides
-4. **PresentationSidebar**: Folders and slides navigation
-5. **PresentationToolbar**: Full formatting toolbar
-6. **SlideEditor**: TipTap WYSIWYG canvas
-7. **SlidePropertiesPanel**: Right panel with all options
-8. **SpeakerNotesPanel**: Notes editor
-9. **ImageUploadHandler**: Image drag-drop and storage
-10. **ShapeLibrary**: Basic shapes picker and rendering
-11. **ChartPicker**: Project data integration
-12. **TransitionSettings**: Animation configuration
-13. **Refactor PresentationsView**: Integrate all components
-14. **PresenterView**: Enhanced presentation mode
-15. **SlideMasterEditor**: Global styles
-16. **PresentationVersionHistory**: Version management
-17. **CollaborationPanel**: Real-time presence
-18. **Edge Functions**: PDF export and AI generation
+1. **Database Migration**: Create RBAC tables, AI conversation tables
+2. **Permission Functions**: Implement `get_user_role` and permission helpers
+3. **Orchestrator Skeleton**: Basic edge function with intent classification
+4. **InsightAgent**: Start with read-only agent (lowest risk)
+5. **GlobalAISidebar**: Frontend chat interface with streaming
+6. **SchedulerAgent**: Add first modification agent
+7. **FinanceAgent**: Add budget analysis
+8. **RiskAgent**: Add risk management
+9. **MeetingAgent**: Integrate existing meeting-ai-extract logic
+10. **AssignmentAgent**: Add resource management
+11. **DocumentAgent**: Add report generation
+12. **StrategicAgent**: Add strategic analysis
+13. **CommunicationAgent**: Add communication scanning
+14. **Multi-Agent Synthesis**: Handle complex queries
+15. **Action Confirmation UI**: Add confirmation dialogs
+16. **Testing & Polish**: End-to-end testing, error handling
 
+---
+
+## Example Interactions
+
+### Scenario 1: PM asks about schedule
+```text
+User: "What's the status of Phase 3?"
+
+Orchestrator:
+→ Intent: INSIGHT_REQUEST
+→ Permission: VIEW_ALL (PM has this) ✓
+→ Agent: InsightAgent
+
+Response: "Phase 3 is currently at 68% completion, 3 days behind schedule. 
+Key blockers: Integration testing delayed due to API dependencies. 
+Recommendation: Consider fast-tracking the API mock development to unblock testing."
+```
+
+### Scenario 2: Viewer tries to modify
+```text
+User: "Move the deadline to next month"
+
+Orchestrator:
+→ Intent: SCHEDULE_MODIFY
+→ Permission: SCHEDULE_EDIT (Viewer lacks this) ✗
+
+Response: "I can't modify the schedule with your current permissions. 
+As a Viewer, you have read-only access.
+
+I can help you:
+- View the current schedule
+- See milestone dates
+- Request schedule changes from a Project Manager"
+```
+
+### Scenario 3: Complex multi-agent query
+```text
+User: "Auto-assign the remaining Beta tasks and tell me how this affects the budget"
+
+Orchestrator:
+→ Intent: RESOURCE_ASSIGN + BUDGET_ANALYSIS
+→ Permissions: TEAM_MANAGE ✓, FINANCE_VIEW ✓
+
+Agent 1 (Assignment): Analyzes tasks, team capacity, skills
+Agent 2 (Finance): Calculates cost impact of assignments
+
+Synthesized Response: "I've analyzed 12 unassigned Beta tasks and created an optimal assignment:
+- 4 tasks → Emily (React specialist)
+- 5 tasks → Michael (API development)
+- 3 tasks → Anna (Data migration)
+
+Budget Impact: This assignment uses 240 additional hours, translating to ~$36,000.
+Current budget has $42,000 remaining, so this is within limits.
+
+[Confirm Assignments] [Cancel]"
+```

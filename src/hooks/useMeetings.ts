@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
+import { addDays, addWeeks, addMonths, format, isBefore, parseISO } from 'date-fns';
 import type { 
   AIEnhancedMeeting,
   ExtractedDecision,
@@ -13,6 +14,86 @@ import type {
   MoMTemplate,
 } from '@/types/ai-pm';
 
+// Helper function to generate recurring meeting instances
+function generateRecurringInstances(
+  input: CreateMeetingInput,
+  parentId: string
+): Omit<CreateMeetingInput, 'recurring_schedule' | 'recurring_end_date'>[] {
+  const instances: Omit<CreateMeetingInput, 'recurring_schedule' | 'recurring_end_date'>[] = [];
+  
+  if (!input.recurring_schedule || input.recurring_schedule === 'none') {
+    return instances;
+  }
+
+  const startDate = parseISO(input.date);
+  const endDate = input.recurring_end_date 
+    ? parseISO(input.recurring_end_date) 
+    : addMonths(startDate, 3); // Default to 3 months if no end date
+
+  let currentDate = startDate;
+  const maxInstances = 52; // Safety limit: max 52 instances (1 year of weekly)
+  let count = 0;
+
+  // Skip the first date (it's the parent meeting)
+  switch (input.recurring_schedule) {
+    case 'daily':
+      currentDate = addDays(currentDate, 1);
+      break;
+    case 'weekly':
+      currentDate = addWeeks(currentDate, 1);
+      break;
+    case 'bi-weekly':
+      currentDate = addWeeks(currentDate, 2);
+      break;
+    case 'monthly':
+      currentDate = addMonths(currentDate, 1);
+      break;
+  }
+
+  while (isBefore(currentDate, endDate) && count < maxInstances) {
+    const instanceDate = format(currentDate, 'yyyy-MM-dd');
+    
+    instances.push({
+      project_id: input.project_id,
+      title: input.title,
+      description: input.description,
+      meeting_type: input.meeting_type,
+      date: instanceDate,
+      start_time: input.start_time,
+      end_time: input.end_time,
+      status: 'scheduled',
+      source_type: input.source_type,
+      meeting_link: input.meeting_link,
+      location: input.location,
+      purpose_type: input.purpose_type,
+      purpose_description: input.purpose_description,
+      expected_outcomes: input.expected_outcomes,
+      success_criteria: input.success_criteria,
+      recurring_parent_id: parentId,
+      recurring_instance_date: instanceDate,
+    });
+
+    // Advance to next occurrence
+    switch (input.recurring_schedule) {
+      case 'daily':
+        currentDate = addDays(currentDate, 1);
+        break;
+      case 'weekly':
+        currentDate = addWeeks(currentDate, 1);
+        break;
+      case 'bi-weekly':
+        currentDate = addWeeks(currentDate, 2);
+        break;
+      case 'monthly':
+        currentDate = addMonths(currentDate, 1);
+        break;
+    }
+    
+    count++;
+  }
+
+  return instances;
+}
 // Database types
 export interface DbMeeting {
   id: string;
@@ -56,6 +137,11 @@ export interface DbMeeting {
   mom_approved: boolean;
   linked_workstreams: string[];
   linked_risks: unknown[];
+  // Recurring meeting fields
+  recurring_schedule: 'none' | 'daily' | 'weekly' | 'bi-weekly' | 'monthly' | null;
+  recurring_end_date: string | null;
+  recurring_parent_id: string | null;
+  recurring_instance_date: string | null;
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -191,6 +277,11 @@ export interface CreateMeetingInput {
   scope_change_authority?: boolean;
   required_quorum?: number;
   capture_mode?: string;
+  // Recurring meeting fields
+  recurring_schedule?: 'none' | 'daily' | 'weekly' | 'bi-weekly' | 'monthly';
+  recurring_end_date?: string;
+  recurring_parent_id?: string;
+  recurring_instance_date?: string;
 }
 
 export interface CreateAgendaItemInput {
@@ -308,7 +399,7 @@ export function useMeetings(projectId?: string | null) {
     };
   }, [fetchMeetings]);
 
-  // Create meeting
+  // Create meeting (with recurring instance generation)
   const createMeeting = useCallback(
     async (input: CreateMeetingInput): Promise<DbMeeting | null> => {
       if (!user) {
@@ -317,10 +408,12 @@ export function useMeetings(projectId?: string | null) {
       }
 
       try {
-        const { data, error: insertError } = await supabase
+        // Create the parent meeting
+        const { data: parentMeeting, error: insertError } = await supabase
           .from('meetings')
           .insert({
             ...input,
+            recurring_schedule: input.recurring_schedule === 'none' ? null : input.recurring_schedule,
             created_by: user.id,
           })
           .select()
@@ -328,9 +421,32 @@ export function useMeetings(projectId?: string | null) {
 
         if (insertError) throw insertError;
 
+        // Generate recurring instances if applicable
+        if (input.recurring_schedule && input.recurring_schedule !== 'none') {
+          const instances = generateRecurringInstances(input, parentMeeting.id);
+          
+          if (instances.length > 0) {
+            const { error: instancesError } = await supabase
+              .from('meetings')
+              .insert(instances.map(inst => ({
+                ...inst,
+                created_by: user.id,
+              })));
+            
+            if (instancesError) {
+              console.error('Error creating recurring instances:', instancesError);
+              // Don't fail the whole operation, just log the error
+            } else {
+              toast.success(`Created meeting with ${instances.length} recurring instances`);
+              fetchMeetings();
+              return parentMeeting as DbMeeting;
+            }
+          }
+        }
+
         toast.success('Meeting created successfully');
         fetchMeetings();
-        return data as DbMeeting;
+        return parentMeeting as DbMeeting;
       } catch (err) {
         console.error('Error creating meeting:', err);
         toast.error('Failed to create meeting');

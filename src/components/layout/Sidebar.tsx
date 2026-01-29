@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import {
@@ -162,9 +162,31 @@ interface SidebarProps {
 }
 
 export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
-  const [collapsed, setCollapsed] = useState(false);
-  const [expandedGroups, setExpandedGroups] = useState<string[]>(['planning', 'execution']);
+  const [collapsed, setCollapsed] = useState(true); // Collapsed by default
   const { isModuleVisible } = useProjectContext();
+
+  // Find which group contains the active item
+  const findParentGroup = useMemo(() => {
+    const allGroups = [...navItems, ...adminItems];
+    for (const group of allGroups) {
+      if (group.children?.some(child => child.id === activeItem)) {
+        return group.id;
+      }
+    }
+    return null;
+  }, [activeItem]);
+
+  // Only expand the group containing the active page
+  const [expandedGroups, setExpandedGroups] = useState<string[]>(() => 
+    findParentGroup ? [findParentGroup] : []
+  );
+
+  // Update expanded group when active item changes
+  useEffect(() => {
+    if (findParentGroup && !expandedGroups.includes(findParentGroup)) {
+      setExpandedGroups([findParentGroup]);
+    }
+  }, [findParentGroup]);
 
   const toggleGroup = (id: string) => {
     setExpandedGroups((prev) =>

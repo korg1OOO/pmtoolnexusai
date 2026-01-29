@@ -312,7 +312,7 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
               <Sparkles className="h-4 w-4 text-primary-foreground" />
             </div>
-            <span className="font-semibold text-foreground">ProjectIQ</span>
+            <span className="font-semibold text-foreground">ProjectOye</span>
           </motion.div>
         )}
         <Button

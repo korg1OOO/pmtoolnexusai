@@ -122,8 +122,8 @@ const defaultSettings: ProjectSettings = {
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'projectiq-settings';
-const SELECTED_PROJECT_KEY = 'projectiq-selected-project';
+const STORAGE_KEY = 'projectoye-settings';
+const SELECTED_PROJECT_KEY = 'projectoye-selected-project';
 
 export function ProjectProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<ProjectSettings>(defaultSettings);

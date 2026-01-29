@@ -4,6 +4,7 @@ import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { GlobalAISidebar } from '@/components/ai/GlobalAISidebar';
+import { MiniChatWindow } from '@/components/chat/MiniChatWindow';
 import { PresenceProvider } from '@/contexts/PresenceContext';
 import { useProjectContext } from '@/contexts/ProjectContext';
 
@@ -15,7 +16,19 @@ interface AppShellProps {
 
 export function AppShell({ children, activeView, onViewChange }: AppShellProps) {
   const [showAISidebar, setShowAISidebar] = useState(false);
+  const [showMiniChat, setShowMiniChat] = useState(false);
   const { settings } = useProjectContext();
+
+  // Handle chat button click - toggle mini chat instead of navigating
+  const handleOpenChat = () => {
+    setShowMiniChat(true);
+  };
+
+  // Expand mini chat to full view
+  const handleExpandChat = () => {
+    setShowMiniChat(false);
+    onViewChange('team-chat');
+  };
 
   return (
     <PresenceProvider>
@@ -33,7 +46,7 @@ export function AppShell({ children, activeView, onViewChange }: AppShellProps) 
               projectName={settings.name}
               projectCode={settings.code}
               onCreateProject={() => onViewChange('create-project')}
-              onOpenChat={() => onViewChange('team-chat')}
+              onOpenChat={handleOpenChat}
             />
             <main className="flex-1 overflow-auto">
               {children}
@@ -45,6 +58,12 @@ export function AppShell({ children, activeView, onViewChange }: AppShellProps) 
             projectId={settings.id}
             projectName={settings.name}
             currentView={activeView}
+          />
+          {/* Mini Chat Window */}
+          <MiniChatWindow
+            isOpen={showMiniChat}
+            onClose={() => setShowMiniChat(false)}
+            onExpand={handleExpandChat}
           />
         </div>
       </TooltipProvider>

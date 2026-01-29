@@ -1,246 +1,343 @@
 
 
-## Dashboard Consolidation & Reports Enhancement Plan
+# Implementation Plan: Backend Wiring and PDF Export
 
-Based on my analysis of the codebase, here's a comprehensive strategy addressing your questions and implementation plan.
+This plan covers five major implementation areas for ProjectOye:
+1. PDF Export functionality for Reports, EVM, and Final Report views
+2. Backlog and Sprint Board database wiring  
+3. Risk Register database wiring
+4. Actions View database wiring with SLA tracking
+5. Issues Register database wiring
 
 ---
 
-## Part 1: Dashboard Consolidation Recommendation
+## Overview
 
 ### Current State Analysis
+- **PDF Export**: The `PDFExporter` component exists and works using `html2canvas` and `jspdf`. Individual views have "Export PDF" buttons that currently show "coming soon" toasts or do nothing.
+- **Backlog/Sprint Board**: Uses local React state with `mockBacklogItems`, `mockEpics`, and `mockSprintItems` from `mockData.ts`. No database tables exist.
+- **Risks**: Uses `mockRisks` from `mockData.ts`. Only `meeting_risks` table exists (scoped to meetings). No standalone risk register table.
+- **Actions**: Uses local `mockActions` array in `ActionsView.tsx`. Only `meeting_action_items` table exists. No standalone actions table with SLA tracking.
+- **Issues**: Uses local `mockIssues` array in `IssuesRegisterView.tsx`. No database tables exist.
 
-| Dashboard | Purpose | Key Components |
-|-----------|---------|----------------|
-| **Dashboard** | Day-to-day project status | KPIs, progress ring, budget overview, active risks, in-progress work |
-| **Morning Briefing** | AI-powered daily digest | Flexible grid with 14 customizable sections, AI insights, alerts |
-| **Strategic Dashboard** | Long-term strategy & AI analysis | Business case, AI risk discovery, value engineering, stakeholder map |
-| **Executive Dashboard** | High-level portfolio metrics | Portfolio KPIs, budget trends, program performance, health distribution |
+---
 
-### Recommendation: Unified Intelligence Hub
+## Phase 1: PDF Export Implementation
 
-**Keep all dashboards but consolidate access via a Dashboard Selector dropdown.** Here's why:
+### 1.1 EVM View PDF Export
+Wire the existing "Export Report" button to generate a multi-page PDF capturing:
+- Overview tab with S-curve charts
+- Variance metrics cards
+- WBS performance summary table
 
-1. **Morning Briefing** is unique - it's a personalized, customizable daily digest with AI generation
-2. **Strategic Dashboard** serves a distinct purpose - project intake quality and value engineering
-3. **Executive Dashboard** is portfolio-level, while Dashboard is project-level
-4. They serve different audiences and use cases
+**Implementation:**
+- Add a `contentRef` to wrap the main content area
+- Integrate `PDFExporter` component with section-based export
+- Add landscape orientation for charts
 
-### Proposed Architecture
+### 1.2 Final Report View PDF Export  
+Wire the "Export PDF" button to generate a comprehensive project closure report:
+- Executive Summary
+- Objectives Achievement table
+- Financial Summary
+- Deliverables Status
+- Team Recognition
+
+**Implementation:**
+- Add refs for each tab content section
+- Use `PDFExporter` with section picker dialog
+- Style optimization for print (hide interactive elements)
+
+### 1.3 Reports View Enhancement
+The Reports view already has `PDFExporter` integrated. Enhancement needed:
+- Wire individual report cards' "Export" action to generate actual PDF content
+- Generate dynamic report content based on report type
+
+---
+
+## Phase 2: Backlog and Sprint Board Wiring
+
+### 2.1 Database Schema
+Create three new tables:
 
 ```text
-+------------------------------------------+
-|  Dashboard (default entry point)         |
-|  +------------------------------------+  |
-|  |  [Dropdown: Dashboard Views ▼]     |  |
-|  |   - Project Dashboard (current)    |  |
-|  |   - Executive Dashboard            |  |
-|  |   - Strategic Dashboard            |  |
-|  +------------------------------------+  |
-|                                          |
-|  Morning Briefing stays separate         |
-|  (unique AI-powered daily digest flow)   |
-+------------------------------------------+
+┌──────────────────────┐
+│       epics          │
+├──────────────────────┤
+│ id (uuid, PK)        │
+│ project_id (FK)      │
+│ name                 │
+│ color                │
+│ description          │
+│ progress             │
+│ total_points         │
+│ completed_points     │
+│ sort_order           │
+│ created_at           │
+│ updated_at           │
+└──────────────────────┘
+
+┌──────────────────────┐
+│   backlog_items      │
+├──────────────────────┤
+│ id (uuid, PK)        │
+│ project_id (FK)      │
+│ epic_id (FK, null)   │
+│ sprint_id (FK, null) │
+│ title                │
+│ description          │
+│ type (enum)          │
+│ priority (enum)      │
+│ story_points         │
+│ assignee_id          │
+│ assignee_name        │
+│ labels (jsonb)       │
+│ status (enum)        │
+│ sort_order           │
+│ created_at           │
+│ updated_at           │
+└──────────────────────┘
+
+┌──────────────────────┐
+│      sprints         │
+├──────────────────────┤
+│ id (uuid, PK)        │
+│ project_id (FK)      │
+│ name                 │
+│ start_date           │
+│ end_date             │
+│ goal                 │
+│ velocity             │
+│ capacity             │
+│ status (enum)        │
+│ created_at           │
+│ updated_at           │
+└──────────────────────┘
 ```
 
----
+### 2.2 Custom Hooks
+- `useEpics.ts`: CRUD operations for epics with real-time subscriptions
+- `useBacklogItems.ts`: Backlog item management with drag-drop reordering
+- `useSprints.ts`: Sprint management with velocity tracking
 
-## Part 2: Project Timeline Overlap Fix
-
-**Issue identified:** The `ProgramTimelineView.tsx` (806 lines) has overlapping elements in the timeline bars.
-
-**Root cause:** Bar positioning calculations don't account for concurrent projects within programs properly.
-
-**Fix approach:**
-- Add vertical stacking logic for overlapping date ranges
-- Implement swimlane separation within program groups
-- Add collision detection for milestone markers
+### 2.3 View Updates
+- **BacklogView.tsx**: Replace `mockBacklogItems` and `mockEpics` with hooks
+- **SprintBoardView.tsx**: Replace `mockSprintItems` and `mockSprint` with hooks
+- Add item status updates on column drag-drop
 
 ---
 
-## Part 3: Reports Page Enhancement
+## Phase 3: Risk Register Wiring
 
-**Current state:** Basic `ReportsView.tsx` with 6 mock reports and 3 sample charts.
-
-**Proposed enhancement:**
-
-### Report Categories
-- **Status Reports**: Portfolio, Project, Sprint
-- **Financial Reports**: Budget, EVM, Burn Rate
-- **Resource Reports**: Utilization, Capacity, Skills
-- **Risk Reports**: Register, Assessment, Trends
-- **Custom Reports**: User-defined
-
-### Key Features
-- Report templates with scheduling (daily/weekly/monthly)
-- Real-time generation from project data
-- Export options (PDF, Excel, PowerPoint)
-- Report history and versioning
-- Sharing and distribution lists
-
----
-
-## Part 4: PDF Export Feature
-
-### Scope
-Export capabilities for:
-- All dashboards (Dashboard, Morning Briefing, Strategic, Executive)
-- All reports from Reports page
-- Individual components/sections
-
-### Technical Approach
-1. **Client-side rendering**: Use `html2canvas` + `jspdf` for quick exports
-2. **Server-side rendering (recommended)**: Edge function using Puppeteer/Playwright for higher quality
-
-### Export Options
-- Single page or multi-page PDF
-- Include/exclude sections
-- Date range selection for data
-- Branding/watermark options
-
----
-
-## Part 5: Presentation Module - Dashboard Component Embedding
-
-This is the most complex feature. Here's the architecture:
-
-### Concept: "Live Data Slides"
+### 3.1 Database Schema
+Create standalone risk register table:
 
 ```text
-+--------------------------------------------+
-|  Presentation Slide                        |
-|  +--------------------------------------+  |
-|  |  Embedded Dashboard Component        |  |
-|  |  (e.g., Project Health Chart)        |  |
-|  |                                      |  |
-|  |  [🔄 Refresh] [📌 Snapshot Mode]     |  |
-|  |                                      |  |
-|  |  Data as of: 2026-01-29 10:30 AM     |  |
-|  +--------------------------------------+  |
-+--------------------------------------------+
+┌──────────────────────────┐
+│        risks             │
+├──────────────────────────┤
+│ id (uuid, PK)            │
+│ project_id (FK)          │
+│ title                    │
+│ description              │
+│ category                 │
+│ probability (enum)       │
+│ impact (enum)            │
+│ status (enum)            │
+│ owner_id                 │
+│ owner_name               │
+│ mitigation_plan          │
+│ contingency_plan         │
+│ triggers                 │
+│ linked_items (jsonb)     │
+│ due_date                 │
+│ created_at               │
+│ updated_at               │
+│ closed_at                │
+└──────────────────────────┘
 ```
 
-### Key Behaviors
-1. **Active Presentation**: Components refresh on-demand when opened
-2. **Inactive Presentations**: Data frozen at last saved state (snapshot)
-3. **Manual Refresh**: User clicks to update specific components
-4. **Bulk Refresh**: "Refresh All" updates all live components in active presentation
+### 3.2 Custom Hook
+- `useRisks.ts`: 
+  - Full CRUD for risk items
+  - Filtering by status, probability, impact
+  - Real-time subscription for multi-user updates
+  - Risk score calculation
 
-### Data Model
+### 3.3 View Updates
+- **RisksView.tsx**: 
+  - Replace `mockRisks` with `useRisks` hook
+  - Wire "Add Risk" button to create dialog
+  - Add risk detail panel with edit capability
+  - Wire risk matrix to show database risks
+  - Add status transition actions
+
+---
+
+## Phase 4: Actions View Wiring with SLA Tracking
+
+### 4.1 Database Schema
+Create actions table with SLA support:
 
 ```text
-slides table:
-  - id
-  - presentation_id
-  - embedded_components: JSON
-    [
-      {
-        componentId: "budget-trend-chart",
-        componentType: "dashboard-widget",
-        sourceModule: "executive-dashboard",
-        position: { x, y, width, height },
-        dataSnapshot: { ... frozen data ... },
-        snapshotAt: timestamp,
-        isLive: boolean
-      }
-    ]
+┌──────────────────────────┐
+│       actions            │
+├──────────────────────────┤
+│ id (uuid, PK)            │
+│ project_id (FK)          │
+│ title                    │
+│ description              │
+│ priority (enum)          │
+│ status (enum)            │
+│ owner_id                 │
+│ owner_name               │
+│ created_by_id            │
+│ created_by_name          │
+│ due_date                 │
+│ completed_at             │
+│ progress (int)           │
+│ notes                    │
+│ source_type (enum)       │
+│ source_id                │
+│ source_title             │
+│ linked_items (jsonb)     │
+│ dependencies (jsonb)     │
+│ blocked_by               │
+│ tags (jsonb)             │
+│ sla_target_hours         │
+│ sla_started_at           │
+│ sla_breached             │
+│ sla_breached_at          │
+│ history (jsonb)          │
+│ created_at               │
+│ updated_at               │
+└──────────────────────────┘
 ```
 
-### Component Registry
-Create an embeddable component registry that catalogs:
-- All charts from dashboards
-- All briefing sections
-- All report visualizations
-- Custom metrics widgets
+### 4.2 SLA Monitoring
+- Add database trigger to automatically mark `sla_breached = true` when target exceeded
+- Create Edge Function `check-sla-breaches` to run periodically and update breach status
+- Real-time subscription for SLA timer updates in UI
+
+### 4.3 Custom Hook  
+- `useActions.ts`:
+  - Full CRUD with optimistic updates
+  - Filter by status, priority, owner, SLA status
+  - Create action from issue/meeting/decision source
+  - Update progress and status
+  - History tracking for audit trail
+
+### 4.4 View Updates
+- **ActionsView.tsx**:
+  - Replace `mockActions` with `useActions` hook
+  - Wire all filter tabs (All, My Actions, SLA Breached)
+  - Connect owner filter dropdown
+  - Wire detail panel status changes
+  - Add "Create Action" dialog
 
 ---
 
-## Implementation Plan
+## Phase 5: Issues Register Wiring
 
-### Phase 1: Foundation (Reports + PDF Export)
+### 5.1 Database Schema
+Create issues table:
 
-**Tasks:**
-1. Create embeddable component registry system
-2. Build enhanced Reports page with categories, templates, and scheduling
-3. Implement PDF export edge function
-4. Add export buttons to all dashboards
-5. Create print-optimized CSS stylesheets
+```text
+┌──────────────────────────┐
+│        issues            │
+├──────────────────────────┤
+│ id (uuid, PK)            │
+│ project_id (FK)          │
+│ title                    │
+│ description              │
+│ type (enum)              │
+│ severity (enum)          │
+│ priority (enum)          │
+│ status (enum)            │
+│ reporter_id              │
+│ reporter_name            │
+│ assignee_id              │
+│ assignee_name            │
+│ sla_target_resolution    │
+│ sla_breached             │
+│ linked_items (jsonb)     │
+│ affected_areas (jsonb)   │
+│ tags (jsonb)             │
+│ root_cause               │
+│ resolution               │
+│ comments (jsonb)         │
+│ history (jsonb)          │
+│ created_at               │
+│ updated_at               │
+│ resolved_at              │
+│ closed_at                │
+└──────────────────────────┘
+```
 
-### Phase 2: Dashboard Consolidation
+### 5.2 Custom Hook
+- `useIssues.ts`:
+  - Full CRUD operations
+  - Status transition with history logging
+  - Comment management
+  - Link to related actions/risks/meetings
+  - SLA monitoring integration
+  - Filter by severity, priority, status
 
-**Tasks:**
-1. Create `DashboardSwitcher` dropdown component
-2. Unify Dashboard, Executive, and Strategic under single entry point
-3. Add "Open in" quick-access from Morning Briefing to relevant dashboards
-4. Fix Project Timeline overlap issues
-
-### Phase 3: Presentation Embedding
-
-**Tasks:**
-1. Extend slides schema for embedded components
-2. Create `ComponentPicker` dialog for inserting dashboard widgets
-3. Build `EmbeddedComponent` wrapper with refresh controls
-4. Implement data snapshot vs live toggle
-5. Add "active presentation" tracking for selective refresh
-6. Create component refresh queue/management system
+### 5.3 View Updates
+- **IssuesRegisterView.tsx**:
+  - Replace `mockIssues` with `useIssues` hook
+  - Wire "Add Issue" button
+  - Connect all filter tabs
+  - Wire detail panel with status changes
+  - Add "Create Action from Issue" functionality
+  - Enable comments section
 
 ---
 
-## Technical Specifications
+## Implementation Order
 
-### New Files to Create
+1. **Database Migrations** (single migration with all tables and RLS policies)
+2. **Custom Hooks** (create all hooks with Supabase integration)
+3. **PDF Export** (EVMView, FinalReportView, ReportsView)
+4. **Risks View** wiring
+5. **Issues Register** wiring  
+6. **Actions View** wiring (includes SLA trigger)
+7. **Backlog/Sprint** wiring (most complex due to drag-drop state)
 
-| File | Purpose |
-|------|---------|
-| `src/lib/embeddableComponents.ts` | Component registry with metadata |
-| `src/components/common/PDFExporter.tsx` | Reusable PDF export wrapper |
-| `src/components/presentations/ComponentPicker.tsx` | Dialog for selecting embeddable components |
-| `src/components/presentations/EmbeddedDashboardWidget.tsx` | Wrapper for embedded live widgets |
-| `src/components/views/DashboardHub.tsx` | Unified dashboard with view switcher |
-| `supabase/functions/generate-pdf/index.ts` | Server-side PDF generation |
+---
 
-### Database Changes
+## Technical Details
 
+### RLS Policies
+All new tables will have Row Level Security enabled with policies:
+- SELECT: Users can read all records in projects they have access to
+- INSERT/UPDATE/DELETE: Users with appropriate project roles
+
+### Realtime Subscriptions
+Enable realtime for collaborative editing:
 ```sql
--- Add embedded components support to slides
-ALTER TABLE slides ADD COLUMN embedded_components JSONB DEFAULT '[]';
-
--- Add active presentation tracking
-CREATE TABLE active_presentations (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id UUID REFERENCES auth.users(id),
-  presentation_id UUID REFERENCES presentations(id),
-  activated_at TIMESTAMPTZ DEFAULT now(),
-  UNIQUE(user_id)
-);
+ALTER PUBLICATION supabase_realtime ADD TABLE public.risks;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.issues;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.actions;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.backlog_items;
+ALTER PUBLICATION supabase_realtime ADD TABLE public.sprints;
 ```
 
-### Edge Function for PDF Export
+### Files to Create
+- `src/hooks/useRisks.ts`
+- `src/hooks/useIssues.ts`  
+- `src/hooks/useActions.ts`
+- `src/hooks/useEpics.ts`
+- `src/hooks/useBacklogItems.ts`
+- `src/hooks/useSprints.ts`
 
-```typescript
-// supabase/functions/generate-pdf/index.ts
-// Uses Puppeteer to render dashboards/reports as PDF
-// Accepts: component IDs, date range, export options
-// Returns: PDF blob or signed URL
-```
-
----
-
-## Summary of Recommendations
-
-| Question | Recommendation |
-|----------|----------------|
-| Keep Strategic + Morning Briefing? | **Yes** - different purposes (strategy vs daily ops) |
-| Merge Executive + Strategic? | **No** - Executive is portfolio-level, Strategic is project-level |
-| Dashboard dropdown? | **Yes** - unify Dashboard/Executive/Strategic access |
-| Morning Briefing separate? | **Yes** - unique AI-powered daily workflow |
-
----
-
-## Dependencies & Considerations
-
-1. **PDF Export**: Consider `@react-pdf/renderer` for complex layouts or edge function for server-side
-2. **Component Embedding**: Requires careful state management for live vs snapshot data
-3. **Active Presentation Tracking**: Real-time subscription to refresh only when needed
-4. **Performance**: Lazy-load embedded components, cache data snapshots
+### Files to Modify
+- `src/components/views/RisksView.tsx`
+- `src/components/views/IssuesRegisterView.tsx`
+- `src/components/views/ActionsView.tsx`
+- `src/components/views/BacklogView.tsx`
+- `src/components/views/SprintBoardView.tsx`
+- `src/components/views/EVMView.tsx`
+- `src/components/views/FinalReportView.tsx`
+- `src/components/views/ReportsView.tsx`
 

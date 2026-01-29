@@ -10,6 +10,12 @@ export interface NotebookSpreadsheet {
   sort_order: number;
   created_at: string;
   updated_at: string;
+  // Linked project plan fields
+  linked_project_id: string | null;
+  linked_at: string | null;
+  last_synced_at: string | null;
+  sync_status: 'synced' | 'syncing' | 'error' | null;
+  sync_direction: 'spreadsheet' | 'project' | 'both' | null;
 }
 
 export interface SpreadsheetSheet {
@@ -46,7 +52,8 @@ export function useSpreadsheets(notebookId: string | null) {
         .order('sort_order', { ascending: true });
 
       if (error) throw error;
-      setSpreadsheets(data || []);
+      // Cast the data to our interface type
+      setSpreadsheets((data || []) as unknown as NotebookSpreadsheet[]);
     } catch (error) {
       console.error('Error fetching spreadsheets:', error);
     } finally {
@@ -82,7 +89,7 @@ export function useSpreadsheets(notebookId: string | null) {
         });
 
       toast({ title: 'Spreadsheet created' });
-      return spreadsheet;
+      return spreadsheet as unknown as NotebookSpreadsheet;
     } catch (error) {
       console.error('Error creating spreadsheet:', error);
       toast({ title: 'Error', description: 'Failed to create spreadsheet', variant: 'destructive' });

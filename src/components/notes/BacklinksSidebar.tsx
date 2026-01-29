@@ -71,7 +71,7 @@ export function BacklinksSidebar({
 
   if (!currentPage) {
     return (
-      <div className="w-72 border-l border-border bg-sidebar p-4">
+      <div className="w-full h-full border-l border-border bg-sidebar p-4">
         <div className="text-center text-muted-foreground py-8">
           <Network className="h-8 w-8 mx-auto mb-3 opacity-50" />
           <p className="text-sm">Select a page to see connections</p>
@@ -81,7 +81,7 @@ export function BacklinksSidebar({
   }
 
   return (
-    <div className="w-72 border-l border-border bg-sidebar flex flex-col h-full">
+    <div className="w-full h-full border-l border-border bg-sidebar flex flex-col overflow-hidden">
       <Tabs defaultValue="links" className="flex flex-col h-full">
         <div className="p-3 border-b border-border">
           <TabsList className="w-full">

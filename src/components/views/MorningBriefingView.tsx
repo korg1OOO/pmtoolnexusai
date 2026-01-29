@@ -18,7 +18,7 @@ import {
   BriefingSectionId,
 } from '@/components/briefing';
 import { useBriefingGeneration } from '@/components/briefing/hooks/useBriefingGeneration';
-import { ResizableBriefingLayout } from '@/components/briefing/ResizableBriefingLayout';
+import { FlexibleBriefingGrid } from '@/components/briefing/FlexibleBriefingGrid';
 
 // Section Components
 import { CriticalAlertsSection } from '@/components/briefing/sections/CriticalAlertsSection';
@@ -344,7 +344,7 @@ export function MorningBriefingView() {
       <div className="flex-1 p-6 overflow-auto">
         <div className="max-w-7xl mx-auto">
           {orderedSections.length > 0 ? (
-            <ResizableBriefingLayout
+            <FlexibleBriefingGrid
               sections={orderedSections}
               renderContent={renderSectionContent}
               isGenerating={isGenerating}

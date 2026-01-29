@@ -7,6 +7,8 @@ import { Input } from '@/components/ui/input';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
+import { PresenceIndicator } from '@/components/collaboration/PresenceIndicator';
+import { usePresenceContext } from '@/contexts/PresenceContext';
 
 interface TopBarProps {
   projectName?: string;
@@ -17,6 +19,7 @@ interface TopBarProps {
 
 export function TopBar({ projectName, projectCode, className, onCreateProject }: TopBarProps) {
   const [showNotifications, setShowNotifications] = useState(false);
+  const { users } = usePresenceContext();
 
   return (
     <header className={cn('flex h-14 items-center justify-between gap-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4', className)}>
@@ -39,6 +42,9 @@ export function TopBar({ projectName, projectCode, className, onCreateProject }:
         </div>
       </div>
       <div className="flex items-center gap-1">
+        {/* Presence Indicator */}
+        <PresenceIndicator users={users} className="mr-2" />
+        
         <Button size="sm" onClick={onCreateProject} className="mr-2"><Plus className="h-4 w-4 mr-1" />New Project</Button>
         <Button variant="ghost" size="iconSm"><LayoutGrid className="h-4 w-4" /></Button>
         <ThemeToggle />

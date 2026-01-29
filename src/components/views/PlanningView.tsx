@@ -30,6 +30,7 @@ import { useProjects, useCreateProject, Project } from '@/hooks/useProjects';
 import { useTasks, useCreateTask } from '@/hooks/useTasks';
 import { useCalculateCriticalPath } from '@/hooks/useCriticalPath';
 import { useScheduleTrigger } from '@/hooks/useScheduleTrigger';
+import { usePresenceContext } from '@/contexts/PresenceContext';
 import { 
   useProjectCalendars,
   useDefaultCalendar, 
@@ -84,6 +85,7 @@ export function PlanningView() {
 
   const { user, loading: authLoading, signOut, isAuthenticated } = useAuth();
   const { data: projects = [], isLoading: projectsLoading } = useProjects();
+  const { setCurrentProjectId, startEditing, stopEditing } = usePresenceContext();
   const createProject = useCreateProject();
   const createTask = useCreateTask();
   const calculateCriticalPath = useCalculateCriticalPath();
@@ -101,12 +103,17 @@ export function PlanningView() {
   const createException = useCreateCalendarException();
   const deleteException = useDeleteCalendarException();
 
-  // Auto-select first project
+  // Auto-select first project and update presence
   useEffect(() => {
     if (projects.length > 0 && !selectedProjectId) {
       setSelectedProjectId(projects[0].id);
     }
   }, [projects, selectedProjectId]);
+
+  // Update presence when project changes
+  useEffect(() => {
+    setCurrentProjectId(selectedProjectId);
+  }, [selectedProjectId, setCurrentProjectId]);
 
   // Auto-select default calendar when project changes
   useEffect(() => {

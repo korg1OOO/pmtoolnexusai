@@ -18,6 +18,7 @@ import { ReadReceipts, ReadReceipt } from '@/components/chat/ReadReceipts';
 import { ReplyPreview, ReplyButton, ParentMessagePreview, ThreadIndicator, getReplyCount, getLastReplyTime, ThreadMessage } from '@/components/chat/MessageThread';
 import { MessageSearch, SearchToggle } from '@/components/chat/MessageSearch';
 import { MessageActionsMenu, InlineEditor, DeleteConfirmDialog, EditHistoryDialog, EditHistoryEntry, EditedIndicator } from '@/components/chat/MessageEditor';
+import { ForwardMessageDialog, ForwardButton } from '@/components/chat/MessageForward';
 import { useChatPresence } from '@/hooks/useChatPresence';
 import { useMentionNotifications } from '@/hooks/useMentionNotifications';
 
@@ -107,6 +108,7 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null);
   const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
   const [viewingHistoryMessage, setViewingHistoryMessage] = useState<ChatMessage | null>(null);
+  const [forwardingMessage, setForwardingMessage] = useState<ChatMessage | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   
@@ -328,6 +330,34 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
     }
   };
 
+  const handleForwardMessage = async (targetProjectId: string, additionalMessage?: string) => {
+    if (!forwardingMessage || !user) return;
+    
+    // Build forwarded message content
+    const forwardedContent = additionalMessage 
+      ? `${additionalMessage}\n\n📨 Forwarded from ${forwardingMessage.user_email.split('@')[0]}:\n"${forwardingMessage.content}"`
+      : `📨 Forwarded from ${forwardingMessage.user_email.split('@')[0]}:\n"${forwardingMessage.content}"`;
+    
+    const { error } = await supabase.from('project_messages').insert({
+      project_id: targetProjectId,
+      user_id: user.id,
+      user_email: user.email || 'Unknown',
+      content: forwardedContent,
+      attachment_url: forwardingMessage.attachment_url,
+      attachment_name: forwardingMessage.attachment_name,
+      attachment_type: forwardingMessage.attachment_type,
+      attachment_size: forwardingMessage.attachment_size,
+    });
+    
+    if (error) {
+      toast.error('Failed to forward message');
+      throw error;
+    }
+    
+    toast.success('Message forwarded successfully');
+    setForwardingMessage(null);
+  };
+
   const handleAddReaction = async (messageId: string, emoji: string) => {
     if (!user) return;
     
@@ -514,6 +544,7 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
                               {!isEditing && !isDeleted && (
                                 <div className={cn("absolute top-0 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity", isOwnMessage ? "left-0 -translate-x-full pr-1" : "right-0 translate-x-full pl-1")}>
                                   <ReplyButton onReply={() => setReplyingTo(msg)} />
+                                  <ForwardButton onForward={() => setForwardingMessage(msg)} />
                                   <PinMessageButton isPinned={msg.is_pinned || false} onTogglePin={() => handleTogglePin(msg.id, msg.is_pinned || false)} />
                                   <MessageActionsMenu
                                     isOwnMessage={isOwnMessage}
@@ -576,6 +607,16 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
           currentContent={viewingHistoryMessage.content}
         />
       )}
+
+      <ForwardMessageDialog
+        isOpen={!!forwardingMessage}
+        onClose={() => setForwardingMessage(null)}
+        message={forwardingMessage}
+        currentProjectId={projectId}
+        currentUserId={user?.id || ''}
+        currentUserEmail={user?.email || ''}
+        onForward={handleForwardMessage}
+      />
     </>
   );
 }

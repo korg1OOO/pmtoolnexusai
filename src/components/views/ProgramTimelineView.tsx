@@ -186,11 +186,44 @@ export function ProgramTimelineView() {
     return { left: `${left}%`, width: `${Math.max(width, 1)}%` };
   };
 
-  // Calculate milestone position
+  // Calculate milestone position with collision detection
   const getMilestonePosition = (date: Date) => {
     const totalDays = (endDate.getTime() - viewDate.getTime()) / (1000 * 60 * 60 * 24);
     const days = (date.getTime() - viewDate.getTime()) / (1000 * 60 * 60 * 24);
     return `${(days / totalDays) * 100}%`;
+  };
+
+  // Calculate swimlane index for overlapping projects
+  const calculateSwimlanes = (projects: TimelineProject[]) => {
+    const sortedProjects = [...projects].sort((a, b) => a.startDate.getTime() - b.startDate.getTime());
+    const swimlanes: { endDate: Date; projectId: string }[][] = [];
+    const projectSwimlaneMap: Map<string, number> = new Map();
+
+    for (const project of sortedProjects) {
+      // Find first swimlane where project doesn't overlap
+      let assignedLane = -1;
+      for (let laneIdx = 0; laneIdx < swimlanes.length; laneIdx++) {
+        const lane = swimlanes[laneIdx];
+        const lastInLane = lane[lane.length - 1];
+        // Add 1 day buffer to prevent visual touching
+        const bufferDate = new Date(lastInLane.endDate.getTime() + 86400000);
+        if (project.startDate >= bufferDate) {
+          assignedLane = laneIdx;
+          break;
+        }
+      }
+
+      if (assignedLane === -1) {
+        // Create new swimlane
+        assignedLane = swimlanes.length;
+        swimlanes.push([]);
+      }
+
+      swimlanes[assignedLane].push({ endDate: project.endDate, projectId: project.id });
+      projectSwimlaneMap.set(project.id, assignedLane);
+    }
+
+    return { swimlaneMap: projectSwimlaneMap, totalLanes: swimlanes.length };
   };
 
   const toggleProgram = (programId: string) => {
@@ -323,12 +356,15 @@ export function ProgramTimelineView() {
               {mockPrograms.map((program) => {
                 const programProjects = timelineData.filter(p => p.programId === program.id);
                 const isExpanded = expandedPrograms.includes(program.id);
+                const { totalLanes } = calculateSwimlanes(programProjects);
+                const summaryRowHeight = Math.max(10, 10 + (totalLanes - 1) * 8);
 
                 return (
                   <div key={program.id}>
                     {/* Program Row */}
                     <motion.div
-                      className="h-10 border-b border-border/50 px-4 flex items-center gap-2 bg-muted/50 cursor-pointer hover:bg-muted transition-colors"
+                      className="border-b border-border/50 px-4 flex items-center gap-2 bg-muted/50 cursor-pointer hover:bg-muted transition-colors"
+                      style={{ height: `${summaryRowHeight}px`, minHeight: '40px' }}
                       onClick={() => toggleProgram(program.id)}
                     >
                       <motion.div
@@ -382,35 +418,48 @@ export function ProgramTimelineView() {
               {mockPrograms.map((program) => {
                 const programProjects = timelineData.filter(p => p.programId === program.id);
                 const isExpanded = expandedPrograms.includes(program.id);
+                const { swimlaneMap, totalLanes } = calculateSwimlanes(programProjects);
+                const summaryRowHeight = Math.max(10, 10 + (totalLanes - 1) * 8); // Dynamic height based on swimlanes
 
                 return (
                   <div key={program.id}>
-                    {/* Program Row - Summary Bar */}
-                    <div className="h-10 border-b border-border/50 relative bg-muted/30">
+                    {/* Program Row - Summary Bar with swimlanes */}
+                    <div 
+                      className="border-b border-border/50 relative bg-muted/30"
+                      style={{ height: `${summaryRowHeight}px` }}
+                    >
                       <div className="absolute inset-0 flex">
                         {timePeriods.map((_, index) => (
                           <div key={index} className="flex-1 min-w-[100px] border-r border-border/20" />
                         ))}
                       </div>
-                      {/* Program span bar */}
-                      {programProjects.length > 0 && (
-                        <div
-                          className="absolute top-1/2 -translate-y-1/2 h-3 rounded-full bg-primary/30"
-                          style={{
-                            left: getBarStyle(programProjects.reduce((earliest, p) => 
-                              p.startDate < earliest.startDate ? p : earliest
-                            )).left,
-                            width: (() => {
-                              const earliest = programProjects.reduce((e, p) => p.startDate < e.startDate ? p : e);
-                              const latest = programProjects.reduce((l, p) => p.endDate > l.endDate ? p : l);
-                              const totalDays = (endDate.getTime() - viewDate.getTime()) / (1000 * 60 * 60 * 24);
-                              const startDays = Math.max(0, (earliest.startDate.getTime() - viewDate.getTime()) / (1000 * 60 * 60 * 24));
-                              const endDays = Math.min(totalDays, (latest.endDate.getTime() - viewDate.getTime()) / (1000 * 60 * 60 * 24));
-                              return `${((endDays - startDays) / totalDays) * 100}%`;
-                            })(),
-                          }}
-                        />
-                      )}
+                      {/* Individual project bars in swimlanes */}
+                      {programProjects.map((project) => {
+                        const barStyle = getBarStyle(project);
+                        const laneIndex = swimlaneMap.get(project.id) || 0;
+                        const topOffset = 4 + laneIndex * 8; // Stack bars vertically
+                        const healthColor = project.health === 'green' ? 'bg-success/60' : 
+                                           project.health === 'amber' ? 'bg-warning/60' : 'bg-destructive/60';
+
+                        return (
+                          <div
+                            key={project.id}
+                            className={`absolute h-2.5 rounded-full ${healthColor} cursor-pointer hover:opacity-80 transition-opacity`}
+                            style={{
+                              ...barStyle,
+                              top: `${topOffset}px`,
+                            }}
+                            title={`${project.name} (${project.progress}%)`}
+                            onClick={() => setSelectedProject(project as ExtendedProject)}
+                          >
+                            {/* Progress overlay */}
+                            <div 
+                              className="absolute inset-0 bg-foreground/20 rounded-l-full"
+                              style={{ width: `${project.progress}%` }}
+                            />
+                          </div>
+                        );
+                      })}
                     </div>
 
                     {/* Project Rows */}

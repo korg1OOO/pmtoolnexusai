@@ -38,7 +38,7 @@ export function AppShell({ children, activeView, onViewChange }: AppShellProps) 
           />
           <div className={cn(
             "flex flex-1 flex-col min-w-0 transition-all duration-300",
-            (activeGlobalPanel === 'ai' || activeGlobalPanel === 'settings') && "mr-96"
+            activeGlobalPanel === 'ai' && "mr-96"
           )}>
             <TopBar
               projectName={settings.name}

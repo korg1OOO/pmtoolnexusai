@@ -82,8 +82,8 @@ const AppContent = () => {
     );
   }
 
-  // Show empty state if no project is loaded
-  if (!settings.id) {
+  // Show empty state if no project is loaded AND not trying to create one
+  if (!settings.id && activeView !== 'create-project') {
     console.log('[Index] No project found, showing empty state. Settings:', settings);
     return <EmptyProjectState onCreateProject={() => handleViewChange('create-project')} />;
   }

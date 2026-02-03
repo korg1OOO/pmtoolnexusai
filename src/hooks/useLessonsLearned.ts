@@ -41,3 +41,25 @@ export function useCreateLessonLearned() {
         },
     });
 }
+export function useUpdateLessonLearned() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, ...updates }: Partial<LessonLearned> & { id: string }) => {
+            const { data, error } = await supabase
+                .from('lessons_learned')
+                .update(updates)
+                .eq('id', id)
+                .select()
+                .single();
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['lessons_learned', data.project_id] });
+            toast.success('Lesson learned updated');
+        },
+        onError: (error) => {
+            toast.error('Failed to update lesson learned: ' + error.message);
+        },
+    });
+}

@@ -46,7 +46,11 @@ const itemVariants = {
   show: { opacity: 1, y: 0 },
 };
 
-export function DashboardView() {
+interface DashboardViewProps {
+  onViewChange?: (view: string) => void;
+}
+
+export function DashboardView({ onViewChange }: DashboardViewProps) {
   const { settings } = useProjectContext();
   const projectId = settings.id;
 
@@ -127,11 +131,18 @@ export function DashboardView() {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onViewChange?.('final-report')}
+          >
             <BarChart3 className="h-4 w-4 mr-2" />
             Full Report
           </Button>
-          <Button size="sm">
+          <Button
+            size="sm"
+            onClick={() => onViewChange?.('morning-briefing')}
+          >
             <Zap className="h-4 w-4 mr-2" />
             AI Insights
           </Button>

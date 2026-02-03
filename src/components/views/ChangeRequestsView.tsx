@@ -25,15 +25,41 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useProjectContext } from '@/contexts/ProjectContext';
-import { useChangeRequests, ChangeRequest } from '@/hooks/useChangeRequests';
+import { useChangeRequests, ChangeRequest, useUpdateChangeRequest, useCreateChangeRequest } from '@/hooks/useChangeRequests';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
+import { toast } from 'sonner';
 
 export function ChangeRequestsView() {
   const { settings } = useProjectContext();
   const { data: changeRequests = [], isLoading } = useChangeRequests(settings.id);
+  const updateCR = useUpdateChangeRequest();
+  const createCR = useCreateChangeRequest();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCR, setSelectedCR] = useState<ChangeRequest | null>(null);
+
+  const handleUpdateStatus = async (status: 'approved' | 'rejected') => {
+    if (!selectedCR) return;
+    await updateCR.mutateAsync({ id: selectedCR.id, status });
+    setSelectedCR(prev => prev ? { ...prev, status } : null);
+  };
+
+  const handleCreateCR = async () => {
+    if (!settings.id) return;
+    await createCR.mutateAsync({
+      project_id: settings.id,
+      title: 'New Scope Change',
+      description: 'Description of the proposed change...',
+      type: 'scope',
+      priority: 'medium',
+      status: 'pending',
+      requested_by: 'current-user-id', // This should be the real user ID
+      requested_by_name: 'Project Manager',
+      requested_at: new Date().toISOString(),
+      justification: 'Justification for the change...',
+      impact_details: { schedule: 0, cost: 0, risk: 'low', scope: 'Minor scope adjustment' }
+    });
+  };
 
   const filteredCRs = changeRequests.filter(cr =>
     cr.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -94,8 +120,8 @@ export function ChangeRequestsView() {
               <p className="text-muted-foreground">Manage scope, schedule, and cost change requests</p>
             </div>
           </div>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
+          <Button onClick={handleCreateCR} disabled={createCR.isPending}>
+            {createCR.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
             New Change Request
           </Button>
         </div>
@@ -194,12 +220,8 @@ export function ChangeRequestsView() {
                     <span className={cn("px-2 py-1 rounded text-xs font-medium", getTypeColor(cr.type || 'scope'))}>
                       {cr.type}
                     </span>
-                    <Badge variant={
-                      cr.status === 'approved' ? 'success' :
-                        cr.status === 'rejected' ? 'destructive' :
-                          cr.status === 'pending' ? 'warning' : 'secondary'
-                    }>
-                      {cr.status}
+                    <Badge variant={(cr.status === 'pending' ? 'warning' : cr.status === 'approved' ? 'success' : 'destructive') as any}>
+                      {cr.status || 'pending'}
                     </Badge>
                   </div>
                 </div>
@@ -255,7 +277,9 @@ export function ChangeRequestsView() {
           <div className="w-96 border-l p-6 overflow-auto bg-muted/20">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold">Change Request Details</h2>
-              <Badge variant="outline">{selectedCR.id.slice(0, 8)}</Badge>
+              <Badge variant="outline" className="capitalize">
+                {selectedCR.type || 'General'}
+              </Badge>
             </div>
 
             <Tabs defaultValue="details" className="space-y-4">
@@ -271,8 +295,8 @@ export function ChangeRequestsView() {
                 </div>
                 <div>
                   <label className="text-xs font-medium text-muted-foreground">Priority</label>
-                  <Badge variant={selectedCR.priority === 'critical' ? 'destructive' : selectedCR.priority === 'high' ? 'warning' : 'secondary'} className="mt-1">
-                    {selectedCR.priority}
+                  <Badge variant={(selectedCR.priority === 'critical' ? 'destructive' : selectedCR.priority === 'high' ? 'warning' : 'secondary') as any}>
+                    {selectedCR.priority || 'medium'}
                   </Badge>
                 </div>
                 <div>
@@ -365,11 +389,20 @@ export function ChangeRequestsView() {
 
             {selectedCR.status === 'pending' && (
               <div className="mt-6 pt-4 border-t flex gap-2">
-                <Button variant="outline" className="flex-1">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => handleUpdateStatus('rejected')}
+                  disabled={updateCR.isPending}
+                >
                   <XCircle className="h-4 w-4 mr-2" />
                   Reject
                 </Button>
-                <Button className="flex-1">
+                <Button
+                  className="flex-1"
+                  onClick={() => handleUpdateStatus('approved')}
+                  disabled={updateCR.isPending}
+                >
                   <CheckCircle2 className="h-4 w-4 mr-2" />
                   Approve
                 </Button>

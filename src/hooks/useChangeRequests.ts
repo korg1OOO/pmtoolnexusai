@@ -41,3 +41,25 @@ export function useCreateChangeRequest() {
         },
     });
 }
+export function useUpdateChangeRequest() {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async ({ id, ...updates }: Partial<ChangeRequest> & { id: string }) => {
+            const { data, error } = await supabase
+                .from('change_requests')
+                .update(updates)
+                .eq('id', id)
+                .select()
+                .single();
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: (data) => {
+            queryClient.invalidateQueries({ queryKey: ['change_requests', data.project_id] });
+            toast.success('Change request updated' + (data.status ? ` to ${data.status}` : ''));
+        },
+        onError: (error) => {
+            toast.error('Failed to update change request: ' + error.message);
+        },
+    });
+}

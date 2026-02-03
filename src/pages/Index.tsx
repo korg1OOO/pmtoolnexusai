@@ -5,7 +5,6 @@ import { DashboardHub } from '@/components/views/DashboardHub';
 import { ProjectPlanView } from '@/components/views/ProjectPlanView';
 import { GanttView } from '@/components/views/GanttView';
 import { SprintBoardView } from '@/components/views/SprintBoardView';
-import { RisksDecisionsView } from '@/components/views/RisksDecisionsView';
 import { FinancialsView } from '@/components/views/FinancialsView';
 import { NotesView } from '@/components/views/NotesView';
 import { ResourcesView } from '@/components/views/ResourcesView';
@@ -70,7 +69,7 @@ const Index = () => {
 
   const renderView = () => {
     switch (activeView) {
-      case 'dashboard': return <DashboardHub />;
+      case 'dashboard': return <DashboardHub onViewChange={handleViewChange} />;
       case 'morning-briefing': return <MorningBriefingView />;
       case 'portfolio': return <PortfolioView />;
       case 'program-timeline': return <ProgramTimelineView />;

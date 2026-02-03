@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
@@ -22,13 +22,55 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { useProjectContext } from '@/contexts/ProjectContext';
-import { useProjectCharter, ProjectCharter } from '@/hooks/useProjectCharter';
+import { useProjectCharter, useUpdateProjectCharter, ProjectCharter } from '@/hooks/useProjectCharter';
 
 export function ProjectCharterView() {
   const { settings: project } = useProjectContext();
   const { data: charter, isLoading } = useProjectCharter(project?.id);
+  const updateCharter = useUpdateProjectCharter();
   const [isEditing, setIsEditing] = useState(false);
+  const [formData, setFormData] = useState<Partial<ProjectCharter>>({});
+
+  useEffect(() => {
+    if (charter) {
+      setFormData(charter);
+    }
+  }, [charter]);
+
+  const handleSave = async () => {
+    if (!project?.id) return;
+    try {
+      await updateCharter.mutateAsync({
+        ...formData,
+        project_id: project.id,
+      });
+      setIsEditing(false);
+    } catch (error) {
+      // Error handled by mutation toast
+    }
+  };
+
+  const handleCreate = async () => {
+    if (!project?.id) return;
+    await updateCharter.mutateAsync({
+      project_id: project.id,
+      name: `${project.name} Charter`,
+      status: 'Draft',
+      version: '1.0',
+      vision: '',
+      mission: '',
+      objectives: [],
+      success_criteria: [],
+      assumptions: [],
+      constraints: [],
+      approval_authorities: [],
+      milestones: [],
+      budget_summary: { approved: 0, allocated: 0, spent: 0 }
+    });
+  };
 
   if (isLoading) {
     return (
@@ -49,8 +91,8 @@ export function ProjectCharterView() {
           A project charter has not been created for this project yet.
           Create one to define the project's vision, objectives, and authority.
         </p>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
+        <Button onClick={handleCreate} disabled={updateCharter.isPending}>
+          {updateCharter.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
           Create Project Charter
         </Button>
       </div>
@@ -58,13 +100,13 @@ export function ProjectCharterView() {
   }
 
   // Helper to cast JSONB fields
-  const objectives = (charter.objectives as any[]) || [];
-  const successCriteria = (charter.success_criteria as any[]) || [];
-  const assumptions = (charter.assumptions as any[]) || [];
-  const constraints = (charter.constraints as any[]) || [];
-  const approvalAuthorities = (charter.approval_authorities as any[]) || [];
-  const milestones = (charter.milestones as any[]) || [];
-  const budget = (charter.budget_summary as any) || {};
+  const objectives = (formData.objectives as any[]) || [];
+  const successCriteria = (formData.success_criteria as any[]) || [];
+  const assumptions = (formData.assumptions as any[]) || [];
+  const constraints = (formData.constraints as any[]) || [];
+  const approvalAuthorities = (formData.approval_authorities as any[]) || [];
+  const milestones = (formData.milestones as any[]) || [];
+  const budget = (formData.budget_summary as any) || {};
 
   return (
     <div className="flex flex-col h-full overflow-auto">
@@ -89,11 +131,16 @@ export function ProjectCharterView() {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setIsEditing(!isEditing)}>
-              {isEditing ? <Save className="h-4 w-4 mr-2" /> : <Edit2 className="h-4 w-4 mr-2" />}
+            <Button
+              variant={isEditing ? 'default' : 'outline'}
+              onClick={isEditing ? handleSave : () => setIsEditing(true)}
+              disabled={updateCharter.isPending}
+            >
+              {updateCharter.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> :
+                isEditing ? <Save className="h-4 w-4 mr-2" /> : <Edit2 className="h-4 w-4 mr-2" />}
               {isEditing ? 'Save Changes' : 'Edit Charter'}
             </Button>
-            <Button>
+            <Button variant="outline">
               <Bookmark className="h-4 w-4 mr-2" />
               Export PDF
             </Button>
@@ -123,7 +170,16 @@ export function ProjectCharterView() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm leading-relaxed">{charter.vision || 'No vision statement defined.'}</p>
+                    {isEditing ? (
+                      <Textarea
+                        value={formData.vision || ''}
+                        onChange={(e) => setFormData({ ...formData, vision: e.target.value })}
+                        placeholder="Define the long-term vision..."
+                        className="min-h-[100px]"
+                      />
+                    ) : (
+                      <p className="text-sm leading-relaxed">{charter.vision || 'No vision statement defined.'}</p>
+                    )}
                   </CardContent>
                 </Card>
 
@@ -135,7 +191,16 @@ export function ProjectCharterView() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm leading-relaxed">{charter.mission || 'No mission statement defined.'}</p>
+                    {isEditing ? (
+                      <Textarea
+                        value={formData.mission || ''}
+                        onChange={(e) => setFormData({ ...formData, mission: e.target.value })}
+                        placeholder="Define the project mission..."
+                        className="min-h-[100px]"
+                      />
+                    ) : (
+                      <p className="text-sm leading-relaxed">{charter.mission || 'No mission statement defined.'}</p>
+                    )}
                   </CardContent>
                 </Card>
               </div>

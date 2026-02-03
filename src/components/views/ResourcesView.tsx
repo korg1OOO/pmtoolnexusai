@@ -30,6 +30,8 @@ import {
   MoreHorizontal,
   Loader2,
   AlertCircle,
+  Download,
+  XCircle,
 } from 'lucide-react';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { useResources, useTaskResourceAssignments, useCreateResource } from '@/hooks/useResources';
@@ -146,6 +148,39 @@ export function ResourcesView() {
     }
   };
 
+  const handleExport = () => {
+    if (resources.length === 0) {
+      toast.error('No resources to export');
+      return;
+    }
+
+    const headers = ['Name', 'Email', 'Role', 'Department', 'Skills', 'Availability', 'Rate'];
+    const csvContent = [
+      headers.join(','),
+      ...resources.map(r => [
+        `"${r.name}"`,
+        `"${r.email}"`,
+        `"${r.role}"`,
+        `"${r.department}"`,
+        `"${r.skills.join('; ')}"`,
+        r.availability,
+        r.hourlyRate
+      ].join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `resources_export_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    toast.success('Resources exported to CSV');
+  };
+
   if (loadingResources || loadingAssignments) {
     return (
       <div className="flex items-center justify-center h-full p-12">
@@ -169,6 +204,10 @@ export function ResourcesView() {
             <Button variant="outline" size="sm" className="gap-2">
               <Filter className="h-4 w-4" />
               Filters
+            </Button>
+            <Button variant="outline" size="sm" className="gap-2" onClick={handleExport}>
+              <Download className="h-4 w-4" />
+              Export
             </Button>
             <Button
               variant="default"

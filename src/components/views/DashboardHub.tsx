@@ -23,6 +23,10 @@ const DashboardView = lazy(() => import('./DashboardView').then(m => ({ default:
 const ExecutiveDashboardView = lazy(() => import('./ExecutiveDashboardView').then(m => ({ default: m.ExecutiveDashboardView })));
 const StrategicDashboardView = lazy(() => import('./StrategicDashboardView').then(m => ({ default: m.StrategicDashboardView })));
 
+interface DashboardHubProps {
+  onViewChange?: (view: string) => void;
+}
+
 export type DashboardType = 'project' | 'executive' | 'strategic';
 
 interface DashboardOption {
@@ -77,7 +81,7 @@ function DashboardSkeleton() {
   );
 }
 
-export function DashboardHub() {
+export function DashboardHub({ onViewChange }: DashboardHubProps) {
   const [activeDashboard, setActiveDashboard] = useState<DashboardType>('project');
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -87,7 +91,7 @@ export function DashboardHub() {
   const renderDashboard = () => {
     switch (activeDashboard) {
       case 'project':
-        return <DashboardView />;
+        return <DashboardView onViewChange={onViewChange} />;
       case 'executive':
         return <ExecutiveDashboardView />;
       case 'strategic':

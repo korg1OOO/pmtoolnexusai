@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { useStrategicInsights } from '@/hooks/useStrategicInsights';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import { StrategicAISidebar } from '@/components/ai/StrategicAISidebar';
 import { mockProjectContext, mockAIRiskDiscovery, mockValueEngineering } from '@/data/aiMockData';
 
@@ -486,6 +487,18 @@ export function StrategicDashboardView() {
                     <p className="text-lg font-semibold text-primary mb-2">{valueEngineering.tradeoffAnalysis.optimalPoint}</p>
                     <p className="text-sm text-muted-foreground mb-3">{valueEngineering.recommendation.justification}</p>
                     <Badge variant="outline">{valueEngineering.recommendation.confidence * 100}% confident</Badge>
+                    <div className="mt-4">
+                      <Button
+                        className="w-full gap-2"
+                        onClick={() => {
+                          const option = valueEngineering.options.find((o: any) => o.id === selectedOption);
+                          toast.success(`Implementing Value Engineering Option: ${option?.name || 'Selected Option'}`);
+                        }}
+                      >
+                        <CheckCircle2 className="h-4 w-4" />
+                        Implement Recommendation
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

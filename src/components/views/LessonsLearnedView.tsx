@@ -28,13 +28,43 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProjectContext } from '@/contexts/ProjectContext';
-import { useLessonsLearned, LessonLearned } from '@/hooks/useLessonsLearned';
+import { useLessonsLearned, LessonLearned, useUpdateLessonLearned, useCreateLessonLearned } from '@/hooks/useLessonsLearned';
 
 export function LessonsLearnedView() {
   const { settings } = useProjectContext();
   const { data: lessons = [], isLoading } = useLessonsLearned(settings.id);
+  const updateLesson = useUpdateLessonLearned();
+  const createLesson = useCreateLessonLearned();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLesson, setSelectedLesson] = useState<LessonLearned | null>(null);
+
+  const handleVote = async (lesson: LessonLearned) => {
+    await updateLesson.mutateAsync({
+      id: lesson.id,
+      votes: (Number(lesson.votes) || 0) + 1
+    });
+    if (selectedLesson?.id === lesson.id) {
+      setSelectedLesson({ ...lesson, votes: (Number(lesson.votes) || 0) + 1 });
+    }
+  };
+
+  const handleAddLesson = async () => {
+    if (!settings.id) return;
+    await createLesson.mutateAsync({
+      project_id: settings.id,
+      title: 'New Lesson Learned',
+      description: 'Describe the lesson learned here...',
+      type: 'success',
+      category: 'General',
+      impact_level: 'medium',
+      phase: 'Execution',
+      submitted_by: 'current-user-id',
+      submitted_by_name: 'Project Team Member',
+      votes: 0,
+      tags: ['new'],
+      recommendations: []
+    });
+  };
 
   const filteredLessons = lessons.filter(l =>
     l.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -79,8 +109,8 @@ export function LessonsLearnedView() {
               <p className="text-muted-foreground">Capture and share project insights for future success</p>
             </div>
           </div>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
+          <Button onClick={handleAddLesson} disabled={createLesson.isPending}>
+            {createLesson.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
             Add Lesson
           </Button>
         </div>
@@ -165,7 +195,7 @@ export function LessonsLearnedView() {
                       <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{lesson.description}</p>
                     </div>
                   </div>
-                  <Button variant="ghost" size="iconSm">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="More options">
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </div>
@@ -261,21 +291,29 @@ export function LessonsLearnedView() {
 
               <TabsContent value="recommendations" className="space-y-3">
                 <label className="text-xs font-medium text-muted-foreground">Recommendations for Future Projects</label>
-                {(Array.isArray(selectedLesson.recommendations) ? selectedLesson.recommendations : []).map((rec: any, i: number) => (
-                  <div key={i} className="flex items-start gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20">
-                    <CheckCircle2 className="h-4 w-4 text-primary mt-0.5" />
-                    <span className="text-sm">{rec}</span>
-                  </div>
-                ))}
-                {(!selectedLesson.recommendations || (Array.isArray(selectedLesson.recommendations) && selectedLesson.recommendations.length === 0)) && (
-                  <p className="text-sm text-muted-foreground italic">No recommendations provided.</p>
-                )}
+                <h3 className="font-semibold mb-2">Recommendations</h3>
+                <div className="space-y-2">
+                  {(Array.isArray(selectedLesson.recommendations) ? selectedLesson.recommendations : []).map((rec: any, i: number) => (
+                    <div key={i} className="flex items-start gap-2 p-3 rounded-lg bg-primary/10 border border-primary/20">
+                      <CheckCircle2 className="h-4 w-4 text-primary mt-0.5" />
+                      <span className="text-sm">{rec}</span>
+                    </div>
+                  ))}
+                  {(!selectedLesson.recommendations || (Array.isArray(selectedLesson.recommendations) && selectedLesson.recommendations.length === 0)) && (
+                    <p className="text-sm text-muted-foreground italic">No recommendations provided.</p>
+                  )}
+                </div>
               </TabsContent>
             </Tabs>
 
             <div className="mt-6 pt-4 border-t flex gap-2">
-              <Button variant="outline" className="flex-1">
-                <ThumbsUp className="h-4 w-4 mr-2" />
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => handleVote(selectedLesson)}
+                disabled={updateLesson.isPending}
+              >
+                {updateLesson.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <ThumbsUp className="h-4 w-4 mr-2" />}
                 Vote ({selectedLesson.votes})
               </Button>
               <Button variant="outline" className="flex-1">

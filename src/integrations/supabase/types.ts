@@ -1318,10 +1318,18 @@ export type Database = {
           description: string | null
           id: string
           impact: Database["public"]["Enums"]["stakeholder_level"] | null
+          impact_level: string | null
+          phase: string | null
           project_id: string | null
           recommendation: string | null
+          recommendations: string[] | null
+          submitted_by: string | null
+          submitted_by_name: string | null
+          tags: string[] | null
           title: string
+          type: string | null
           updated_at: string
+          votes: number | null
         }
         Insert: {
           category?: string | null
@@ -1331,10 +1339,18 @@ export type Database = {
           description?: string | null
           id?: string
           impact?: Database["public"]["Enums"]["stakeholder_level"] | null
+          impact_level?: string | null
+          phase?: string | null
           project_id?: string | null
           recommendation?: string | null
+          recommendations?: string[] | null
+          submitted_by?: string | null
+          submitted_by_name?: string | null
+          tags?: string[] | null
           title: string
+          type?: string | null
           updated_at?: string
+          votes?: number | null
         }
         Update: {
           category?: string | null
@@ -1344,10 +1360,18 @@ export type Database = {
           description?: string | null
           id?: string
           impact?: Database["public"]["Enums"]["stakeholder_level"] | null
+          impact_level?: string | null
+          phase?: string | null
           project_id?: string | null
           recommendation?: string | null
+          recommendations?: string[] | null
+          submitted_by?: string | null
+          submitted_by_name?: string | null
+          tags?: string[] | null
           title?: string
+          type?: string | null
           updated_at?: string
+          votes?: number | null
         }
         Relationships: [
           {

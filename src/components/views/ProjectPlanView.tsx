@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useMemo } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   ChevronRight,
@@ -18,12 +18,15 @@ import {
   Circle,
   Pause,
   XCircle,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { mockTasks } from '@/data/mockData';
+import { useProjectContext } from '@/contexts/ProjectContext';
+import { useTasks, useCreateTask, useSaveProjectBaseline, DbTask } from '@/hooks/useTasks';
 import type { Task, TaskStatus, TaskType, Priority } from '@/types/project';
+import { toast } from 'sonner';
 
 const statusIcons: Record<TaskStatus, React.ReactNode> = {
   'not-started': <Circle className="h-4 w-4 text-muted-foreground" />,
@@ -78,13 +81,10 @@ function TaskRow({ task, expanded, onToggle, selected, onSelect }: TaskRowProps)
         {hasChildren ? (
           <button
             onClick={onToggle}
-            className="p-0.5 rounded hover:bg-muted transition-colors"
+            className="p-0.5 rounded hover:bg-muted transition-colors transition-transform duration-200"
+            style={{ transform: expanded ? 'rotate(0deg)' : 'rotate(-90deg)' }}
           >
-            {expanded ? (
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
-            )}
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
           </button>
         ) : (
           <div className="w-5" />
@@ -123,12 +123,12 @@ function TaskRow({ task, expanded, onToggle, selected, onSelect }: TaskRowProps)
 
       {/* Start Date */}
       <div className="text-xs text-muted-foreground font-mono">
-        {new Date(task.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+        {task.startDate ? new Date(task.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
       </div>
 
       {/* End Date */}
       <div className="text-xs text-muted-foreground font-mono">
-        {new Date(task.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+        {task.endDate ? new Date(task.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
       </div>
 
       {/* Duration */}
@@ -154,7 +154,7 @@ function TaskRow({ task, expanded, onToggle, selected, onSelect }: TaskRowProps)
 
       {/* Actions */}
       <div className="flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-        <Button variant="ghost" size="iconXs">
+        <Button variant="ghost" size="icon">
           <MoreHorizontal className="h-4 w-4" />
         </Button>
       </div>
@@ -163,10 +163,61 @@ function TaskRow({ task, expanded, onToggle, selected, onSelect }: TaskRowProps)
 }
 
 export function ProjectPlanView() {
-  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(
-    new Set(mockTasks.filter(t => t.expanded).map(t => t.id))
-  );
+  const { settings } = useProjectContext();
+  const projectId = settings.id;
+
+  const { data: dbTasks = [], isLoading } = useTasks(projectId);
+  const createTask = useCreateTask();
+  const saveBaseline = useSaveProjectBaseline();
+
+  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
+
+  const taskTree = useMemo(() => {
+    const taskMap = new Map<string, Task>();
+    const roots: Task[] = [];
+
+    dbTasks.forEach(t => {
+      taskMap.set(t.id, {
+        id: t.id,
+        wbs: t.wbs,
+        name: t.name,
+        type: t.type as TaskType,
+        status: t.status as TaskStatus,
+        priority: t.priority as Priority,
+        startDate: t.start_date,
+        endDate: t.end_date,
+        duration: t.duration,
+        progress: t.progress,
+        assignee: t.assignee_id || undefined,
+        dependencies: [],
+        isCritical: t.is_critical || false,
+        level: t.level,
+        expanded: t.expanded || false, // from DB
+        children: [],
+      });
+    });
+
+    dbTasks.forEach(t => {
+      const task = taskMap.get(t.id)!;
+      if (t.parent_id && taskMap.has(t.parent_id)) {
+        taskMap.get(t.parent_id)!.children!.push(task);
+      } else {
+        roots.push(task);
+      }
+    });
+
+    return roots;
+  }, [dbTasks]);
+
+  // Sync expanded tasks from DB if needed, but for now we'll just use the local state
+  // Or initialize it if it's the first load
+  useMemo(() => {
+    if (dbTasks.length > 0 && expandedTasks.size === 0) {
+      const initialExpanded = new Set(dbTasks.filter(t => t.expanded).map(t => t.id));
+      setExpandedTasks(initialExpanded);
+    }
+  }, [dbTasks.length === 0]);
 
   const toggleTask = (taskId: string) => {
     setExpandedTasks((prev) => {
@@ -196,22 +247,73 @@ export function ProjectPlanView() {
     const result: Task[] = [];
     for (const task of tasks) {
       result.push(task);
-      if (task.children && expandedTasks.has(task.id)) {
+      if (task.children && task.children.length > 0 && expandedTasks.has(task.id)) {
         result.push(...flattenTasks(task.children));
       }
     }
     return result;
   };
 
-  const visibleTasks = flattenTasks(mockTasks);
+  const visibleTasks = useMemo(() => flattenTasks(taskTree), [taskTree, expandedTasks]);
+
+  const handleAddTask = async () => {
+    if (!projectId) return;
+
+    const newTask: Omit<DbTask, 'id' | 'created_at' | 'updated_at'> = {
+      project_id: projectId,
+      name: 'New Task',
+      wbs: `${visibleTasks.length + 1}`,
+      type: 'task',
+      status: 'not-started',
+      priority: 'medium',
+      start_date: new Date().toISOString(),
+      end_date: new Date().toISOString(),
+      duration: 1,
+      progress: 0,
+      assignee_id: null,
+      parent_id: null,
+      level: 0,
+      sort_order: visibleTasks.length,
+      is_critical: false,
+      notes: null,
+      expanded: false,
+    };
+
+    try {
+      await createTask.mutateAsync(newTask);
+      toast.success('Task created successfully');
+    } catch (error) {
+      // toast.error handled by mutation
+    }
+  };
+
+  const handleBaseline = async () => {
+    if (!projectId) return;
+
+    const name = `Baseline ${new Date().toLocaleDateString()}`;
+    try {
+      await saveBaseline.mutateAsync({ projectId, name });
+      toast.success('Project baseline saved');
+    } catch (error) {
+      // toast.error handled by mutation
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full p-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
       <div className="flex items-center justify-between p-4 border-b bg-card">
         <div className="flex items-center gap-2">
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-1" />
+          <Button size="sm" onClick={handleAddTask} disabled={createTask.isPending}>
+            {createTask.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Plus className="h-4 w-4 mr-1" />}
             Add Task
           </Button>
           <Button variant="outline" size="sm">
@@ -231,7 +333,8 @@ export function ProjectPlanView() {
             <Flag className="h-3 w-3 text-destructive" />
             Critical Path
           </Badge>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={handleBaseline} disabled={saveBaseline.isPending}>
+            {saveBaseline.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
             Baseline
           </Button>
         </div>
@@ -260,16 +363,26 @@ export function ProjectPlanView() {
 
       {/* Task List */}
       <div className="flex-1 overflow-auto">
-        {visibleTasks.map((task) => (
-          <TaskRow
-            key={task.id}
-            task={task}
-            expanded={expandedTasks.has(task.id)}
-            onToggle={() => toggleTask(task.id)}
-            selected={selectedTasks.has(task.id)}
-            onSelect={(selected) => toggleSelection(task.id, selected)}
-          />
-        ))}
+        {visibleTasks.length > 0 ? (
+          visibleTasks.map((task) => (
+            <TaskRow
+              key={task.id}
+              task={task}
+              expanded={expandedTasks.has(task.id)}
+              onToggle={() => toggleTask(task.id)}
+              selected={selectedTasks.has(task.id)}
+              onSelect={(selected) => toggleSelection(task.id, !!selected)}
+            />
+          ))
+        ) : (
+          <div className="flex flex-col items-center justify-center h-full p-12 text-center text-muted-foreground">
+            <AlertCircle className="h-12 w-12 mb-4 opacity-20" />
+            <p className="text-sm">No tasks found for this project.</p>
+            <Button variant="outline" size="sm" className="mt-4" onClick={handleAddTask}>
+              Create your first task
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Footer */}

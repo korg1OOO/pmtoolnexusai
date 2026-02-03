@@ -1,43 +1,30 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
-import { Tables } from '@/integrations/supabase/types';
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/lib/supabase";
 
-export type Scenario = Tables<'scenarios'>;
+export interface Scenario {
+    id: string;
+    project_id: string;
+    name: string;
+    description: string;
+    data: any;
+    created_at: string;
+    updated_at: string;
+}
 
-export function useScenarios(projectId: string | null) {
+export const useScenarios = (projectId?: string) => {
     return useQuery({
-        queryKey: ['scenarios', projectId],
+        queryKey: ["scenarios", projectId],
         queryFn: async () => {
-            let query = supabase.from('scenarios').select('*');
-            if (projectId) {
-                query = query.eq('project_id', projectId);
-            }
-            const { data, error } = await query.order('created_at', { ascending: false });
+            if (!projectId) return [];
+            const { data, error } = await supabase
+                .from("scenarios")
+                .select("*")
+                .eq("project_id", projectId)
+                .order("created_at", { ascending: false });
+
             if (error) throw error;
             return data as Scenario[];
         },
+        enabled: !!projectId,
     });
-}
-
-export function useCreateScenario() {
-    const queryClient = useQueryClient();
-    return useMutation({
-        mutationFn: async (scenario: Omit<Scenario, 'id' | 'created_at' | 'updated_at'>) => {
-            const { data, error } = await supabase
-                .from('scenarios')
-                .insert(scenario)
-                .select()
-                .single();
-            if (error) throw error;
-            return data;
-        },
-        onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['scenarios'] });
-            toast.success('Scenario created successfully');
-        },
-        onError: (error) => {
-            toast.error('Failed to create scenario: ' + error.message);
-        },
-    });
-}
+};

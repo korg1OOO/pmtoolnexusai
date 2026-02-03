@@ -19,6 +19,7 @@ import {
   ArrowUpRight,
   ExternalLink,
   Maximize2,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -33,86 +34,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-
-interface TraceabilityItem {
-  id: string;
-  type: 'sprint' | 'issue' | 'action' | 'decision' | 'risk' | 'meeting' | 'task';
-  title: string;
-  status: string;
-  linkedTo: { type: string; id: string; title: string }[];
-}
-
-const mockTraceabilityData: TraceabilityItem[] = [
-  {
-    id: 'SP-012',
-    type: 'sprint',
-    title: 'Sprint 12 - API Gateway & Infrastructure',
-    status: 'active',
-    linkedTo: [
-      { type: 'task', id: 'T-011', title: 'Application Migration - Wave 1' },
-      { type: 'task', id: 'T-013', title: 'Data Migration' },
-      { type: 'issue', id: 'ISS-001', title: 'API Gateway timeout during peak load' },
-      { type: 'meeting', id: 'MTG-002', title: 'Sprint 12 Daily Standup' },
-      { type: 'action', id: 'ACT-001', title: 'Configure load balancer auto-scaling rules' },
-    ],
-  },
-  {
-    id: 'ISS-001',
-    type: 'issue',
-    title: 'API Gateway timeout during peak load',
-    status: 'investigating',
-    linkedTo: [
-      { type: 'risk', id: 'RSK-001', title: 'Vendor Lock-in with Cloud Provider' },
-      { type: 'action', id: 'ACT-001', title: 'Configure load balancer auto-scaling rules' },
-      { type: 'sprint', id: 'SP-012', title: 'Sprint 12' },
-      { type: 'decision', id: 'DEC-002', title: 'Scale infrastructure horizontally' },
-    ],
-  },
-  {
-    id: 'ACT-001',
-    type: 'action',
-    title: 'Configure load balancer auto-scaling rules',
-    status: 'in-progress',
-    linkedTo: [
-      { type: 'issue', id: 'ISS-001', title: 'API Gateway timeout' },
-      { type: 'risk', id: 'RSK-001', title: 'Infrastructure capacity risk' },
-      { type: 'task', id: 'T-045', title: 'Load balancer configuration' },
-    ],
-  },
-  {
-    id: 'DEC-001',
-    type: 'decision',
-    title: 'Use multi-cloud architecture',
-    status: 'active',
-    linkedTo: [
-      { type: 'risk', id: 'RSK-001', title: 'Vendor Lock-in' },
-      { type: 'task', id: 'T-006', title: 'Cloud Architecture Design' },
-      { type: 'meeting', id: 'MTG-001', title: 'Steering Committee' },
-    ],
-  },
-  {
-    id: 'RSK-001',
-    type: 'risk',
-    title: 'Vendor Lock-in with Cloud Provider',
-    status: 'mitigating',
-    linkedTo: [
-      { type: 'decision', id: 'DEC-001', title: 'Multi-cloud architecture' },
-      { type: 'action', id: 'ACT-006', title: 'Finalize vendor contract' },
-      { type: 'task', id: 'T-006', title: 'Cloud Architecture Design' },
-    ],
-  },
-  {
-    id: 'MTG-001',
-    type: 'meeting',
-    title: 'Weekly Steering Committee',
-    status: 'scheduled',
-    linkedTo: [
-      { type: 'decision', id: 'DEC-001', title: 'Multi-cloud architecture' },
-      { type: 'risk', id: 'RSK-002', title: 'Data Migration Complexity' },
-      { type: 'action', id: 'ACT-002', title: 'Review rollback plan' },
-    ],
-  },
-];
+import { useTraceability, TraceabilityItem } from '@/hooks/useTraceability';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 const typeConfig: Record<string, { color: string; icon: React.ElementType; label: string }> = {
   sprint: { color: 'bg-sprint-todo', icon: Clock, label: 'Sprint' },
@@ -132,7 +56,7 @@ interface MatrixCellProps {
 
 function MatrixCell({ from, to, hasLink }: MatrixCellProps) {
   const linkedItem = from.linkedTo.find(l => l.type === to);
-  
+
   return (
     <div className={cn(
       'h-10 flex items-center justify-center border-r border-b transition-colors',
@@ -175,8 +99,8 @@ function TraceabilityNode({ item, isSelected, onClick }: TraceabilityNodeProps) 
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
-            <Badge variant="outline" className="text-[10px]">{item.id}</Badge>
-            <Badge variant="secondary" className="text-[10px]">{config.label}</Badge>
+            {(Badge as any) && <Badge variant="outline" className="text-[10px]">{item.id}</Badge>}
+            {(Badge as any) && <Badge variant="secondary" className="text-[10px]">{config.label}</Badge>}
           </div>
           <p className="text-sm font-medium line-clamp-1">{item.title}</p>
           <div className="flex items-center gap-1 mt-1">
@@ -190,6 +114,17 @@ function TraceabilityNode({ item, isSelected, onClick }: TraceabilityNodeProps) 
 }
 
 export function TraceabilityMatrixView() {
+  // For testing purposes, we use the fixed project ID or fetch the first one
+  const { data: projects } = useQuery({
+    queryKey: ['projects-traceability'],
+    queryFn: async () => {
+      const { data } = await supabase.from('projects').select('id').limit(1);
+      return data;
+    }
+  });
+
+  const projectId = projects?.[0]?.id;
+  const { data: traceabilityData, isLoading } = useTraceability(projectId);
   const [selectedItem, setSelectedItem] = useState<TraceabilityItem | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
@@ -198,23 +133,34 @@ export function TraceabilityMatrixView() {
   const types = ['sprint', 'task', 'issue', 'action', 'decision', 'risk', 'meeting'];
 
   const filteredItems = useMemo(() => {
-    return mockTraceabilityData.filter(item => {
+    if (!traceabilityData) return [];
+    return traceabilityData.filter(item => {
       const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.id.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesType = filterType === 'all' || item.type === filterType;
       return matchesSearch && matchesType;
     });
-  }, [searchQuery, filterType]);
+  }, [traceabilityData, searchQuery, filterType]);
 
   const linkStats = useMemo(() => {
     const stats: Record<string, number> = {};
+    if (!traceabilityData) return stats;
     types.forEach(type => {
-      stats[type] = mockTraceabilityData.filter(i => i.type === type).length;
+      stats[type] = traceabilityData.filter(i => i.type === type).length;
     });
     return stats;
-  }, []);
+  }, [traceabilityData]);
 
-  const totalLinks = mockTraceabilityData.reduce((sum, item) => sum + item.linkedTo.length, 0);
+  const totalLinks = traceabilityData?.reduce((sum, item) => sum + item.linkedTo.length, 0) || 0;
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-3 text-muted-foreground">Loading traceability matrix...</span>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -227,7 +173,7 @@ export function TraceabilityMatrixView() {
           <div>
             <h1 className="text-lg font-semibold">Traceability Matrix</h1>
             <p className="text-sm text-muted-foreground">
-              {mockTraceabilityData.length} items • {totalLinks} relationships
+              {traceabilityData?.length || 0} items • {totalLinks} relationships
             </p>
           </div>
         </div>
@@ -261,7 +207,7 @@ export function TraceabilityMatrixView() {
             >
               <Icon className="h-4 w-4" />
               <span className="text-sm font-medium">{config.label}</span>
-              <Badge variant="secondary" className="text-xs">{linkStats[type]}</Badge>
+              <Badge variant="secondary" className="text-xs">{linkStats[type] || 0}</Badge>
             </button>
           );
         })}

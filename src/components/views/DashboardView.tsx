@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import {
   TrendingUp,
@@ -13,6 +13,7 @@ import {
   BarChart3,
   Zap,
   ArrowRight,
+  Loader2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,7 +21,15 @@ import { Badge } from '@/components/ui/badge';
 import { KPICard } from '@/components/enterprise/KPICard';
 import { ProgressRing } from '@/components/enterprise/ProgressRing';
 import { StatusIndicator } from '@/components/enterprise/StatusIndicator';
-import { mockProject, mockTasks, mockRisks, mockMeetings, kpiData, mockSprintItems } from '@/data/mockData';
+import { useProjectContext } from '@/contexts/ProjectContext';
+import { useProject } from '@/hooks/useProject';
+import { useTasks } from '@/hooks/useTasks';
+import { useRisks } from '@/hooks/useRisks';
+import { useMeetings } from '@/hooks/useMeetings';
+import { useActions } from '@/hooks/useActions';
+import { useBacklogItems } from '@/hooks/useBacklogItems';
+import { useFinancials } from '@/hooks/useFinancials';
+import { kpiData as mockKPIData } from '@/data/mockData';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -38,9 +47,66 @@ const itemVariants = {
 };
 
 export function DashboardView() {
-  const inProgressTasks = mockSprintItems.filter((t) => t.status === 'in-progress');
-  const upcomingMeetings = mockMeetings.filter((m) => m.status === 'scheduled');
-  const activeRisks = mockRisks.filter((r) => r.status !== 'closed');
+  const { settings } = useProjectContext();
+  const projectId = settings.id;
+
+  const { data: project, isLoading: loadingProject } = useProject(projectId);
+  const { data: tasks = [], isLoading: loadingTasks } = useTasks(projectId);
+  const { risks = [], loading: loadingRisks } = useRisks();
+  const { meetings = [], isLoading: loadingMeetings } = useMeetings(projectId);
+  const { actions = [], loading: loadingActions } = useActions();
+  const { items: backlogItems = [], loading: loadingBacklog } = useBacklogItems();
+  const { budget } = useFinancials(projectId);
+
+  const isLoading = loadingProject || loadingTasks || loadingRisks || loadingMeetings || loadingActions || loadingBacklog;
+
+  const kpis = useMemo(() => {
+    if (!project) return mockKPIData;
+
+    const activeRisksCount = risks.filter(r => r.status !== 'closed').length;
+    const criticalRisks = risks.filter(r => r.status !== 'closed' && r.impact === 'critical').length;
+    const openActions = actions.filter(a => a.status === 'pending' || a.status === 'in-progress').length;
+    const overdueActions = actions.filter(a => (a.status === 'pending' || a.status === 'in-progress') && a.due_date && new Date(a.due_date) < new Date()).length;
+
+    // Simple cost variance calculation
+    const budgetTotal = project.budget || 0;
+    const spentTotal = project.spent || 0;
+    const costVariance = budgetTotal > 0 ? ((budgetTotal - spentTotal) / budgetTotal) * 100 : 0;
+
+    return {
+      ...mockKPIData,
+      costVariance: parseFloat(costVariance.toFixed(1)),
+      openRisks: activeRisksCount,
+      criticalRisks,
+      openActions,
+      overdueActions,
+      teamUtilization: 85, // Fallback for now
+    };
+  }, [project, risks, actions]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full p-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  const activeProject = project || {
+    name: settings.name,
+    health: 'green',
+    description: 'No description available.',
+    methodology: settings.methodology,
+    progress: 0,
+    start_date: new Date().toISOString(),
+    end_date: new Date().toISOString(),
+    spent: 0,
+    budget: 0,
+  };
+
+  const inProgressItems = backlogItems.filter((t) => t.status === 'in-progress');
+  const upcomingMeetings = meetings.filter((m) => m.status === 'scheduled');
+  const activeRisks = risks.filter((r) => r.status !== 'closed');
 
   return (
     <motion.div
@@ -53,11 +119,11 @@ export function DashboardView() {
       <motion.div variants={itemVariants} className="flex items-start justify-between">
         <div>
           <div className="flex items-center gap-3 mb-2">
-            <h1 className="text-2xl font-bold">{mockProject.name}</h1>
-            <StatusIndicator status={mockProject.health} pulse />
+            <h1 className="text-2xl font-bold">{activeProject.name}</h1>
+            <StatusIndicator status={activeProject.health as any} pulse />
           </div>
           <p className="text-muted-foreground max-w-2xl">
-            {mockProject.description}
+            {activeProject.description}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -76,46 +142,46 @@ export function DashboardView() {
       <motion.div variants={itemVariants} className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
         <KPICard
           title="Schedule Variance"
-          value={`${kpiData.scheduleVariance > 0 ? '+' : ''}${kpiData.scheduleVariance}%`}
-          status={kpiData.scheduleVariance >= 0 ? 'success' : 'warning'}
+          value={`${kpis.scheduleVariance > 0 ? '+' : ''}${kpis.scheduleVariance}%`}
+          status={kpis.scheduleVariance >= 0 ? 'success' : 'warning'}
           icon={Calendar}
           subtitle="vs. baseline"
         />
         <KPICard
           title="Cost Variance"
-          value={`${kpiData.costVariance > 0 ? '+' : ''}${kpiData.costVariance}%`}
-          status={kpiData.costVariance >= 0 ? 'success' : 'warning'}
+          value={`${kpis.costVariance > 0 ? '+' : ''}${kpis.costVariance}%`}
+          status={kpis.costVariance >= 0 ? 'success' : 'warning'}
           icon={DollarSign}
           subtitle="under budget"
         />
         <KPICard
           title="Sprint Velocity"
-          value={kpiData.sprintVelocity}
+          value={kpis.sprintVelocity}
           status="info"
           icon={TrendingUp}
           trend={{ value: 6, label: 'vs avg' }}
-          subtitle={`Avg: ${kpiData.avgVelocity} pts`}
+          subtitle={`Avg: ${kpis.avgVelocity} pts`}
         />
         <KPICard
           title="Open Risks"
-          value={kpiData.openRisks}
-          status={kpiData.criticalRisks > 0 ? 'error' : 'warning'}
+          value={kpis.openRisks}
+          status={kpis.criticalRisks > 0 ? 'error' : 'warning'}
           icon={AlertTriangle}
-          subtitle={`${kpiData.criticalRisks} critical`}
+          subtitle={`${kpis.criticalRisks} critical`}
         />
         <KPICard
           title="Team Utilization"
-          value={`${kpiData.teamUtilization}%`}
+          value={`${kpis.teamUtilization}%`}
           status="info"
           icon={Users}
           subtitle="Current sprint"
         />
         <KPICard
           title="Actions Due"
-          value={kpiData.openActions}
-          status={kpiData.overdueActions > 0 ? 'warning' : 'success'}
+          value={kpis.openActions}
+          status={kpis.overdueActions > 0 ? 'warning' : 'success'}
           icon={CheckCircle2}
-          subtitle={`${kpiData.overdueActions} overdue`}
+          subtitle={`${kpis.overdueActions} overdue`}
         />
       </motion.div>
 
@@ -126,26 +192,26 @@ export function DashboardView() {
           <Card className="h-full">
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-base font-semibold">Project Progress</CardTitle>
-              <Badge variant={mockProject.methodology === 'hybrid' ? 'info' : 'secondary'}>
-                {mockProject.methodology}
+              <Badge variant={activeProject.methodology === 'hybrid' ? 'info' : 'secondary'}>
+                {activeProject.methodology}
               </Badge>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-center py-4">
-                <ProgressRing value={mockProject.progress} size={120} strokeWidth={10} color="primary" />
+                <ProgressRing value={activeProject.progress || 0} size={120} strokeWidth={10} color="primary" />
               </div>
               <div className="space-y-3 mt-4">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Start Date</span>
-                  <span className="font-medium">{new Date(mockProject.startDate).toLocaleDateString()}</span>
+                  <span className="font-medium">{activeProject.start_date ? new Date(activeProject.start_date).toLocaleDateString() : 'N/A'}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Target End</span>
-                  <span className="font-medium">{new Date(mockProject.endDate).toLocaleDateString()}</span>
+                  <span className="font-medium">{activeProject.end_date ? new Date(activeProject.end_date).toLocaleDateString() : 'N/A'}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Projected</span>
-                  <span className="font-medium text-success">{kpiData.projectedCompletion}</span>
+                  <span className="font-medium text-success">{kpis.projectedCompletion}</span>
                 </div>
               </div>
             </CardContent>
@@ -165,13 +231,13 @@ export function DashboardView() {
                   <div className="flex items-center justify-between text-sm mb-1">
                     <span className="text-muted-foreground">Spent</span>
                     <span className="font-mono font-medium">
-                      ${(mockProject.spent / 1000000).toFixed(2)}M / ${(mockProject.budget / 1000000).toFixed(2)}M
+                      ${((activeProject.spent || 0) / 1000000).toFixed(2)}M / ${((activeProject.budget || 0) / 1000000).toFixed(2)}M
                     </span>
                   </div>
                   <div className="h-2 bg-muted rounded-full overflow-hidden">
                     <div
                       className="h-full bg-primary rounded-full transition-all"
-                      style={{ width: `${(mockProject.spent / mockProject.budget) * 100}%` }}
+                      style={{ width: `${activeProject.budget > 0 ? ((activeProject.spent || 0) / activeProject.budget) * 100 : 0}%` }}
                     />
                   </div>
                 </div>
@@ -179,11 +245,11 @@ export function DashboardView() {
                 <div className="grid grid-cols-2 gap-4 pt-2">
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground">Burn Rate</p>
-                    <p className="text-lg font-semibold font-mono">${(kpiData.burnRate / 1000).toFixed(0)}K<span className="text-xs text-muted-foreground">/mo</span></p>
+                    <p className="text-lg font-semibold font-mono">${(kpis.burnRate / 1000).toFixed(0)}K<span className="text-xs text-muted-foreground">/mo</span></p>
                   </div>
                   <div className="space-y-1">
                     <p className="text-xs text-muted-foreground">Remaining</p>
-                    <p className="text-lg font-semibold font-mono text-success">${((mockProject.budget - mockProject.spent) / 1000000).toFixed(2)}M</p>
+                    <p className="text-lg font-semibold font-mono text-success">${(((activeProject.budget || 0) - (activeProject.spent || 0)) / 1000000).toFixed(2)}M</p>
                   </div>
                 </div>
 
@@ -214,11 +280,10 @@ export function DashboardView() {
                     key={risk.id}
                     className="flex items-start gap-3 p-2 rounded-lg hover:bg-muted/50 transition-colors cursor-pointer"
                   >
-                    <div className={`mt-0.5 h-2 w-2 rounded-full shrink-0 ${
-                      risk.impact === 'critical' ? 'bg-destructive' :
+                    <div className={`mt-0.5 h-2 w-2 rounded-full shrink-0 ${risk.impact === 'critical' ? 'bg-destructive' :
                       risk.impact === 'high' ? 'bg-orange-500' :
-                      risk.impact === 'medium' ? 'bg-warning' : 'bg-success'
-                    }`} />
+                        risk.impact === 'medium' ? 'bg-warning' : 'bg-success'
+                      }`} />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{risk.title}</p>
                       <div className="flex items-center gap-2 mt-1">
@@ -230,6 +295,7 @@ export function DashboardView() {
                     </div>
                   </div>
                 ))}
+                {activeRisks.length === 0 && <p className="text-xs text-muted-foreground text-center py-4">No active risks</p>}
               </div>
             </CardContent>
           </Card>
@@ -243,11 +309,11 @@ export function DashboardView() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between pb-2">
               <CardTitle className="text-base font-semibold">In Progress</CardTitle>
-              <Badge variant="in-progress">{inProgressTasks.length} items</Badge>
+              <Badge variant="in-progress">{inProgressItems.length} items</Badge>
             </CardHeader>
             <CardContent>
               <div className="space-y-2">
-                {inProgressTasks.map((item) => (
+                {inProgressItems.map((item) => (
                   <div
                     key={item.id}
                     className="flex items-center gap-3 p-3 rounded-lg bg-muted/30 hover:bg-muted/50 transition-colors cursor-pointer"
@@ -257,12 +323,12 @@ export function DashboardView() {
                     </Badge>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{item.title}</p>
-                      <p className="text-xs text-muted-foreground">{item.key}</p>
+                      <p className="text-xs text-muted-foreground">{item.key || item.wbs || 'No key'}</p>
                     </div>
                     {item.assignee && (
                       <div className="flex items-center gap-2">
                         <div className="h-6 w-6 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium text-primary">
-                          {item.assignee.split(' ').map(n => n[0]).join('')}
+                          {item.assignee.split(' ').map((n: string) => n[0]).join('')}
                         </div>
                       </div>
                     )}
@@ -273,6 +339,7 @@ export function DashboardView() {
                     )}
                   </div>
                 ))}
+                {inProgressItems.length === 0 && <p className="text-xs text-muted-foreground text-center py-8">No work in progress</p>}
               </div>
             </CardContent>
           </Card>
@@ -313,24 +380,10 @@ export function DashboardView() {
                           {meeting.type}
                         </Badge>
                       </div>
-                      <div className="flex items-center gap-1 mt-2">
-                        {meeting.participants.slice(0, 4).map((p, i) => (
-                          <div
-                            key={p.id}
-                            className="h-5 w-5 rounded-full bg-muted border-2 border-card flex items-center justify-center text-[10px] font-medium -ml-1 first:ml-0"
-                          >
-                            {p.name.split(' ').map(n => n[0]).join('')}
-                          </div>
-                        ))}
-                        {meeting.participants.length > 4 && (
-                          <span className="text-xs text-muted-foreground ml-1">
-                            +{meeting.participants.length - 4}
-                          </span>
-                        )}
-                      </div>
                     </div>
                   </div>
                 ))}
+                {upcomingMeetings.length === 0 && <p className="text-xs text-muted-foreground text-center py-8">No upcoming meetings</p>}
               </div>
             </CardContent>
           </Card>

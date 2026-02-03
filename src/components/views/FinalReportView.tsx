@@ -11,6 +11,8 @@ import {
   Printer,
   Edit2,
   Star,
+  Loader2,
+  Plus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,10 +20,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { PDFExporter, PDFExportSection } from '@/components/common/PDFExporter';
-import { mockProject } from '@/data/mockData';
+import { useProjectContext } from '@/contexts/ProjectContext';
+import { useFinalReport, FinalReport } from '@/hooks/useFinalReport';
 
 export function FinalReportView() {
   const contentRef = useRef<HTMLDivElement>(null);
+  const { settings: project } = useProjectContext();
+  const { data: report, isLoading } = useFinalReport(project?.id);
 
   const pdfSections: PDFExportSection[] = [
     { id: 'summary', name: 'Executive Summary', selector: '[data-section="summary"]' },
@@ -32,68 +37,40 @@ export function FinalReportView() {
     { id: 'team', name: 'Team Recognition', selector: '[data-section="team"]' },
   ];
 
-  const reportData = {
-    projectName: mockProject.name,
-    projectCode: mockProject.code,
-    completionDate: '2024-12-15',
-    sponsor: 'James Morrison',
-    projectManager: 'Sarah Mitchell',
-    
-    executiveSummary: `The ${mockProject.name} was successfully completed on schedule and within budget. 
-    All primary objectives were achieved, including the migration of 100% of Tier-1 applications to the cloud, 
-    achieving 99.99% uptime SLA, and implementing zero-trust security architecture. 
-    The project delivered significant value to the organization through improved scalability, 
-    reduced operational costs, and enhanced security posture.`,
-    
-    objectives: [
-      { objective: 'Migrate 100% of Tier-1 applications to cloud', target: '100%', achieved: '100%', status: 'met' },
-      { objective: 'Achieve 99.99% uptime SLA', target: '99.99%', achieved: '99.97%', status: 'met' },
-      { objective: 'Reduce infrastructure costs by 40%', target: '40%', achieved: '38%', status: 'partial' },
-      { objective: 'Implement zero-trust security architecture', target: 'Complete', achieved: 'Complete', status: 'met' },
-      { objective: 'Complete within approved budget', target: '$2.5M', achieved: '$2.45M', status: 'met' },
-    ],
-    
-    financialSummary: {
-      approvedBudget: 2500000,
-      actualSpend: 2450000,
-      variance: 50000,
-      variancePercent: 2.0,
-    },
-    
-    scheduleSummary: {
-      plannedDuration: 365,
-      actualDuration: 365,
-      variance: 0,
-      plannedEnd: '2024-12-15',
-      actualEnd: '2024-12-15',
-    },
-    
-    deliverables: [
-      { name: 'Cloud Architecture Design', status: 'delivered', quality: 'excellent' },
-      { name: 'Data Migration Framework', status: 'delivered', quality: 'good' },
-      { name: 'Security Framework', status: 'delivered', quality: 'excellent' },
-      { name: 'API Gateway', status: 'delivered', quality: 'good' },
-      { name: 'User Training Materials', status: 'delivered', quality: 'excellent' },
-      { name: 'Operations Runbook', status: 'delivered', quality: 'good' },
-    ],
-    
-    teamMembers: [
-      { name: 'John Doe', role: 'Technical Lead', contribution: 'excellent' },
-      { name: 'Jane Smith', role: 'Senior Developer', contribution: 'excellent' },
-      { name: 'Mike Johnson', role: 'Cloud Architect', contribution: 'excellent' },
-      { name: 'Emily Brown', role: 'Data Engineer', contribution: 'good' },
-      { name: 'David Wilson', role: 'DevOps Engineer', contribution: 'excellent' },
-    ],
-    
-    stakeholderSatisfaction: 4.5,
-    
-    recommendations: [
-      'Continue monitoring cloud costs for the first 6 months post-go-live',
-      'Plan for Phase 2 migration of Tier-2 applications',
-      'Establish a cloud center of excellence team',
-      'Implement automated cost optimization tools',
-    ],
-  };
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!report) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-12 text-center">
+        <div className="p-4 rounded-full bg-success/10 mb-4">
+          <FileCheck className="h-12 w-12 text-success" />
+        </div>
+        <h2 className="text-2xl font-bold mb-2">No Final Report</h2>
+        <p className="text-muted-foreground mb-6 max-w-md">
+          A final report has not been generated for this project yet.
+          Generate one after project completion to summarize achievements and performance.
+        </p>
+        <Button className="bg-success hover:bg-success/90">
+          <Plus className="h-4 w-4 mr-2" />
+          Generate Final Report
+        </Button>
+      </div>
+    );
+  }
+
+  // Helper to cast JSONB fields
+  const objectives = (report.objectives_achievement as any[]) || [];
+  const financials = (report.financial_performance as any) || {};
+  const schedule = (report.schedule_performance as any) || {};
+  const deliverables = (report.deliverables_status as any[]) || [];
+  const teamMembers = (report.team_recognition as any[]) || [];
+  const recommendations = (report.recommendations as any[]) || [];
 
   return (
     <div className="flex flex-col h-full overflow-auto" ref={contentRef}>
@@ -109,13 +86,15 @@ export function FinalReportView() {
                 <h1 className="text-2xl font-bold">Project Final Report</h1>
                 <Badge variant="success" className="gap-1">
                   <CheckCircle2 className="h-3 w-3" />
-                  Completed
+                  {report.status === 'completed' ? 'Completed' : 'Draft'}
                 </Badge>
               </div>
-              <p className="text-muted-foreground">{reportData.projectName}</p>
-              <p className="text-sm text-muted-foreground mt-1">
-                Completed: {new Date(reportData.completionDate).toLocaleDateString()}
-              </p>
+              <p className="text-muted-foreground">{project.name}</p>
+              {report.completion_date && (
+                <p className="text-sm text-muted-foreground mt-1">
+                  Completed: {new Date(report.completion_date).toLocaleDateString()}
+                </p>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -157,7 +136,7 @@ export function FinalReportView() {
                   <CardTitle className="text-base">Executive Summary</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm leading-relaxed">{reportData.executiveSummary}</p>
+                  <p className="text-sm leading-relaxed">{report.executive_summary || 'No executive summary provided.'}</p>
                 </CardContent>
               </Card>
 
@@ -166,18 +145,22 @@ export function FinalReportView() {
                 <Card className="border-success/30 bg-success/5">
                   <CardContent className="p-4">
                     <DollarSign className="h-5 w-5 text-success mb-2" />
-                    <div className="text-2xl font-bold text-success">Under Budget</div>
+                    <div className="text-2xl font-bold text-success">
+                      {financials.variance > 0 ? 'Under Budget' : financials.variance < 0 ? 'Over Budget' : 'On Budget'}
+                    </div>
                     <p className="text-sm text-muted-foreground">
-                      ${(reportData.financialSummary.variance / 1000).toFixed(0)}K saved
+                      {financials.variance !== undefined ? `$${(Math.abs(financials.variance) / 1000).toFixed(0)}K ${financials.variance > 0 ? 'saved' : 'over'}` : 'N/A'}
                     </p>
                   </CardContent>
                 </Card>
                 <Card className="border-success/30 bg-success/5">
                   <CardContent className="p-4">
                     <Calendar className="h-5 w-5 text-success mb-2" />
-                    <div className="text-2xl font-bold text-success">On Time</div>
+                    <div className="text-2xl font-bold text-success">
+                      {schedule.variance > 0 ? 'Delayed' : schedule.variance < 0 ? 'Ahead' : 'On Time'}
+                    </div>
                     <p className="text-sm text-muted-foreground">
-                      Delivered as planned
+                      {schedule.variance !== undefined ? `${Math.abs(schedule.variance)} days ${schedule.variance > 0 ? 'delay' : 'finish'}` : 'Delivered as planned'}
                     </p>
                   </CardContent>
                 </Card>
@@ -185,7 +168,7 @@ export function FinalReportView() {
                   <CardContent className="p-4">
                     <Target className="h-5 w-5 text-success mb-2" />
                     <div className="text-2xl font-bold text-success">
-                      {reportData.objectives.filter(o => o.status === 'met').length}/{reportData.objectives.length}
+                      {objectives.filter(o => o.status === 'met').length}/{objectives.length}
                     </div>
                     <p className="text-sm text-muted-foreground">Objectives Met</p>
                   </CardContent>
@@ -193,7 +176,7 @@ export function FinalReportView() {
                 <Card className="border-warning/30 bg-warning/5">
                   <CardContent className="p-4">
                     <Star className="h-5 w-5 text-warning mb-2" />
-                    <div className="text-2xl font-bold text-warning">{reportData.stakeholderSatisfaction}/5</div>
+                    <div className="text-2xl font-bold text-warning">{report.stakeholder_satisfaction || 0}/5</div>
                     <p className="text-sm text-muted-foreground">Satisfaction Score</p>
                   </CardContent>
                 </Card>
@@ -206,12 +189,15 @@ export function FinalReportView() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {reportData.recommendations.map((rec, i) => (
+                    {recommendations.map((rec, i) => (
                       <div key={i} className="flex items-start gap-2 p-3 rounded-lg bg-muted/30">
                         <span className="text-primary font-medium">{i + 1}.</span>
                         <span className="text-sm">{rec}</span>
                       </div>
                     ))}
+                    {recommendations.length === 0 && (
+                      <p className="text-sm text-muted-foreground italic">No recommendations provided.</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -224,7 +210,7 @@ export function FinalReportView() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {reportData.objectives.map((obj, i) => (
+                    {objectives.map((obj, i) => (
                       <div key={i} className="p-4 rounded-lg border bg-muted/20">
                         <div className="flex items-start justify-between mb-2">
                           <span className="font-medium">{obj.objective}</span>
@@ -247,6 +233,9 @@ export function FinalReportView() {
                         </div>
                       </div>
                     ))}
+                    {objectives.length === 0 && (
+                      <p className="text-sm text-muted-foreground italic">No objectives achievement data.</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -261,17 +250,20 @@ export function FinalReportView() {
                   <CardContent className="space-y-4">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Approved Budget</span>
-                      <span className="font-semibold">${(reportData.financialSummary.approvedBudget / 1000000).toFixed(1)}M</span>
+                      <span className="font-semibold">${((financials.approvedBudget || 0) / 1000000).toFixed(1)}M</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Actual Spend</span>
-                      <span className="font-semibold">${(reportData.financialSummary.actualSpend / 1000000).toFixed(2)}M</span>
+                      <span className="font-semibold">${((financials.actualSpend || 0) / 1000000).toFixed(2)}M</span>
                     </div>
                     <div className="border-t pt-4">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium">Variance</span>
-                        <span className="font-bold text-success">
-                          +${(reportData.financialSummary.variance / 1000).toFixed(0)}K ({reportData.financialSummary.variancePercent}%)
+                        <span className={cn(
+                          "font-bold",
+                          financials.variance >= 0 ? 'text-success' : 'text-destructive'
+                        )}>
+                          {financials.variance >= 0 ? '+' : '-'}${Math.abs((financials.variance || 0) / 1000).toFixed(0)}K ({financials.variancePercent || 0}%)
                         </span>
                       </div>
                     </div>
@@ -285,16 +277,21 @@ export function FinalReportView() {
                   <CardContent className="space-y-4">
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Planned Duration</span>
-                      <span className="font-semibold">{reportData.scheduleSummary.plannedDuration} days</span>
+                      <span className="font-semibold">{schedule.plannedDuration || 0} days</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Actual Duration</span>
-                      <span className="font-semibold">{reportData.scheduleSummary.actualDuration} days</span>
+                      <span className="font-semibold">{schedule.actualDuration || 0} days</span>
                     </div>
                     <div className="border-t pt-4">
                       <div className="flex items-center justify-between">
                         <span className="text-sm font-medium">Variance</span>
-                        <span className="font-bold text-success">On Time</span>
+                        <span className={cn(
+                          "font-bold",
+                          schedule.variance <= 0 ? 'text-success' : 'text-destructive'
+                        )}>
+                          {schedule.variance <= 0 ? 'On Time / Ahead' : `${schedule.variance} days Delay`}
+                        </span>
                       </div>
                     </div>
                   </CardContent>
@@ -309,7 +306,7 @@ export function FinalReportView() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {reportData.deliverables.map((del, i) => (
+                    {deliverables.map((del, i) => (
                       <div key={i} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
                         <div className="flex items-center gap-3">
                           <CheckCircle2 className="h-5 w-5 text-success" />
@@ -323,6 +320,9 @@ export function FinalReportView() {
                         </div>
                       </div>
                     ))}
+                    {deliverables.length === 0 && (
+                      <p className="text-sm text-muted-foreground italic">No deliverables status data.</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -338,12 +338,12 @@ export function FinalReportView() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {reportData.teamMembers.map((member, i) => (
+                    {teamMembers.map((member, i) => (
                       <div key={i} className="flex items-center justify-between p-3 rounded-lg border bg-muted/20">
                         <div className="flex items-center gap-3">
                           <Avatar className="h-10 w-10">
                             <AvatarFallback>
-                              {member.name.split(' ').map(n => n[0]).join('')}
+                              {member.name.split(' ').map((n: string) => n[0]).join('')}
                             </AvatarFallback>
                           </Avatar>
                           <div>
@@ -356,6 +356,9 @@ export function FinalReportView() {
                         </Badge>
                       </div>
                     ))}
+                    {teamMembers.length === 0 && (
+                      <p className="text-sm text-muted-foreground italic">No team recognition data.</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>

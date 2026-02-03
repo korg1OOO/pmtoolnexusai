@@ -33,129 +33,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 
-interface Stakeholder {
-  id: string;
-  name: string;
-  role: string;
-  organization: string;
-  email: string;
-  phone: string;
-  influence: 'high' | 'medium' | 'low';
-  interest: 'high' | 'medium' | 'low';
-  engagement: 'supportive' | 'neutral' | 'resistant';
-  category: 'internal' | 'external' | 'partner';
-  communicationPreference: string;
-  keyInterests: string[];
-  isKeyStakeholder: boolean;
-}
-
-const mockStakeholders: Stakeholder[] = [
-  {
-    id: 'STK-001',
-    name: 'James Morrison',
-    role: 'Executive Sponsor',
-    organization: 'Acme Corp',
-    email: 'james.morrison@acme.com',
-    phone: '+1 555-0101',
-    influence: 'high',
-    interest: 'high',
-    engagement: 'supportive',
-    category: 'internal',
-    communicationPreference: 'Weekly executive summary',
-    keyInterests: ['ROI', 'Strategic alignment', 'Risk management'],
-    isKeyStakeholder: true,
-  },
-  {
-    id: 'STK-002',
-    name: 'Sarah Mitchell',
-    role: 'Project Sponsor',
-    organization: 'Acme Corp',
-    email: 'sarah.mitchell@acme.com',
-    phone: '+1 555-0102',
-    influence: 'high',
-    interest: 'high',
-    engagement: 'supportive',
-    category: 'internal',
-    communicationPreference: 'Daily updates, weekly meetings',
-    keyInterests: ['Budget adherence', 'Timeline', 'Quality'],
-    isKeyStakeholder: true,
-  },
-  {
-    id: 'STK-003',
-    name: 'Lisa Chen',
-    role: 'Business Owner',
-    organization: 'Acme Corp - Operations',
-    email: 'lisa.chen@acme.com',
-    phone: '+1 555-0103',
-    influence: 'medium',
-    interest: 'high',
-    engagement: 'supportive',
-    category: 'internal',
-    communicationPreference: 'Bi-weekly status calls',
-    keyInterests: ['Business continuity', 'User experience', 'Training'],
-    isKeyStakeholder: true,
-  },
-  {
-    id: 'STK-004',
-    name: 'Michael Torres',
-    role: 'Cloud Vendor Account Manager',
-    organization: 'AWS',
-    email: 'mtorres@aws.com',
-    phone: '+1 555-0201',
-    influence: 'medium',
-    interest: 'medium',
-    engagement: 'supportive',
-    category: 'partner',
-    communicationPreference: 'Monthly review meetings',
-    keyInterests: ['Service adoption', 'Support escalations'],
-    isKeyStakeholder: false,
-  },
-  {
-    id: 'STK-005',
-    name: 'Robert Williams',
-    role: 'IT Security Officer',
-    organization: 'Acme Corp - Security',
-    email: 'robert.w@acme.com',
-    phone: '+1 555-0104',
-    influence: 'high',
-    interest: 'medium',
-    engagement: 'neutral',
-    category: 'internal',
-    communicationPreference: 'Security review checkpoints',
-    keyInterests: ['Compliance', 'Security architecture', 'Audit readiness'],
-    isKeyStakeholder: true,
-  },
-  {
-    id: 'STK-006',
-    name: 'Jennifer Adams',
-    role: 'End User Representative',
-    organization: 'Acme Corp - Sales',
-    email: 'jennifer.a@acme.com',
-    phone: '+1 555-0105',
-    influence: 'low',
-    interest: 'high',
-    engagement: 'neutral',
-    category: 'internal',
-    communicationPreference: 'UAT sessions, training workshops',
-    keyInterests: ['Usability', 'Performance', 'Feature parity'],
-    isKeyStakeholder: false,
-  },
-  {
-    id: 'STK-007',
-    name: 'David Park',
-    role: 'External Auditor',
-    organization: 'Deloitte',
-    email: 'dpark@deloitte.com',
-    phone: '+1 555-0301',
-    influence: 'medium',
-    interest: 'low',
-    engagement: 'neutral',
-    category: 'external',
-    communicationPreference: 'Quarterly compliance reviews',
-    keyInterests: ['Regulatory compliance', 'Documentation', 'Controls'],
-    isKeyStakeholder: false,
-  },
-];
 
 const raciMatrix = [
   { activity: 'Project Charter Approval', roles: { sponsor: 'A', pm: 'R', techLead: 'C', business: 'I' } },
@@ -166,15 +43,21 @@ const raciMatrix = [
   { activity: 'Change Requests', roles: { sponsor: 'A', pm: 'R', techLead: 'C', business: 'C' } },
 ];
 
+import { useProjectContext } from '@/contexts/ProjectContext';
+import { useStakeholders, Stakeholder } from '@/hooks/useStakeholders';
+import { Loader2 } from 'lucide-react';
+
 export function StakeholderRegisterView() {
+  const { settings } = useProjectContext();
+  const { data: stakeholders = [], isLoading } = useStakeholders(settings.id);
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedStakeholder, setSelectedStakeholder] = useState<Stakeholder | null>(null);
 
-  const filteredStakeholders = mockStakeholders.filter(s =>
+  const filteredStakeholders = stakeholders.filter(s =>
     s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    s.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    s.organization.toLowerCase().includes(searchQuery.toLowerCase())
+    (s.role?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+    (s.organization?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
 
   const getInfluenceInterestQuadrant = (influence: string, interest: string) => {
@@ -192,6 +75,14 @@ export function StakeholderRegisterView() {
       default: return 'bg-muted text-muted-foreground';
     }
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full overflow-auto">
@@ -270,7 +161,7 @@ export function StakeholderRegisterView() {
                             <div>
                               <div className="flex items-center gap-2">
                                 <h3 className="font-semibold">{stakeholder.name}</h3>
-                                {stakeholder.isKeyStakeholder && (
+                                {stakeholder.is_key_stakeholder && (
                                   <Star className="h-4 w-4 text-warning fill-warning" />
                                 )}
                               </div>
@@ -299,13 +190,13 @@ export function StakeholderRegisterView() {
                         <div className="flex items-center justify-between text-xs">
                           <div className="flex items-center gap-2">
                             <span className="text-muted-foreground">Influence:</span>
-                            <Badge variant={stakeholder.influence === 'high' ? 'destructive' : stakeholder.influence === 'medium' ? 'warning' : 'secondary'}>
+                            <Badge variant={(stakeholder.influence || 'low') === 'high' ? 'destructive' : (stakeholder.influence || 'low') === 'medium' ? 'warning' : 'secondary'}>
                               {stakeholder.influence}
                             </Badge>
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="text-muted-foreground">Interest:</span>
-                            <Badge variant={stakeholder.interest === 'high' ? 'info' : stakeholder.interest === 'medium' ? 'warning' : 'secondary'}>
+                            <Badge variant={(stakeholder.interest || 'low') === 'high' ? 'info' : (stakeholder.interest || 'low') === 'medium' ? 'warning' : 'secondary'}>
                               {stakeholder.interest}
                             </Badge>
                           </div>
@@ -314,9 +205,9 @@ export function StakeholderRegisterView() {
                         <div className="mt-3 pt-3 border-t">
                           <span className={cn(
                             "text-xs px-2 py-1 rounded",
-                            getQuadrantColor(getInfluenceInterestQuadrant(stakeholder.influence, stakeholder.interest))
+                            getQuadrantColor(getInfluenceInterestQuadrant(stakeholder.influence || 'low', stakeholder.interest || 'low'))
                           )}>
-                            {getInfluenceInterestQuadrant(stakeholder.influence, stakeholder.interest)}
+                            {getInfluenceInterestQuadrant(stakeholder.influence || 'low', stakeholder.interest || 'low')}
                           </span>
                         </div>
                       </CardContent>
@@ -350,7 +241,7 @@ export function StakeholderRegisterView() {
                             </Avatar>
                             <div className="flex items-center gap-1">
                               <span className="font-medium">{stakeholder.name}</span>
-                              {stakeholder.isKeyStakeholder && (
+                              {stakeholder.is_key_stakeholder && (
                                 <Star className="h-3 w-3 text-warning fill-warning" />
                               )}
                             </div>
@@ -359,12 +250,12 @@ export function StakeholderRegisterView() {
                         <TableCell>{stakeholder.role}</TableCell>
                         <TableCell>{stakeholder.organization}</TableCell>
                         <TableCell>
-                          <Badge variant={stakeholder.influence === 'high' ? 'destructive' : stakeholder.influence === 'medium' ? 'warning' : 'secondary'}>
+                          <Badge variant={(stakeholder.influence || 'low') === 'high' ? 'destructive' : (stakeholder.influence || 'low') === 'medium' ? 'warning' : 'secondary'}>
                             {stakeholder.influence}
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={stakeholder.interest === 'high' ? 'info' : stakeholder.interest === 'medium' ? 'warning' : 'secondary'}>
+                          <Badge variant={(stakeholder.interest || 'low') === 'high' ? 'info' : (stakeholder.interest || 'low') === 'medium' ? 'warning' : 'secondary'}>
                             {stakeholder.interest}
                           </Badge>
                         </TableCell>
@@ -376,9 +267,9 @@ export function StakeholderRegisterView() {
                         <TableCell>
                           <span className={cn(
                             "text-xs px-2 py-1 rounded",
-                            getQuadrantColor(getInfluenceInterestQuadrant(stakeholder.influence, stakeholder.interest))
+                            getQuadrantColor(getInfluenceInterestQuadrant(stakeholder.influence || 'low', stakeholder.interest || 'low'))
                           )}>
-                            {getInfluenceInterestQuadrant(stakeholder.influence, stakeholder.interest)}
+                            {getInfluenceInterestQuadrant(stakeholder.influence || 'low', stakeholder.interest || 'low')}
                           </span>
                         </TableCell>
                       </TableRow>

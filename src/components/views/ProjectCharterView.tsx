@@ -14,69 +14,57 @@ import {
   Award,
   Bookmark,
   Link2,
+  Loader2,
+  Plus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { mockProject } from '@/data/mockData';
+import { useProjectContext } from '@/contexts/ProjectContext';
+import { useProjectCharter, ProjectCharter } from '@/hooks/useProjectCharter';
 
 export function ProjectCharterView() {
+  const { settings: project } = useProjectContext();
+  const { data: charter, isLoading } = useProjectCharter(project?.id);
   const [isEditing, setIsEditing] = useState(false);
 
-  const charterData = {
-    projectName: mockProject.name,
-    projectCode: mockProject.code,
-    version: '2.1',
-    status: 'Approved',
-    approvedDate: '2024-01-10',
-    vision: 'Transform our legacy infrastructure into a modern, scalable cloud-native platform that enables rapid innovation and reduces operational costs by 40%.',
-    mission: 'Execute a phased migration of all business-critical applications to the cloud while maintaining zero disruption to business operations.',
-    objectives: [
-      { id: 1, text: 'Migrate 100% of Tier-1 applications to cloud by Q4 2024', status: 'in-progress', progress: 65 },
-      { id: 2, text: 'Achieve 99.99% uptime SLA for all migrated systems', status: 'on-track', progress: 85 },
-      { id: 3, text: 'Reduce infrastructure costs by 40%', status: 'at-risk', progress: 30 },
-      { id: 4, text: 'Implement zero-trust security architecture', status: 'completed', progress: 100 },
-    ],
-    successCriteria: [
-      'All critical business applications successfully migrated',
-      'No unplanned downtime during migration',
-      'Security audit passed with no critical findings',
-      'User satisfaction score above 85%',
-      'Cost reduction targets achieved within 12 months post-migration',
-    ],
-    assumptions: [
-      'Cloud provider will maintain committed SLAs',
-      'Adequate skilled resources available for migration',
-      'Legacy system documentation is accurate and complete',
-      'Business stakeholders available for UAT cycles',
-    ],
-    constraints: [
-      'Budget ceiling of $2.5M',
-      'Must complete before regulatory deadline Q1 2025',
-      'No impact to month-end financial processing',
-      'Maintain PCI-DSS compliance throughout',
-    ],
-    approvalAuthorities: [
-      { role: 'Executive Sponsor', name: 'James Morrison', authority: 'Final project approval', approved: true },
-      { role: 'Project Sponsor', name: 'Sarah Mitchell', authority: 'Budget & scope changes up to $50K', approved: true },
-      { role: 'Technical Lead', name: 'Mike Johnson', authority: 'Technical decisions & architecture', approved: true },
-      { role: 'Business Owner', name: 'Lisa Chen', authority: 'Business requirements sign-off', approved: false },
-    ],
-    milestones: [
-      { name: 'Discovery Complete', date: '2024-03-15', status: 'completed' },
-      { name: 'Architecture Approved', date: '2024-05-31', status: 'completed' },
-      { name: 'Wave 1 Migration', date: '2024-08-31', status: 'in-progress' },
-      { name: 'Wave 2 Migration', date: '2024-10-15', status: 'upcoming' },
-      { name: 'Go-Live', date: '2024-12-15', status: 'upcoming' },
-    ],
-    budget: {
-      approved: 2500000,
-      allocated: 2300000,
-      spent: mockProject.spent,
-    },
-  };
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!charter) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full p-12 text-center">
+        <div className="p-4 rounded-full bg-primary/10 mb-4">
+          <FileText className="h-12 w-12 text-primary" />
+        </div>
+        <h2 className="text-2xl font-bold mb-2">No Project Charter</h2>
+        <p className="text-muted-foreground mb-6 max-w-md">
+          A project charter has not been created for this project yet.
+          Create one to define the project's vision, objectives, and authority.
+        </p>
+        <Button>
+          <Plus className="h-4 w-4 mr-2" />
+          Create Project Charter
+        </Button>
+      </div>
+    );
+  }
+
+  // Helper to cast JSONB fields
+  const objectives = (charter.objectives as any[]) || [];
+  const successCriteria = (charter.success_criteria as any[]) || [];
+  const assumptions = (charter.assumptions as any[]) || [];
+  const constraints = (charter.constraints as any[]) || [];
+  const approvalAuthorities = (charter.approval_authorities as any[]) || [];
+  const milestones = (charter.milestones as any[]) || [];
+  const budget = (charter.budget_summary as any) || {};
 
   return (
     <div className="flex flex-col h-full overflow-auto">
@@ -88,13 +76,15 @@ export function ProjectCharterView() {
               <FileText className="h-8 w-8 text-primary" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold">{charterData.projectName}</h1>
-              <p className="text-muted-foreground">Project Charter • Version {charterData.version}</p>
+              <h1 className="text-2xl font-bold">{project.name}</h1>
+              <p className="text-muted-foreground">Project Charter • Version {charter.version}</p>
               <div className="flex items-center gap-2 mt-2">
-                <Badge variant="success">{charterData.status}</Badge>
-                <span className="text-xs text-muted-foreground">
-                  Approved: {new Date(charterData.approvedDate).toLocaleDateString()}
-                </span>
+                <Badge variant={charter.status === 'Approved' ? 'success' : 'warning'}>{charter.status}</Badge>
+                {charter.approved_at && (
+                  <span className="text-xs text-muted-foreground">
+                    Approved: {new Date(charter.approved_at).toLocaleDateString()}
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -133,7 +123,7 @@ export function ProjectCharterView() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm leading-relaxed">{charterData.vision}</p>
+                    <p className="text-sm leading-relaxed">{charter.vision || 'No vision statement defined.'}</p>
                   </CardContent>
                 </Card>
 
@@ -145,7 +135,7 @@ export function ProjectCharterView() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <p className="text-sm leading-relaxed">{charterData.mission}</p>
+                    <p className="text-sm leading-relaxed">{charter.mission || 'No mission statement defined.'}</p>
                   </CardContent>
                 </Card>
               </div>
@@ -160,12 +150,15 @@ export function ProjectCharterView() {
                 </CardHeader>
                 <CardContent>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {charterData.successCriteria.map((criteria, i) => (
+                    {successCriteria.map((criteria, i) => (
                       <div key={i} className="flex items-start gap-2 p-3 rounded-lg bg-muted/30">
                         <CheckCircle2 className="h-4 w-4 text-success mt-0.5" />
                         <span className="text-sm">{criteria}</span>
                       </div>
                     ))}
+                    {successCriteria.length === 0 && (
+                      <p className="text-sm text-muted-foreground italic">No success criteria defined.</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -181,15 +174,15 @@ export function ProjectCharterView() {
                 <CardContent>
                   <div className="grid grid-cols-3 gap-4">
                     <div className="text-center p-4 rounded-lg bg-muted/30">
-                      <div className="text-2xl font-bold">${(charterData.budget.approved / 1000000).toFixed(1)}M</div>
+                      <div className="text-2xl font-bold">${((budget.approved || 0) / 1000000).toFixed(1)}M</div>
                       <p className="text-xs text-muted-foreground">Approved Budget</p>
                     </div>
                     <div className="text-center p-4 rounded-lg bg-muted/30">
-                      <div className="text-2xl font-bold">${(charterData.budget.allocated / 1000000).toFixed(1)}M</div>
+                      <div className="text-2xl font-bold">${((budget.allocated || 0) / 1000000).toFixed(1)}M</div>
                       <p className="text-xs text-muted-foreground">Allocated</p>
                     </div>
                     <div className="text-center p-4 rounded-lg bg-muted/30">
-                      <div className="text-2xl font-bold text-primary">${(charterData.budget.spent / 1000000).toFixed(2)}M</div>
+                      <div className="text-2xl font-bold text-primary">${((budget.spent || 0) / 1000000).toFixed(2)}M</div>
                       <p className="text-xs text-muted-foreground">Spent to Date</p>
                     </div>
                   </div>
@@ -205,16 +198,16 @@ export function ProjectCharterView() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {charterData.objectives.map((obj) => (
-                      <div key={obj.id} className="p-4 rounded-lg border bg-muted/20">
+                    {objectives.map((obj, idx) => (
+                      <div key={obj.id || idx} className="p-4 rounded-lg border bg-muted/20">
                         <div className="flex items-start justify-between mb-3">
                           <p className="text-sm font-medium">{obj.text}</p>
                           <Badge variant={
                             obj.status === 'completed' ? 'success' :
-                            obj.status === 'at-risk' ? 'destructive' :
-                            obj.status === 'on-track' ? 'info' : 'warning'
+                              obj.status === 'at-risk' ? 'destructive' :
+                                obj.status === 'on-track' ? 'info' : 'warning'
                           }>
-                            {obj.status}
+                            {obj.status || 'pending'}
                           </Badge>
                         </div>
                         <div className="flex items-center gap-3">
@@ -223,15 +216,18 @@ export function ProjectCharterView() {
                               className={cn(
                                 "h-full rounded-full transition-all",
                                 obj.status === 'completed' ? 'bg-success' :
-                                obj.status === 'at-risk' ? 'bg-destructive' : 'bg-primary'
+                                  obj.status === 'at-risk' ? 'bg-destructive' : 'bg-primary'
                               )}
-                              style={{ width: `${obj.progress}%` }}
+                              style={{ width: `${obj.progress || 0}%` }}
                             />
                           </div>
-                          <span className="text-sm font-medium">{obj.progress}%</span>
+                          <span className="text-sm font-medium">{obj.progress || 0}%</span>
                         </div>
                       </div>
                     ))}
+                    {objectives.length === 0 && (
+                      <p className="text-sm text-muted-foreground italic">No objectives defined.</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -249,12 +245,15 @@ export function ProjectCharterView() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      {charterData.assumptions.map((assumption, i) => (
+                      {assumptions.map((assumption, i) => (
                         <div key={i} className="flex items-start gap-2 p-3 rounded-lg bg-info/10 border border-info/20">
                           <span className="text-info font-medium">A{i + 1}.</span>
                           <span className="text-sm">{assumption}</span>
                         </div>
                       ))}
+                      {assumptions.length === 0 && (
+                        <p className="text-sm text-muted-foreground italic">No assumptions defined.</p>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -269,12 +268,15 @@ export function ProjectCharterView() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      {charterData.constraints.map((constraint, i) => (
+                      {constraints.map((constraint, i) => (
                         <div key={i} className="flex items-start gap-2 p-3 rounded-lg bg-warning/10 border border-warning/20">
                           <span className="text-warning font-medium">C{i + 1}.</span>
                           <span className="text-sm">{constraint}</span>
                         </div>
                       ))}
+                      {constraints.length === 0 && (
+                        <p className="text-sm text-muted-foreground italic">No constraints defined.</p>
+                      )}
                     </div>
                   </CardContent>
                 </Card>
@@ -292,12 +294,12 @@ export function ProjectCharterView() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-3">
-                    {charterData.approvalAuthorities.map((auth, i) => (
+                    {approvalAuthorities.map((auth, i) => (
                       <div key={i} className="flex items-center justify-between p-4 rounded-lg border bg-muted/20">
                         <div className="flex items-center gap-4">
                           <Avatar className="h-10 w-10">
                             <AvatarFallback>
-                              {auth.name.split(' ').map(n => n[0]).join('')}
+                              {auth.name.split(' ').map((n: string) => n[0]).join('')}
                             </AvatarFallback>
                           </Avatar>
                           <div>
@@ -318,6 +320,9 @@ export function ProjectCharterView() {
                         </div>
                       </div>
                     ))}
+                    {approvalAuthorities.length === 0 && (
+                      <p className="text-sm text-muted-foreground italic">No approval authorities defined.</p>
+                    )}
                   </div>
                 </CardContent>
               </Card>
@@ -335,32 +340,35 @@ export function ProjectCharterView() {
                   <div className="relative">
                     <div className="absolute left-4 top-0 bottom-0 w-0.5 bg-border" />
                     <div className="space-y-4">
-                      {charterData.milestones.map((milestone, i) => (
+                      {milestones.map((milestone, i) => (
                         <div key={i} className="relative flex items-center gap-4 pl-10">
                           <div className={cn(
                             "absolute left-2.5 h-4 w-4 rounded-full border-2",
                             milestone.status === 'completed' ? 'bg-success border-success' :
-                            milestone.status === 'in-progress' ? 'bg-primary border-primary animate-pulse' :
-                            'bg-muted border-border'
+                              milestone.status === 'in-progress' ? 'bg-primary border-primary animate-pulse' :
+                                'bg-muted border-border'
                           )} />
                           <div className="flex-1 p-3 rounded-lg border bg-muted/20">
                             <div className="flex items-center justify-between">
                               <span className="font-medium">{milestone.name}</span>
                               <Badge variant={
                                 milestone.status === 'completed' ? 'success' :
-                                milestone.status === 'in-progress' ? 'info' : 'secondary'
+                                  milestone.status === 'in-progress' ? 'info' : 'secondary'
                               }>
-                                {milestone.status}
+                                {milestone.status || 'upcoming'}
                               </Badge>
                             </div>
                             <p className="text-sm text-muted-foreground mt-1">
-                              {new Date(milestone.date).toLocaleDateString('en-US', { 
-                                year: 'numeric', month: 'long', day: 'numeric' 
+                              {new Date(milestone.date).toLocaleDateString('en-US', {
+                                year: 'numeric', month: 'long', day: 'numeric'
                               })}
                             </p>
                           </div>
                         </div>
                       ))}
+                      {milestones.length === 0 && (
+                        <p className="text-sm text-muted-foreground italic">No milestones defined.</p>
+                      )}
                     </div>
                   </div>
                 </CardContent>

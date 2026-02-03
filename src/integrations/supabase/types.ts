@@ -425,6 +425,71 @@ export type Database = {
           },
         ]
       }
+      change_requests: {
+        Row: {
+          approved_by_id: string | null
+          approved_by_name: string | null
+          created_at: string
+          description: string | null
+          id: string
+          impact_area: string | null
+          priority: Database["public"]["Enums"]["priority_level"] | null
+          project_id: string | null
+          requested_at: string | null
+          requested_by_id: string | null
+          requested_by_name: string | null
+          resolved_at: string | null
+          status: Database["public"]["Enums"]["cr_status"] | null
+          title: string
+          type: string | null
+          updated_at: string
+        }
+        Insert: {
+          approved_by_id?: string | null
+          approved_by_name?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          impact_area?: string | null
+          priority?: Database["public"]["Enums"]["priority_level"] | null
+          project_id?: string | null
+          requested_at?: string | null
+          requested_by_id?: string | null
+          requested_by_name?: string | null
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["cr_status"] | null
+          title: string
+          type?: string | null
+          updated_at?: string
+        }
+        Update: {
+          approved_by_id?: string | null
+          approved_by_name?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          impact_area?: string | null
+          priority?: Database["public"]["Enums"]["priority_level"] | null
+          project_id?: string | null
+          requested_at?: string | null
+          requested_by_id?: string | null
+          requested_by_name?: string | null
+          resolved_at?: string | null
+          status?: Database["public"]["Enums"]["cr_status"] | null
+          title?: string
+          type?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "change_requests_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       decisions: {
         Row: {
           alternatives: Json | null
@@ -1237,6 +1302,56 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "issues_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      lessons_learned: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by_id: string | null
+          created_by_name: string | null
+          description: string | null
+          id: string
+          impact: Database["public"]["Enums"]["stakeholder_level"] | null
+          project_id: string | null
+          recommendation: string | null
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by_id?: string | null
+          created_by_name?: string | null
+          description?: string | null
+          id?: string
+          impact?: Database["public"]["Enums"]["stakeholder_level"] | null
+          project_id?: string | null
+          recommendation?: string | null
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by_id?: string | null
+          created_by_name?: string | null
+          description?: string | null
+          id?: string
+          impact?: Database["public"]["Enums"]["stakeholder_level"] | null
+          project_id?: string | null
+          recommendation?: string | null
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "lessons_learned_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
@@ -2361,6 +2476,77 @@ export type Database = {
           },
         ]
       }
+      portfolios: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          owner_id: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          owner_id?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          owner_id?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      programs: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          owner_id: string | null
+          portfolio_id: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          owner_id?: string | null
+          portfolio_id?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          owner_id?: string | null
+          portfolio_id?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "programs_portfolio_id_fkey"
+            columns: ["portfolio_id"]
+            isOneToOne: false
+            referencedRelation: "portfolios"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       presentations: {
         Row: {
           created_at: string
@@ -2599,6 +2785,8 @@ export type Database = {
           methodology: string
           name: string
           owner_id: string | null
+          portfolio_id: string | null
+          program_id: string | null
           progress: number | null
           spent: number | null
           start_date: string
@@ -2616,6 +2804,8 @@ export type Database = {
           methodology?: string
           name: string
           owner_id?: string | null
+          portfolio_id?: string | null
+          program_id?: string | null
           progress?: number | null
           spent?: number | null
           start_date?: string
@@ -2633,13 +2823,30 @@ export type Database = {
           methodology?: string
           name?: string
           owner_id?: string | null
+          portfolio_id?: string | null
+          program_id?: string | null
           progress?: number | null
           spent?: number | null
           start_date?: string
           status?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "projects_portfolio_id_fkey"
+            columns: ["portfolio_id"]
+            isOneToOne: false
+            referencedRelation: "portfolios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_program_id_fkey"
+            columns: ["program_id"]
+            isOneToOne: false
+            referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       resource_assignments: {
         Row: {
@@ -2838,6 +3045,47 @@ export type Database = {
           },
         ]
       }
+      scenarios: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          data: Json | null
+          description: string | null
+          id: string
+          name: string
+          project_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          data?: Json | null
+          description?: string | null
+          id?: string
+          name: string
+          project_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          data?: Json | null
+          description?: string | null
+          id?: string
+          name?: string
+          project_id?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scenarios_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       spreadsheet_sheets: {
         Row: {
           column_widths: Json | null
@@ -2933,6 +3181,71 @@ export type Database = {
             columns: ["task_id"]
             isOneToOne: false
             referencedRelation: "tasks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      stakeholders: {
+        Row: {
+          category: string | null
+          communication_preference: string | null
+          created_at: string
+          email: string | null
+          engagement: Database["public"]["Enums"]["stakeholder_engagement"] | null
+          id: string
+          influence: Database["public"]["Enums"]["stakeholder_level"] | null
+          interest: Database["public"]["Enums"]["stakeholder_level"] | null
+          is_key_stakeholder: boolean | null
+          key_interests: Json | null
+          name: string
+          organization: string | null
+          phone: string | null
+          project_id: string | null
+          role: string | null
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          communication_preference?: string | null
+          created_at?: string
+          email?: string | null
+          engagement?: Database["public"]["Enums"]["stakeholder_engagement"] | null
+          id?: string
+          influence?: Database["public"]["Enums"]["stakeholder_level"] | null
+          interest?: Database["public"]["Enums"]["stakeholder_level"] | null
+          is_key_stakeholder?: boolean | null
+          key_interests?: Json | null
+          name: string
+          organization?: string | null
+          phone?: string | null
+          project_id?: string | null
+          role?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          communication_preference?: string | null
+          created_at?: string
+          email?: string | null
+          engagement?: Database["public"]["Enums"]["stakeholder_engagement"] | null
+          id?: string
+          influence?: Database["public"]["Enums"]["stakeholder_level"] | null
+          interest?: Database["public"]["Enums"]["stakeholder_level"] | null
+          is_key_stakeholder?: boolean | null
+          key_interests?: Json | null
+          name?: string
+          organization?: string | null
+          phone?: string | null
+          project_id?: string | null
+          role?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stakeholders_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
             referencedColumns: ["id"]
           },
         ]
@@ -3119,8 +3432,8 @@ export type Database = {
           calendar_id?: string | null
           constraint_date?: string | null
           constraint_type?:
-            | Database["public"]["Enums"]["constraint_type"]
-            | null
+          | Database["public"]["Enums"]["constraint_type"]
+          | null
           cost?: number | null
           created_at?: string
           deadline?: string | null
@@ -3132,8 +3445,8 @@ export type Database = {
           expanded?: boolean | null
           fixed_cost?: number | null
           fixed_cost_accrual?:
-            | Database["public"]["Enums"]["cost_accrual"]
-            | null
+          | Database["public"]["Enums"]["cost_accrual"]
+          | null
           free_slack?: number | null
           id?: string
           is_critical?: boolean | null
@@ -3164,8 +3477,8 @@ export type Database = {
           calendar_id?: string | null
           constraint_date?: string | null
           constraint_type?:
-            | Database["public"]["Enums"]["constraint_type"]
-            | null
+          | Database["public"]["Enums"]["constraint_type"]
+          | null
           cost?: number | null
           created_at?: string
           deadline?: string | null
@@ -3177,8 +3490,8 @@ export type Database = {
           expanded?: boolean | null
           fixed_cost?: number | null
           fixed_cost_accrual?:
-            | Database["public"]["Enums"]["cost_accrual"]
-            | null
+          | Database["public"]["Enums"]["cost_accrual"]
+          | null
           free_slack?: number | null
           id?: string
           is_critical?: boolean | null
@@ -3219,6 +3532,47 @@ export type Database = {
           },
           {
             foreignKeyName: "tasks_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      traceability_matrix: {
+        Row: {
+          created_at: string
+          id: string
+          project_id: string | null
+          relationship_type: string | null
+          source_id: string
+          source_type: string
+          target_id: string
+          target_type: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          project_id?: string | null
+          relationship_type?: string | null
+          source_id: string
+          source_type: string
+          target_id: string
+          target_type: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          project_id?: string | null
+          relationship_type?: string | null
+          source_id?: string
+          source_type?: string
+          target_id?: string
+          target_type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "traceability_matrix_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
@@ -3303,48 +3657,51 @@ export type Database = {
     }
     Enums: {
       action_status:
-        | "pending"
-        | "in-progress"
-        | "completed"
-        | "deferred"
-        | "cancelled"
+      | "pending"
+      | "in-progress"
+      | "completed"
+      | "deferred"
+      | "cancelled"
       backlog_status: "todo" | "in-progress" | "review" | "done"
+      cr_status: "pending" | "analyzing" | "approved" | "rejected" | "implemented"
       constraint_type:
-        | "ASAP"
-        | "ALAP"
-        | "MSO"
-        | "MFO"
-        | "SNET"
-        | "SNLT"
-        | "FNET"
-        | "FNLT"
+      | "ASAP"
+      | "ALAP"
+      | "MSO"
+      | "MFO"
+      | "SNET"
+      | "SNLT"
+      | "FNET"
+      | "FNLT"
       cost_accrual: "start" | "end" | "prorated"
       dependency_type: "FS" | "SS" | "FF" | "SF"
       issue_severity: "minor" | "moderate" | "major" | "critical"
       issue_status:
-        | "open"
-        | "investigating"
-        | "in-progress"
-        | "resolved"
-        | "closed"
+      | "open"
+      | "investigating"
+      | "in-progress"
+      | "resolved"
+      | "closed"
       item_type: "epic" | "story" | "task" | "bug" | "tech-debt"
       priority_level: "critical" | "high" | "medium" | "low"
       project_role: "admin" | "pm" | "lead" | "developer" | "analyst" | "viewer"
       resource_type: "work" | "material" | "cost"
       risk_level: "low" | "medium" | "high" | "critical"
       risk_status:
-        | "identified"
-        | "analyzing"
-        | "mitigating"
-        | "closed"
-        | "accepted"
+      | "identified"
+      | "analyzing"
+      | "mitigating"
+      | "closed"
+      | "accepted"
       sprint_status: "planning" | "active" | "completed" | "cancelled"
+      stakeholder_engagement: "supportive" | "neutral" | "resistant"
+      stakeholder_level: "low" | "medium" | "high" | "critical"
       task_status:
-        | "not-started"
-        | "in-progress"
-        | "completed"
-        | "blocked"
-        | "on-hold"
+      | "not-started"
+      | "in-progress"
+      | "completed"
+      | "blocked"
+      | "on-hold"
       task_type: "task" | "milestone" | "summary"
     }
     CompositeTypes: {
@@ -3359,116 +3716,116 @@ type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
-    : never = never,
+  ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
+    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+    DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
       Row: infer R
     }
-    ? R
-    : never
+  ? R
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
-        Row: infer R
-      }
-      ? R
-      : never
-    : never
+    DefaultSchema["Views"])
+  ? (DefaultSchema["Tables"] &
+    DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+      Row: infer R
+    }
+  ? R
+  : never
+  : never
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Tables"]
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Insert: infer I
-    }
-    ? I
-    : never
+    Insert: infer I
+  }
+  ? I
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Insert: infer I
-      }
-      ? I
-      : never
-    : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    Insert: infer I
+  }
+  ? I
+  : never
+  : never
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Tables"]
+  | { schema: keyof DatabaseWithoutInternals },
   TableName extends DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+  : never = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
-      Update: infer U
-    }
-    ? U
-    : never
+    Update: infer U
+  }
+  ? U
+  : never
   : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
-        Update: infer U
-      }
-      ? U
-      : never
-    : never
+  ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+    Update: infer U
+  }
+  ? U
+  : never
+  : never
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["Enums"]
+  | { schema: keyof DatabaseWithoutInternals },
   EnumName extends DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+  : never = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
   : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
-    : never
+  ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
+  | keyof DefaultSchema["CompositeTypes"]
+  | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
-    : never = never,
+  ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+  : never = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
   ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
   : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
-    : never
+  ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  : never
 
 export const Constants = {
   public: {
@@ -3481,6 +3838,7 @@ export const Constants = {
         "cancelled",
       ],
       backlog_status: ["todo", "in-progress", "review", "done"],
+      cr_status: ["pending", "analyzing", "approved", "rejected", "implemented"],
       constraint_type: [
         "ASAP",
         "ALAP",
@@ -3514,6 +3872,8 @@ export const Constants = {
         "accepted",
       ],
       sprint_status: ["planning", "active", "completed", "cancelled"],
+      stakeholder_engagement: ["supportive", "neutral", "resistant"],
+      stakeholder_level: ["low", "medium", "high", "critical"],
       task_status: [
         "not-started",
         "in-progress",

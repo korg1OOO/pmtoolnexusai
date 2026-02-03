@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import {
   Play, Plus, Copy, Trash2, ChevronRight,
   Calendar, DollarSign, AlertCircle, CheckCircle2,
@@ -27,6 +28,7 @@ import { cn } from '@/lib/utils';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { useScenarios } from '@/hooks/useScenarios';
 import { mockScenarios } from '@/data/aiMockData';
+import { aiService } from '@/services/aiService';
 
 interface Adjustment {
   id: string;
@@ -77,6 +79,7 @@ export function ScenariosView() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [newScenarioName, setNewScenarioName] = useState('');
   const [newScenarioDesc, setNewScenarioDesc] = useState('');
+  const [isSimulating, setIsSimulating] = useState(false);
 
   // Sync state with fetched data
   useEffect(() => {
@@ -145,6 +148,30 @@ export function ScenariosView() {
     };
     setScenarios([...scenarios, duplicated]);
     setSelectedScenario(duplicated);
+  };
+
+  const handleRunSimulation = async () => {
+    if (!selectedScenario || !settings?.id) return;
+
+    setIsSimulating(true);
+    toast.info('AI is simulating scenario impacts...');
+
+    const { data, error } = await aiService.simulateScenarios(settings.id, selectedScenario.adjustments);
+    setIsSimulating(false);
+
+    if (error) {
+      toast.error('Simulation failed: ' + error);
+    } else {
+      const updatedScenario = {
+        ...selectedScenario,
+        impact: data,
+        modifiedDate: new Date().toISOString().split('T')[0]
+      };
+
+      setScenarios(scenarios.map(s => s.id === selectedScenario.id ? updatedScenario : s));
+      setSelectedScenario(updatedScenario);
+      toast.success('Simulation complete!');
+    }
   };
 
   return (
@@ -245,11 +272,22 @@ export function ScenariosView() {
                   <Button variant="outline" size="sm" onClick={() => handleDuplicateScenario(selectedScenario)} className="gap-2">
                     <Copy className="h-4 w-4" /> Duplicate
                   </Button>
-                  {selectedScenario.status !== 'active' && (
-                    <Button variant="outline" size="sm" className="text-destructive hover:bg-destructive/10 gap-2 border-destructive/20">
-                      <Trash2 className="h-4 w-4" /> Delete
-                    </Button>
-                  )}
+                  <Button variant="outline" size="sm" className="text-destructive hover:bg-destructive/10 gap-2 border-destructive/20">
+                    <Trash2 className="h-4 w-4" /> Delete
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="gap-2 bg-primary hover:bg-primary/90"
+                    disabled={isSimulating || selectedScenario.adjustments.length === 0}
+                    onClick={handleRunSimulation}
+                  >
+                    {isSimulating ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-4 w-4" />
+                    )}
+                    Run Simulation
+                  </Button>
                 </div>
               </div>
 

@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import {
   Brain,
@@ -24,13 +25,15 @@ import {
   BarChart3,
   HelpCircle,
   Zap,
+  Loader2,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
-import { useProjectContext } from '@/context/ProjectContext';
+import { useProjectContext } from '@/contexts/ProjectContext';
+import { aiService } from '@/services/aiService';
 import { useTasks, useDependencies } from '@/hooks/useTasks';
 import { useLessonsLearned } from '@/hooks/useLessonsLearned';
 import { useCalculateCriticalPath } from '@/hooks/useCriticalPath';
@@ -60,6 +63,8 @@ export function PMCoachSidebar({ isOpen, onToggle, currentView = 'gantt' }: PMCo
   const { scheduleProject, applySchedule, isApplying } = useAutoScheduler();
 
   const [activeTab, setActiveTab] = useState<'insights' | 'patterns' | 'learning'>('insights');
+  const [isAsking, setIsAsking] = useState(false);
+  const [chatHistory, setChatHistory] = useState<{ role: string, content: string }[]>([]);
 
   const projectCalendar = useMemo(() => calendars.find(c => c.is_default) || null, [calendars]);
 
@@ -109,7 +114,7 @@ export function PMCoachSidebar({ isOpen, onToggle, currentView = 'gantt' }: PMCo
       })
       .map(t => ({
         constraintId: t.id,
-        severity: 'warning' as const,
+        severity: 'warning' as 'warning' | 'critical',
         description: `Constraint violation for "${t.name}": Expected ${t.constraint_type} ${t.constraint_date}`,
         suggestedResolution: 'Run auto-scheduler to re-align dates.',
       }));
@@ -141,6 +146,30 @@ export function PMCoachSidebar({ isOpen, onToggle, currentView = 'gantt' }: PMCo
       if (results.length > 0) {
         applySchedule({ results, projectId });
       }
+    }
+  };
+
+  const handleAskCoach = async (query?: string) => {
+    const message = query || "Tell me how the project is doing given the current view.";
+    if (!projectId) return;
+
+    setIsAsking(true);
+    toast.info('AI PM Coach is thinking...');
+
+    // Add user message to history
+    const userMsg = { role: 'user', content: message };
+    const updatedHistory = [...chatHistory, userMsg];
+    setChatHistory(updatedHistory);
+
+    const { data, error } = await aiService.chat(projectId, message, chatHistory);
+    setIsAsking(false);
+
+    if (error) {
+      toast.error('Coach failed: ' + error);
+    } else {
+      // Add assistant message to history
+      setChatHistory([...updatedHistory, { role: 'assistant', content: data?.reply || data || 'No response from coach' }]);
+      toast.success('Coach responded');
     }
   };
 
@@ -475,11 +504,41 @@ export function PMCoachSidebar({ isOpen, onToggle, currentView = 'gantt' }: PMCo
 
             {/* Footer */}
             <div className="p-4 border-t bg-muted/20">
-              <Button className="w-full gap-2" size="sm">
-                <MessageSquare className="h-4 w-4" />
+              <Button
+                className="w-full gap-2"
+                size="sm"
+                onClick={() => handleAskCoach()}
+                disabled={isAsking}
+              >
+                {isAsking ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageSquare className="h-4 w-4" />}
                 Ask AI Coach
               </Button>
             </div>
+
+            {/* Simple Chat Overlay if history exists */}
+            {chatHistory.length > 0 && (
+              <div className="absolute bottom-16 left-4 right-4 max-h-96 bg-card border rounded-lg shadow-2xl flex flex-col z-50 overflow-hidden">
+                <div className="p-2 border-b bg-muted/50 flex items-center justify-between">
+                  <span className="text-xs font-semibold">Coach Conversation</span>
+                  <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => setChatHistory([])}>
+                    <XCircle className="h-3 w-3" />
+                  </Button>
+                </div>
+                <ScrollArea className="flex-1 p-3">
+                  <div className="space-y-3">
+                    {chatHistory.map((msg, i) => (
+                      <div key={i} className={cn(
+                        "p-2 rounded-lg text-xs leading-relaxed",
+                        msg.role === 'user' ? "bg-primary/5 ml-4" : "bg-muted mr-4"
+                      )}>
+                        <p className="font-semibold mb-1 capitalize">{msg.role}:</p>
+                        <p>{msg.content}</p>
+                      </div>
+                    ))}
+                  </div>
+                </ScrollArea>
+              </div>
+            )}
           </motion.aside>
         )}
       </AnimatePresence>

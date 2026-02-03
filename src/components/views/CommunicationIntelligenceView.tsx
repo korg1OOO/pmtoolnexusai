@@ -29,12 +29,13 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Textarea } from '@/components/ui/textarea';
-import { mockExecutiveStatus } from '@/data/aiMockData';
 import { CommunicationAISidebar } from '@/components/ai/CommunicationAISidebar';
 import type { CommunicationIngest, ExecutiveStatus, CommunicationAnalysis } from '@/types/ai-pm';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { useEmailAccounts } from '@/hooks/useEmailAccounts';
 import { useEmails, Email } from '@/hooks/useEmails';
+import { aiService } from '@/services/aiService';
+import { mockExecutiveStatus } from '@/data/aiMockData';
 
 export function CommunicationIntelligenceView() {
   const { settings: project } = useProjectContext();
@@ -77,8 +78,12 @@ export function CommunicationIntelligenceView() {
   const [statusAudience, setStatusAudience] = useState<string>('steering-committee');
   const [emailContent, setEmailContent] = useState('');
   const [showAISidebar, setShowAISidebar] = useState(true);
+  const [isGeneratingStatus, setIsGeneratingStatus] = useState(false);
+  const [isAnalyzingContent, setIsAnalyzingContent] = useState(false);
+  const [executiveStatus, setExecutiveStatus] = useState<ExecutiveStatus | null>(null);
 
-  const executiveStatus = mockExecutiveStatus;
+  // Use mock only if no status generated yet
+  const displayStatus = executiveStatus || (mockExecutiveStatus as unknown as ExecutiveStatus);
 
   const handleSync = async () => {
     if (accountIds.length > 0) {
@@ -229,7 +234,9 @@ export function CommunicationIntelligenceView() {
                           {getTypeIcon(selectedComm.type)}
                           Communication Details
                         </CardTitle>
-                        <Badge variant="outline">{Math.round(selectedComm.aiAnalysis.confidence * 100)}% confidence</Badge>
+                        {selectedComm.aiAnalysis.confidence > 0 && (
+                          <Badge variant="outline">{Math.round(selectedComm.aiAnalysis.confidence * 100)}% confidence</Badge>
+                        )}
                       </div>
                     </CardHeader>
                     <CardContent>
@@ -543,15 +550,33 @@ export function CommunicationIntelligenceView() {
                           <option value="board">Board</option>
                           <option value="team">Team</option>
                         </select>
-                        <Button
-                          size="sm"
-                          onClick={() => {
-                            toast.success(`Executive Status generated for ${statusAudience}`);
+                        <button
+                          className={cn(
+                            "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm font-medium transition-colors",
+                            "bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+                          )}
+                          onClick={async () => {
+                            if (!project?.id) return;
+                            setIsGeneratingStatus(true);
+                            const { data, error } = await aiService.generateExecutiveStatus(project.id, statusAudience);
+                            setIsGeneratingStatus(false);
+
+                            if (error) {
+                              toast.error('Failed to generate status: ' + error);
+                            } else {
+                              setExecutiveStatus(data);
+                              toast.success(`Executive Status generated for ${statusAudience}`);
+                            }
                           }}
+                          disabled={isGeneratingStatus || !project?.id}
                         >
-                          <RefreshCw className="h-4 w-4 mr-1" />
+                          {isGeneratingStatus ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <RefreshCw className="h-4 w-4" />
+                          )}
                           Generate
-                        </Button>
+                        </button>
                       </div>
                     </div>
                     <CardDescription>
@@ -561,7 +586,7 @@ export function CommunicationIntelligenceView() {
                   <CardContent>
                     {/* RAG Status */}
                     <div className="grid grid-cols-6 gap-2 mb-6">
-                      {Object.entries(executiveStatus.ragStatus).map(([key, value]) => (
+                      {Object.entries(displayStatus.ragStatus).map(([key, value]) => (
                         <div key={key} className="text-center">
                           <div className={cn('w-8 h-8 rounded-full mx-auto mb-1', getRAGColor(value))} />
                           <span className="text-xs capitalize">{key}</span>
@@ -571,7 +596,7 @@ export function CommunicationIntelligenceView() {
 
                     {/* Status Sections */}
                     <div className="space-y-4">
-                      {executiveStatus.sections.map((section, i) => (
+                      {displayStatus.sections.map((section, i) => (
                         <div key={i} className="p-4 rounded-lg border">
                           <h4 className="font-medium mb-2">{section.title}</h4>
                           <p className="text-sm text-muted-foreground mb-3">{section.content}</p>
@@ -580,10 +605,10 @@ export function CommunicationIntelligenceView() {
                             <div className="mb-2">
                               <span className="text-xs font-medium text-success">Highlights:</span>
                               <ul className="mt-1 space-y-1">
-                                {section.highlights.map((h, j) => (
+                                {section.highlights.map((h: any, j: number) => (
                                   <li key={j} className="text-xs flex items-center gap-1">
                                     <CheckCircle2 className="h-3 w-3 text-success" />
-                                    {h}
+                                    {String(h)}
                                   </li>
                                 ))}
                               </ul>
@@ -594,10 +619,10 @@ export function CommunicationIntelligenceView() {
                             <div>
                               <span className="text-xs font-medium text-warning">Concerns:</span>
                               <ul className="mt-1 space-y-1">
-                                {section.concerns.map((c, j) => (
+                                {section.concerns.map((c: any, j: number) => (
                                   <li key={j} className="text-xs flex items-center gap-1">
                                     <AlertTriangle className="h-3 w-3 text-warning" />
-                                    {c}
+                                    {String(c)}
                                   </li>
                                 ))}
                               </ul>
@@ -616,7 +641,7 @@ export function CommunicationIntelligenceView() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      {executiveStatus.keyChanges.map((change, i) => (
+                      {displayStatus.keyChanges.map((change, i) => (
                         <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
                           <Badge variant={
                             change.category === 'decision' ? 'info' :
@@ -645,7 +670,7 @@ export function CommunicationIntelligenceView() {
                   </CardHeader>
                   <CardContent>
                     <div className="space-y-2">
-                      {executiveStatus.recommendations.map((rec, i) => (
+                      {displayStatus.recommendations.map((rec, i) => (
                         <div key={i} className="flex items-start gap-2 p-2 rounded bg-primary/5 border border-primary/20">
                           <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                           <p className="text-sm">{rec}</p>
@@ -700,16 +725,34 @@ export function CommunicationIntelligenceView() {
                     />
                     <Button
                       className="w-full gap-2"
-                      onClick={() => {
+                      disabled={isAnalyzingContent || !emailContent.trim()}
+                      onClick={async () => {
                         if (!emailContent.trim()) {
                           toast.error('Please paste content to analyze');
                           return;
                         }
-                        toast.success('Analyzing communication content...');
-                        // Logic for extraction would go here
+
+                        setIsAnalyzingContent(true);
+                        toast.info('Analyzing communication content...');
+
+                        const { data, error } = await aiService.processCommunication(project?.id || 'manual', emailContent);
+                        setIsAnalyzingContent(false);
+
+                        if (error) {
+                          toast.error('Analysis failed: ' + error);
+                        } else {
+                          // For now, we just toast the success and keep the data in mind
+                          // In a full implementation, we'd update the UI to show this specific analysis
+                          toast.success('Analysis complete! Sentiment: ' + data.sentiment);
+                          console.log('Analysis result:', data);
+                        }
                       }}
                     >
-                      <Sparkles className="h-4 w-4" />
+                      {isAnalyzingContent ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Sparkles className="h-4 w-4" />
+                      )}
                       Analyze Content
                     </Button>
                   </CardContent>

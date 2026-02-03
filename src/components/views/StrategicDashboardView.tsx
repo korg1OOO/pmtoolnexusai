@@ -15,12 +15,16 @@ import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { StrategicAISidebar } from '@/components/ai/StrategicAISidebar';
 import { mockProjectContext, mockAIRiskDiscovery, mockValueEngineering } from '@/data/aiMockData';
+import { aiService } from '@/services/aiService';
+import { AIRiskDiscovery, ProjectContext, ValueEngineering } from '@/types/ai-pm';
 
 export function StrategicDashboardView() {
   const { settings } = useProjectContext();
   const { data: insights, isLoading } = useStrategicInsights(settings.id);
   const [selectedOption, setSelectedOption] = useState<string | null>('OPT-001');
   const [showAISidebar, setShowAISidebar] = useState(true);
+  const [isAnalyzingRisks, setIsAnalyzingRisks] = useState(false);
+  const [discoveredRisks, setDiscoveredRisks] = useState<AIRiskDiscovery | null>(null);
 
   if (isLoading) {
     return (
@@ -30,9 +34,9 @@ export function StrategicDashboardView() {
     );
   }
 
-  const context = insights?.context || mockProjectContext;
-  const riskDiscovery = insights?.riskDiscovery || mockAIRiskDiscovery;
-  const valueEngineering = insights?.valueEngineering || mockValueEngineering;
+  const context = (insights as any)?.context || (mockProjectContext as unknown as ProjectContext);
+  const riskDiscovery = discoveredRisks || (insights as any)?.riskDiscovery || (mockAIRiskDiscovery as unknown as AIRiskDiscovery);
+  const valueEngineering = (insights as any)?.valueEngineering || (mockValueEngineering as unknown as ValueEngineering);
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -272,10 +276,38 @@ export function StrategicDashboardView() {
               <div className="md:col-span-2 space-y-4">
                 <Card>
                   <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Sparkles className="h-5 w-5 text-primary" />
-                      Discovered Risks
-                    </CardTitle>
+                    <div className="flex items-center justify-between">
+                      <CardTitle className="flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-primary" />
+                        Discovered Risks
+                      </CardTitle>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="gap-2"
+                        disabled={isAnalyzingRisks || !settings?.id}
+                        onClick={async () => {
+                          if (!settings?.id) return;
+                          setIsAnalyzingRisks(true);
+                          toast.info('AI is performing project risk discovery...');
+                          const { data, error } = await aiService.analyzeRisks(settings.id);
+                          setIsAnalyzingRisks(false);
+                          if (error) {
+                            toast.error('Risk discovery failed: ' + error);
+                          } else {
+                            setDiscoveredRisks(data);
+                            toast.success('AI Risk Discovery complete');
+                          }
+                        }}
+                      >
+                        {isAnalyzingRisks ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <Sparkles className="h-4 w-4" />
+                        )}
+                        Re-discover Risks
+                      </Button>
+                    </div>
                     <CardDescription>AI-identified risks based on pattern matching and historical project data</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">

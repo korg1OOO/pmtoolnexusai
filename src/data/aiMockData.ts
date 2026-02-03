@@ -898,3 +898,79 @@ export const mockValueEngineering: ValueEngineering = {
     ],
   },
 };
+
+export const mockScenarios: any[] = [
+  {
+    id: 'S-001',
+    name: 'Baseline Schedule',
+    description: 'Current approved project schedule and budget',
+    status: 'active',
+    createdDate: '2024-01-15',
+    modifiedDate: '2024-08-01',
+    author: 'System',
+    adjustments: [],
+    impact: {
+      endDateChange: 0,
+      costChange: 0,
+      riskLevel: 'low',
+      criticalPathAffected: false,
+      tasksAffected: 0
+    }
+  },
+  {
+    id: 'S-002',
+    name: 'Fast-Track Migration',
+    description: 'Compress Wave 1 & 2 timelines with additional senior resources',
+    status: 'draft',
+    createdDate: '2024-08-10',
+    modifiedDate: '2024-08-12',
+    author: 'Mike Johnson',
+    adjustments: [
+      {
+        id: 'ADJ-001',
+        type: 'acceleration',
+        taskId: 'T-011',
+        taskName: 'Wave 1 Migration',
+        field: 'duration',
+        originalValue: 45,
+        newValue: 30,
+        unit: 'days'
+      }
+    ],
+    impact: {
+      endDateChange: -15,
+      costChange: 75000,
+      riskLevel: 'medium',
+      criticalPathAffected: true,
+      tasksAffected: 4
+    }
+  },
+  {
+    id: 'S-003',
+    name: 'Resource Constrained',
+    description: 'Scenario where key architect availability is reduced to 50%',
+    status: 'draft',
+    createdDate: '2024-08-11',
+    modifiedDate: '2024-08-11',
+    author: 'Sarah Mitchell',
+    adjustments: [
+      {
+        id: 'ADJ-002',
+        type: 'resource',
+        taskId: 'T-010',
+        taskName: 'System Architecture',
+        field: 'resource_allocation',
+        originalValue: 100,
+        newValue: 50,
+        unit: '%'
+      }
+    ],
+    impact: {
+      endDateChange: 20,
+      costChange: -15000,
+      riskLevel: 'high',
+      criticalPathAffected: true,
+      tasksAffected: 8
+    }
+  }
+];

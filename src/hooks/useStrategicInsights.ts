@@ -14,7 +14,7 @@ export const useStrategicInsights = (projectId?: string) => {
     return useQuery({
         queryKey: ["strategic_insights", projectId],
         queryFn: async () => {
-            if (!projectId) return [];
+            if (!projectId) return { context: null, riskDiscovery: null, valueEngineering: null };
             const { data, error } = await supabase
                 .from("strategic_insights")
                 .select("*")
@@ -24,9 +24,9 @@ export const useStrategicInsights = (projectId?: string) => {
 
             // Organize data by type for easier consumption
             const organizedData = {
-                context: data.find(i => i.type === 'context')?.data,
-                riskDiscovery: data.find(i => i.type === 'risk-discovery')?.data,
-                valueEngineering: data.find(i => i.type === 'value-engineering')?.data,
+                context: data?.find(i => i.type === 'context')?.data || null,
+                riskDiscovery: data?.find(i => i.type === 'risk-discovery')?.data || null,
+                valueEngineering: data?.find(i => i.type === 'value-engineering')?.data || null,
             };
 
             return organizedData;

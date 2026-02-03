@@ -268,6 +268,49 @@ export function ProgramTimelineView() {
           <Button variant="outline" size="sm">
             <Maximize2 className="h-4 w-4" />
           </Button>
+          <Button size="sm" onClick={async () => {
+            try {
+              const programName = prompt('Enter program name:');
+              if (!programName || programName.trim() === '') return;
+
+              const portfolioName = prompt('Assign to portfolio? (leave empty to skip)');
+
+              console.log('[Program] Creating program...');
+              const { supabase } = await import('@/integrations/supabase/client');
+              const { toast } = await import('sonner');
+
+              let portfolioId = null;
+              if (portfolioName && portfolioName.trim()) {
+                const { data: portfolioData } = await supabase
+                  .from('portfolios')
+                  .select('id')
+                  .ilike('name', portfolioName.trim())
+                  .single();
+                portfolioId = portfolioData?.id || null;
+              }
+
+              const { data, error } = await supabase.from('programs').insert({
+                name: programName.trim(),
+                description: `Program created on ${new Date().toLocaleDateString()}`,
+                status: 'active',
+                portfolio_id: portfolioId
+              }).select().single();
+
+              if (error) {
+                console.error('[Program] Creation error:', error);
+                toast.error('Failed to create program', { description: error.message });
+                return;
+              }
+
+              console.log('[Program] Created successfully:', data);
+              toast.success('Program created successfully!');
+              setTimeout(() => window.location.reload(), 1000);
+            } catch (err: any) {
+              console.error('[Program] Unexpected error:', err);
+              const { toast } = await import('sonner');
+              toast.error('Unexpected error', { description: err.message });
+            }
+          }}><Plus className="h-4 w-4 mr-2" />Create Program</Button>
         </div>
       </div>
 

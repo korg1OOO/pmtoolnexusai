@@ -114,7 +114,32 @@ export function PortfolioView() {
         <Briefcase className="h-12 w-12 mx-auto text-muted-foreground opacity-20 mb-4" />
         <h3 className="text-lg font-medium text-foreground">No Portfolios Found</h3>
         <p className="text-muted-foreground">Create a portfolio to start managing programs and projects.</p>
-        <Button className="mt-4"><Plus className="h-4 w-4 mr-2" />Create Portfolio</Button>
+        <Button className="mt-4" onClick={async () => {
+          try {
+            console.log('[Portfolio] Creating portfolio...');
+            const { supabase } = await import('@/integrations/supabase/client');
+            const { toast } = await import('sonner');
+
+            const { data, error } = await supabase.from('portfolios').insert({
+              name: 'Default Portfolio',
+              description: 'Your first portfolio'
+            }).select().single();
+
+            if (error) {
+              console.error('[Portfolio] Creation error:', error);
+              toast.error('Failed to create portfolio', { description: error.message });
+              return;
+            }
+
+            console.log('[Portfolio] Created successfully:', data);
+            toast.success('Portfolio created successfully!');
+            setTimeout(() => window.location.reload(), 1000);
+          } catch (err: any) {
+            console.error('[Portfolio] Unexpected error:', err);
+            const { toast } = await import('sonner');
+            toast.error('Unexpected error', { description: err.message });
+          }
+        }}><Plus className="h-4 w-4 mr-2" />Create Portfolio</Button>
       </div>
     );
   }
@@ -131,6 +156,37 @@ export function PortfolioView() {
           <Button variant="outline" size="sm"><Filter className="h-4 w-4 mr-2" />Filter</Button>
           <Button variant="outline" size="sm"><Download className="h-4 w-4 mr-2" />Export</Button>
           <Button variant="outline" size="sm" onClick={() => window.location.reload()}><RefreshCw className="h-4 w-4 mr-2" />Refresh</Button>
+          <Button size="sm" onClick={async () => {
+            try {
+              const portfolioName = prompt('Enter portfolio name:');
+              if (!portfolioName || portfolioName.trim() === '') {
+                return; // User cancelled or entered empty name
+              }
+
+              console.log('[Portfolio] Creating portfolio...');
+              const { supabase } = await import('@/integrations/supabase/client');
+              const { toast } = await import('sonner');
+
+              const { data, error } = await supabase.from('portfolios').insert({
+                name: portfolioName.trim(),
+                description: `Portfolio created on ${new Date().toLocaleDateString()}`
+              }).select().single();
+
+              if (error) {
+                console.error('[Portfolio] Creation error:', error);
+                toast.error('Failed to create portfolio', { description: error.message });
+                return;
+              }
+
+              console.log('[Portfolio] Created successfully:', data);
+              toast.success('Portfolio created successfully!');
+              setTimeout(() => window.location.reload(), 1000);
+            } catch (err: any) {
+              console.error('[Portfolio] Unexpected error:', err);
+              const { toast } = await import('sonner');
+              toast.error('Unexpected error', { description: err.message });
+            }
+          }}><Plus className="h-4 w-4 mr-2" />Create Portfolio</Button>
         </div>
       </div>
 

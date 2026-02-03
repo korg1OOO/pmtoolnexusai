@@ -46,6 +46,7 @@ import { DecisionsView } from '@/components/views/DecisionsView';
 import { TeamChatView } from '@/components/views/TeamChatView';
 import { TeamManagementView } from '@/components/views/TeamManagementView';
 import { TrackingView } from '@/components/views/TrackingView';
+import { TimelinePlannerTab } from '@/components/views/TimelinePlannerTab';
 import { ProjectProvider, useProjectContext } from '@/contexts/ProjectContext';
 import { EmptyProjectState } from '@/components/EmptyProjectState';
 
@@ -134,6 +135,7 @@ const AppContent = () => {
       case 'admin-templates': return <TemplatesAdminView />;
       case 'settings': return <UserSettingsView />;
       case 'create-project': return <ProjectCreationView />;
+      case 'timeline-planner': return <TimelinePlannerTab />;
       default: return <DashboardHub />;
     }
   };

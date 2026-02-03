@@ -15,18 +15,16 @@ interface AppShellProps {
 }
 
 export function AppShell({ children, activeView, onViewChange }: AppShellProps) {
-  const [showAISidebar, setShowAISidebar] = useState(false);
-  const [showMiniChat, setShowMiniChat] = useState(false);
-  const { settings } = useProjectContext();
+  const { settings, activeGlobalPanel, setActiveGlobalPanel } = useProjectContext();
 
-  // Handle chat button click - toggle mini chat instead of navigating
+  // Handle chat button click - toggle global panel instead of local state
   const handleOpenChat = () => {
-    setShowMiniChat(true);
+    setActiveGlobalPanel(activeGlobalPanel === 'chat' ? null : 'chat');
   };
 
   // Expand mini chat to full view
   const handleExpandChat = () => {
-    setShowMiniChat(false);
+    setActiveGlobalPanel(null);
     onViewChange('team-chat');
   };
 
@@ -40,7 +38,7 @@ export function AppShell({ children, activeView, onViewChange }: AppShellProps) 
           />
           <div className={cn(
             "flex flex-1 flex-col min-w-0 transition-all duration-300",
-            showAISidebar && "mr-96"
+            (activeGlobalPanel === 'ai' || activeGlobalPanel === 'settings') && "mr-96"
           )}>
             <TopBar
               projectName={settings.name}
@@ -52,17 +50,17 @@ export function AppShell({ children, activeView, onViewChange }: AppShellProps) 
               {children}
             </main>
           </div>
-          <GlobalAISidebar 
-            isOpen={showAISidebar} 
-            onToggle={() => setShowAISidebar(!showAISidebar)}
+          <GlobalAISidebar
+            isOpen={activeGlobalPanel === 'ai'}
+            onToggle={() => setActiveGlobalPanel(activeGlobalPanel === 'ai' ? null : 'ai')}
             projectId={settings.id}
             projectName={settings.name}
             currentView={activeView}
           />
           {/* Mini Chat Window */}
           <MiniChatWindow
-            isOpen={showMiniChat}
-            onClose={() => setShowMiniChat(false)}
+            isOpen={activeGlobalPanel === 'chat'}
+            onClose={() => setActiveGlobalPanel(null)}
             onExpand={handleExpandChat}
           />
         </div>

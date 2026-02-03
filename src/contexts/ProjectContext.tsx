@@ -42,6 +42,8 @@ export interface ProjectSettings {
   defaultView: string;
 }
 
+export type GlobalPanelType = 'chat' | 'ai' | 'settings' | null;
+
 interface ProjectContextType {
   settings: ProjectSettings;
   updateMethodology: (methodology: Methodology) => void;
@@ -51,6 +53,8 @@ interface ProjectContextType {
   getDefaultModules: (methodology: Methodology) => ModuleVisibility;
   loading: boolean;
   selectProject: (projectId: string) => void;
+  activeGlobalPanel: GlobalPanelType;
+  setActiveGlobalPanel: (panel: GlobalPanelType) => void;
 }
 
 const defaultModules: ModuleVisibility = {
@@ -128,6 +132,7 @@ const SELECTED_PROJECT_KEY = 'projectoye-selected-project';
 export function ProjectProvider({ children }: { children: ReactNode }) {
   const [settings, setSettings] = useState<ProjectSettings>(defaultSettings);
   const [loading, setLoading] = useState(true);
+  const [activeGlobalPanel, setActiveGlobalPanel] = useState<GlobalPanelType>(null);
 
   // Load selected project on mount
   useEffect(() => {
@@ -276,6 +281,8 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
         getDefaultModules,
         loading,
         selectProject,
+        activeGlobalPanel,
+        setActiveGlobalPanel,
       }}
     >
       {children}

@@ -63,12 +63,13 @@ const navItems: NavItem[] = [
     children: [
       { id: 'project-charter', label: 'Project Charter', icon: BookOpen, alwaysShow: true },
       { id: 'stakeholders', label: 'Stakeholder Register', icon: Users, alwaysShow: true },
+      { id: 'timeline-planner', label: 'Timeline Planner', icon: Clock, alwaysShow: true },
       { id: 'create-project', label: 'Create Project', icon: FolderKanban, alwaysShow: true },
     ]
   },
-  { 
-    id: 'planning', 
-    label: 'Planning', 
+  {
+    id: 'planning',
+    label: 'Planning',
     icon: CalendarDays,
     children: [
       { id: 'project-plan', label: 'Project Plan', icon: ListTodo, moduleKey: 'projectPlan' },
@@ -175,7 +176,7 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
   }, [activeItem]);
 
   // Only expand the group containing the active page
-  const [expandedGroups, setExpandedGroups] = useState<string[]>(() => 
+  const [expandedGroups, setExpandedGroups] = useState<string[]>(() =>
     findParentGroup ? [findParentGroup] : []
   );
 
@@ -230,8 +231,8 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
         className={cn(
           'flex items-center w-full gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
           'text-sidebar-foreground hover:text-sidebar-accent-foreground',
-          isActive 
-            ? 'bg-sidebar-accent text-sidebar-accent-foreground' 
+          isActive
+            ? 'bg-sidebar-accent text-sidebar-accent-foreground'
             : 'hover:bg-sidebar-accent/50',
           depth > 0 && 'ml-4 pl-6 border-l border-sidebar-border'
         )}

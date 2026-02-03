@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Database Diagnostic Tool</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      padding: 20px;
+      color: #333;
+    }
+    
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    
+    h1 {
+      color: #667eea;
+      margin-bottom: 10px;
+      font-size: 2rem;
+    }
+    
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+    }
+    
+    .test-item {
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 8px;
+      border-left: 4px solid #ccc;
+      background: #f8f9fa;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    
+    .test-item.success {
+      border-left-color: #10b981;
+      background: #f0fdf4;
+    }
+    
+    .test-item.error {
+      border-left-color: #ef4444;
+      background: #fef2f2;
+    }
+    
+    .test-item.warning {
+      border-left-color: #f59e0b;
+      background: #fffbeb;
+    }
+    
+    .test-item.pending {
+      border-left-color: #3b82f6;
+      background: #eff6ff;
+    }
+    
+    .icon {
+      font-size: 24px;
+      min-width: 24px;
+    }
+    
+    .test-content {
+      flex: 1;
+    }
+    
+    .test-name {
+      font-weight: 600;
+      margin-bottom: 5px;
+    }
+    
+    .test-detail {
+      font-size: 0.9rem;
+      color: #666;
+    }
+    
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    }
+    
+    button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    
+    .loading {
+      display: inline-block;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    .results {
+      margin-top: 20px;
+    }
+    
+    .summary {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    
+    code {
+      background: #1e293b;
+      color: #10b981;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: 'Monaco', 'Courier New', monospace;
+      font-size: 0.9em;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h1>🔍 Database Diagnostic Tool</h1>
+      <p class="subtitle">This tool will check your Supabase database connection and identify what's causing the blank page.</p>
+      
+      <button id="runTests" onclick="runDiagnostics()">Run Diagnostics</button>
+      
+      <div class="results" id="results"></div>
+    </div>
+  </div>
+
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+    
+    const SUPABASE_URL = 'https://wmnfuwmjauslyqqucmov.supabase.co';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndtbmZ1d21qYXVzbHlxcXVjbW92Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njk2MDQ4OTksImV4cCI6MjA4NTE4MDg5OX0.i9OhkSX57NJTeMom2gUNEFd5MAUK5oAgks1Ulre_vGY';
+    
+    const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+    
+    window.runDiagnostics = async function() {
+      const resultsDiv = document.getElementById('results');
+      const button = document.getElementById('runTests');
+      
+      button.disabled = true;
+      resultsDiv.innerHTML = '';
+      
+      const tests = [
+        { name: 'Connection Test', test: testConnection },
+        { name: 'Projects Table', test: () => testTable('projects') },
+        { name: 'Project Tasks Table', test: () => testTable('project_tasks') },
+        { name: 'Meetings Table', test: () => testTable('meetings') },
+        { name: 'Sample Project Exists', test: testProjectExists },
+      ];
+      
+      for (const { name, test } of tests) {
+        await runTest(name, test, resultsDiv);
+      }
+      
+      // Summary
+      const summary = document.createElement('div');
+      summary.className = 'summary';
+      summary.innerHTML = `
+        <h3>📋 Diagnosis Summary</h3>
+        <p>Diagnostics complete! Check the results above for details.</p>
+        <p><strong>Next Steps:</strong></p>
+        <ul>
+          <li>If tables are missing: Database migrations need to be applied</li>
+          <li>If no projects exist: Create a project using the app or seed script</li>
+          <li>Check browser console (F12) for JavaScript errors</li>
+        </ul>
+      `;
+      resultsDiv.appendChild(summary);
+      
+      button.disabled = false;
+    };
+    
+    async function runTest(name, testFn, container) {
+      const item = document.createElement('div');
+      item.className = 'test-item pending';
+      item.innerHTML = `
+        <div class="icon loading">⏳</div>
+        <div class="test-content">
+          <div class="test-name">${name}</div>
+          <div class="test-detail">Running...</div>
+        </div>
+      `;
+      container.appendChild(item);
+      
+      try {
+        const result = await testFn();
+        
+        if (result.success) {
+          item.className = 'test-item success';
+          item.innerHTML = `
+            <div class="icon">✅</div>
+            <div class="test-content">
+              <div class="test-name">${name}</div>
+              <div class="test-detail">${result.message}</div>
+            </div>
+          `;
+        } else {
+          item.className = 'test-item error';
+          item.innerHTML = `
+            <div class="icon">❌</div>
+            <div class="test-content">
+              <div class="test-name">${name}</div>
+              <div class="test-detail">${result.message}</div>
+            </div>
+          `;
+        }
+      } catch (error) {
+        item.className = 'test-item error';
+        item.innerHTML = `
+          <div class="icon">❌</div>
+          <div class="test-content">
+            <div class="test-name">${name}</div>
+            <div class="test-detail">Error: ${error.message}</div>
+          </div>
+        `;
+      }
+    }
+    
+    async function testConnection() {
+      const { data, error } = await supabase.from('_test').select('*').limit(1);
+      
+      if (error && error.code === '42P01') {
+        // Table doesn't exist, but connection works
+        return { success: true, message: 'Connected to Supabase successfully' };
+      } else if (error) {
+        return { success: false, message: `Connection error: ${error.message}` };
+      }
+      return { success: true, message: 'Connected to Supabase successfully' };
+    }
+    
+    async function testTable(tableName) {
+      const { data, error, count } = await supabase
+        .from(tableName)
+        .select('*', { count: 'exact', head: true });
+      
+      if (error) {
+        if (error.code === '42P01') {
+          return { 
+            success: false, 
+            message: `Table <code>${tableName}</code> does not exist. Migrations need to be applied.` 
+          };
+        }
+        return { 
+          success: false, 
+          message: `Error accessing table: ${error.message}` 
+        };
+      }
+      
+      return { 
+        success: true, 
+        message: `Table <code>${tableName}</code> exists with ${count || 0} rows` 
+      };
+    }
+    
+    async function testProjectExists() {
+      const { data, error } = await supabase
+        .from('projects')
+        .select('id, name, code')
+        .limit(1);
+      
+      if (error) {
+        return { 
+          success: false, 
+          message: `Cannot check projects: ${error.message}` 
+        };
+      }
+      
+      if (!data || data.length === 0) {
+        return { 
+          success: false, 
+          message: 'No projects found in database. The app needs at least one project.' 
+        };
+      }
+      
+      return { 
+        success: true, 
+        message: `Found project: <code>${data[0].name}</code> (${data[0].code})` 
+      };
+    }
+  </script>
+</body>
+</html>

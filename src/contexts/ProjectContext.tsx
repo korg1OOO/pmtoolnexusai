@@ -132,13 +132,15 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
   // Load selected project on mount
   useEffect(() => {
     const loadProject = async () => {
+      console.log('[ProjectContext] Starting to load project...');
       try {
         // First try to get stored project ID
         const storedProjectId = localStorage.getItem(SELECTED_PROJECT_KEY);
-        
+        console.log('[ProjectContext] Stored project ID:', storedProjectId);
+
         // Get the first available project or the stored one
         let query = supabase.from('projects').select('*');
-        
+
         if (storedProjectId) {
           // Try to load the stored project first
           const { data: storedProject } = await supabase
@@ -146,7 +148,9 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
             .select('*')
             .eq('id', storedProjectId)
             .maybeSingle();
-          
+
+          console.log('[ProjectContext] Stored project query result:', storedProject);
+
           if (storedProject) {
             const methodology = (storedProject.methodology || 'hybrid') as Methodology;
             setSettings({
@@ -158,13 +162,15 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
               defaultView: methodology === 'waterfall' ? 'gantt' : methodology === 'scrum' ? 'sprints' : 'dashboard',
             });
             setLoading(false);
+            console.log('[ProjectContext] Loaded stored project successfully');
             return;
           }
         }
-        
+
         // Fall back to first available project
         const { data: projects } = await query.order('created_at', { ascending: false }).limit(1);
-        
+        console.log('[ProjectContext] First available project query result:', projects);
+
         if (projects && projects.length > 0) {
           const project = projects[0];
           const methodology = (project.methodology || 'hybrid') as Methodology;
@@ -177,11 +183,15 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
             modules: getDefaultModulesInternal(methodology),
             defaultView: methodology === 'waterfall' ? 'gantt' : methodology === 'scrum' ? 'sprints' : 'dashboard',
           });
+          console.log('[ProjectContext] Loaded first available project');
+        } else {
+          console.log('[ProjectContext] No projects found in database');
         }
       } catch (error) {
-        console.error('Failed to load project:', error);
+        console.error('[ProjectContext] Failed to load project:', error);
       } finally {
         setLoading(false);
+        console.log('[ProjectContext] Loading complete');
       }
     };
 
@@ -208,7 +218,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
         .single();
 
       if (error) throw error;
-      
+
       const methodology = (project.methodology || 'hybrid') as Methodology;
       localStorage.setItem(SELECTED_PROJECT_KEY, project.id);
       setSettings({

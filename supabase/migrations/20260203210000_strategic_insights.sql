@@ -24,4 +24,5 @@ CREATE POLICY "Users can delete strategic_insights" ON public.strategic_insights
 CREATE TRIGGER update_strategic_insights_updated_at
     BEFORE UPDATE ON public.strategic_insights
     FOR EACH ROW
-    EXECUTE FUNCTION update_updated_at_column();
+    EXECUTE FUNCTION public.handle_updated_at();
+

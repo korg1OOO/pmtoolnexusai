@@ -46,12 +46,14 @@ import { DecisionsView } from '@/components/views/DecisionsView';
 import { TeamChatView } from '@/components/views/TeamChatView';
 import { TeamManagementView } from '@/components/views/TeamManagementView';
 import { TrackingView } from '@/components/views/TrackingView';
-import { ProjectProvider } from '@/contexts/ProjectContext';
+import { ProjectProvider, useProjectContext } from '@/contexts/ProjectContext';
+import { EmptyProjectState } from '@/components/EmptyProjectState';
 
-const Index = () => {
+const AppContent = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const viewFromUrl = searchParams.get('view') || 'dashboard';
   const [activeView, setActiveView] = useState(viewFromUrl);
+  const { settings, loading } = useProjectContext();
 
   // Sync URL when view changes
   const handleViewChange = useCallback((view: string) => {
@@ -66,6 +68,28 @@ const Index = () => {
       setActiveView(urlView);
     }
   }, [searchParams]);
+
+  // Show loading state
+  if (loading) {
+    console.log('[Index] Rendering loading state');
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show empty state if no project is loaded
+  if (!settings.id) {
+    console.log('[Index] No project found, showing empty state. Settings:', settings);
+    return <EmptyProjectState onCreateProject={() => handleViewChange('create-project')} />;
+  }
+
+  console.log('[Index] Project loaded, rendering views. Settings:', settings);
+
 
   const renderView = () => {
     switch (activeView) {
@@ -115,12 +139,19 @@ const Index = () => {
   };
 
   return (
+    <AppShell activeView={activeView} onViewChange={handleViewChange}>
+      {renderView()}
+    </AppShell>
+  );
+};
+
+const Index = () => {
+  return (
     <ProjectProvider>
-      <AppShell activeView={activeView} onViewChange={handleViewChange}>
-        {renderView()}
-      </AppShell>
+      <AppContent />
     </ProjectProvider>
   );
 };
 
 export default Index;
+

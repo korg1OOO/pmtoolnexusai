@@ -1,5 +1,6 @@
-import React, { useState, useRef, useCallback, useReducer, useMemo } from "react";
+import React, { useState, useRef, useCallback, useReducer, useMemo, useEffect } from "react";
 import { useProjectContext } from "@/contexts/ProjectContext";
+import { timelineService } from "@/services/timelineService";
 import {
     Plus, Trash2, Lock, Unlock, Users, MapPin,
     MessageSquare, ChevronDown, ChevronRight, Copy,
@@ -198,8 +199,7 @@ const initialComments: Comment[] = [
 ];
 
 // ─── UTILITY ─────────────────────────────────────────────────────────────────
-let idCounter = 100;
-const uid = () => `id_${++idCounter}`;
+const uid = () => crypto.randomUUID();
 
 function Avatar({ initials, color = "#3b82f6", size = 28 }: { initials: string, color?: string, size?: number }) {
     return (
@@ -286,10 +286,10 @@ const DependencyArrows = ({ swimlanes, monthWidth, rowHeight, columnWidth }: { s
 type TimelineAction =
     | { type: 'MOVE_ACTIVITY', swimId: string, actId: string, newStart: number }
     | { type: 'RESIZE_ACTIVITY', swimId: string, actId: string, newDur: number }
-    | { type: 'ADD_ACTIVITY', swimId: string }
+    | { type: 'ADD_ACTIVITY', swimId: string, id: string }
     | { type: 'DELETE_ACTIVITY', swimId: string, actId: string }
     | { type: 'RENAME_ACTIVITY', swimId: string, actId: string, name: string }
-    | { type: 'ADD_SWIMLANE' }
+    | { type: 'ADD_SWIMLANE', id: string }
     | { type: 'DELETE_SWIMLANE', id: string }
     | { type: 'RENAME_SWIMLANE', id: string, label: string }
     | { type: 'TOGGLE_COLLAPSE', id: string }
@@ -303,7 +303,10 @@ type TimelineAction =
     | { type: 'DELETE_MILESTONE', id: string }
     | { type: 'UPDATE_SWIMLANE', id: string, updates: Partial<Swimlane> }
     | { type: 'UNDO' }
-    | { type: 'REDO' };
+    | { type: 'UPDATE_SWIMLANE', id: string, updates: Partial<Swimlane> }
+    | { type: 'UNDO' }
+    | { type: 'REDO' }
+    | { type: 'SET_INITIAL_DATA', swimlanes: Swimlane[], milestones: Milestone[] };
 
 interface TimelineState {
     swimlanes: Swimlane[];
@@ -432,7 +435,7 @@ const timelineReducer = (state: TimelineState, action: TimelineAction): Timeline
         case 'ADD_ACTIVITY': {
             const newSwimlanes = state.swimlanes.map(s => s.id === action.swimId ? {
                 ...s, activities: [...s.activities, {
-                    id: uid(), name: "New Activity", start: 0, duration: 2,
+                    id: action.id, name: "New Activity", start: 0, duration: 2,
                     color: COLORS[s.activities.length % COLORS.length], tags: [], notes: ""
                 }]
             } : s);
@@ -456,8 +459,8 @@ const timelineReducer = (state: TimelineState, action: TimelineAction): Timeline
         }
         case 'ADD_SWIMLANE': {
             const newSwimlanes = [...state.swimlanes, {
-                id: uid(), label: "New Phase", color: SWIMLANE_COLORS[state.swimlanes.length % SWIMLANE_COLORS.length],
-                collapsed: false, activities: []
+                id: action.id, label: "New Phase", color: SWIMLANE_COLORS[state.swimlanes.length % SWIMLANE_COLORS.length],
+                collapsed: false, activities: [], order_index: state.swimlanes.length
             }];
             return saveToHistory(newSwimlanes);
         }
@@ -554,6 +557,15 @@ const timelineReducer = (state: TimelineState, action: TimelineAction): Timeline
             }
             return state;
         }
+        case 'SET_INITIAL_DATA': {
+            return {
+                ...state,
+                swimlanes: action.swimlanes,
+                milestones: action.milestones,
+                history: [{ swimlanes: action.swimlanes, milestones: action.milestones }],
+                historyIndex: 0
+            };
+        }
         default:
             return state;
     }
@@ -566,23 +578,81 @@ const timelineReducer = (state: TimelineState, action: TimelineAction): Timeline
 export function TimelinePlannerTab() {
     const { settings, activeGlobalPanel, setActiveGlobalPanel } = useProjectContext();
     const [state, dispatch] = React.useReducer(timelineReducer, {
-        swimlanes: initialSwimlanes,
-        milestones: [
-            { id: "m1", name: "Design Review", monthIndex: 3, color: "#f59e0b" },
-            { id: "m2", name: "UAT Start", monthIndex: 8, color: "#10b981" }
-        ],
+        swimlanes: [], // Initial empty state, will load from DB
+        milestones: [],
         months: initialMonths,
         goLiveIndex: 10,
         lockMode: 'golive',
-        history: [{
-            swimlanes: initialSwimlanes,
-            milestones: [
-                { id: "m1", name: "Design Review", monthIndex: 3, color: "#f59e0b" },
-                { id: "m2", name: "UAT Start", monthIndex: 8, color: "#10b981" }
-            ]
-        }],
+        history: [],
         historyIndex: 0
     });
+
+    // Load Data from Backend
+    useEffect(() => {
+        if (!settings.id) return;
+
+        const loadData = async () => {
+            try {
+                const data = await timelineService.fetchTimelineData(settings.id!);
+
+                // Map Backend Types to Frontend Types
+                const mappedSwimlanes: Swimlane[] = data.swimlanes.map(s => ({
+                    id: s.id,
+                    label: s.label,
+                    color: s.color,
+                    collapsed: s.collapsed,
+                    targetDuration: s.target_duration,
+                    siteIds: s.site_ids,
+                    teamIds: s.team_ids,
+                    activities: s.activities?.map(a => ({
+                        id: a.id,
+                        name: a.name,
+                        start: a.start_month,
+                        duration: a.duration_months,
+                        color: a.color,
+                        tags: a.tags || [],
+                        notes: a.notes || "",
+                        resourcesPerMonth: a.resources_per_month ? Object.fromEntries(Object.entries(a.resources_per_month).map(([k, v]) => [parseInt(k), v])) : undefined,
+                        dependencies: a.dependencies?.map(d => ({
+                            targetId: d.target_activity_id, // Note: Assuming we want target here. Dependencies logic might need review if it expects 'targetId' to be the predecessor or successor. 
+                            // In fetchTimelineData we fetched dependencies where source_activity_id IN (activities). 
+                            // So 'source' is THIS activity, 'target' is the other one.
+                            // BUT wait, standard dependency: A -> B (A is predecessor, B is successor).
+                            // Usually stored as (pred, succ). 
+                            // Frontend `dependencies` on `Activity` usually means "Predecessors" (things that must finish before this starts)?
+                            // Let's check DependencyArrows: `act.dependencies.map(dep => ... pred = actMap.get(dep.targetId))`
+                            // It looks like `targetId` in the array refers to the PREDECESSOR. 
+                            // So if A has dependency {targetId: B}, it means B -> A.
+                            // So in DB: source_activity_id = A, target_activity_id = B.
+                            type: d.type as "FS" | "SS"
+                        }))
+                    })) || []
+                }));
+
+                const mappedMilestones: Milestone[] = data.milestones.map(m => ({
+                    id: m.id,
+                    name: m.name,
+                    monthIndex: m.month_index,
+                    color: m.color
+                }));
+
+                if (mappedSwimlanes.length === 0) {
+                    // Fallback to initial seed if DB is empty (optional, or just show empty)
+                    // For now, let's keep it empty or user can "Seed" via a button? 
+                    // The user request said "Replace all mock data", so we should respect DB even if empty.
+                    // But to avoid a blank screen confusion, maybe we insert default swimlanes if empty?
+                    // Let's stick to DB truth.
+                }
+
+                dispatch({ type: 'SET_INITIAL_DATA', swimlanes: mappedSwimlanes, milestones: mappedMilestones });
+            } catch (error) {
+                console.error("Failed to load timeline data", error);
+                toast({ title: "Error loading timeline", description: "Could not fetch project data.", variant: "destructive" });
+            }
+        };
+
+        loadData();
+    }, [settings.id]);
 
     const { swimlanes, milestones, months, goLiveIndex, lockMode } = state;
 
@@ -598,6 +668,7 @@ export function TimelinePlannerTab() {
     const [newMonthLabel, setNewMonthLabel] = useState("");
     const [selectedActivityIds, setSelectedActivityIds] = useState<string[]>([]);
     const [isResourceEditing, setIsResourceEditing] = useState(false);
+    const [sidebarContext, setSidebarContext] = useState<'phase' | 'swimlane' | null>(null);
     const [editingResourceCell, setEditingResourceCell] = useState<{ swimId: string, actId: string, monthIndex: number } | null>(null);
     const [addingMonth, setAddingMonth] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
@@ -902,15 +973,66 @@ export function TimelinePlannerTab() {
     }, [state.swimlanes, months, criticalPathIds, sites, teams]);
 
     // ── Handlers ──
-    const toggleCollapse = (id: string) => dispatch({ type: 'TOGGLE_COLLAPSE', id });
-    const addSwimlane = () => dispatch({ type: 'ADD_SWIMLANE' });
-    const deleteSwimlane = (id: string) => dispatch({ type: 'DELETE_SWIMLANE', id });
-    const updateSwimlane = (id: string, updates: Partial<Swimlane>) => dispatch({ type: 'UPDATE_SWIMLANE', id, updates });
-    const renameSwimlane = (id: string, label: string) => dispatch({ type: 'RENAME_SWIMLANE', id, label });
-    const addActivity = (swimId: string) => dispatch({ type: 'ADD_ACTIVITY', swimId });
-    const deleteActivity = (swimId: string, actId: string) => dispatch({ type: 'DELETE_ACTIVITY', swimId, actId });
-    const renameActivity = (swimId: string, actId: string, name: string) => dispatch({ type: 'RENAME_ACTIVITY', swimId, actId, name });
-    const removeMonth = (index: number) => dispatch({ type: 'REMOVE_MONTH', index });
+    const toggleCollapse = async (id: string) => {
+        dispatch({ type: 'TOGGLE_COLLAPSE', id });
+        const swimlane = swimlanes.find(s => s.id === id);
+        if (swimlane) {
+            timelineService.saveSwimlane({ id, collapsed: !swimlane.collapsed }).catch(console.error);
+        }
+    };
+    const addSwimlane = async () => {
+        if (!settings.id) return;
+        const id = uid();
+        dispatch({ type: 'ADD_SWIMLANE', id });
+        timelineService.saveSwimlane({
+            id,
+            project_id: settings.id,
+            label: "New Phase",
+            color: SWIMLANE_COLORS[swimlanes.length % SWIMLANE_COLORS.length],
+            collapsed: false,
+            order_index: swimlanes.length
+        }).catch(console.error);
+    };
+    const deleteSwimlane = (id: string) => {
+        dispatch({ type: 'DELETE_SWIMLANE', id });
+        timelineService.deleteSwimlane(id).catch(console.error);
+    };
+    const updateSwimlane = (id: string, updates: Partial<Swimlane>) => {
+        dispatch({ type: 'UPDATE_SWIMLANE', id, updates });
+        timelineService.saveSwimlane({ id, ...updates }).catch(console.error);
+    };
+    const renameSwimlane = (id: string, label: string) => {
+        dispatch({ type: 'RENAME_SWIMLANE', id, label });
+        timelineService.saveSwimlane({ id, label }).catch(console.error);
+    };
+    const addActivity = (swimId: string) => {
+        const id = uid();
+        dispatch({ type: 'ADD_ACTIVITY', swimId, id });
+        const swimlane = swimlanes.find(s => s.id === swimId);
+        timelineService.saveActivity({
+            id,
+            swimlane_id: swimId,
+            name: "New Activity",
+            start_month: 0,
+            duration_months: 2,
+            color: COLORS[(swimlane?.activities.length || 0) % COLORS.length]
+        }).catch(console.error);
+    };
+    const deleteActivity = (swimId: string, actId: string) => {
+        dispatch({ type: 'DELETE_ACTIVITY', swimId, actId });
+        timelineService.deleteActivity(actId).catch(console.error);
+    };
+    const renameActivity = (swimId: string, actId: string, name: string) => {
+        dispatch({ type: 'RENAME_ACTIVITY', swimId, actId, name });
+        timelineService.saveActivity({ id: actId, name }).catch(console.error);
+    };
+    const removeMonth = (index: number) => {
+        // Month management (adding/removing months globally)
+        // If months are stored in project metadata or ignored (dynamic view), we might not persist this yet
+        // Implementation plan didn't specify 'months' table, implying 12-month fixed or metadata based.
+        // Let's assume handled locally for now or persist to project table if needed.
+        dispatch({ type: 'REMOVE_MONTH', index });
+    };
 
     const onBarMouseDown = (e: React.MouseEvent, swimId: string, actId: string, act: Activity, mode: 'move' | 'resize' | 'start' | 'end') => {
         e.preventDefault();
@@ -919,25 +1041,40 @@ export function TimelinePlannerTab() {
         const origDur = act.duration;
         const pxPerMonth = MONTH_COL_W;
 
+        let finalStart = origStart;
+        let finalDur = origDur;
+
         const onMove = (ev: MouseEvent) => {
             const dx = ev.clientX - startX;
             const monthsDelta = Math.round(dx / pxPerMonth);
 
             if (mode === "move") {
                 const newStart = Math.max(0, Math.min(months.length - origDur, origStart + monthsDelta));
+                finalStart = newStart;
                 dispatch({ type: 'TRANSFORM_ACTIVITY', swimId, actId, start: newStart });
             } else if (mode === "resize" || mode === "end") {
                 const newDur = Math.max(1, Math.min(months.length - origStart, origDur + monthsDelta));
+                finalDur = newDur;
                 dispatch({ type: 'TRANSFORM_ACTIVITY', swimId, actId, duration: newDur });
             } else if (mode === "start") {
                 const newStart = Math.max(0, Math.min(origStart + origDur - 1, origStart + monthsDelta));
                 const newDur = origDur - (newStart - origStart);
+                finalStart = newStart;
+                finalDur = newDur;
                 dispatch({ type: 'TRANSFORM_ACTIVITY', swimId, actId, start: newStart, duration: newDur });
             }
         };
         const onUp = () => {
             window.removeEventListener("mousemove", onMove);
             window.removeEventListener("mouseup", onUp);
+
+            if (finalStart !== origStart || finalDur !== origDur) {
+                timelineService.saveActivity({
+                    id: actId,
+                    start_month: finalStart,
+                    duration_months: finalDur
+                }).catch(console.error);
+            }
         };
         window.addEventListener("mousemove", onMove);
         window.addEventListener("mouseup", onUp);
@@ -1452,24 +1589,6 @@ export function TimelinePlannerTab() {
                                                                     </div>
                                                                 </>
                                                             )}
-                                                        >
-                                                            <div className="bg-muted/30 rounded-full h-8 flex items-end overflow-hidden border border-border/20 shadow-inner p-0.5">
-                                                                <div
-                                                                    style={{ height: `${Math.min(load * 8, 100)}%` }}
-                                                                    className={cn(
-                                                                        "w-full rounded-full transition-all duration-700",
-                                                                        load > 8 ? "bg-red-500 shadow-[0_0_15px_rgba(239,68,68,0.4)]" : load > 5 ? "bg-orange-500 shadow-[0_0_15px_rgba(249,115,22,0.4)]" : "bg-emerald-500 shadow-[0_0_15px_rgba(16,185,129,0.4)]",
-                                                                        isResourceEditing && "opacity-80"
-                                                                    )}
-                                                                />
-                                                            </div>
-                                                            <div className={cn(
-                                                                "text-[10px] font-black text-center mt-1 transition-colors",
-                                                                load > 8 ? "text-red-500" : load > 5 ? "text-orange-500" : "text-emerald-500",
-                                                                !load && "text-muted-foreground/30"
-                                                            )}>
-                                                                {load > 0 ? load.toFixed(1) : "0"}
-                                                            </div>
                                                         </div>
                                                     );
                                                 })}
@@ -1500,10 +1619,12 @@ export function TimelinePlannerTab() {
                                                         const isMulti = e.metaKey || e.ctrlKey || e.shiftKey;
                                                         if (isMulti) {
                                                             setSelectedSwimlaneIds(prev => prev.includes(sw.id) ? prev.filter(id => id !== sw.id) : [...prev, sw.id]);
+                                                            setSidebarContext('phase');
                                                         } else {
                                                             // Idempotent selection: Don't toggle off if already selected
                                                             setSelectedSwimlaneIds([sw.id]);
                                                             setSelectedActivityIds([]);
+                                                            setSidebarContext('phase');
                                                         }
                                                     }}
                                                 >
@@ -1540,6 +1661,7 @@ export function TimelinePlannerTab() {
                                                         if (!isMulti) {
                                                             setSelectedSwimlaneIds([sw.id]);
                                                             setSelectedActivityIds([]);
+                                                            setSidebarContext('swimlane');
                                                         }
                                                     }}>
                                                         {filteredActivities.map((act) => (
@@ -2303,24 +2425,45 @@ export function TimelinePlannerTab() {
 
                             <ScrollArea className="flex-1 p-5">
                                 <div className="space-y-8">
-                                    <section className="space-y-6">
-                                        <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
-                                            <Calendar className="h-3.5 w-3.5 text-indigo-500" /> Phase Orchestration
-                                        </Label>
-                                        <div className="space-y-4">
-                                            <div className="p-4 rounded-xl bg-muted/20 border border-border space-y-3">
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-[10px] font-bold text-muted-foreground uppercase">Workstream Intensity</span>
-                                                    <Badge className="bg-indigo-500/10 text-indigo-500 border-indigo-500/10">{sw.activities.length} Tasks</Badge>
+                                    {/* PHASE ORCHESTRATION (Header Click) */}
+                                    {(sidebarContext === 'phase' || sidebarContext === null) && (
+                                        <section className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+                                            <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                                                <Calendar className="h-3.5 w-3.5 text-indigo-500" /> Phase Orchestration
+                                            </Label>
+                                            <div className="space-y-4">
+                                                <div className="p-4 rounded-xl bg-muted/20 border border-border space-y-3">
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Workstream Intensity</span>
+                                                        <Badge className="bg-indigo-500/10 text-indigo-500 border-indigo-500/10">{sw.activities.length} Tasks</Badge>
+                                                    </div>
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-[10px] font-bold text-muted-foreground uppercase">Structural Status</span>
+                                                        <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Optimized</span>
+                                                    </div>
                                                 </div>
-                                                <div className="flex items-center justify-between">
-                                                    <span className="text-[10px] font-bold text-muted-foreground uppercase">Structural Status</span>
-                                                    <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest">Optimized</span>
+
+                                                <div className="space-y-2">
+                                                    <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter">Phase Label</Label>
+                                                    <Input
+                                                        value={sw.label}
+                                                        onChange={e => updateSwimlane(sw.id, { label: e.target.value })}
+                                                        className="h-10 rounded-xl bg-zinc-900 border-zinc-800 font-black text-zinc-200"
+                                                    />
                                                 </div>
                                             </div>
+                                        </section>
+                                    )}
 
-                                            <div className="space-y-4">
-                                                <div className="grid grid-cols-2 gap-4">
+                                    {/* SWIMLANE CONFIGURATION (Track Click) */}
+                                    {sidebarContext === 'swimlane' && (
+                                        <section className="space-y-6 animate-in slide-in-from-right-4 duration-500">
+                                            <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">
+                                                <Settings className="h-3.5 w-3.5 text-indigo-500" /> Swimlane Configuration
+                                            </Label>
+
+                                            <div className="p-4 rounded-xl bg-indigo-500/5 border border-indigo-500/10 space-y-6">
+                                                <div className="space-y-4">
                                                     <div className="space-y-2">
                                                         <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter">Phase Label</Label>
                                                         <Input
@@ -2330,7 +2473,7 @@ export function TimelinePlannerTab() {
                                                         />
                                                     </div>
                                                     <div className="space-y-2">
-                                                        <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter">Color</Label>
+                                                        <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter">Phase Color</Label>
                                                         <Select value={sw.color} onValueChange={(val) => updateSwimlane(sw.id, { color: val })}>
                                                             <SelectTrigger className="h-10 rounded-xl bg-zinc-900 border-zinc-800 font-black text-zinc-200">
                                                                 <div className="flex items-center gap-2">
@@ -2350,9 +2493,28 @@ export function TimelinePlannerTab() {
                                                             </SelectContent>
                                                         </Select>
                                                     </div>
+
+                                                    <div className="space-y-2 pt-2">
+                                                        <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter">Target Duration (Months)</Label>
+                                                        <Input
+                                                            type="number"
+                                                            value={sw.targetDuration || ""}
+                                                            onChange={e => {
+                                                                const newDuration = parseInt(e.target.value) || 0;
+                                                                updateSwimlane(sw.id, { targetDuration: newDuration });
+                                                                // Backend Update
+                                                                timelineService.saveSwimlane({
+                                                                    id: sw.id,
+                                                                    target_duration: newDuration
+                                                                }).catch(console.error);
+                                                            }}
+                                                            className="h-10 rounded-xl bg-zinc-900 border-zinc-800 font-black text-zinc-200"
+                                                            placeholder="Set Target Duration..."
+                                                        />
+                                                    </div>
                                                 </div>
 
-                                                <div className="space-y-4 pt-2">
+                                                <div className="space-y-4 pt-4 border-t border-indigo-500/10">
                                                     <div className="space-y-2">
                                                         <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter">Locations</Label>
                                                         <div className="flex flex-wrap gap-2">
@@ -2410,20 +2572,9 @@ export function TimelinePlannerTab() {
                                                         </div>
                                                     </div>
                                                 </div>
-
-                                                <div className="space-y-2 pt-4 border-t border-border">
-                                                    <Label className="text-[10px] font-bold text-zinc-400 uppercase tracking-tighter">Target Duration (Months)</Label>
-                                                    <Input
-                                                        type="number"
-                                                        value={sw.targetDuration || ""}
-                                                        onChange={e => updateSwimlane(sw.id, { targetDuration: parseInt(e.target.value) || 0 })}
-                                                        className="h-10 rounded-xl bg-zinc-900 border-zinc-800 font-black text-zinc-200"
-                                                        placeholder="Set Target Duration..."
-                                                    />
-                                                </div>
                                             </div>
-                                        </div>
-                                    </section>
+                                        </section>
+                                    )}
 
                                     <section className="space-y-6">
                                         <Label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 flex items-center gap-2">

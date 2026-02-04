@@ -376,12 +376,13 @@ function EditableTaskRow({
 
 interface DatabaseTaskGridProps {
   projectId: string;
+  scenarioId?: string | null;
   onSelectionChange?: (selectedTasks: DbTask[]) => void;
 }
 
-export function DatabaseTaskGrid({ projectId, onSelectionChange }: DatabaseTaskGridProps) {
-  const { data: tasks = [], isLoading, error } = useTasks(projectId);
-  const { data: dependencies = [] } = useDependencies(projectId);
+export function DatabaseTaskGrid({ projectId, scenarioId = null, onSelectionChange }: DatabaseTaskGridProps) {
+  const { data: tasks = [], isLoading, error } = useTasks(projectId, scenarioId);
+  const { data: dependencies = [] } = useDependencies(projectId, scenarioId);
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
@@ -598,6 +599,7 @@ export function DatabaseTaskGrid({ projectId, onSelectionChange }: DatabaseTaskG
       expanded: true,
       level,
       sort_order: sortOrder,
+      scenario_id: scenarioId,
     });
 
     if (parentId) {

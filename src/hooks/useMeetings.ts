@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 import { addDays, addWeeks, addMonths, format, isBefore, parseISO } from 'date-fns';
-import type { 
+import type {
   AIEnhancedMeeting,
   ExtractedDecision,
   ExtractedActionItem,
@@ -20,14 +20,14 @@ function generateRecurringInstances(
   parentId: string
 ): Omit<CreateMeetingInput, 'recurring_schedule' | 'recurring_end_date'>[] {
   const instances: Omit<CreateMeetingInput, 'recurring_schedule' | 'recurring_end_date'>[] = [];
-  
+
   if (!input.recurring_schedule || input.recurring_schedule === 'none') {
     return instances;
   }
 
   const startDate = parseISO(input.date);
-  const endDate = input.recurring_end_date 
-    ? parseISO(input.recurring_end_date) 
+  const endDate = input.recurring_end_date
+    ? parseISO(input.recurring_end_date)
     : addMonths(startDate, 3); // Default to 3 months if no end date
 
   let currentDate = startDate;
@@ -52,7 +52,7 @@ function generateRecurringInstances(
 
   while (isBefore(currentDate, endDate) && count < maxInstances) {
     const instanceDate = format(currentDate, 'yyyy-MM-dd');
-    
+
     instances.push({
       project_id: input.project_id,
       title: input.title,
@@ -88,7 +88,7 @@ function generateRecurringInstances(
         currentDate = addMonths(currentDate, 1);
         break;
     }
-    
+
     count++;
   }
 
@@ -333,8 +333,23 @@ export function useMeetings(projectId?: string | null) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Helper
+  const isValidUuid = (id: string | null | undefined): boolean => {
+    if (!id) return false;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id);
+  };
+
   // Fetch all meetings for project
   const fetchMeetings = useCallback(async () => {
+    // Skip if projectId is provided but is "demo" or invalid UUID
+    if (projectId && !isValidUuid(projectId)) {
+      console.log("Skipping meetings fetch for invalid/demo projectId:", projectId);
+      setMeetings([]); // Or maybe set some demo data? For now, empty.
+      setLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
@@ -424,7 +439,7 @@ export function useMeetings(projectId?: string | null) {
         // Generate recurring instances if applicable
         if (input.recurring_schedule && input.recurring_schedule !== 'none') {
           const instances = generateRecurringInstances(input, parentMeeting.id);
-          
+
           if (instances.length > 0) {
             const { error: instancesError } = await supabase
               .from('meetings')
@@ -432,7 +447,7 @@ export function useMeetings(projectId?: string | null) {
                 ...inst,
                 created_by: user.id,
               })));
-            
+
             if (instancesError) {
               console.error('Error creating recurring instances:', instancesError);
               // Don't fail the whole operation, just log the error

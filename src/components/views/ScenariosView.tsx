@@ -70,7 +70,13 @@ const mockTasks = [
 
 export function ScenariosView() {
   const { settings } = useProjectContext();
-  const { data: fetchedScenarios = [], isLoading } = useScenarios(settings.id);
+  const {
+    data: fetchedScenarios = [],
+    isLoading,
+    createScenario,
+    deleteScenario
+  } = useScenarios(settings.id);
+
   const [scenarios, setScenarios] = useState<any[]>([]);
   const [selectedScenario, setSelectedScenario] = useState<any | null>(null);
   const [compareMode, setCompareMode] = useState(false);
@@ -80,61 +86,63 @@ export function ScenariosView() {
   const [newScenarioName, setNewScenarioName] = useState('');
   const [newScenarioDesc, setNewScenarioDesc] = useState('');
   const [isSimulating, setIsSimulating] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
 
   // Sync state with fetched data
   useEffect(() => {
-    if (fetchedScenarios.length > 0) {
-      const formatted = fetchedScenarios.map(s => ({
-        ...s.data,
-        id: s.id,
-        name: s.name,
-        description: s.description,
-      }));
+    if (fetchedScenarios) {
+      const formatted = fetchedScenarios.map(s => {
+        // Parse data field if it exists, otherwise default
+        const meta = s.data || {};
+        return {
+          id: s.id,
+          name: s.name,
+          description: s.description,
+          status: s.status,
+          createdDate: new Date(s.created_at).toLocaleDateString(),
+          modifiedDate: new Date(s.updated_at).toLocaleDateString(),
+          author: 'User', // TODO: Get from created_by
+          adjustments: meta.adjustments || [],
+          impact: meta.impact || {
+            endDateChange: 0,
+            costChange: 0,
+            riskLevel: 'low',
+            criticalPathAffected: false,
+            tasksAffected: 0
+          }
+        };
+      });
       setScenarios(formatted);
+
+      // Select first if none selected
       if (!selectedScenario && formatted.length > 0) {
         setSelectedScenario(formatted[0]);
       }
-    } else if (!isLoading) {
-      // Use mock if no data and not loading
-      setScenarios(mockScenarios);
-      setSelectedScenario(mockScenarios[1]);
-    }
-  }, [fetchedScenarios, isLoading]);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-full">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  const baselineScenario = scenarios.find(s => s.status === 'active');
-  const compareScenario = compareScenarioId ? scenarios.find(s => s.id === compareScenarioId) : null;
-
-  const handleCreateScenario = () => {
-    const newScenario: Scenario = {
-      id: `S-${Date.now()}`,
-      name: newScenarioName,
-      description: newScenarioDesc,
-      status: 'draft',
-      createdDate: new Date().toISOString().split('T')[0],
-      modifiedDate: new Date().toISOString().split('T')[0],
-      author: 'Current User',
-      adjustments: [],
-      impact: {
-        endDateChange: 0,
-        costChange: 0,
-        riskLevel: 'low',
-        criticalPathAffected: false,
-        tasksAffected: 0
+      // Update selected if it exists in new data
+      else if (selectedScenario) {
+        const found = formatted.find(s => s.id === selectedScenario.id);
+        if (found) setSelectedScenario(found);
       }
-    };
-    setScenarios([...scenarios, newScenario]);
-    setSelectedScenario(newScenario);
-    setShowCreateDialog(false);
-    setNewScenarioName('');
-    setNewScenarioDesc('');
+    }
+  }, [fetchedScenarios]);
+
+  const handleCreateScenario = async () => {
+    if (!newScenarioName.trim()) return;
+
+    setIsCreating(true);
+    try {
+      await createScenario({
+        name: newScenarioName,
+        description: newScenarioDesc
+      });
+      setShowCreateDialog(false);
+      setNewScenarioName('');
+      setNewScenarioDesc('');
+    } catch (error) {
+      toast.error("Failed to create scenario");
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleDuplicateScenario = (scenario: Scenario) => {

@@ -75,9 +75,10 @@ type ResourceViewMode = 'none' | 'sheet' | 'usage';
 
 interface PlanningViewProps {
   demo?: boolean;
+  scenarioId?: string | null;
 }
 
-export function PlanningView({ demo = false }: PlanningViewProps) {
+export function PlanningView({ demo = false, scenarioId = null }: PlanningViewProps) {
   const [viewMode, setViewMode] = useState<PlanViewMode>('grid');
   const [resourceView, setResourceView] = useState<ResourceViewMode>('none');
   const [showShortcuts, setShowShortcuts] = useState(false);
@@ -425,7 +426,7 @@ export function PlanningView({ demo = false }: PlanningViewProps) {
           {/* Task Views (only show when not in resource view) */}
           {resourceView === 'none' && (
             <>
-              {viewMode === 'grid' && (
+              {
                 demo ? (
                   // Demo Grid Placeholder - Replace with actual Mock Grid if needed, or rely on DatabaseTaskGrid handling 'demo' ID gracefully?
                   // DatabaseTaskGrid likely fetches from DB. We need to mock that too or render a visual placeholder.
@@ -483,6 +484,7 @@ export function PlanningView({ demo = false }: PlanningViewProps) {
                     {viewMode === 'grid' && selectedProjectId && (
                       <DatabaseTaskGrid
                         projectId={selectedProjectId}
+                        scenarioId={scenarioId}
                         onSelectionChange={setSelectedTasks}
                       />
                     )}
@@ -490,6 +492,7 @@ export function PlanningView({ demo = false }: PlanningViewProps) {
                     {viewMode === 'gantt' && (
                       <DatabaseGantt
                         projectId={selectedProjectId || ''}
+                        scenarioId={scenarioId}
                         onSelectionChange={setSelectedTasks}
                       />
                     )}

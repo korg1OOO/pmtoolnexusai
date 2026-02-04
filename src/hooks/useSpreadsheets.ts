@@ -37,8 +37,14 @@ export function useSpreadsheets(notebookId: string | null) {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  const isValidUuid = (id: string | null | undefined): boolean => {
+    if (!id) return false;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id);
+  };
+
   const fetchSpreadsheets = async () => {
-    if (!notebookId) {
+    if (!notebookId || !isValidUuid(notebookId)) {
       setSpreadsheets([]);
       setLoading(false);
       return;
@@ -62,7 +68,7 @@ export function useSpreadsheets(notebookId: string | null) {
   };
 
   const createSpreadsheet = async (name: string, color?: string) => {
-    if (!notebookId) return null;
+    if (!notebookId || !isValidUuid(notebookId)) return null;
 
     try {
       const { data: spreadsheet, error } = await supabase
@@ -132,7 +138,7 @@ export function useSpreadsheets(notebookId: string | null) {
 
   // Subscribe to realtime updates
   useEffect(() => {
-    if (!notebookId) return;
+    if (!notebookId || !isValidUuid(notebookId)) return;
 
     const channel = supabase
       .channel(`spreadsheets-${notebookId}`)
@@ -170,8 +176,14 @@ export function useSheets(spreadsheetId: string | null) {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  const isValidUuid = (id: string | null | undefined): boolean => {
+    if (!id) return false;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id);
+  };
+
   const fetchSheets = async () => {
-    if (!spreadsheetId) {
+    if (!spreadsheetId || !isValidUuid(spreadsheetId)) {
       setSheets([]);
       setLoading(false);
       return;
@@ -185,18 +197,18 @@ export function useSheets(spreadsheetId: string | null) {
         .order('sort_order', { ascending: true });
 
       if (error) throw error;
-      
+
       // Parse JSON data with proper typing
       const parsedData: SpreadsheetSheet[] = (data || []).map(sheet => ({
         id: sheet.id,
         spreadsheet_id: sheet.spreadsheet_id,
         name: sheet.name,
         data: Array.isArray(sheet.data) ? sheet.data as any[][] : [],
-        column_widths: (typeof sheet.column_widths === 'object' && sheet.column_widths !== null && !Array.isArray(sheet.column_widths)) 
-          ? sheet.column_widths as Record<string, number> 
+        column_widths: (typeof sheet.column_widths === 'object' && sheet.column_widths !== null && !Array.isArray(sheet.column_widths))
+          ? sheet.column_widths as Record<string, number>
           : {},
-        row_heights: (typeof sheet.row_heights === 'object' && sheet.row_heights !== null && !Array.isArray(sheet.row_heights)) 
-          ? sheet.row_heights as Record<string, number> 
+        row_heights: (typeof sheet.row_heights === 'object' && sheet.row_heights !== null && !Array.isArray(sheet.row_heights))
+          ? sheet.row_heights as Record<string, number>
           : {},
         frozen_rows: sheet.frozen_rows ?? 0,
         frozen_cols: sheet.frozen_cols ?? 0,
@@ -204,7 +216,7 @@ export function useSheets(spreadsheetId: string | null) {
         created_at: sheet.created_at,
         updated_at: sheet.updated_at,
       }));
-      
+
       setSheets(parsedData);
     } catch (error) {
       console.error('Error fetching sheets:', error);
@@ -214,7 +226,7 @@ export function useSheets(spreadsheetId: string | null) {
   };
 
   const createSheet = async (name: string = 'New Sheet') => {
-    if (!spreadsheetId) return null;
+    if (!spreadsheetId || !isValidUuid(spreadsheetId)) return null;
 
     try {
       const { data, error } = await supabase
@@ -277,7 +289,7 @@ export function useSheets(spreadsheetId: string | null) {
 
   // Subscribe to realtime updates
   useEffect(() => {
-    if (!spreadsheetId) return;
+    if (!spreadsheetId || !isValidUuid(spreadsheetId)) return;
 
     const channel = supabase
       .channel(`sheets-${spreadsheetId}`)
@@ -312,7 +324,7 @@ export function useSheets(spreadsheetId: string | null) {
 
 // Helper function to create an empty grid
 function createEmptyGrid(rows: number, cols: number): any[][] {
-  return Array.from({ length: rows }, () => 
+  return Array.from({ length: rows }, () =>
     Array.from({ length: cols }, () => '')
   );
 }

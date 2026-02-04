@@ -69,7 +69,7 @@ export function useNotebooks() {
       setLoading(false);
       return;
     }
-    
+
     try {
       const { data, error } = await supabase
         .from('notebooks')
@@ -101,7 +101,7 @@ export function useNotebooks() {
         .single();
 
       if (error) throw error;
-      
+
       toast({ title: 'Notebook created', description: `"${name}" has been created.` });
       return data;
     } catch (error) {
@@ -187,8 +187,14 @@ export function useSections(notebookId: string | null) {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  const isValidUuid = (id: string | null | undefined): boolean => {
+    if (!id) return false;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id);
+  };
+
   const fetchSections = async () => {
-    if (!notebookId) {
+    if (!notebookId || !isValidUuid(notebookId)) {
       setSections([]);
       setLoading(false);
       return;
@@ -211,7 +217,7 @@ export function useSections(notebookId: string | null) {
   };
 
   const createSection = async (name: string, color?: string) => {
-    if (!notebookId) return null;
+    if (!notebookId || !isValidUuid(notebookId)) return null;
 
     try {
       const { data, error } = await supabase
@@ -270,7 +276,7 @@ export function useSections(notebookId: string | null) {
 
   // Subscribe to realtime updates
   useEffect(() => {
-    if (!notebookId) return;
+    if (!notebookId || !isValidUuid(notebookId)) return;
 
     const channel = supabase
       .channel(`sections-${notebookId}`)
@@ -308,8 +314,14 @@ export function usePages(sectionId: string | null) {
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
+  const isValidUuid = (id: string | null | undefined): boolean => {
+    if (!id) return false;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id);
+  };
+
   const fetchPages = async () => {
-    if (!sectionId) {
+    if (!sectionId || !isValidUuid(sectionId)) {
       setPages([]);
       setLoading(false);
       return;
@@ -333,7 +345,7 @@ export function usePages(sectionId: string | null) {
   };
 
   const createPage = async (title = 'Untitled') => {
-    if (!sectionId) return null;
+    if (!sectionId || !isValidUuid(sectionId)) return null;
 
     try {
       const { data, error } = await supabase
@@ -391,7 +403,7 @@ export function usePages(sectionId: string | null) {
 
   // Subscribe to realtime updates
   useEffect(() => {
-    if (!sectionId) return;
+    if (!sectionId || !isValidUuid(sectionId)) return;
 
     const channel = supabase
       .channel(`pages-${sectionId}`)
@@ -449,7 +461,7 @@ export function useAllPages(projectId: string | null) {
         .eq('project_id', projectId);
 
       if (nbError) throw nbError;
-      
+
       if (!notebooks || notebooks.length === 0) {
         setAllPages([]);
         setLoading(false);
@@ -510,8 +522,14 @@ export function usePageLinks(pageId: string | null) {
   const [incomingLinks, setIncomingLinks] = useState<PageLink[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const isValidUuid = (id: string | null | undefined): boolean => {
+    if (!id) return false;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id);
+  };
+
   const fetchLinks = async () => {
-    if (!pageId) {
+    if (!pageId || !isValidUuid(pageId)) {
       setOutgoingLinks([]);
       setIncomingLinks([]);
       setLoading(false);
@@ -543,7 +561,7 @@ export function usePageLinks(pageId: string | null) {
   };
 
   const createLink = async (targetPageId: string, linkText?: string) => {
-    if (!pageId) return;
+    if (!pageId || !isValidUuid(pageId)) return;
 
     try {
       const { error } = await supabase

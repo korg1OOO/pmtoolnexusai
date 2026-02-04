@@ -3071,14 +3071,16 @@ export type Database = {
       }
       scenarios: {
         Row: {
-          created_at: string
-          created_by: string | null
-          data: Json | null
-          description: string | null
           id: string
-          name: string
           project_id: string | null
+          name: string
+          description: string | null
+          status: "draft" | "active" | "archived"
+          base_plan_snapshot_id: string | null
+          data: Json | null
+          created_at: string
           updated_at: string
+          created_by: string | null
         }
         Insert: {
           created_at?: string
@@ -3372,6 +3374,7 @@ export type Database = {
           lag: number | null
           predecessor_id: string
           task_id: string
+          scenario_id: string | null
           type: Database["public"]["Enums"]["dependency_type"]
         }
         Insert: {
@@ -3439,6 +3442,7 @@ export type Database = {
           priority: Database["public"]["Enums"]["priority_level"]
           progress: number
           project_id: string
+          scenario_id: string | null
           remaining_work_hours: number | null
           sort_order: number
           start_date: string

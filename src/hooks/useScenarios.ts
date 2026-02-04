@@ -1,30 +1,56 @@
-import { useQuery } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { scenarioService, Scenario } from "@/services/scenarioService";
+import { toast } from "sonner";
 
-export interface Scenario {
-    id: string;
-    project_id: string;
-    name: string;
-    description: string;
-    data: any;
-    created_at: string;
-    updated_at: string;
-}
+export { type Scenario };
 
 export const useScenarios = (projectId?: string) => {
-    return useQuery({
+    const queryClient = useQueryClient();
+
+    const { data, isLoading } = useQuery({
         queryKey: ["scenarios", projectId],
         queryFn: async () => {
             if (!projectId) return [];
-            const { data, error } = await supabase
-                .from("scenarios")
-                .select("*")
-                .eq("project_id", projectId)
-                .order("created_at", { ascending: false });
-
-            if (error) throw error;
-            return data as Scenario[];
+            return await scenarioService.getScenarios(projectId);
         },
         enabled: !!projectId,
     });
+
+    const createMutation = useMutation({
+        mutationFn: async ({ name, description }: { name: string; description: string }) => {
+            if (!projectId) throw new Error("Project ID is required");
+            return await scenarioService.createScenario(projectId, name, description);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["scenarios", projectId] });
+            toast.success("Scenario created successfully");
+        },
+        onError: (error) => {
+            console.error(error);
+            toast.error("Failed to create scenario");
+        }
+    });
+
+    const deleteMutation = useMutation({
+        mutationFn: async (id: string) => {
+            return await scenarioService.deleteScenario(id);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["scenarios", projectId] });
+            toast.success("Scenario deleted");
+        },
+        onError: (error) => {
+            console.error(error);
+            toast.error("Failed to delete scenario");
+        }
+    });
+
+    return {
+        data,
+        isLoading,
+        createScenario: createMutation.mutateAsync,
+        deleteScenario: deleteMutation.mutateAsync,
+        isCreating: createMutation.isPending,
+        isDeleting: deleteMutation.isPending
+    };
 };

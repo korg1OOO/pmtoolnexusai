@@ -51,6 +51,7 @@ export interface DbTask {
   manually_scheduled?: boolean | null;
   calendar_id?: string | null;
   child_project_id?: string | null;
+  scenario_id?: string | null;
 }
 
 export interface DbDependency {
@@ -59,6 +60,7 @@ export interface DbDependency {
   predecessor_id: string;
   type: Database['public']['Enums']['dependency_type'];
   lag: number;
+  scenario_id?: string | null;
   created_at: string;
 }
 
@@ -73,19 +75,26 @@ export interface DbBaseline {
   created_at: string;
 }
 
-export function useTasks(projectId: string | null) {
+export function useTasks(projectId: string | null, scenarioId: string | null = null) {
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ['tasks', projectId],
+    queryKey: ['tasks', projectId, scenarioId],
     queryFn: async () => {
       if (!projectId) return [];
 
-      const { data, error } = await supabase
+      let builder = supabase
         .from('tasks')
         .select('*')
-        .eq('project_id', projectId)
-        .order('sort_order', { ascending: true });
+        .eq('project_id', projectId);
+
+      if (scenarioId) {
+        builder = builder.eq('scenario_id', scenarioId);
+      } else {
+        builder = builder.is('scenario_id', null);
+      }
+
+      const { data, error } = await builder.order('sort_order', { ascending: true });
 
       if (error) throw error;
       return data as DbTask[];
@@ -108,7 +117,7 @@ export function useTasks(projectId: string | null) {
           filter: `project_id=eq.${projectId}`,
         },
         () => {
-          queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
+          queryClient.invalidateQueries({ queryKey: ['tasks', projectId, scenarioId] });
         }
       )
       .subscribe();
@@ -121,19 +130,27 @@ export function useTasks(projectId: string | null) {
   return query;
 }
 
-export function useDependencies(projectId: string | null) {
+export function useDependencies(projectId: string | null, scenarioId: string | null = null) {
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ['dependencies', projectId],
+    queryKey: ['dependencies', projectId, scenarioId],
     queryFn: async () => {
       if (!projectId) return [];
 
-      // Get all task IDs for this project first
-      const { data: tasks, error: tasksError } = await supabase
+      // Get all task IDs for this project first (filtered by scenario)
+      let tasksBuilder = supabase
         .from('tasks')
         .select('id')
         .eq('project_id', projectId);
+
+      if (scenarioId) {
+        tasksBuilder = tasksBuilder.eq('scenario_id', scenarioId);
+      } else {
+        tasksBuilder = tasksBuilder.is('scenario_id', null);
+      }
+
+      const { data: tasks, error: tasksError } = await tasksBuilder;
 
       if (tasksError) throw tasksError;
 
@@ -165,7 +182,7 @@ export function useDependencies(projectId: string | null) {
           table: 'task_dependencies',
         },
         () => {
-          queryClient.invalidateQueries({ queryKey: ['dependencies', projectId] });
+          queryClient.invalidateQueries({ queryKey: ['dependencies', projectId, scenarioId] });
         }
       )
       .subscribe();
@@ -212,7 +229,7 @@ export function useCreateTask() {
       return data;
     },
     onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', data.project_id] });
+      queryClient.invalidateQueries({ queryKey: ['tasks', data.project_id, data.scenario_id] });
     },
     onError: (error) => {
       toast.error('Failed to create task: ' + error.message);

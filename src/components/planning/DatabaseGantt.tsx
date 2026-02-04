@@ -102,12 +102,13 @@ interface LinkDraggingState {
 
 interface DatabaseGanttProps {
   projectId: string;
+  scenarioId?: string | null;
   onSelectionChange?: (selectedTasks: DbTask[]) => void;
 }
 
-export function DatabaseGantt({ projectId, onSelectionChange }: DatabaseGanttProps) {
-  const { data: tasks = [], isLoading, error } = useTasks(projectId);
-  const { data: dependencies = [] } = useDependencies(projectId);
+export function DatabaseGantt({ projectId, scenarioId = null, onSelectionChange }: DatabaseGanttProps) {
+  const { data: tasks = [], isLoading, error } = useTasks(projectId, scenarioId);
+  const { data: dependencies = [] } = useDependencies(projectId, scenarioId);
   const updateTask = useUpdateTask();
   const saveBaseline = useSaveProjectBaseline();
   const { triggerSchedule } = useScheduleTrigger(projectId);

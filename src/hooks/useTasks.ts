@@ -50,6 +50,7 @@ export interface DbTask {
   // Scheduling fields
   manually_scheduled?: boolean | null;
   calendar_id?: string | null;
+  child_project_id?: string | null;
 }
 
 export interface DbDependency {
@@ -79,7 +80,7 @@ export function useTasks(projectId: string | null) {
     queryKey: ['tasks', projectId],
     queryFn: async () => {
       if (!projectId) return [];
-      
+
       const { data, error } = await supabase
         .from('tasks')
         .select('*')
@@ -127,7 +128,7 @@ export function useDependencies(projectId: string | null) {
     queryKey: ['dependencies', projectId],
     queryFn: async () => {
       if (!projectId) return [];
-      
+
       // Get all task IDs for this project first
       const { data: tasks, error: tasksError } = await supabase
         .from('tasks')
@@ -135,7 +136,7 @@ export function useDependencies(projectId: string | null) {
         .eq('project_id', projectId);
 
       if (tasksError) throw tasksError;
-      
+
       const taskIds = tasks.map(t => t.id);
       if (taskIds.length === 0) return [];
 
@@ -182,7 +183,7 @@ export function useBaselines(taskId: string | null) {
     queryKey: ['baselines', taskId],
     queryFn: async () => {
       if (!taskId) return [];
-      
+
       const { data, error } = await supabase
         .from('task_baselines')
         .select('*')
@@ -298,9 +299,9 @@ export function useCreateDependency() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ dependency, projectId }: { 
-      dependency: Omit<DbDependency, 'id' | 'created_at'>; 
-      projectId: string 
+    mutationFn: async ({ dependency, projectId }: {
+      dependency: Omit<DbDependency, 'id' | 'created_at'>;
+      projectId: string
     }) => {
       const { data, error } = await supabase
         .from('task_dependencies')
@@ -348,12 +349,12 @@ export function useUpdateDependency() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ 
-      dependencyId, 
+    mutationFn: async ({
+      dependencyId,
       projectId,
-      updates 
-    }: { 
-      dependencyId: string; 
+      updates
+    }: {
+      dependencyId: string;
       projectId: string;
       updates: { type?: 'FS' | 'SS' | 'FF' | 'SF'; lag?: number };
     }) => {
@@ -405,10 +406,10 @@ export function useSaveProjectBaseline() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ projectId, name, description }: { 
-      projectId: string; 
-      name: string; 
-      description?: string 
+    mutationFn: async ({ projectId, name, description }: {
+      projectId: string;
+      name: string;
+      description?: string
     }) => {
       // Get all tasks for the project
       const { data: tasks, error: tasksError } = await supabase

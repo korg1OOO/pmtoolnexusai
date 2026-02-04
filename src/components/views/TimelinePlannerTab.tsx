@@ -58,6 +58,16 @@ import {
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const COLORS = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#ef4444", "#06b6d4", "#f97316"];
 const SWIMLANE_COLORS = ["#1e293b", "#312e81", "#4c1d95", "#1e3a5f", "#14532d", "#450a0a"];
+import { useTimelineGenerator } from "@/hooks/useTimelineGenerator";
+
+const SwimlaneDragHandle = () => {
+    const controls = useDragControls();
+    return (
+        <div className="cursor-grab active:cursor-grabbing p-1 hover:bg-zinc-200 rounded shrink-0" onPointerDown={(e) => controls.start(e)}>
+            <GripVertical className="h-4 w-4 text-zinc-400" />
+        </div>
+    );
+};
 
 interface Activity {
     id: string;
@@ -779,6 +789,19 @@ export function TimelinePlannerTab() {
 
         dispatch({ type: 'SET_INITIAL_DATA', swimlanes, milestones });
         toast({ title: "Snapshot Loaded", description: `Restored state from ${snapshot.name}` });
+    };
+
+    // Geneator Hook
+    const { generatePlan, isGenerating } = useTimelineGenerator();
+
+    const handleGeneratePlan = async () => {
+        if (!settings.id) return;
+        if (!confirm("This will generate a new Project Plan based on this timeline. This will append tasks to your existing plan. Continue?")) return;
+
+        await generatePlan(settings.id, {
+            swimlanes: state.swimlanes,
+            milestones: state.milestones
+        });
     };
 
 
@@ -1912,9 +1935,10 @@ export function TimelinePlannerTab() {
                                                             ))}
                                                         </div>
                                                     )}
-                                                </div>
+                                                </Reorder.Item>
                                             );
                                         })}
+                                    </Reorder.Group>
                                 </div>
                                 {/* Milestone Pins */}
                                 <div className="absolute inset-0 pointer-events-none">
@@ -1956,8 +1980,8 @@ export function TimelinePlannerTab() {
                                     ))}
                                 </div>
 
-                            </Card>
-                        </div>
+                            </Card >
+                        </div >
                         <ScrollBar orientation="horizontal" />
                     </ScrollArea >
                 ) : activeTab === 'resources' ? (

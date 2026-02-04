@@ -21,14 +21,15 @@ import { ViewSwitcher, PlanViewMode } from './ViewSwitcher';
 import { DatabaseTaskGrid } from '@/components/planning/DatabaseTaskGrid';
 import { DatabaseGantt } from '@/components/planning/DatabaseGantt';
 import { SprintBoardView } from './SprintBoardView';
-import { AuthDialog } from '@/components/auth/AuthDialog';
+
 import { CalendarDialog } from '@/components/planning/CalendarDialog';
 import { ResourceSheet } from '@/components/resources/ResourceSheet';
 import { ResourceUsageView } from '@/components/resources/ResourceUsageView';
 import { ProjectChat } from '@/components/collaboration/ProjectChat';
 import { useAuth } from '@/hooks/useAuth';
 import { useProjects, useCreateProject, Project } from '@/hooks/useProjects';
-import { useTasks, useCreateTask } from '@/hooks/useTasks';
+import { useTasks, useCreateTask, DbTask } from '@/hooks/useTasks';
+import { LinkChildProjectDialog } from '@/components/planning/LinkChildProjectDialog';
 import { useCalculateCriticalPath } from '@/hooks/useCriticalPath';
 import { useScheduleTrigger } from '@/hooks/useScheduleTrigger';
 import { usePresenceContext } from '@/contexts/PresenceContext';
@@ -80,7 +81,7 @@ export function PlanningView({ demo = false }: PlanningViewProps) {
   const [viewMode, setViewMode] = useState<PlanViewMode>('grid');
   const [resourceView, setResourceView] = useState<ResourceViewMode>('none');
   const [showShortcuts, setShowShortcuts] = useState(false);
-  const [showAuthDialog, setShowAuthDialog] = useState(false);
+
   const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
   const [showCalendarDialog, setShowCalendarDialog] = useState(false);
   const [showChat, setShowChat] = useState(false);
@@ -89,6 +90,11 @@ export function PlanningView({ demo = false }: PlanningViewProps) {
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectCode, setNewProjectCode] = useState('');
   const [newProjectDesc, setNewProjectDesc] = useState('');
+
+  const [selectedTasks, setSelectedTasks] = useState<DbTask[]>([]);
+  const [showLinkDialog, setShowLinkDialog] = useState(false);
+  const [linkingTaskId, setLinkingTaskId] = useState<string | null>(null);
+  const [currentChildProjectId, setCurrentChildProjectId] = useState<string | null>(null);
 
   const { user, loading: authLoading, signOut, isAuthenticated } = useAuth();
   const { data: projects = [], isLoading: projectsLoading } = useProjects();
@@ -130,6 +136,27 @@ export function PlanningView({ demo = false }: PlanningViewProps) {
       setSelectedCalendarId(null);
     }
   }, [defaultCalendar]);
+
+  const handleChildPlanClick = () => {
+    if (selectedTasks.length !== 1) return;
+    const task = selectedTasks[0];
+
+    if (task.child_project_id) {
+      // Navigate to child project
+      setSelectedProjectId(task.child_project_id);
+      setCurrentProjectId(task.child_project_id);
+      toast.success('Switched to child plan');
+    } else {
+      // Open link dialog
+      setLinkingTaskId(task.id);
+      setCurrentChildProjectId(null);
+      setShowLinkDialog(true);
+    }
+  };
+
+  const handleLinkSuccess = () => {
+    // Refresh tasks logic if needed, but QueryClient handles it
+  };
 
   const shortcuts = [
     { key: '↑ / ↓', description: 'Navigate between tasks' },
@@ -230,54 +257,24 @@ export function PlanningView({ demo = false }: PlanningViewProps) {
       {/* Toolbar */}
       <div className="flex items-center justify-between p-4 border-b bg-card">
         <div className="flex items-center gap-2">
-          {/* Project Selector */}
-          <div className="flex items-center gap-2 mr-4">
-            <FolderOpen className="h-4 w-4 text-muted-foreground" />
-            {projectsLoading ? (
-              <Skeleton className="h-8 w-40" />
-            ) : (
-              <Select
-                value={selectedProjectId || ''}
-                onValueChange={setSelectedProjectId}
-              >
-                <SelectTrigger className="w-48 h-8">
-                  <SelectValue placeholder="Select project" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      <span className="font-mono text-xs mr-2">{project.code}</span>
-                      {project.name}
-                    </SelectItem>
-                  ))}
-                  <DropdownMenuSeparator />
-                  <SelectItem value="__new__" disabled>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full justify-start -ml-2"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowNewProjectDialog(true);
-                      }}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      New Project
-                    </Button>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowNewProjectDialog(true)}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
+
 
           <div className="w-px h-6 bg-border" />
+
+          <Button
+            size="sm"
+            onClick={handleChildPlanClick}
+            disabled={selectedTasks.length !== 1}
+            className={cn(
+              selectedTasks.length === 1 && selectedTasks[0].child_project_id
+                ? "bg-green-600 hover:bg-green-700 text-white"
+                : "bg-blue-600 hover:bg-blue-700 text-white"
+            )}
+            variant={selectedTasks.length !== 1 ? "outline" : "default"}
+          >
+            <Link2 className="h-4 w-4 mr-1" />
+            Child Plan
+          </Button>
 
           <Button size="sm" onClick={handleAddTask} disabled={!selectedProjectId}>
             <Plus className="h-4 w-4 mr-1" />
@@ -482,15 +479,26 @@ export function PlanningView({ demo = false }: PlanningViewProps) {
                     </div>
                   </div>
                 ) : (
-                  <DatabaseTaskGrid projectId={selectedProjectId} />
-                )
-              )}
-              {viewMode === 'gantt' && (
-                <DatabaseGantt projectId={selectedProjectId || ''} />
-              )}
+                  <div className="flex-1 overflow-hidden relative">
+                    {viewMode === 'grid' && selectedProjectId && (
+                      <DatabaseTaskGrid
+                        projectId={selectedProjectId}
+                        onSelectionChange={setSelectedTasks}
+                      />
+                    )}
+
+                    {viewMode === 'gantt' && (
+                      <DatabaseGantt
+                        projectId={selectedProjectId || ''}
+                        onSelectionChange={setSelectedTasks}
+                      />
+                    )}
+                  </div>
+                )}
               {viewMode === 'board' && <SprintBoardView />}
             </>
-          )}
+          )
+          }
         </>
       ) : (
         <div className="flex-1 flex items-center justify-center text-muted-foreground">
@@ -584,43 +592,57 @@ export function PlanningView({ demo = false }: PlanningViewProps) {
         </DialogContent>
       </Dialog>
 
-      <AuthDialog open={showAuthDialog} onOpenChange={setShowAuthDialog} />
+
+
+      {
+        linkingTaskId && (
+          <LinkChildProjectDialog
+            open={showLinkDialog}
+            onOpenChange={setShowLinkDialog}
+            taskId={linkingTaskId}
+            currentChildProjectId={currentChildProjectId}
+            onLinkSuccess={handleLinkSuccess}
+          />
+        )
+      }
 
       {/* Calendar Dialog */}
-      {selectedProjectId && (
-        <CalendarDialog
-          open={showCalendarDialog}
-          onOpenChange={setShowCalendarDialog}
-          calendars={calendars}
-          selectedCalendar={selectedCalendar}
-          exceptions={calendarExceptions}
-          projectId={selectedProjectId}
-          onSelectCalendar={(id) => setSelectedCalendarId(id)}
-          onSave={async (updates) => {
-            if (selectedCalendar) {
-              await updateCalendar.mutateAsync({ id: selectedCalendar.id, ...updates });
-            }
-          }}
-          onCreateCalendar={async (calendar) => {
-            const newCal = await createCalendar.mutateAsync(calendar);
-            setSelectedCalendarId(newCal.id);
-          }}
-          onDeleteCalendar={async (id) => {
-            await deleteCalendar.mutateAsync({ id, projectId: selectedProjectId });
-            setSelectedCalendarId(null);
-          }}
-          onAddException={async (exception) => {
-            await createException.mutateAsync(exception);
-          }}
-          onRemoveException={async (id) => {
-            if (selectedCalendar) {
-              await deleteException.mutateAsync({ id, calendarId: selectedCalendar.id });
-            }
-          }}
-          isSaving={updateCalendar.isPending}
-        />
-      )}
-    </div>
+      {
+        selectedProjectId && (
+          <CalendarDialog
+            open={showCalendarDialog}
+            onOpenChange={setShowCalendarDialog}
+            calendars={calendars}
+            selectedCalendar={selectedCalendar}
+            exceptions={calendarExceptions}
+            projectId={selectedProjectId}
+            onSelectCalendar={(id) => setSelectedCalendarId(id)}
+            onSave={async (updates) => {
+              if (selectedCalendar) {
+                await updateCalendar.mutateAsync({ id: selectedCalendar.id, ...updates });
+              }
+            }}
+            onCreateCalendar={async (calendar) => {
+              const newCal = await createCalendar.mutateAsync(calendar);
+              setSelectedCalendarId(newCal.id);
+            }}
+            onDeleteCalendar={async (id) => {
+              await deleteCalendar.mutateAsync({ id, projectId: selectedProjectId });
+              setSelectedCalendarId(null);
+            }}
+            onAddException={async (exception) => {
+              await createException.mutateAsync(exception);
+            }}
+            onRemoveException={async (id) => {
+              if (selectedCalendar) {
+                await deleteException.mutateAsync({ id, calendarId: selectedCalendar.id });
+              }
+            }}
+            isSaving={updateCalendar.isPending}
+          />
+        )
+      }
+    </div >
   );
 }
 

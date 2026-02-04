@@ -45,7 +45,7 @@ export function TopBar({ projectName, projectCode, className, onCreateProject, o
         {/* Presence Indicator */}
         <PresenceIndicator users={users} className="mr-2" />
 
-        <Button size="sm" onClick={onCreateProject} className="mr-2"><Plus className="h-4 w-4 mr-1" />New Project</Button>
+
         <Button variant="ghost" size="iconSm"><LayoutGrid className="h-4 w-4" /></Button>
         <ThemeToggle />
         <NotificationCenter />

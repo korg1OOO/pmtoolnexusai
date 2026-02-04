@@ -44,11 +44,11 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format } from 'date-fns';
-import { 
-  DbTask, 
-  useTasks, 
-  useCreateTask, 
-  useUpdateTask, 
+import {
+  DbTask,
+  useTasks,
+  useCreateTask,
+  useUpdateTask,
   useDeleteTask,
   useDependencies,
   useCreateDependency,
@@ -376,16 +376,17 @@ function EditableTaskRow({
 
 interface DatabaseTaskGridProps {
   projectId: string;
+  onSelectionChange?: (selectedTasks: DbTask[]) => void;
 }
 
-export function DatabaseTaskGrid({ projectId }: DatabaseTaskGridProps) {
+export function DatabaseTaskGrid({ projectId, onSelectionChange }: DatabaseTaskGridProps) {
   const { data: tasks = [], isLoading, error } = useTasks(projectId);
   const { data: dependencies = [] } = useDependencies(projectId);
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
   const { triggerSchedule } = useScheduleTrigger(projectId);
-  
+
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
   const [focusedTaskId, setFocusedTaskId] = useState<string | null>(null);
@@ -395,7 +396,7 @@ export function DatabaseTaskGrid({ projectId }: DatabaseTaskGridProps) {
   // Build hierarchical structure
   const { visibleTasks, taskChildrenMap } = useMemo(() => {
     const childrenMap = new Map<string | null, DbTask[]>();
-    
+
     tasks.forEach(task => {
       const parentId = task.parent_id;
       if (!childrenMap.has(parentId)) {
@@ -407,14 +408,14 @@ export function DatabaseTaskGrid({ projectId }: DatabaseTaskGridProps) {
     const flatten = (parentId: string | null, level: number): DbTask[] => {
       const children = childrenMap.get(parentId) || [];
       const result: DbTask[] = [];
-      
+
       children.forEach(task => {
         result.push({ ...task, level });
         if (expandedTasks.has(task.id) || task.expanded) {
           result.push(...flatten(task.id, level + 1));
         }
       });
-      
+
       return result;
     };
 
@@ -439,7 +440,7 @@ export function DatabaseTaskGrid({ projectId }: DatabaseTaskGridProps) {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!focusedTaskId) return;
-      
+
       const currentIndex = visibleTasks.findIndex(t => t.id === focusedTaskId);
       if (currentIndex === -1) return;
 
@@ -518,6 +519,11 @@ export function DatabaseTaskGrid({ projectId }: DatabaseTaskGridProps) {
       } else {
         next.delete(taskId);
       }
+
+      // Notify parent
+      const selectedTaskObjects = tasks.filter(t => next.has(t.id));
+      onSelectionChange?.(selectedTaskObjects);
+
       return next;
     });
   };
@@ -526,7 +532,7 @@ export function DatabaseTaskGrid({ projectId }: DatabaseTaskGridProps) {
     setSavingTasks(prev => new Set([...prev, taskId]));
     try {
       await updateTask.mutateAsync({ id: taskId, project_id: projectId, ...updates });
-      
+
       // Trigger auto-scheduling when date-related fields change
       const schedulingFields = ['start_date', 'end_date', 'duration', 'constraint_type', 'constraint_date'];
       const shouldSchedule = schedulingFields.some(field => field in updates);
@@ -565,7 +571,7 @@ export function DatabaseTaskGrid({ projectId }: DatabaseTaskGridProps) {
     const siblings = taskChildrenMap.get(parentId) || [];
     const wbs = generateWBS(parentId, siblings);
     const level = parentId ? (tasks.find(t => t.id === parentId)?.level ?? 0) + 1 : 0;
-    
+
     let sortOrder = 0;
     if (afterTaskId) {
       const afterTask = tasks.find(t => t.id === afterTaskId);
@@ -647,11 +653,14 @@ export function DatabaseTaskGrid({ projectId }: DatabaseTaskGridProps) {
           <Checkbox
             checked={selectedTasks.size === visibleTasks.length && visibleTasks.length > 0}
             onCheckedChange={(checked) => {
+              let newSet = new Set<string>();
               if (checked) {
-                setSelectedTasks(new Set(visibleTasks.map(t => t.id)));
-              } else {
-                setSelectedTasks(new Set());
+                newSet = new Set(visibleTasks.map(t => t.id));
               }
+              setSelectedTasks(newSet);
+
+              const selectedTaskObjects = tasks.filter(t => newSet.has(t.id));
+              onSelectionChange?.(selectedTaskObjects);
             }}
           />
         </div>

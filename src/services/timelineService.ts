@@ -190,5 +190,64 @@ export const timelineService = {
             .order('created_at', { ascending: false });
         if (error) throw error;
         return data;
+    },
+    async deleteSnapshot(id: string) {
+        const { error } = await supabase
+            .from('timeline_snapshots')
+            .delete()
+            .eq('id', id);
+        if (error) throw error;
+    },
+
+    // Sites
+    async fetchSites(projectId: string) {
+        const { data, error } = await supabase
+            .from('timeline_sites')
+            .select('*')
+            .eq('project_id', projectId);
+        if (error) throw error;
+        return data;
+    },
+    async saveSite(site: any) {
+        const { data, error } = await supabase
+            .from('timeline_sites')
+            .upsert(site)
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
+    },
+    async deleteSite(id: string) {
+        const { error } = await supabase
+            .from('timeline_sites')
+            .delete()
+            .eq('id', id);
+        if (error) throw error;
+    },
+
+    // Teams
+    async fetchTeams(projectId: string) {
+        const { data, error } = await supabase
+            .from('timeline_teams')
+            .select('*')
+            .eq('project_id', projectId);
+        if (error) throw error;
+        return data;
+    },
+    async saveTeam(team: any) {
+        const { data, error } = await supabase
+            .from('timeline_teams')
+            .upsert(team)
+            .select()
+            .single();
+        if (error) throw error;
+        return data;
+    },
+    async deleteTeam(id: string) {
+        const { error } = await supabase
+            .from('timeline_teams')
+            .delete()
+            .eq('id', id);
+        if (error) throw error;
     }
 };

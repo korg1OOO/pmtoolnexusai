@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
 
@@ -67,6 +67,58 @@ export const useProgram = (id: string | undefined) => {
             if (error) throw error;
             return data;
         },
-        enabled: !!id,
+    });
+};
+
+export const useCreateProgram = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (newProgram: { name: string; description?: string; status?: 'active' | 'archived'; portfolio_id: string }) => {
+            const { data, error } = await supabase
+                .from('programs')
+                .insert(newProgram)
+                .select()
+                .single();
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['programs'] });
+        },
+    });
+};
+
+export const useUpdateProgram = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (program: { id: string; name?: string; description?: string; status?: 'active' | 'archived'; owner_id?: string }) => {
+            const { data, error } = await supabase
+                .from('programs')
+                .update(program)
+                .eq('id', program.id)
+                .select()
+                .single();
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['programs'] });
+        },
+    });
+};
+
+export const useDeleteProgram = () => {
+    const queryClient = useQueryClient();
+    return useMutation({
+        mutationFn: async (id: string) => {
+            const { error } = await supabase
+                .from('programs')
+                .delete()
+                .eq('id', id);
+            if (error) throw error;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['programs'] });
+        },
     });
 };

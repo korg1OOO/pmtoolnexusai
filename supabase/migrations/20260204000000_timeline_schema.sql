@@ -58,12 +58,12 @@ CREATE TABLE IF NOT EXISTS timeline_snapshots (
 );
 
 -- Indexes for performance
-CREATE INDEX idx_timeline_swimlanes_project_id ON timeline_swimlanes(project_id);
-CREATE INDEX idx_timeline_activities_swimlane_id ON timeline_activities(swimlane_id);
-CREATE INDEX idx_timeline_dependencies_source ON timeline_dependencies(source_activity_id);
-CREATE INDEX idx_timeline_dependencies_target ON timeline_dependencies(target_activity_id);
-CREATE INDEX idx_timeline_milestones_project_id ON timeline_milestones(project_id);
-CREATE INDEX idx_timeline_snapshots_project_id ON timeline_snapshots(project_id);
+CREATE INDEX IF NOT EXISTS idx_timeline_swimlanes_project_id ON timeline_swimlanes(project_id);
+CREATE INDEX IF NOT EXISTS idx_timeline_activities_swimlane_id ON timeline_activities(swimlane_id);
+CREATE INDEX IF NOT EXISTS idx_timeline_dependencies_source ON timeline_dependencies(source_activity_id);
+CREATE INDEX IF NOT EXISTS idx_timeline_dependencies_target ON timeline_dependencies(target_activity_id);
+CREATE INDEX IF NOT EXISTS idx_timeline_milestones_project_id ON timeline_milestones(project_id);
+CREATE INDEX IF NOT EXISTS idx_timeline_snapshots_project_id ON timeline_snapshots(project_id);
 
 -- Enable RLS (Assuming RLS is generally used, but keeping policies open for now or copying standard project access)
 ALTER TABLE timeline_swimlanes ENABLE ROW LEVEL SECURITY;
@@ -73,25 +73,44 @@ ALTER TABLE timeline_milestones ENABLE ROW LEVEL SECURITY;
 ALTER TABLE timeline_snapshots ENABLE ROW LEVEL SECURITY;
 
 -- Standard policies (Project member access - simplified for this iteration to public or authenticated)
+-- Standard policies (Project member access - simplified for this iteration to public or authenticated)
+DROP POLICY IF EXISTS "Enable read access for authenticated users" ON timeline_swimlanes;
 CREATE POLICY "Enable read access for authenticated users" ON timeline_swimlanes FOR SELECT USING (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS "Enable insert access for authenticated users" ON timeline_swimlanes;
 CREATE POLICY "Enable insert access for authenticated users" ON timeline_swimlanes FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS "Enable update access for authenticated users" ON timeline_swimlanes;
 CREATE POLICY "Enable update access for authenticated users" ON timeline_swimlanes FOR UPDATE USING (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS "Enable delete access for authenticated users" ON timeline_swimlanes;
 CREATE POLICY "Enable delete access for authenticated users" ON timeline_swimlanes FOR DELETE USING (auth.role() = 'authenticated');
 
+DROP POLICY IF EXISTS "Enable read access for authenticated users" ON timeline_activities;
 CREATE POLICY "Enable read access for authenticated users" ON timeline_activities FOR SELECT USING (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS "Enable insert access for authenticated users" ON timeline_activities;
 CREATE POLICY "Enable insert access for authenticated users" ON timeline_activities FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS "Enable update access for authenticated users" ON timeline_activities;
 CREATE POLICY "Enable update access for authenticated users" ON timeline_activities FOR UPDATE USING (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS "Enable delete access for authenticated users" ON timeline_activities;
 CREATE POLICY "Enable delete access for authenticated users" ON timeline_activities FOR DELETE USING (auth.role() = 'authenticated');
 
+DROP POLICY IF EXISTS "Enable read access for authenticated users" ON timeline_dependencies;
 CREATE POLICY "Enable read access for authenticated users" ON timeline_dependencies FOR SELECT USING (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS "Enable insert access for authenticated users" ON timeline_dependencies;
 CREATE POLICY "Enable insert access for authenticated users" ON timeline_dependencies FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS "Enable delete access for authenticated users" ON timeline_dependencies;
 CREATE POLICY "Enable delete access for authenticated users" ON timeline_dependencies FOR DELETE USING (auth.role() = 'authenticated');
 
+DROP POLICY IF EXISTS "Enable read access for authenticated users" ON timeline_milestones;
 CREATE POLICY "Enable read access for authenticated users" ON timeline_milestones FOR SELECT USING (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS "Enable insert access for authenticated users" ON timeline_milestones;
 CREATE POLICY "Enable insert access for authenticated users" ON timeline_milestones FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS "Enable update access for authenticated users" ON timeline_milestones;
 CREATE POLICY "Enable update access for authenticated users" ON timeline_milestones FOR UPDATE USING (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS "Enable delete access for authenticated users" ON timeline_milestones;
 CREATE POLICY "Enable delete access for authenticated users" ON timeline_milestones FOR DELETE USING (auth.role() = 'authenticated');
 
+DROP POLICY IF EXISTS "Enable read access for authenticated users" ON timeline_snapshots;
 CREATE POLICY "Enable read access for authenticated users" ON timeline_snapshots FOR SELECT USING (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS "Enable insert access for authenticated users" ON timeline_snapshots;
 CREATE POLICY "Enable insert access for authenticated users" ON timeline_snapshots FOR INSERT WITH CHECK (auth.role() = 'authenticated');
+DROP POLICY IF EXISTS "Enable delete access for authenticated users" ON timeline_snapshots;
 CREATE POLICY "Enable delete access for authenticated users" ON timeline_snapshots FOR DELETE USING (auth.role() = 'authenticated');

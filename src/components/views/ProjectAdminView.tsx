@@ -21,7 +21,15 @@ import {
   ChevronRight,
   Save,
   RefreshCw,
+  User,
+  Copy,
+  Briefcase,
+  Monitor
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { usePortfolios, useUpdatePortfolio } from '@/hooks/usePortfolios';
+import { usePrograms, useUpdateProgram } from '@/hooks/usePrograms';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -149,6 +157,19 @@ const roleColors: Record<TeamMember['role'], string> = {
 export function ProjectAdminView() {
   const [activeTab, setActiveTab] = useState('settings');
   const { settings, updateMethodology, updateModuleVisibility, updateSettings, getDefaultModules } = useProjectContext();
+  const [currentUserId, setCurrentUserId] = useState<string>('');
+
+
+  React.useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setCurrentUserId(data.user.id);
+    });
+  }, []);
+
+  const copyId = () => {
+    navigator.clipboard.writeText(currentUserId);
+    toast.success('User ID copied to clipboard');
+  };
 
   const handleMethodologyChange = (methodology: Methodology) => {
     updateMethodology(methodology);
@@ -212,6 +233,10 @@ export function ProjectAdminView() {
             <TabsTrigger value="integrations" className="gap-2">
               <Plug className="h-4 w-4" />
               Integrations
+            </TabsTrigger>
+            <TabsTrigger value="assignments" className="gap-2">
+              <Briefcase className="h-4 w-4" />
+              Assignments
             </TabsTrigger>
           </TabsList>
 
@@ -414,7 +439,7 @@ export function ProjectAdminView() {
                     const info = methodologyInfo[method];
                     const Icon = info.icon;
                     const isSelected = settings.methodology === method;
-                    
+
                     return (
                       <button
                         key={method}
@@ -617,8 +642,180 @@ export function ProjectAdminView() {
               ))}
             </div>
           </TabsContent>
+
+          {/* Assignments Tab */}
+          <TabsContent value="assignments" className="space-y-6">
+            <div className="mb-6 p-4 rounded-lg bg-muted/50 border flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-primary/10 p-2 rounded-full">
+                  <User className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Your User ID</p>
+                  <p className="text-xs text-muted-foreground font-mono mt-0.5">{currentUserId || 'Loading...'}</p>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={copyId} disabled={!currentUserId}>
+                <Copy className="h-4 w-4 mr-2" />
+                Copy ID
+              </Button>
+            </div>
+
+            <Tabs defaultValue="portfolios" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 max-w-[400px] mb-4">
+                <TabsTrigger value="portfolios">Portfolios</TabsTrigger>
+                <TabsTrigger value="programs">Programs</TabsTrigger>
+              </TabsList>
+              <TabsContent value="portfolios" className="space-y-4">
+                <PortfolioAssignments currentUserId={currentUserId} />
+              </TabsContent>
+              <TabsContent value="programs" className="space-y-4">
+                <ProgramAssignments currentUserId={currentUserId} />
+              </TabsContent>
+            </Tabs>
+          </TabsContent>
         </Tabs>
       </div>
     </div>
   );
+
 }
+
+function PortfolioAssignments({ currentUserId }: { currentUserId: string }) {
+  const { data: portfolios } = usePortfolios();
+  const updatePortfolio = useUpdatePortfolio();
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const handleAssign = async (id: string, newOwnerId: string) => {
+    try {
+      await updatePortfolio.mutateAsync({ id, owner_id: newOwnerId });
+      toast.success('Portfolio owner updated');
+      setEditingId(null);
+    } catch (error) {
+      toast.error('Failed to update owner');
+    }
+  };
+
+  return (
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Portfolio Name</TableHead>
+            <TableHead>Current Owner ID</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {portfolios?.map((p) => (
+            <AssignmentRow
+              key={p.id}
+              item={p}
+              currentUserId={currentUserId}
+              onAssign={handleAssign}
+              isEditing={editingId === p.id}
+              setEditing={setEditingId}
+            />
+          ))}
+          {(!portfolios || portfolios.length === 0) && (
+            <TableRow><TableCell colSpan={3} className="p-8 text-center text-muted-foreground">No portfolios found.</TableCell></TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function ProgramAssignments({ currentUserId }: { currentUserId: string }) {
+  const { data: programs } = usePrograms();
+  const updateProgram = useUpdateProgram();
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const handleAssign = async (id: string, newOwnerId: string) => {
+    try {
+      await updateProgram.mutateAsync({ id, owner_id: newOwnerId });
+      toast.success('Program owner updated');
+      setEditingId(null);
+    } catch (error) {
+      toast.error('Failed to update owner');
+    }
+  };
+
+  return (
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Program Name</TableHead>
+            <TableHead>Current Owner ID</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {programs?.map((p) => (
+            <AssignmentRow
+              key={p.id}
+              item={p}
+              currentUserId={currentUserId}
+              onAssign={handleAssign}
+              isEditing={editingId === p.id}
+              setEditing={setEditingId}
+            />
+          ))}
+          {(!programs || programs.length === 0) && (
+            <TableRow><TableCell colSpan={3} className="p-8 text-center text-muted-foreground">No programs found.</TableCell></TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function AssignmentRow({ item, currentUserId, onAssign, isEditing, setEditing }: any) {
+  const [inputValue, setInputValue] = useState(item.owner_id || '');
+
+  return (
+    <TableRow>
+      <TableCell className="font-medium">{item.name}</TableCell>
+      <TableCell className="font-mono text-xs text-muted-foreground">
+        {isEditing ? (
+          <Input
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            placeholder="Enter User UUID"
+            className="h-8 w-[300px]"
+          />
+        ) : (
+          <div className="flex items-center gap-2">
+            {item.owner_id ? (
+              <>
+                <span className="truncate max-w-[200px]">{item.owner_id}</span>
+                {item.owner_id === currentUserId && <Badge variant="outline" className="text-[10px] h-5">You</Badge>}
+              </>
+            ) : (
+              <span className="italic text-muted-foreground/50">Unassigned</span>
+            )}
+          </div>
+        )}
+      </TableCell>
+      <TableCell className="text-right">
+        {isEditing ? (
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setEditing(null)}>Cancel</Button>
+            <Button size="sm" onClick={() => onAssign(item.id, inputValue)}>Save</Button>
+          </div>
+        ) : (
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => { setInputValue(currentUserId); onAssign(item.id, currentUserId); }}>
+              Assign to Me
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => { setInputValue(item.owner_id || ''); setEditing(item.id); }}>
+              Edit
+            </Button>
+          </div>
+        )}
+      </TableCell>
+    </TableRow>
+  );
+}
+

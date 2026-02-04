@@ -596,7 +596,7 @@ export function TimelinePlannerTab() {
                 const data = await timelineService.fetchTimelineData(settings.id!);
 
                 // Map Backend Types to Frontend Types
-                const mappedSwimlanes: Swimlane[] = data.swimlanes.map(s => ({
+                const mappedSwimlanes: Swimlane[] = (data.swimlanes || []).map(s => ({
                     id: s.id,
                     label: s.label,
                     color: s.color,
@@ -629,7 +629,7 @@ export function TimelinePlannerTab() {
                     })) || []
                 }));
 
-                const mappedMilestones: Milestone[] = data.milestones.map(m => ({
+                const mappedMilestones: Milestone[] = (data.milestones || []).map(m => ({
                     id: m.id,
                     name: m.name,
                     monthIndex: m.month_index,
@@ -645,9 +645,13 @@ export function TimelinePlannerTab() {
                 }
 
                 dispatch({ type: 'SET_INITIAL_DATA', swimlanes: mappedSwimlanes, milestones: mappedMilestones });
-            } catch (error) {
+            } catch (error: any) {
                 console.error("Failed to load timeline data", error);
-                toast({ title: "Error loading timeline", description: "Could not fetch project data.", variant: "destructive" });
+                toast({
+                    title: "Error Loading Timeline",
+                    description: error.message || "Could not fetch project data",
+                    variant: "destructive"
+                });
             }
         };
 
@@ -659,8 +663,8 @@ export function TimelinePlannerTab() {
     const [activeTab, setActiveTab] = useState<'timeline' | 'resources' | 'analysis' | 'configurations'>('timeline');
     const [projectStartDate, setProjectStartDate] = useState("Mar 2025");
     const [projectDuration, setProjectDuration] = useState(12);
-    const [teams, setTeams] = useState<Team[]>(initialTeams);
-    const [sites, setSites] = useState<Site[]>(initialSites);
+    const [teams, setTeams] = useState<Team[]>([]);
+    const [sites, setSites] = useState<Site[]>([]);
     const [comments, setComments] = useState<Comment[]>(initialComments);
     const [showResourcePanel, setShowResourcePanel] = useState(false);
     const [selectedActivity, setSelectedActivity] = useState<Activity | null>(null);
@@ -672,11 +676,104 @@ export function TimelinePlannerTab() {
     const [editingResourceCell, setEditingResourceCell] = useState<{ swimId: string, actId: string, monthIndex: number } | null>(null);
     const [addingMonth, setAddingMonth] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
-    const [snapshots, setSnapshots] = useState<Snapshot[]>([
-        { id: "s-1", name: "Baseline Plan", timestamp: "2025-05-12", status: 'active', data: initialSwimlanes },
-        { id: "s-2", name: "Aggressive Timeline", timestamp: "2025-06-01", status: 'saved', data: initialSwimlanes },
-        { id: "s-3", name: "Conservative", timestamp: "2025-06-15", status: 'saved', data: initialSwimlanes },
-    ]);
+    const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
+
+    // Load Snapshots
+    useEffect(() => {
+        if (!settings.id) return;
+        timelineService.getSnapshots(settings.id)
+            .then(data => {
+                // Map backend structure to frontend Snapshot interface
+                // Backend: id, name, timestamp, data (jsonb), project_id
+                const mapped: Snapshot[] = (data || []).map((s: any) => ({
+                    id: s.id,
+                    name: s.name,
+                    timestamp: s.timestamp,
+                    status: 'saved',
+                    data: s.data
+                }));
+                setSnapshots(mapped);
+            })
+            .catch(console.error);
+    }, [settings.id]);
+
+    // Load Sites and Teams
+    useEffect(() => {
+        if (!settings.id) return;
+        Promise.all([
+            timelineService.fetchSites(settings.id),
+            timelineService.fetchTeams(settings.id)
+        ]).then(([loadedSites, loadedTeams]) => {
+            setSites(loadedSites || []);
+            setTeams(loadedTeams || []);
+        }).catch(console.error);
+    }, [settings.id]);
+
+    const handleCreateSnapshot = async () => {
+        const name = prompt("Enter snapshot name:");
+        if (!name || !settings.id) return;
+
+        try {
+            const snapshotData = {
+                swimlanes: state.swimlanes,
+                milestones: state.milestones
+            };
+
+            const newSnapshot = await timelineService.createSnapshot({
+                project_id: settings.id,
+                name,
+                timestamp: new Date().toISOString(),
+                data: snapshotData
+            });
+
+            // Optimistic update or refetch
+            const mapped: Snapshot = {
+                id: newSnapshot.id,
+                name: newSnapshot.name,
+                timestamp: newSnapshot.timestamp,
+                status: 'saved',
+                data: newSnapshot.data
+            };
+            setSnapshots([mapped, ...snapshots]);
+            toast({ title: "Snapshot Saved", description: "Timeline state preserved." });
+        } catch (error) {
+            console.error("Failed to save snapshot", error);
+            toast({ title: "Error", description: "Could not save snapshot.", variant: "destructive" });
+        }
+    };
+
+    const handleDeleteSnapshot = async (id: string) => {
+        try {
+            await timelineService.deleteSnapshot(id);
+            setSnapshots(snapshots.filter(s => s.id !== id));
+            toast({ title: "Snapshot Deleted", description: "Snapshot removed." });
+        } catch (error) {
+            console.error(error);
+            toast({ title: "Error", description: "Failed to delete snapshot.", variant: "destructive" });
+        }
+    };
+
+    const handleLoadSnapshot = (snapshot: Snapshot) => {
+        if (!confirm(`Load snapshot "${snapshot.name}"? Unsaved changes will be lost.`)) return;
+
+        // The snapshot data might be just swimlanes or { swimlanes, milestones }
+        // Migration check:
+        const data = snapshot.data as any;
+        let swimlanes = [];
+        let milestones = [];
+
+        if (Array.isArray(data)) {
+            swimlanes = data;
+            milestones = state.milestones; // Keep existing if not in snapshot
+        } else {
+            swimlanes = data.swimlanes || [];
+            milestones = data.milestones || [];
+        }
+
+        dispatch({ type: 'SET_INITIAL_DATA', swimlanes, milestones });
+        toast({ title: "Snapshot Loaded", description: `Restored state from ${snapshot.name}` });
+    };
+
 
     // ─── UTILITIES ───────────────────────────────────────────────────────────
     const { toast } = useToast();
@@ -1977,7 +2074,11 @@ export function TimelinePlannerTab() {
                                         <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-muted-foreground">
                                             <MapPin className="h-3.5 w-3.5 text-emerald-500" /> Sites / Locations
                                         </div>
-                                        <Button size="sm" variant="outline" className="h-7 px-3 rounded-lg font-black text-[9px] tracking-widest uppercase border-emerald-500/20 text-emerald-500 hover:bg-emerald-500/10" onClick={() => setSites([...sites, { id: uid(), name: "New Site", region: "Global" }])}>
+                                        {/* Fixed: Removed extra closing div */}
+                                        <Button size="sm" variant="outline" className="h-7 px-3 rounded-lg font-black text-[9px] tracking-widest uppercase border-emerald-500/20 text-emerald-500 hover:bg-emerald-500/10" onClick={() => {
+                                            const newSite = { id: uid(), project_id: settings.id, name: "New Site", region: "Global" };
+                                            timelineService.saveSite(newSite).then(s => setSites([...sites, s]));
+                                        }}>
                                             <Plus size={12} className="mr-1" /> Add
                                         </Button>
                                     </div>
@@ -1993,11 +2094,19 @@ export function TimelinePlannerTab() {
                                                         placeholder="Enter site name"
                                                         className="w-full bg-transparent border-none p-0 text-sm font-black tracking-tight text-foreground focus:ring-0 outline-none"
                                                         value={s.name}
-                                                        onChange={e => setSites(prev => prev.map(x => x.id === s.id ? { ...x, name: e.target.value } : x))}
+                                                        onChange={e => {
+                                                            const updated = { ...s, name: e.target.value };
+                                                            setSites(prev => prev.map(x => x.id === s.id ? updated : x));
+                                                            // Debounce usually better, but for now specific save on blur or raw
+                                                        }}
+                                                        onBlur={() => timelineService.saveSite(s)}
                                                     />
                                                     <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{s.region}</div>
                                                 </div>
-                                                <Button variant="ghost" size="icon" className="opacity-0 group-hover/site:opacity-100 h-8 w-8 rounded-lg text-muted-foreground hover:text-red-500 transition-all" onClick={() => setSites(prev => prev.filter(x => x.id !== s.id))}>
+                                                <Button variant="ghost" size="icon" className="opacity-0 group-hover/site:opacity-100 h-8 w-8 rounded-lg text-muted-foreground hover:text-red-500 transition-all" onClick={() => {
+                                                    timelineService.deleteSite(s.id);
+                                                    setSites(prev => prev.filter(x => x.id !== s.id));
+                                                }}>
                                                     <X size={14} />
                                                 </Button>
                                             </div>
@@ -2011,7 +2120,11 @@ export function TimelinePlannerTab() {
                                         <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-muted-foreground">
                                             <Users className="h-3.5 w-3.5 text-indigo-500" /> Teams
                                         </div>
-                                        <Button size="sm" variant="outline" className="h-7 px-3 rounded-lg font-black text-[9px] tracking-widest uppercase border-indigo-500/20 text-indigo-500 hover:bg-indigo-500/10" onClick={() => setTeams([...teams, { id: uid(), name: "New Team", location: "Remote", color: COLORS[teams.length % COLORS.length] }])}>
+                                        {/* Fixed: Removed premature closing div so Button is inside flex header */}
+                                        <Button size="sm" variant="outline" className="h-7 px-3 rounded-lg font-black text-[9px] tracking-widest uppercase border-indigo-500/20 text-indigo-500 hover:bg-indigo-500/10" onClick={() => {
+                                            const newTeam = { id: uid(), project_id: settings.id, name: "New Team", location: "Remote", color: COLORS[teams.length % COLORS.length] };
+                                            timelineService.saveTeam(newTeam).then(t => setTeams([...teams, t]));
+                                        }}>
                                             <Plus size={12} className="mr-1" /> Add
                                         </Button>
                                     </div>
@@ -2027,11 +2140,18 @@ export function TimelinePlannerTab() {
                                                         placeholder="Enter team name"
                                                         className="w-full bg-transparent border-none p-0 text-sm font-black tracking-tight text-foreground focus:ring-0 outline-none"
                                                         value={t.name}
-                                                        onChange={e => setTeams(prev => prev.map(x => x.id === t.id ? { ...x, name: e.target.value } : x))}
+                                                        onChange={e => {
+                                                            const updated = { ...t, name: e.target.value };
+                                                            setTeams(prev => prev.map(x => x.id === t.id ? updated : x));
+                                                        }}
+                                                        onBlur={() => timelineService.saveTeam(t)}
                                                     />
                                                     <div className="text-[9px] font-bold text-muted-foreground uppercase tracking-widest">{t.location}</div>
                                                 </div>
-                                                <Button variant="ghost" size="icon" className="opacity-0 group-hover/team:opacity-100 h-8 w-8 rounded-lg text-muted-foreground hover:text-red-500 transition-all" onClick={() => setTeams(prev => prev.filter(x => x.id !== t.id))}>
+                                                <Button variant="ghost" size="icon" className="opacity-0 group-hover/team:opacity-100 h-8 w-8 rounded-lg text-muted-foreground hover:text-red-500 transition-all" onClick={() => {
+                                                    timelineService.deleteTeam(t.id);
+                                                    setTeams(prev => prev.filter(x => x.id !== t.id));
+                                                }}>
                                                     <X size={14} />
                                                 </Button>
                                             </div>
@@ -2046,10 +2166,7 @@ export function TimelinePlannerTab() {
                                     <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-muted-foreground">
                                         <Copy className="h-3.5 w-3.5 text-indigo-500" /> Scenario Snapshots
                                     </div>
-                                    <Button size="sm" className="h-8 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[10px] tracking-widest uppercase px-6" onClick={() => {
-                                        const name = prompt("Enter snapshot name:");
-                                        if (name) setSnapshots([{ id: uid(), name, timestamp: new Date().toISOString(), status: 'saved', data: JSON.parse(JSON.stringify(state.swimlanes)) }, ...snapshots]);
-                                    }}>
+                                    <Button size="sm" className="h-8 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[10px] tracking-widest uppercase px-6" onClick={handleCreateSnapshot}>
                                         <Plus size={14} className="mr-2" /> Save Current as Snapshot
                                     </Button>
                                 </div>
@@ -2058,7 +2175,7 @@ export function TimelinePlannerTab() {
                                         <div key={s.id} className={cn(
                                             "p-4 rounded-xl border transition-all flex items-center justify-between group cursor-pointer",
                                             s.status === 'active' ? "bg-indigo-600/5 border-indigo-500 shadow-lg shadow-indigo-500/10 ring-1 ring-indigo-500/50" : "bg-card border-border hover:bg-accent"
-                                        )}>
+                                        )} onClick={() => handleLoadSnapshot(s)}>
                                             <div className="flex items-center gap-3">
                                                 <div className={cn("h-2.5 w-2.5 rounded-full", s.status === 'active' ? "bg-emerald-500 animate-pulse" : "bg-zinc-700")} />
                                                 <div>
@@ -2073,7 +2190,7 @@ export function TimelinePlannerTab() {
                                                 {s.status !== 'active' && (
                                                     <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-muted-foreground hover:text-red-500" onClick={(e) => {
                                                         e.stopPropagation();
-                                                        setSnapshots(snapshots.filter(x => x.id !== s.id));
+                                                        handleDeleteSnapshot(s.id);
                                                     }}>
                                                         <X size={12} />
                                                     </Button>
@@ -2083,8 +2200,8 @@ export function TimelinePlannerTab() {
                                     ))}
                                 </div>
                             </section>
-                        </div>
-                    </div>
+                        </div >
+                    </div >
                 ) : (
                     /* ── ANALYSIS TAB (Reports) ── */
                     <div className="flex-1 p-6 overflow-y-auto w-full bg-background no-print">

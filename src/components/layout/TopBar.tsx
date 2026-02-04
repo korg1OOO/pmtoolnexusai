@@ -9,6 +9,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { NotificationCenter } from '@/components/notifications/NotificationCenter';
 import { PresenceIndicator } from '@/components/collaboration/PresenceIndicator';
 import { usePresenceContext } from '@/contexts/PresenceContext';
+import { ProjectSwitcher } from '@/components/layout/ProjectSwitcher';
 
 interface TopBarProps {
   projectName?: string;
@@ -27,9 +28,7 @@ export function TopBar({ projectName, projectCode, className, onCreateProject, o
       <div className="flex items-center gap-4">
         {projectName && (
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-muted-foreground">{projectCode}</span>
-            <span className="text-muted-foreground">/</span>
-            <h1 className="text-sm font-semibold truncate max-w-[300px]">{projectName}</h1>
+            <ProjectSwitcher />
           </div>
         )}
       </div>
@@ -45,7 +44,7 @@ export function TopBar({ projectName, projectCode, className, onCreateProject, o
       <div className="flex items-center gap-1">
         {/* Presence Indicator */}
         <PresenceIndicator users={users} className="mr-2" />
-        
+
         <Button size="sm" onClick={onCreateProject} className="mr-2"><Plus className="h-4 w-4 mr-1" />New Project</Button>
         <Button variant="ghost" size="iconSm"><LayoutGrid className="h-4 w-4" /></Button>
         <ThemeToggle />

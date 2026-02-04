@@ -44,11 +44,14 @@ import {
   Tooltip,
   ResponsiveContainer
 } from 'recharts';
+import { PortfolioManagement } from './PortfolioManagement';
+import { usePermissions } from '@/hooks/usePermissions';
 
 export function PortfolioView() {
   const { data: portfoliosData, isLoading: isLoadingPortfolios } = usePortfolios();
+  const { data: permissions } = usePermissions();
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'overview' | 'programs' | 'projects'>('overview');
+  const [viewMode, setViewMode] = useState<'overview' | 'programs' | 'projects' | 'management'>('overview');
   const [selectedProject, setSelectedProject] = useState<any | null>(null);
 
   // Set initial selected portfolio if not set
@@ -234,6 +237,16 @@ export function PortfolioView() {
             {mode}
           </button>
         ))}
+        {permissions?.hasManagementAccess && (
+          <button
+            key="management"
+            onClick={() => setViewMode('management')}
+            className={`px-4 py-2 rounded-md text-sm font-medium transition-all capitalize ${viewMode === 'management' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+              }`}
+          >
+            management
+          </button>
+        )}
       </div>
 
       {viewMode === 'overview' && (
@@ -419,6 +432,12 @@ export function PortfolioView() {
             </table>
           </CardContent>
         </Card>
+      )}
+
+      {viewMode === 'management' && (
+        <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+          <PortfolioManagement />
+        </div>
       )}
 
       {/* Project Detail Slide-out Panel */}

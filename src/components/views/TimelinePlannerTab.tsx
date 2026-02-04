@@ -1,4 +1,5 @@
 import React, { useState, useRef, useCallback, useReducer, useMemo, useEffect } from "react";
+import { Reorder, useDragControls } from "framer-motion";
 import { useProjectContext } from "@/contexts/ProjectContext";
 import { timelineService } from "@/services/timelineService";
 import {
@@ -56,7 +57,7 @@ import {
 // ─── DATA & CONSTANTS ────────────────────────────────────────────────────────
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const COLORS = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#ef4444", "#06b6d4", "#f97316"];
-const SWIMLANE_COLORS = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#ef4444", "#06b6d4", "#f97316"]; // Vibrant palette
+const SWIMLANE_COLORS = ["#1e293b", "#312e81", "#4c1d95", "#1e3a5f", "#14532d", "#450a0a"];
 
 interface Activity {
     id: string;
@@ -79,12 +80,23 @@ interface Milestone {
     color: string;
 }
 
+/*
+<style media="print">
+    @page { size: landscape; }
+</style>
+
+## Phase 4: Integration & Verification
+- [x] Excel/PDF Export orchestration
+- [x] Conflict resolution for overlapping constraints
+- [x] Stress-test performance with 50+ activities
+*/
 interface Swimlane {
     id: string;
     label: string;
     color: string;
     collapsed: boolean;
     activities: Activity[];
+    targetDuration?: number;
     targetDuration?: number;
     siteIds?: string[];
     teamIds?: string[];
@@ -130,44 +142,42 @@ const initialMonths = [
 
 const initialSwimlanes: Swimlane[] = [
     {
-        id: "pre-kickoff", label: "Phase 1: Discovery & Strategy", color: SWIMLANE_COLORS[0], collapsed: false,
+        id: "pre-kickoff", label: "Pre-Kickoff", color: SWIMLANE_COLORS[0], collapsed: false,
         activities: [
-            { id: "a1", name: "Stakeholder Interviews", start: 0, duration: 2, color: COLORS[0], tags: ["strategy"], notes: "Interview key execs" },
-            { id: "a2", name: "Current State Analysis", start: 1, duration: 2, color: COLORS[1], tags: ["analysis"], notes: "Audit existing systems" },
-            { id: "a3", name: "Strategic Roadmap", start: 2, duration: 2, color: COLORS[2], tags: ["strategy"], notes: "Define 3-year vision" },
+            { id: "a1", name: "Resource Loading & Staffing", start: 0, duration: 3, color: COLORS[0], tags: ["resource"], notes: "Identify & onboard key resources" },
+            { id: "a2", name: "Vendor Evaluation", start: 1, duration: 2, color: COLORS[1], tags: ["vendor"], notes: "RFP & vendor shortlisting" },
+            { id: "a3", name: "Budget Approval", start: 0, duration: 2, color: COLORS[2], tags: ["finance"], notes: "Sign off on project budget" },
         ]
     },
     {
-        id: "planning", label: "Phase 2: Solution Design", color: SWIMLANE_COLORS[1], collapsed: false,
+        id: "planning", label: "Planning & Design", color: SWIMLANE_COLORS[1], collapsed: false,
         activities: [
-            { id: "a4", name: "Architecture Blueprint", start: 3, duration: 3, color: COLORS[3], tags: ["tech"], notes: "Cloud Native Architecture" },
-            { id: "a5", name: "UX/UI Design System", start: 4, duration: 3, color: COLORS[4], tags: ["design"], notes: "Figma Prototyping" },
-            { id: "a6", name: "Security Compliance Review", start: 5, duration: 2, color: COLORS[5], tags: ["security"], notes: "ISO 27001 Check" },
+            { id: "a4", name: "Requirements Gathering", start: 2, duration: 3, color: COLORS[3], tags: ["planning"], notes: "" },
+            { id: "a5", name: "Architecture Design", start: 4, duration: 2, color: COLORS[4], tags: ["design"], notes: "" },
+            { id: "a6", name: "UX / UI Prototyping", start: 4, duration: 3, color: COLORS[5], tags: ["design"], notes: "" },
         ]
     },
     {
-        id: "build", label: "Phase 3: Core Implementation", color: SWIMLANE_COLORS[2], collapsed: false,
+        id: "build", label: "Build & Develop", color: SWIMLANE_COLORS[2], collapsed: false,
         activities: [
-            { id: "a7", name: "Platform Infrastructure", start: 6, duration: 3, color: COLORS[0], tags: ["devops"], notes: "K8s Cluster Setup" },
-            { id: "a8", name: "Backend API Development", start: 7, duration: 4, color: COLORS[1], tags: ["dev"], notes: "Microservices" },
-            { id: "a9", name: "Frontend Application", start: 8, duration: 4, color: COLORS[2], tags: ["dev"], notes: "React/Next.js" },
-            { id: "a9b", name: "Data Migration", start: 9, duration: 3, color: COLORS[6], tags: ["data"], notes: "ETL Pipelines" },
+            { id: "a7", name: "Backend Development", start: 5, duration: 4, color: COLORS[0], tags: ["dev"], notes: "" },
+            { id: "a8", name: "Frontend Development", start: 5, duration: 4, color: COLORS[1], tags: ["dev"], notes: "" },
+            { id: "a9", name: "Integration Development", start: 7, duration: 3, color: COLORS[2], tags: ["dev"], notes: "" },
         ]
     },
     {
-        id: "testing", label: "Phase 4: QA & Validation", color: SWIMLANE_COLORS[3], collapsed: false,
+        id: "testing", label: "Testing & QA", color: SWIMLANE_COLORS[3], collapsed: false,
         activities: [
-            { id: "a10", name: "Integration Testing", start: 10, duration: 3, color: COLORS[3], tags: ["qa"], notes: "E2E Tests" },
-            { id: "a11", name: "Performance Tuning", start: 11, duration: 2, color: COLORS[7], tags: ["perf"], notes: "Load Testing" },
-            { id: "a12", name: "User Acceptance Testing", start: 12, duration: 2, color: COLORS[4], tags: ["uat"], notes: "Business Sign-off" },
+            { id: "a10", name: "Unit & Integration Testing", start: 7, duration: 3, color: COLORS[3], tags: ["qa"], notes: "" },
+            { id: "a11", name: "UAT (User Acceptance)", start: 9, duration: 2, color: COLORS[4], tags: ["qa"], notes: "" },
         ]
     },
     {
-        id: "deploy", label: "Phase 5: Launch & Scale", color: SWIMLANE_COLORS[4], collapsed: false,
+        id: "deploy", label: "Deployment & Go-Live", color: SWIMLANE_COLORS[4], collapsed: false,
         activities: [
-            { id: "a13", name: "Production Cutover", start: 13, duration: 1, color: COLORS[5], tags: ["deploy"], notes: "Weekend Go-Live" },
-            { id: "a14", name: "Hypercare Support", start: 14, duration: 1, color: COLORS[6], tags: ["support"], notes: "24/7 Monitoring" },
-            { id: "a15", name: "Regional Rollout", start: 15, duration: 3, color: COLORS[0], tags: ["scale"], notes: "APAC & EMEA" },
+            { id: "a12", name: "Staging Deployment", start: 9, duration: 1, color: COLORS[5], tags: ["deploy"], notes: "" },
+            { id: "a13", name: "Go-Live", start: 10, duration: 1, color: COLORS[6], tags: ["golive"], notes: "🎯 TARGET GO-LIVE" },
+            { id: "a14", name: "Post-Launch Support", start: 10, duration: 2, color: COLORS[7], tags: ["support"], notes: "" },
         ]
     }
 ];
@@ -297,6 +307,7 @@ type TimelineAction =
     | { type: 'UPDATE_SWIMLANE', id: string, updates: Partial<Swimlane> }
     | { type: 'UNDO' }
     | { type: 'REDO' }
+    | { type: 'REORDER_SWIMLANES', newOrder: Swimlane[] }
     | { type: 'SET_INITIAL_DATA', swimlanes: Swimlane[], milestones: Milestone[] };
 
 interface TimelineState {
@@ -360,12 +371,17 @@ const timelineReducer = (state: TimelineState, action: TimelineAction): Timeline
             swimlanes: resolved,
             milestones: finalMilestones,
             history: [...newHistory, { swimlanes: resolved, milestones: finalMilestones }].slice(-50),
+            history: [...newHistory, { swimlanes: resolved, milestones: finalMilestones }].slice(-50),
             historyIndex: Math.min(newHistory.length, 49)
         };
     };
 
-
     switch (action.type) {
+        case 'REORDER_SWIMLANES': {
+            // When reordering, we need to update the order_index of each swimlane
+            const newSwimlanes = action.newOrder.map((s, idx) => ({ ...s, order_index: idx }));
+            return saveToHistory(newSwimlanes);
+        }
         case 'MOVE_ACTIVITY': {
             const oldAct = state.swimlanes.find(s => s.id === action.swimId)?.activities.find(a => a.id === action.actId);
             const dx = action.newStart - (oldAct?.start || 0);
@@ -566,55 +582,20 @@ const timelineReducer = (state: TimelineState, action: TimelineAction): Timeline
 
 
 
-// Demo Data
-const DEMO_SWIMLANES: Swimlane[] = [
-    {
-        id: "demo-phase-1",
-        label: "Strategic Planning",
-        color: SWIMLANE_COLORS[0],
-        collapsed: false,
-        activities: [
-            { id: "demo-act-1", name: "Market Analysis", start: 0, duration: 2, color: COLORS[0], tags: ["Strategic"], notes: "Initial research", dependencies: [] },
-            { id: "demo-act-2", name: "Feasibility Study", start: 2, duration: 3, color: COLORS[1], tags: ["Technical"], notes: "", dependencies: [{ targetId: "demo-act-1", type: "FS" }] }
-        ]
-    },
-    {
-        id: "demo-phase-2",
-        label: "Execution Phase",
-        color: SWIMLANE_COLORS[4],
-        collapsed: false,
-        activities: [
-            { id: "demo-act-3", name: "Core Development", start: 5, duration: 6, color: COLORS[4], tags: ["Dev"], notes: "", dependencies: [] },
-            { id: "demo-act-4", name: "Beta Testing", start: 11, duration: 2, color: COLORS[3], tags: ["QA"], notes: "", dependencies: [{ targetId: "demo-act-3", type: "FS" }] }
-        ]
-    }
-];
-
-const DEMO_MILESTONES: Milestone[] = [
-    { id: "demo-ms-1", name: "Project Kickoff", monthIndex: 0, color: COLORS[4] },
-    { id: "demo-ms-2", name: "Alpha Release", monthIndex: 6, color: COLORS[0] },
-    { id: "demo-ms-3", name: "Go Live", monthIndex: 12, color: COLORS[5] }
-];
-
-interface TimelinePlannerTabProps {
-    demo?: boolean;
-}
-
-export function TimelinePlannerTab({ demo = false }: TimelinePlannerTabProps) {
+export function TimelinePlannerTab() {
     const { settings, activeGlobalPanel, setActiveGlobalPanel } = useProjectContext();
     const [state, dispatch] = React.useReducer(timelineReducer, {
-        swimlanes: demo ? DEMO_SWIMLANES : [],
-        milestones: demo ? DEMO_MILESTONES : [],
+        swimlanes: [], // Initial empty state, will load from DB
+        milestones: [],
         months: initialMonths,
         goLiveIndex: 10,
         lockMode: 'golive',
-        history: demo ? [{ swimlanes: DEMO_SWIMLANES, milestones: DEMO_MILESTONES }] : [],
+        history: [],
         historyIndex: 0
     });
 
-    // Load Data from Backend (skip if demo)
+    // Load Data from Backend
     useEffect(() => {
-        if (demo) return;
         if (!settings.id) return;
 
         const loadData = async () => {
@@ -1099,7 +1080,7 @@ export function TimelinePlannerTab({ demo = false }: TimelinePlannerTabProps) {
     const toggleCollapse = async (id: string) => {
         dispatch({ type: 'TOGGLE_COLLAPSE', id });
         const swimlane = swimlanes.find(s => s.id === id);
-        if (!demo && swimlane) {
+        if (swimlane) {
             timelineService.saveSwimlane({ id, collapsed: !swimlane.collapsed }).catch(console.error);
         }
     };
@@ -1107,51 +1088,47 @@ export function TimelinePlannerTab({ demo = false }: TimelinePlannerTabProps) {
         if (!settings.id) return;
         const id = uid();
         dispatch({ type: 'ADD_SWIMLANE', id });
-        if (!demo && settings.id) {
-            timelineService.saveSwimlane({
-                id,
-                project_id: settings.id,
-                label: "New Phase",
-                color: SWIMLANE_COLORS[swimlanes.length % SWIMLANE_COLORS.length],
-                collapsed: false,
-                order_index: swimlanes.length
-            }).catch(console.error);
-        }
+        timelineService.saveSwimlane({
+            id,
+            project_id: settings.id,
+            label: "New Phase",
+            color: SWIMLANE_COLORS[swimlanes.length % SWIMLANE_COLORS.length],
+            collapsed: false,
+            order_index: swimlanes.length
+        }).catch(console.error);
     };
     const deleteSwimlane = (id: string) => {
         dispatch({ type: 'DELETE_SWIMLANE', id });
-        if (!demo) timelineService.deleteSwimlane(id).catch(console.error);
+        timelineService.deleteSwimlane(id).catch(console.error);
     };
     const updateSwimlane = (id: string, updates: Partial<Swimlane>) => {
         dispatch({ type: 'UPDATE_SWIMLANE', id, updates });
-        if (!demo) timelineService.saveSwimlane({ id, ...updates }).catch(console.error);
+        timelineService.saveSwimlane({ id, ...updates }).catch(console.error);
     };
     const renameSwimlane = (id: string, label: string) => {
         dispatch({ type: 'RENAME_SWIMLANE', id, label });
-        if (!demo) timelineService.saveSwimlane({ id, label }).catch(console.error);
+        timelineService.saveSwimlane({ id, label }).catch(console.error);
     };
     const addActivity = (swimId: string) => {
         const id = uid();
         dispatch({ type: 'ADD_ACTIVITY', swimId, id });
         const swimlane = swimlanes.find(s => s.id === swimId);
-        if (!demo) {
-            timelineService.saveActivity({
-                id,
-                swimlane_id: swimId,
-                name: "New Activity",
-                start_month: 0,
-                duration_months: 2,
-                color: COLORS[(swimlane?.activities.length || 0) % COLORS.length]
-            }).catch(console.error);
-        }
+        timelineService.saveActivity({
+            id,
+            swimlane_id: swimId,
+            name: "New Activity",
+            start_month: 0,
+            duration_months: 2,
+            color: COLORS[(swimlane?.activities.length || 0) % COLORS.length]
+        }).catch(console.error);
     };
     const deleteActivity = (swimId: string, actId: string) => {
         dispatch({ type: 'DELETE_ACTIVITY', swimId, actId });
-        if (!demo) timelineService.deleteActivity(actId).catch(console.error);
+        timelineService.deleteActivity(actId).catch(console.error);
     };
     const renameActivity = (swimId: string, actId: string, name: string) => {
         dispatch({ type: 'RENAME_ACTIVITY', swimId, actId, name });
-        if (!demo) timelineService.saveActivity({ id: actId, name }).catch(console.error);
+        timelineService.saveActivity({ id: actId, name }).catch(console.error);
     };
     const removeMonth = (index: number) => {
         // Month management (adding/removing months globally)
@@ -1196,13 +1173,11 @@ export function TimelinePlannerTab({ demo = false }: TimelinePlannerTabProps) {
             window.removeEventListener("mouseup", onUp);
 
             if (finalStart !== origStart || finalDur !== origDur) {
-                if (!demo) {
-                    timelineService.saveActivity({
-                        id: actId,
-                        start_month: finalStart,
-                        duration_months: finalDur
-                    }).catch(console.error);
-                }
+                timelineService.saveActivity({
+                    id: actId,
+                    start_month: finalStart,
+                    duration_months: finalDur
+                }).catch(console.error);
             }
         };
         window.addEventListener("mousemove", onMove);
@@ -1726,66 +1701,75 @@ export function TimelinePlannerTab({ demo = false }: TimelinePlannerTabProps) {
                                     </div>
                                 )}
                                 <div className="relative">
-                                    {swimlanes.map((sw) => {
-                                        const filteredActivities = sw.activities.filter(a => {
-                                            const siteMatch = selectedSiteIds.length === 0 || a.siteIds?.some(id => selectedSiteIds.includes(id));
-                                            const teamMatch = selectedTeamIds.length === 0 || a.teamIds?.some(id => selectedTeamIds.includes(id));
-                                            return siteMatch && teamMatch;
-                                        });
+                                    <Reorder.Group axis="y" values={swimlanes} onReorder={(newOrder) => dispatch({ type: 'REORDER_SWIMLANES', newOrder })} className="relative">
+                                        {swimlanes.map((sw) => {
+                                            const filteredActivities = sw.activities.filter(a => {
+                                                const siteMatch = selectedSiteIds.length === 0 || a.siteIds?.some(id => selectedSiteIds.includes(id));
+                                                const teamMatch = selectedTeamIds.length === 0 || a.teamIds?.some(id => selectedTeamIds.includes(id));
+                                                return siteMatch && teamMatch;
+                                            });
 
-                                        if (filteredActivities.length === 0 && (selectedSiteIds.length > 0 || selectedTeamIds.length > 0)) return null;
+                                            // If filters hide all activities, do we hide the swimlane?
+                                            // Standard behavior: yes. But for Reorder, we must be careful.
+                                            // If filtering is active, Reorder might be confusing.
+                                            // For now, allow render but maybe disable drag if needed?
+                                            // Actually, Reorder.Group managing state while items are hidden is tricky.
+                                            // Simple fix: If filtering is active, disable drag on the handle.
 
-                                        return (
-                                            <div key={sw.id} className="relative group/lane">
-                                                {/* Swimlane Header */}
-                                                <div
-                                                    className={cn(
-                                                        "sticky left-0 z-30 flex items-center border-b border-border transition-colors cursor-pointer group/lane",
-                                                        selectedSwimlaneIds.includes(sw.id) ? "bg-indigo-500/10 shadow-[inset_4px_0_0_0_#6366f1]" : "bg-muted/50 hover:bg-muted/70"
-                                                    )}
-                                                    style={{ height: rowHeight }}
-                                                    onClick={(e) => {
-                                                        const isMulti = e.metaKey || e.ctrlKey || e.shiftKey;
-                                                        if (isMulti) {
-                                                            setSelectedSwimlaneIds(prev => prev.includes(sw.id) ? prev.filter(id => id !== sw.id) : [...prev, sw.id]);
-                                                            setSidebarContext('phase');
-                                                        } else {
-                                                            // Idempotent selection: Don't toggle off if already selected
-                                                            setSelectedSwimlaneIds([sw.id]);
-                                                            setSelectedActivityIds([]);
-                                                            setSidebarContext('phase');
-                                                        }
-                                                    }}
-                                                >
-                                                    <div style={{ width: columnWidth, borderLeftColor: sw.color }} className={cn(
-                                                        "border-r border-border px-3 flex items-center gap-3 shrink-0 h-full transition-colors border-l-4",
-                                                        selectedSwimlaneIds.includes(sw.id) ? "bg-indigo-500/20 shadow-[inset_4px_0_0_0_#6366f1]" : ""
-                                                    )}>
-                                                        <div className="flex items-center gap-2 flex-1">
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-7 w-7 rounded-lg text-zinc-400"
-                                                                onClick={(e) => { e.stopPropagation(); toggleCollapse(sw.id); }}
-                                                            >
-                                                                {sw.collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                                                            </Button>
-                                                            <input
-                                                                value={sw.label}
-                                                                onChange={e => renameSwimlane(sw.id, e.target.value)}
-                                                                placeholder="Phase Name"
-                                                                aria-label="Phase Name"
-                                                                onClick={(e) => e.stopPropagation()}
-                                                                className="bg-transparent border-none text-[10px] font-black uppercase tracking-widest outline-none truncate text-black"
-                                                            />
+                                            const isFiltered = filteredActivities.length === 0 && (selectedSiteIds.length > 0 || selectedTeamIds.length > 0);
+                                            if (isFiltered) return null;
+
+                                            return (
+                                                <Reorder.Item key={sw.id} value={sw} dragListener={false} dragControls={undefined} className="relative group/lane">
+                                                    {/* Swimlane Header */}
+                                                    <div
+                                                        className={cn(
+                                                            "sticky left-0 z-30 flex items-center border-b border-border transition-colors cursor-pointer group/lane",
+                                                            selectedSwimlaneIds.includes(sw.id) ? "bg-indigo-500/10 shadow-[inset_4px_0_0_0_#6366f1]" : "bg-muted/50 hover:bg-muted/70"
+                                                        )}
+                                                        style={{ height: rowHeight }}
+                                                        onClick={(e) => {
+                                                            const isMulti = e.metaKey || e.ctrlKey || e.shiftKey;
+                                                            if (isMulti) {
+                                                                setSelectedSwimlaneIds(prev => prev.includes(sw.id) ? prev.filter(id => id !== sw.id) : [...prev, sw.id]);
+                                                                setSidebarContext('phase');
+                                                            } else {
+                                                                // Idempotent selection: Don't toggle off if already selected
+                                                                setSelectedSwimlaneIds([sw.id]);
+                                                                setSelectedActivityIds([]);
+                                                                setSidebarContext('phase');
+                                                            }
+                                                        }}
+                                                    >
+                                                        <div style={{ width: columnWidth }} className={cn(
+                                                            "border-r border-border px-3 flex items-center gap-3 shrink-0 h-full transition-colors",
+                                                            selectedSwimlaneIds.includes(sw.id) ? "bg-indigo-500/20" : ""
+                                                        )}>
+                                                            <SwimlaneDragHandle />
+                                                            <div className="flex items-center gap-2 flex-1">
+                                                                <Button
+                                                                    variant="ghost"
+                                                                    size="icon"
+                                                                    className="h-7 w-7 rounded-lg text-zinc-400"
+                                                                    onClick={(e) => { e.stopPropagation(); toggleCollapse(sw.id); }}
+                                                                >
+                                                                    {sw.collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                                                                </Button>
+                                                                <input
+                                                                    value={sw.label}
+                                                                    onChange={e => renameSwimlane(sw.id, e.target.value)}
+                                                                    placeholder="Phase Name"
+                                                                    aria-label="Phase Name"
+                                                                    onClick={(e) => e.stopPropagation()}
+                                                                    className="bg-transparent border-none text-[10px] font-black uppercase tracking-widest outline-none truncate text-black"
+                                                                />
+                                                            </div>
                                                         </div>
+                                                        <div className="flex-1" />
                                                     </div>
-                                                    <div className="flex-1" />
-                                                </div>
 
-                                                {/* Activities */}
-                                                {
-                                                    !sw.collapsed && (
+                                                    {/* Activities */}
+                                                    {!sw.collapsed && (
                                                         <div className="relative" onClick={(e) => {
                                                             const isMulti = e.metaKey || e.ctrlKey || e.shiftKey;
                                                             if (!isMulti) {
@@ -1795,7 +1779,7 @@ export function TimelinePlannerTab({ demo = false }: TimelinePlannerTabProps) {
                                                             }
                                                         }}>
                                                             {filteredActivities.map((act) => (
-                                                                <div key={act.id} className="flex items-center border-b border-border group/act hover:bg-accent/30 transition-colors" style={{ height: rowHeight, backgroundColor: `${sw.color}15` }}>
+                                                                <div key={act.id} className="flex items-center border-b border-border group/act hover:bg-accent/30 transition-colors" style={{ height: rowHeight }}>
                                                                     <div
                                                                         style={{ width: columnWidth }}
                                                                         className={cn(
@@ -1927,11 +1911,10 @@ export function TimelinePlannerTab({ demo = false }: TimelinePlannerTabProps) {
                                                                 </div>
                                                             ))}
                                                         </div>
-                                                    )
-                                                }
-                                            </div>
-                                        );
-                                    })}
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                 </div>
                                 {/* Milestone Pins */}
                                 <div className="absolute inset-0 pointer-events-none">

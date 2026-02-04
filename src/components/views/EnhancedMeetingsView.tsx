@@ -137,7 +137,7 @@ function mapMeetingToDisplay(meeting: MeetingWithRelations) {
         source: r.source || 'manual',
         confidence: r.ai_confidence || 1,
       })),
-      keyTopics: Array.isArray(meeting.ai_key_topics) 
+      keyTopics: Array.isArray(meeting.ai_key_topics)
         ? (meeting.ai_key_topics as { topic: string; duration: number; participants: string[]; sentiment: string }[])
         : [],
       sentimentAnalysis: meeting.ai_sentiment as { overall: string; engagement: number; concerns: string[]; positives: string[] } || {
@@ -165,20 +165,72 @@ function mapMeetingToDisplay(meeting: MeetingWithRelations) {
   };
 }
 
-export function EnhancedMeetingsView() {
+// Mock Data for Demo Mode
+const MOCK_MEETINGS = [
+  {
+    id: 'demo-1',
+    title: 'Product Strategy Sync',
+    type: 'strategy',
+    date: new Date().toISOString(),
+    start_time: '10:00',
+    end_time: '11:00',
+    status: 'scheduled',
+    meeting_participants: [
+      { id: 'p1', name: 'Alice Chen', role: 'Product Lead', attendance_status: 'accepted' },
+      { id: 'p2', name: 'Bob Smith', role: 'Eng Lead', attendance_status: 'accepted' }
+    ],
+    ai_summary: 'Discussed Q3 roadmap realignment. Key focus on "Project Oye" launch features.',
+    ai_confidence: 0.92,
+    meeting_decisions: [
+      { id: 'd1', description: 'Launch "Demo Mode" for Landing Page', decision_type: 'reversible', impact: 'high' }
+    ],
+    meeting_action_items: [
+      { id: 'a1', title: 'Update Landing Page UI', owner_name: 'Bob Smith', priority: 'high', status: 'pending' }
+    ],
+    meeting_risks: [],
+    meeting_agenda_items: [],
+    purpose: { type: 'decision', description: 'Finalize launch scope' },
+    ai_sentiment: { overall: 'positive', engagement: 0.85, positives: ['Clear consensus'], concerns: [] }
+  },
+  {
+    id: 'demo-2',
+    title: 'Weekly Team Standup',
+    type: 'status',
+    date: new Date().toISOString(),
+    start_time: '09:00',
+    end_time: '09:15',
+    status: 'completed',
+    meeting_participants: [],
+    ai_summary: 'Routine updates. No blockers reported.',
+    ai_confidence: 0.88,
+    meeting_decisions: [],
+    meeting_action_items: [],
+    meeting_risks: [],
+    meeting_agenda_items: []
+  }
+];
+
+interface EnhancedMeetingsViewProps {
+  demo?: boolean;
+}
+
+export function EnhancedMeetingsView({ demo = false }: EnhancedMeetingsViewProps) {
   const { settings } = useProjectContext();
-  const projectId = settings.id; // Use project ID from context
-  
-  const { 
-    meetings, 
-    isLoading, 
-    createMeeting, 
-    addParticipant, 
+  const projectId = settings?.id || 'demo';
+
+  const {
+    meetings: realMeetings,
+    isLoading: isRealLoading,
+    createMeeting,
+    addParticipant,
     addAgendaItem,
     updateMeeting,
     processWithAI,
     generateMoM,
   } = useMeetings(projectId);
+
+  const meetings = demo ? MOCK_MEETINGS as any[] : realMeetings;
+  const isLoading = demo ? false : isRealLoading;
 
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null);
   const [showMoM, setShowMoM] = useState(false);
@@ -189,11 +241,11 @@ export function EnhancedMeetingsView() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showTranscriptDialog, setShowTranscriptDialog] = useState(false);
   const [isGeneratingMoM, setIsGeneratingMoM] = useState(false);
-  
+
   // Mini calendar states
   const [calendarMonth, setCalendarMonth] = useState(new Date());
   const [filterDate, setFilterDate] = useState<Date | null>(null);
-  
+
   // Edit dialog states
   const [showRecurringEditDialog, setShowRecurringEditDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -221,7 +273,7 @@ export function EnhancedMeetingsView() {
       count,
     }));
   }, [displayMeetings]);
-  
+
   // Get selected meeting
   const selectedMeeting = useMemo(() => {
     if (!selectedMeetingId && filteredMeetings.length > 0) {
@@ -273,7 +325,7 @@ export function EnhancedMeetingsView() {
 
   const handleUploadTranscript = async (transcript: string) => {
     if (!selectedMeeting) return;
-    
+
     await updateMeeting(selectedMeeting.id, {
       // We need to store transcript - update the meeting record
     });
@@ -281,7 +333,7 @@ export function EnhancedMeetingsView() {
     // Store transcript in the meeting
     const { error } = await supabase
       .from('meetings')
-      .update({ 
+      .update({
         transcript_text: transcript,
         transcript_available: true,
         capture_mode: 'post-meeting',
@@ -314,9 +366,9 @@ export function EnhancedMeetingsView() {
   const handleEditClick = (meeting: ReturnType<typeof mapMeetingToDisplay>) => {
     const dbMeeting = meetings.find((m) => m.id === meeting.id);
     if (!dbMeeting) return;
-    
+
     setMeetingToEdit(dbMeeting);
-    
+
     // Check if this is a recurring meeting
     if (meeting.isRecurring) {
       setShowRecurringEditDialog(true);
@@ -340,23 +392,23 @@ export function EnhancedMeetingsView() {
     if (editMode === 'all' && meetingToEdit?.recurring_parent_id) {
       // Update all instances in the series
       const parentId = meetingToEdit.recurring_parent_id || id;
-      
+
       // Update parent meeting
       await updateMeeting(parentId, updates);
-      
+
       // Update all child instances (excluding date for 'all' edit)
       const { date, ...updatesWithoutDate } = updates;
       const childMeetings = meetings.filter((m) => m.recurring_parent_id === parentId);
       for (const child of childMeetings) {
         await updateMeeting(child.id, updatesWithoutDate);
       }
-      
+
       toast.success(`Updated ${childMeetings.length + 1} meetings in series`);
     } else {
       // Update single instance
       await updateMeeting(id, updates);
     }
-    
+
     setMeetingToEdit(null);
   };
 
@@ -416,10 +468,10 @@ export function EnhancedMeetingsView() {
   }
 
   return (
-    <>
-      <MeetingAISidebar 
-        isOpen={showAISidebar} 
-        onToggle={() => setShowAISidebar(!showAISidebar)} 
+    <div className="relative h-full w-full overflow-hidden">
+      <MeetingAISidebar
+        isOpen={showAISidebar}
+        onToggle={() => setShowAISidebar(!showAISidebar)}
         meeting={null}
       />
       <div className={cn("flex h-full transition-all duration-300", showAISidebar && "mr-80")}>
@@ -450,7 +502,7 @@ export function EnhancedMeetingsView() {
             </div>
             <div className="flex items-center justify-between">
               <p className="text-xs text-muted-foreground">
-                {filterDate 
+                {filterDate
                   ? `${filteredMeetings.length} meeting(s) on ${filterDate.toLocaleDateString()}`
                   : `${displayMeetings.length} meetings total`
                 }
@@ -538,7 +590,7 @@ export function EnhancedMeetingsView() {
                           {getCaptureIcon(meeting.captureMode.mode)}
                           <Badge variant={
                             meeting.captureConfidence === 'high' ? 'success' :
-                            meeting.captureConfidence === 'medium' ? 'warning' : 'secondary'
+                              meeting.captureConfidence === 'medium' ? 'warning' : 'secondary'
                           } className="text-xs">
                             {meeting.captureConfidence} confidence
                           </Badge>
@@ -566,6 +618,7 @@ export function EnhancedMeetingsView() {
             </div>
           </ScrollArea>
         </div>
+
 
         {/* Meeting Details */}
         {selectedMeeting ? (
@@ -598,8 +651,8 @@ export function EnhancedMeetingsView() {
                       <Upload className="h-4 w-4 mr-2" />
                       Upload Transcript
                     </Button>
-                    <Button 
-                      variant="outline" 
+                    <Button
+                      variant="outline"
                       onClick={handleGenerateMoM}
                       disabled={isGeneratingMoM}
                     >
@@ -678,8 +731,8 @@ export function EnhancedMeetingsView() {
                       </div>
                       <div className="text-center p-3 rounded-lg bg-muted/30">
                         <span className="text-lg font-semibold">
-                          {selectedMeeting.decisionScope.budgetAuthority 
-                            ? `$${(selectedMeeting.decisionScope.budgetAuthority / 1000).toFixed(0)}K` 
+                          {selectedMeeting.decisionScope.budgetAuthority
+                            ? `$${(selectedMeeting.decisionScope.budgetAuthority / 1000).toFixed(0)}K`
                             : 'N/A'}
                         </span>
                         <p className="text-xs text-muted-foreground">Budget Authority</p>
@@ -755,8 +808,8 @@ export function EnhancedMeetingsView() {
                                 </div>
                                 <Badge variant={
                                   topic.sentiment === 'positive' ? 'success' :
-                                  topic.sentiment === 'negative' ? 'destructive' :
-                                  topic.sentiment === 'mixed' ? 'warning' : 'secondary'
+                                    topic.sentiment === 'negative' ? 'destructive' :
+                                      topic.sentiment === 'mixed' ? 'warning' : 'secondary'
                                 }>
                                   {topic.sentiment}
                                 </Badge>
@@ -782,7 +835,7 @@ export function EnhancedMeetingsView() {
                                 <span className="text-sm font-medium">Overall Sentiment</span>
                                 <Badge variant={
                                   selectedMeeting.aiIntelligence.sentimentAnalysis.overall === 'positive' ? 'success' :
-                                  selectedMeeting.aiIntelligence.sentimentAnalysis.overall === 'negative' ? 'destructive' : 'secondary'
+                                    selectedMeeting.aiIntelligence.sentimentAnalysis.overall === 'negative' ? 'destructive' : 'secondary'
                                 }>
                                   {selectedMeeting.aiIntelligence.sentimentAnalysis.overall}
                                 </Badge>
@@ -878,7 +931,7 @@ export function EnhancedMeetingsView() {
                                     </Badge>
                                     <Badge variant={
                                       decision.impact === 'high' ? 'destructive' :
-                                      decision.impact === 'medium' ? 'warning' : 'secondary'
+                                        decision.impact === 'medium' ? 'warning' : 'secondary'
                                     }>
                                       {decision.impact} impact
                                     </Badge>
@@ -1167,7 +1220,7 @@ export function EnhancedMeetingsView() {
                                   <Badge variant="outline" className="text-xs">{p.role}</Badge>
                                   <Badge variant={
                                     p.powerLevel === 'high' ? 'destructive' :
-                                    p.powerLevel === 'medium' ? 'warning' : 'secondary'
+                                      p.powerLevel === 'medium' ? 'warning' : 'secondary'
                                   } className="text-xs">
                                     {p.powerLevel}
                                   </Badge>
@@ -1176,8 +1229,8 @@ export function EnhancedMeetingsView() {
                               <div className={cn(
                                 'h-2 w-2 rounded-full',
                                 p.status === 'accepted' ? 'bg-success' :
-                                p.status === 'tentative' ? 'bg-warning' :
-                                p.status === 'declined' ? 'bg-destructive' : 'bg-muted'
+                                  p.status === 'tentative' ? 'bg-warning' :
+                                    p.status === 'declined' ? 'bg-destructive' : 'bg-muted'
                               )} />
                             </div>
                           ))}
@@ -1261,6 +1314,6 @@ export function EnhancedMeetingsView() {
         onSave={handleSaveEdit}
         editMode={editMode}
       />
-    </>
+    </div>
   );
 }

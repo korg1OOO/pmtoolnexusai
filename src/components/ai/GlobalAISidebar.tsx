@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Bot, 
-  X, 
-  Send, 
-  Plus, 
-  History, 
-  Trash2, 
+import {
+  Bot,
+  X,
+  Send,
+  Plus,
+  History,
+  Trash2,
   Loader2,
   ChevronRight,
   Sparkles,
@@ -46,9 +46,9 @@ interface GlobalAISidebarProps {
   currentView?: string;
 }
 
-export function GlobalAISidebar({ 
-  isOpen, 
-  onToggle, 
+export function GlobalAISidebar({
+  isOpen,
+  onToggle,
   projectId,
   projectName = 'Current Project',
   currentView = 'dashboard'
@@ -61,18 +61,18 @@ export function GlobalAISidebar({
   const [showContext, setShowContext] = useState(true);
   const [selectedContexts, setSelectedContexts] = useState<ContextItem[]>([]);
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
-  
+
   // Draggable position state
   const [buttonPosition, setButtonPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
-  
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const { data: userRole = 'viewer' } = useUserRole(projectId);
   const viewContext = getViewContext(currentView);
   const suggestedQuestions = getSuggestedQuestions(currentView);
-  
+
   const {
     messages,
     conversations,
@@ -95,7 +95,7 @@ export function GlobalAISidebar({
 
   const handleConfirmAction = useCallback(async () => {
     if (!pendingAction) return;
-    
+
     setIsActionLoading(true);
     try {
       await sendMessage(`Confirmed: ${pendingAction.description}`);
@@ -116,12 +116,12 @@ export function GlobalAISidebar({
   // Handle clarifying question answer
   const handleClarifyingAnswer = useCallback(async (questionId: string, selectedOptions: string[]) => {
     if (!pendingClarification) return;
-    
+
     const selectedLabels = pendingClarification.options
       .filter(opt => selectedOptions.includes(opt.id))
       .map(opt => opt.label)
       .join(', ');
-    
+
     await sendMessage(`My answer: ${selectedLabels}`);
     clearClarification();
   }, [pendingClarification, sendMessage, clearClarification]);
@@ -149,13 +149,13 @@ export function GlobalAISidebar({
     if ((!input.trim() && attachments.length === 0) || isSending) return;
     const message = input;
     setInput('');
-    
+
     // Include context in the message
-    const modePrefix = intentMode === 'plan' 
-      ? '[Plan Mode] ' 
+    const modePrefix = intentMode === 'plan'
+      ? '[Plan Mode] '
       : '[Action Mode] ';
     const contextString = formatContextsForAI(selectedContexts);
-    
+
     // Include attachment info in the message
     let attachmentInfo = '';
     if (attachments.length > 0) {
@@ -163,7 +163,7 @@ export function GlobalAISidebar({
       attachmentInfo = `[Attachments: ${attachmentNames}] `;
       setAttachments([]); // Clear attachments after sending
     }
-    
+
     await sendMessage(contextString + attachmentInfo + modePrefix + message);
   };
 
@@ -215,7 +215,7 @@ export function GlobalAISidebar({
               x: buttonPosition.x,
               y: buttonPosition.y,
             }}
-            className="fixed right-4 top-1/2 -translate-y-1/2 z-[60] cursor-grab active:cursor-grabbing"
+            className="fixed right-4 top-1/2 -translate-y-1/2 z-[160] cursor-grab active:cursor-grabbing"
           >
             <Tooltip>
               <TooltipTrigger asChild>
@@ -252,7 +252,7 @@ export function GlobalAISidebar({
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 bottom-0 w-96 bg-background border-l z-50 flex flex-col shadow-xl"
+            className="fixed right-0 top-0 bottom-0 w-96 bg-background border-l z-[150] flex flex-col shadow-xl"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b bg-muted/30">
@@ -400,7 +400,7 @@ export function GlobalAISidebar({
                     </div>
                     <h3 className="font-medium mb-1 text-sm">How can I help you?</h3>
                     <p className="text-xs text-muted-foreground mb-3">
-                      {intentMode === 'plan' 
+                      {intentMode === 'plan'
                         ? "I'll analyze and provide insights without making changes."
                         : "I'll help you make changes (with confirmation)."}
                     </p>
@@ -409,7 +409,7 @@ export function GlobalAISidebar({
                   {/* Mode Indicator */}
                   <div className={cn(
                     "flex items-center gap-2 p-2 rounded-lg text-xs",
-                    intentMode === 'plan' 
+                    intentMode === 'plan'
                       ? "bg-primary/10 text-primary"
                       : "bg-accent text-accent-foreground"
                   )}>
@@ -457,7 +457,7 @@ export function GlobalAISidebar({
                       onActionRequest={handleActionRequest}
                     />
                   ))}
-                  
+
                   {/* Clarifying Question */}
                   {pendingClarification && (
                     <ClarifyingQuestion
@@ -467,7 +467,7 @@ export function GlobalAISidebar({
                       isLoading={isSending}
                     />
                   )}
-                  
+
                   {/* Typing/Processing Indicator */}
                   {isSending && (
                     <div className="flex items-start gap-3">
@@ -484,7 +484,7 @@ export function GlobalAISidebar({
                       </div>
                     </div>
                   )}
-                  
+
                   <div ref={messagesEndRef} />
                 </div>
               )}

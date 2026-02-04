@@ -52,7 +52,7 @@ export function MeetingAISidebar({ isOpen, onToggle, meeting }: MeetingAISidebar
 
   const fetchMeetingInsights = async () => {
     if (!meeting) return;
-    
+
     setIsLoading(true);
     try {
       const response = await supabase.functions.invoke('ai-orchestrator', {
@@ -68,7 +68,7 @@ export function MeetingAISidebar({ isOpen, onToggle, meeting }: MeetingAISidebar
       }
 
       const aiResponse = response.data?.response || '';
-      
+
       // Use meeting data combined with AI response
       setInsights({
         summary: aiResponse || meeting.aiIntelligence?.summary || 'Meeting analysis pending.',
@@ -122,7 +122,7 @@ export function MeetingAISidebar({ isOpen, onToggle, meeting }: MeetingAISidebar
             exit={{ opacity: 0 }}
             onClick={onToggle}
             className={cn(
-              'fixed right-0 top-1/2 -translate-y-1/2 z-40',
+              'absolute right-0 top-1/2 -translate-y-1/2 z-40',
               'flex items-center gap-1 px-2 py-3 rounded-l-lg',
               'bg-accent text-accent-foreground shadow-lg',
               'hover:bg-accent/90 transition-colors'
@@ -142,7 +142,7 @@ export function MeetingAISidebar({ isOpen, onToggle, meeting }: MeetingAISidebar
             animate={{ x: 0 }}
             exit={{ x: '100%' }}
             transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 h-full w-80 bg-background border-l shadow-xl z-40 flex flex-col"
+            className="absolute right-0 top-0 h-full w-80 bg-background border-l shadow-xl z-40 flex flex-col"
           >
             {/* Header */}
             <div className="flex items-center justify-between p-4 border-b">
@@ -157,9 +157,9 @@ export function MeetingAISidebar({ isOpen, onToggle, meeting }: MeetingAISidebar
               </div>
               <div className="flex items-center gap-1">
                 {meeting && (
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
+                  <Button
+                    variant="ghost"
+                    size="icon"
                     onClick={fetchMeetingInsights}
                     disabled={isLoading}
                   >

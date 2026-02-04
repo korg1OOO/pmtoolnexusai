@@ -32,10 +32,10 @@ import { useTasks, useCreateTask } from '@/hooks/useTasks';
 import { useCalculateCriticalPath } from '@/hooks/useCriticalPath';
 import { useScheduleTrigger } from '@/hooks/useScheduleTrigger';
 import { usePresenceContext } from '@/contexts/PresenceContext';
-import { 
+import {
   useProjectCalendars,
-  useDefaultCalendar, 
-  useCalendarExceptions, 
+  useDefaultCalendar,
+  useCalendarExceptions,
   useUpdateCalendar,
   useCreateCalendarException,
   useDeleteCalendarException,
@@ -71,7 +71,12 @@ import { toast } from 'sonner';
 
 type ResourceViewMode = 'none' | 'sheet' | 'usage';
 
-export function PlanningView() {
+
+interface PlanningViewProps {
+  demo?: boolean;
+}
+
+export function PlanningView({ demo = false }: PlanningViewProps) {
   const [viewMode, setViewMode] = useState<PlanViewMode>('grid');
   const [resourceView, setResourceView] = useState<ResourceViewMode>('none');
   const [showShortcuts, setShowShortcuts] = useState(false);
@@ -95,8 +100,8 @@ export function PlanningView() {
   // Calendar hooks
   const { data: calendars = [] } = useProjectCalendars(selectedProjectId);
   const { data: defaultCalendar } = useDefaultCalendar(selectedProjectId);
-  const selectedCalendar = selectedCalendarId 
-    ? calendars.find(c => c.id === selectedCalendarId) || null 
+  const selectedCalendar = selectedCalendarId
+    ? calendars.find(c => c.id === selectedCalendarId) || null
     : defaultCalendar;
   const { data: calendarExceptions = [] } = useCalendarExceptions(selectedCalendar?.id || null);
   const updateCalendar = useUpdateCalendar();
@@ -293,12 +298,12 @@ export function PlanningView() {
         <div className="flex items-center gap-2">
           <ViewSwitcher value={viewMode} onChange={(v) => { setViewMode(v); setResourceView('none'); }} />
           <div className="w-px h-6 bg-border" />
-          
+
           {/* Resource Views Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button 
-                variant={resourceView !== 'none' ? 'secondary' : 'outline'} 
+              <Button
+                variant={resourceView !== 'none' ? 'secondary' : 'outline'}
                 size="sm"
               >
                 <Users className="h-4 w-4 mr-1" />
@@ -341,8 +346,8 @@ export function PlanningView() {
           <Button variant="outline" size="sm">
             Baseline
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             onClick={() => setShowCalendarDialog(true)}
             disabled={!selectedProjectId}
@@ -350,8 +355,8 @@ export function PlanningView() {
             <CalendarDays className="h-4 w-4 mr-1" />
             Calendar
           </Button>
-          <Button 
-            variant="default" 
+          <Button
+            variant="default"
             size="sm"
             onClick={handleAutoSchedule}
             disabled={!selectedProjectId || isScheduling}
@@ -363,8 +368,8 @@ export function PlanningView() {
             )}
             Auto-Schedule
           </Button>
-          <Button 
-            variant="secondary" 
+          <Button
+            variant="secondary"
             size="sm"
             onClick={handleCalculateCriticalPath}
             disabled={!selectedProjectId || calculateCriticalPath.isPending}
@@ -379,10 +384,10 @@ export function PlanningView() {
 
           {/* Chat Button */}
           {selectedProjectId && (
-            <ProjectChat 
-              projectId={selectedProjectId} 
-              isOpen={showChat} 
-              onToggle={() => setShowChat(!showChat)} 
+            <ProjectChat
+              projectId={selectedProjectId}
+              isOpen={showChat}
+              onToggle={() => setShowChat(!showChat)}
             />
           )}
 
@@ -410,24 +415,78 @@ export function PlanningView() {
       </div>
 
       {/* Content */}
-      {selectedProjectId ? (
+      {(selectedProjectId || demo) ? (
         <>
           {/* Resource Views */}
           {resourceView === 'sheet' && (
-            <ResourceSheet projectId={selectedProjectId} />
+            <ResourceSheet projectId={selectedProjectId || 'demo'} />
           )}
           {resourceView === 'usage' && (
-            <ResourceUsageView projectId={selectedProjectId} />
+            <ResourceUsageView projectId={selectedProjectId || 'demo'} />
           )}
-          
+
           {/* Task Views (only show when not in resource view) */}
           {resourceView === 'none' && (
             <>
               {viewMode === 'grid' && (
-                <DatabaseTaskGrid projectId={selectedProjectId} />
+                demo ? (
+                  // Demo Grid Placeholder - Replace with actual Mock Grid if needed, or rely on DatabaseTaskGrid handling 'demo' ID gracefully?
+                  // DatabaseTaskGrid likely fetches from DB. We need to mock that too or render a visual placeholder.
+                  // For Landing Page, a visual placeholder is safer than hacking the query hooks deeply.
+                  <div className="p-8">
+                    <div className="border rounded-xl shadow-sm overflow-hidden bg-card/60 backdrop-blur-sm">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/50 border-b border-border/50">
+                          <tr>
+                            <th className="p-4 text-left w-20 font-bold text-muted-foreground text-xs uppercase tracking-wider">WBS</th>
+                            <th className="p-4 text-left font-bold text-muted-foreground text-xs uppercase tracking-wider">Task Name</th>
+                            <th className="p-4 text-left w-40 font-bold text-muted-foreground text-xs uppercase tracking-wider">Assignee</th>
+                            <th className="p-4 text-left w-32 font-bold text-muted-foreground text-xs uppercase tracking-wider">Status</th>
+                            <th className="p-4 text-left w-32 font-bold text-muted-foreground text-xs uppercase tracking-wider">Duration</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[
+                            { wbs: "1.0", name: "Program Initiation", assignee: "Project Office", status: "Completed", dur: "15d", indent: 0, statusColor: "text-emerald-500 bg-emerald-500/10" },
+                            { wbs: "1.1", name: "Charter Approval", assignee: "Exec Comm", status: "Completed", dur: "5d", indent: 1, statusColor: "text-emerald-500 bg-emerald-500/10" },
+                            { wbs: "1.2", name: "Resource Allocation", assignee: "Sarah K.", status: "Completed", dur: "10d", indent: 1, statusColor: "text-emerald-500 bg-emerald-500/10" },
+                            { wbs: "2.0", name: "Planning Phase", assignee: "Core Team", status: "In Progress", dur: "45d", indent: 0, statusColor: "text-indigo-500 bg-indigo-500/10" },
+                            { wbs: "2.1", name: "Requirements Analysis", assignee: "John D.", status: "In Progress", dur: "15d", indent: 1, statusColor: "text-indigo-500 bg-indigo-500/10" },
+                            { wbs: "2.2", name: "Technical Architecture", assignee: "Mike R.", status: "Pending", dur: "20d", indent: 1, statusColor: "text-amber-500 bg-amber-500/10" },
+                            { wbs: "2.3", name: "Risk Assessment", assignee: "Legal Team", status: "At Risk", dur: "10d", indent: 1, statusColor: "text-red-500 bg-red-500/10" },
+                            { wbs: "3.0", name: "Execution", assignee: "Dev Team", status: "Not Started", dur: "90d", indent: 0, statusColor: "text-muted-foreground bg-muted" },
+                            { wbs: "3.1", name: "Module A Development", assignee: "Backend Squad", status: "Not Started", dur: "30d", indent: 1, statusColor: "text-muted-foreground bg-muted" },
+                          ].map((task, i) => (
+                            <tr key={i} className="border-b border-border/50 last:border-0 hover:bg-muted/5 transition-colors">
+                              <td className="p-4 font-mono text-xs text-muted-foreground">{task.wbs}</td>
+                              <td className="p-4 font-medium">
+                                <span style={{ paddingLeft: `${task.indent * 20}px` }} className="flex items-center gap-2">
+                                  {task.indent > 0 && <span className="text-muted-foreground/30">↳</span>}
+                                  {task.name}
+                                </span>
+                              </td>
+                              <td className="p-4">
+                                <div className="flex items-center gap-2 text-xs">
+                                  <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[9px] font-bold">
+                                    {task.assignee.charAt(0)}
+                                  </div>
+                                  {task.assignee}
+                                </div>
+                              </td>
+                              <td className="p-4"><Badge variant="outline" className={`border-0 ${task.statusColor} hover:${task.statusColor}`}>{task.status}</Badge></td>
+                              <td className="p-4 text-xs tabular-nums text-muted-foreground">{task.dur}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  <DatabaseTaskGrid projectId={selectedProjectId} />
+                )
               )}
               {viewMode === 'gantt' && (
-                <DatabaseGantt projectId={selectedProjectId} />
+                <DatabaseGantt projectId={selectedProjectId || ''} />
               )}
               {viewMode === 'board' && <SprintBoardView />}
             </>

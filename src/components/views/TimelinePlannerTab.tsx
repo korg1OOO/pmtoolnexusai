@@ -56,7 +56,7 @@ import {
 // ─── DATA & CONSTANTS ────────────────────────────────────────────────────────
 const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
 const COLORS = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#ef4444", "#06b6d4", "#f97316"];
-const SWIMLANE_COLORS = ["#1e293b", "#312e81", "#4c1d95", "#1e3a5f", "#14532d", "#450a0a"];
+const SWIMLANE_COLORS = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#ef4444", "#06b6d4", "#f97316"]; // Vibrant palette
 
 interface Activity {
     id: string;
@@ -79,23 +79,12 @@ interface Milestone {
     color: string;
 }
 
-/*
-<style media="print">
-    @page { size: landscape; }
-</style>
-
-## Phase 4: Integration & Verification
-- [x] Excel/PDF Export orchestration
-- [x] Conflict resolution for overlapping constraints
-- [x] Stress-test performance with 50+ activities
-*/
 interface Swimlane {
     id: string;
     label: string;
     color: string;
     collapsed: boolean;
     activities: Activity[];
-    targetDuration?: number;
     targetDuration?: number;
     siteIds?: string[];
     teamIds?: string[];
@@ -141,42 +130,44 @@ const initialMonths = [
 
 const initialSwimlanes: Swimlane[] = [
     {
-        id: "pre-kickoff", label: "Pre-Kickoff", color: SWIMLANE_COLORS[0], collapsed: false,
+        id: "pre-kickoff", label: "Phase 1: Discovery & Strategy", color: SWIMLANE_COLORS[0], collapsed: false,
         activities: [
-            { id: "a1", name: "Resource Loading & Staffing", start: 0, duration: 3, color: COLORS[0], tags: ["resource"], notes: "Identify & onboard key resources" },
-            { id: "a2", name: "Vendor Evaluation", start: 1, duration: 2, color: COLORS[1], tags: ["vendor"], notes: "RFP & vendor shortlisting" },
-            { id: "a3", name: "Budget Approval", start: 0, duration: 2, color: COLORS[2], tags: ["finance"], notes: "Sign off on project budget" },
+            { id: "a1", name: "Stakeholder Interviews", start: 0, duration: 2, color: COLORS[0], tags: ["strategy"], notes: "Interview key execs" },
+            { id: "a2", name: "Current State Analysis", start: 1, duration: 2, color: COLORS[1], tags: ["analysis"], notes: "Audit existing systems" },
+            { id: "a3", name: "Strategic Roadmap", start: 2, duration: 2, color: COLORS[2], tags: ["strategy"], notes: "Define 3-year vision" },
         ]
     },
     {
-        id: "planning", label: "Planning & Design", color: SWIMLANE_COLORS[1], collapsed: false,
+        id: "planning", label: "Phase 2: Solution Design", color: SWIMLANE_COLORS[1], collapsed: false,
         activities: [
-            { id: "a4", name: "Requirements Gathering", start: 2, duration: 3, color: COLORS[3], tags: ["planning"], notes: "" },
-            { id: "a5", name: "Architecture Design", start: 4, duration: 2, color: COLORS[4], tags: ["design"], notes: "" },
-            { id: "a6", name: "UX / UI Prototyping", start: 4, duration: 3, color: COLORS[5], tags: ["design"], notes: "" },
+            { id: "a4", name: "Architecture Blueprint", start: 3, duration: 3, color: COLORS[3], tags: ["tech"], notes: "Cloud Native Architecture" },
+            { id: "a5", name: "UX/UI Design System", start: 4, duration: 3, color: COLORS[4], tags: ["design"], notes: "Figma Prototyping" },
+            { id: "a6", name: "Security Compliance Review", start: 5, duration: 2, color: COLORS[5], tags: ["security"], notes: "ISO 27001 Check" },
         ]
     },
     {
-        id: "build", label: "Build & Develop", color: SWIMLANE_COLORS[2], collapsed: false,
+        id: "build", label: "Phase 3: Core Implementation", color: SWIMLANE_COLORS[2], collapsed: false,
         activities: [
-            { id: "a7", name: "Backend Development", start: 5, duration: 4, color: COLORS[0], tags: ["dev"], notes: "" },
-            { id: "a8", name: "Frontend Development", start: 5, duration: 4, color: COLORS[1], tags: ["dev"], notes: "" },
-            { id: "a9", name: "Integration Development", start: 7, duration: 3, color: COLORS[2], tags: ["dev"], notes: "" },
+            { id: "a7", name: "Platform Infrastructure", start: 6, duration: 3, color: COLORS[0], tags: ["devops"], notes: "K8s Cluster Setup" },
+            { id: "a8", name: "Backend API Development", start: 7, duration: 4, color: COLORS[1], tags: ["dev"], notes: "Microservices" },
+            { id: "a9", name: "Frontend Application", start: 8, duration: 4, color: COLORS[2], tags: ["dev"], notes: "React/Next.js" },
+            { id: "a9b", name: "Data Migration", start: 9, duration: 3, color: COLORS[6], tags: ["data"], notes: "ETL Pipelines" },
         ]
     },
     {
-        id: "testing", label: "Testing & QA", color: SWIMLANE_COLORS[3], collapsed: false,
+        id: "testing", label: "Phase 4: QA & Validation", color: SWIMLANE_COLORS[3], collapsed: false,
         activities: [
-            { id: "a10", name: "Unit & Integration Testing", start: 7, duration: 3, color: COLORS[3], tags: ["qa"], notes: "" },
-            { id: "a11", name: "UAT (User Acceptance)", start: 9, duration: 2, color: COLORS[4], tags: ["qa"], notes: "" },
+            { id: "a10", name: "Integration Testing", start: 10, duration: 3, color: COLORS[3], tags: ["qa"], notes: "E2E Tests" },
+            { id: "a11", name: "Performance Tuning", start: 11, duration: 2, color: COLORS[7], tags: ["perf"], notes: "Load Testing" },
+            { id: "a12", name: "User Acceptance Testing", start: 12, duration: 2, color: COLORS[4], tags: ["uat"], notes: "Business Sign-off" },
         ]
     },
     {
-        id: "deploy", label: "Deployment & Go-Live", color: SWIMLANE_COLORS[4], collapsed: false,
+        id: "deploy", label: "Phase 5: Launch & Scale", color: SWIMLANE_COLORS[4], collapsed: false,
         activities: [
-            { id: "a12", name: "Staging Deployment", start: 9, duration: 1, color: COLORS[5], tags: ["deploy"], notes: "" },
-            { id: "a13", name: "Go-Live", start: 10, duration: 1, color: COLORS[6], tags: ["golive"], notes: "🎯 TARGET GO-LIVE" },
-            { id: "a14", name: "Post-Launch Support", start: 10, duration: 2, color: COLORS[7], tags: ["support"], notes: "" },
+            { id: "a13", name: "Production Cutover", start: 13, duration: 1, color: COLORS[5], tags: ["deploy"], notes: "Weekend Go-Live" },
+            { id: "a14", name: "Hypercare Support", start: 14, duration: 1, color: COLORS[6], tags: ["support"], notes: "24/7 Monitoring" },
+            { id: "a15", name: "Regional Rollout", start: 15, duration: 3, color: COLORS[0], tags: ["scale"], notes: "APAC & EMEA" },
         ]
     }
 ];
@@ -575,20 +566,55 @@ const timelineReducer = (state: TimelineState, action: TimelineAction): Timeline
 
 
 
-export function TimelinePlannerTab() {
+// Demo Data
+const DEMO_SWIMLANES: Swimlane[] = [
+    {
+        id: "demo-phase-1",
+        label: "Strategic Planning",
+        color: SWIMLANE_COLORS[0],
+        collapsed: false,
+        activities: [
+            { id: "demo-act-1", name: "Market Analysis", start: 0, duration: 2, color: COLORS[0], tags: ["Strategic"], notes: "Initial research", dependencies: [] },
+            { id: "demo-act-2", name: "Feasibility Study", start: 2, duration: 3, color: COLORS[1], tags: ["Technical"], notes: "", dependencies: [{ targetId: "demo-act-1", type: "FS" }] }
+        ]
+    },
+    {
+        id: "demo-phase-2",
+        label: "Execution Phase",
+        color: SWIMLANE_COLORS[4],
+        collapsed: false,
+        activities: [
+            { id: "demo-act-3", name: "Core Development", start: 5, duration: 6, color: COLORS[4], tags: ["Dev"], notes: "", dependencies: [] },
+            { id: "demo-act-4", name: "Beta Testing", start: 11, duration: 2, color: COLORS[3], tags: ["QA"], notes: "", dependencies: [{ targetId: "demo-act-3", type: "FS" }] }
+        ]
+    }
+];
+
+const DEMO_MILESTONES: Milestone[] = [
+    { id: "demo-ms-1", name: "Project Kickoff", monthIndex: 0, color: COLORS[4] },
+    { id: "demo-ms-2", name: "Alpha Release", monthIndex: 6, color: COLORS[0] },
+    { id: "demo-ms-3", name: "Go Live", monthIndex: 12, color: COLORS[5] }
+];
+
+interface TimelinePlannerTabProps {
+    demo?: boolean;
+}
+
+export function TimelinePlannerTab({ demo = false }: TimelinePlannerTabProps) {
     const { settings, activeGlobalPanel, setActiveGlobalPanel } = useProjectContext();
     const [state, dispatch] = React.useReducer(timelineReducer, {
-        swimlanes: [], // Initial empty state, will load from DB
-        milestones: [],
+        swimlanes: demo ? DEMO_SWIMLANES : [],
+        milestones: demo ? DEMO_MILESTONES : [],
         months: initialMonths,
         goLiveIndex: 10,
         lockMode: 'golive',
-        history: [],
+        history: demo ? [{ swimlanes: DEMO_SWIMLANES, milestones: DEMO_MILESTONES }] : [],
         historyIndex: 0
     });
 
-    // Load Data from Backend
+    // Load Data from Backend (skip if demo)
     useEffect(() => {
+        if (demo) return;
         if (!settings.id) return;
 
         const loadData = async () => {
@@ -1073,7 +1099,7 @@ export function TimelinePlannerTab() {
     const toggleCollapse = async (id: string) => {
         dispatch({ type: 'TOGGLE_COLLAPSE', id });
         const swimlane = swimlanes.find(s => s.id === id);
-        if (swimlane) {
+        if (!demo && swimlane) {
             timelineService.saveSwimlane({ id, collapsed: !swimlane.collapsed }).catch(console.error);
         }
     };
@@ -1081,47 +1107,51 @@ export function TimelinePlannerTab() {
         if (!settings.id) return;
         const id = uid();
         dispatch({ type: 'ADD_SWIMLANE', id });
-        timelineService.saveSwimlane({
-            id,
-            project_id: settings.id,
-            label: "New Phase",
-            color: SWIMLANE_COLORS[swimlanes.length % SWIMLANE_COLORS.length],
-            collapsed: false,
-            order_index: swimlanes.length
-        }).catch(console.error);
+        if (!demo && settings.id) {
+            timelineService.saveSwimlane({
+                id,
+                project_id: settings.id,
+                label: "New Phase",
+                color: SWIMLANE_COLORS[swimlanes.length % SWIMLANE_COLORS.length],
+                collapsed: false,
+                order_index: swimlanes.length
+            }).catch(console.error);
+        }
     };
     const deleteSwimlane = (id: string) => {
         dispatch({ type: 'DELETE_SWIMLANE', id });
-        timelineService.deleteSwimlane(id).catch(console.error);
+        if (!demo) timelineService.deleteSwimlane(id).catch(console.error);
     };
     const updateSwimlane = (id: string, updates: Partial<Swimlane>) => {
         dispatch({ type: 'UPDATE_SWIMLANE', id, updates });
-        timelineService.saveSwimlane({ id, ...updates }).catch(console.error);
+        if (!demo) timelineService.saveSwimlane({ id, ...updates }).catch(console.error);
     };
     const renameSwimlane = (id: string, label: string) => {
         dispatch({ type: 'RENAME_SWIMLANE', id, label });
-        timelineService.saveSwimlane({ id, label }).catch(console.error);
+        if (!demo) timelineService.saveSwimlane({ id, label }).catch(console.error);
     };
     const addActivity = (swimId: string) => {
         const id = uid();
         dispatch({ type: 'ADD_ACTIVITY', swimId, id });
         const swimlane = swimlanes.find(s => s.id === swimId);
-        timelineService.saveActivity({
-            id,
-            swimlane_id: swimId,
-            name: "New Activity",
-            start_month: 0,
-            duration_months: 2,
-            color: COLORS[(swimlane?.activities.length || 0) % COLORS.length]
-        }).catch(console.error);
+        if (!demo) {
+            timelineService.saveActivity({
+                id,
+                swimlane_id: swimId,
+                name: "New Activity",
+                start_month: 0,
+                duration_months: 2,
+                color: COLORS[(swimlane?.activities.length || 0) % COLORS.length]
+            }).catch(console.error);
+        }
     };
     const deleteActivity = (swimId: string, actId: string) => {
         dispatch({ type: 'DELETE_ACTIVITY', swimId, actId });
-        timelineService.deleteActivity(actId).catch(console.error);
+        if (!demo) timelineService.deleteActivity(actId).catch(console.error);
     };
     const renameActivity = (swimId: string, actId: string, name: string) => {
         dispatch({ type: 'RENAME_ACTIVITY', swimId, actId, name });
-        timelineService.saveActivity({ id: actId, name }).catch(console.error);
+        if (!demo) timelineService.saveActivity({ id: actId, name }).catch(console.error);
     };
     const removeMonth = (index: number) => {
         // Month management (adding/removing months globally)
@@ -1166,11 +1196,13 @@ export function TimelinePlannerTab() {
             window.removeEventListener("mouseup", onUp);
 
             if (finalStart !== origStart || finalDur !== origDur) {
-                timelineService.saveActivity({
-                    id: actId,
-                    start_month: finalStart,
-                    duration_months: finalDur
-                }).catch(console.error);
+                if (!demo) {
+                    timelineService.saveActivity({
+                        id: actId,
+                        start_month: finalStart,
+                        duration_months: finalDur
+                    }).catch(console.error);
+                }
             }
         };
         window.addEventListener("mousemove", onMove);
@@ -1725,9 +1757,9 @@ export function TimelinePlannerTab() {
                                                         }
                                                     }}
                                                 >
-                                                    <div style={{ width: columnWidth }} className={cn(
-                                                        "border-r border-border px-3 flex items-center gap-3 shrink-0 h-full transition-colors",
-                                                        selectedSwimlaneIds.includes(sw.id) ? "bg-indigo-500/20" : ""
+                                                    <div style={{ width: columnWidth, borderLeftColor: sw.color }} className={cn(
+                                                        "border-r border-border px-3 flex items-center gap-3 shrink-0 h-full transition-colors border-l-4",
+                                                        selectedSwimlaneIds.includes(sw.id) ? "bg-indigo-500/20 shadow-[inset_4px_0_0_0_#6366f1]" : ""
                                                     )}>
                                                         <div className="flex items-center gap-2 flex-1">
                                                             <Button
@@ -1752,149 +1784,151 @@ export function TimelinePlannerTab() {
                                                 </div>
 
                                                 {/* Activities */}
-                                                {!sw.collapsed && (
-                                                    <div className="relative" onClick={(e) => {
-                                                        const isMulti = e.metaKey || e.ctrlKey || e.shiftKey;
-                                                        if (!isMulti) {
-                                                            setSelectedSwimlaneIds([sw.id]);
-                                                            setSelectedActivityIds([]);
-                                                            setSidebarContext('swimlane');
-                                                        }
-                                                    }}>
-                                                        {filteredActivities.map((act) => (
-                                                            <div key={act.id} className="flex items-center border-b border-border group/act hover:bg-accent/30 transition-colors" style={{ height: rowHeight }}>
-                                                                <div
-                                                                    style={{ width: columnWidth }}
-                                                                    className={cn(
-                                                                        "border-r border-border pl-4 pr-3 flex items-center gap-2 shrink-0 h-full transition-all relative group/col cursor-pointer",
-                                                                        selectedActivityIds.includes(act.id) ? "bg-indigo-500/5 shadow-[inset_4px_0_0_0_#6366f1]" : "bg-muted/20"
-                                                                    )}
-                                                                    onClick={(e) => {
-                                                                        e.stopPropagation();
-                                                                        const isMulti = e.metaKey || e.ctrlKey || e.shiftKey;
-                                                                        if (isMulti) {
-                                                                            setSelectedActivityIds(prev => prev.includes(act.id) ? prev.filter(id => id !== act.id) : [...prev, act.id]);
-                                                                        } else {
-                                                                            // Idempotent selection: Ensure it stays selected!
-                                                                            setSelectedActivityIds([act.id]);
-                                                                            setSelectedSwimlaneIds([]);
-                                                                        }
-                                                                    }}
-                                                                >
+                                                {
+                                                    !sw.collapsed && (
+                                                        <div className="relative" onClick={(e) => {
+                                                            const isMulti = e.metaKey || e.ctrlKey || e.shiftKey;
+                                                            if (!isMulti) {
+                                                                setSelectedSwimlaneIds([sw.id]);
+                                                                setSelectedActivityIds([]);
+                                                                setSidebarContext('swimlane');
+                                                            }
+                                                        }}>
+                                                            {filteredActivities.map((act) => (
+                                                                <div key={act.id} className="flex items-center border-b border-border group/act hover:bg-accent/30 transition-colors" style={{ height: rowHeight, backgroundColor: `${sw.color}15` }}>
                                                                     <div
-                                                                        style={{
-                                                                            width: 10,
-                                                                            height: 10,
-                                                                            borderRadius: '50%',
-                                                                            background: act.teamIds?.[0] ? teams.find(t => t.id === act.teamIds?.[0])?.color || act.color : act.color,
-                                                                            boxShadow: `0 0 12px ${act.teamIds?.[0] ? (teams.find(t => t.id === act.teamIds?.[0])?.color || act.color) : act.color}80`
+                                                                        style={{ width: columnWidth }}
+                                                                        className={cn(
+                                                                            "border-r border-border pl-4 pr-3 flex items-center gap-2 shrink-0 h-full transition-all relative group/col cursor-pointer",
+                                                                            selectedActivityIds.includes(act.id) ? "bg-indigo-500/5 shadow-[inset_4px_0_0_0_#6366f1]" : "bg-muted/20"
+                                                                        )}
+                                                                        onClick={(e) => {
+                                                                            e.stopPropagation();
+                                                                            const isMulti = e.metaKey || e.ctrlKey || e.shiftKey;
+                                                                            if (isMulti) {
+                                                                                setSelectedActivityIds(prev => prev.includes(act.id) ? prev.filter(id => id !== act.id) : [...prev, act.id]);
+                                                                            } else {
+                                                                                // Idempotent selection: Ensure it stays selected!
+                                                                                setSelectedActivityIds([act.id]);
+                                                                                setSelectedSwimlaneIds([]);
+                                                                            }
                                                                         }}
-                                                                        className="shrink-0"
-                                                                    />
-                                                                    <input
-                                                                        value={act.name}
-                                                                        onChange={e => renameActivity(sw.id, act.id, e.target.value)}
-                                                                        placeholder="Activity Name"
-                                                                        aria-label="Activity Name"
-                                                                        onClick={(e) => e.stopPropagation()}
-                                                                        className="flex-1 bg-transparent border-none text-[10px] font-semibold text-foreground outline-none truncate placeholder:text-muted-foreground/30"
-                                                                    />
-                                                                    {selectedActivityIds.includes(act.id) && (
-                                                                        <Button
-                                                                            variant="ghost"
-                                                                            size="icon"
-                                                                            className="h-6 w-6 p-0 text-red-500 hover:bg-red-500/10 rounded-md shrink-0"
-                                                                            onClick={(e) => {
-                                                                                e.stopPropagation();
-                                                                                deleteActivity(sw.id, act.id);
-                                                                                setSelectedActivityIds(prev => prev.filter(id => id !== act.id));
+                                                                    >
+                                                                        <div
+                                                                            style={{
+                                                                                width: 10,
+                                                                                height: 10,
+                                                                                borderRadius: '50%',
+                                                                                background: act.teamIds?.[0] ? teams.find(t => t.id === act.teamIds?.[0])?.color || act.color : act.color,
+                                                                                boxShadow: `0 0 12px ${act.teamIds?.[0] ? (teams.find(t => t.id === act.teamIds?.[0])?.color || act.color) : act.color}80`
                                                                             }}
-                                                                        >
-                                                                            <Trash2 size={12} />
-                                                                        </Button>
-                                                                    )}
-                                                                    <div
-                                                                        onMouseDown={onColumnResize}
-                                                                        className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize opacity-0 group-hover/col:opacity-100 bg-indigo-500/20 hover:bg-indigo-500 transition-all z-30"
-                                                                    />
-                                                                    <div
-                                                                        onMouseDown={onRowResize}
-                                                                        className="absolute bottom-0 left-0 right-0 h-1 cursor-row-resize opacity-0 group-hover/act:opacity-100 bg-indigo-500/20 hover:bg-indigo-500 transition-all z-30"
-                                                                    />
-                                                                </div>
-                                                                <div className="relative flex flex-1 h-full shrink-0">
-                                                                    {/* Grid lines */}
-                                                                    <div className="absolute inset-0 flex pointer-events-none">
-                                                                        {months.map((_, i) => (
-                                                                            <div key={i} style={{ width: MONTH_COL_W }} className="shrink-0 border-r border-border/50 h-full" />
-                                                                        ))}
+                                                                            className="shrink-0"
+                                                                        />
+                                                                        <input
+                                                                            value={act.name}
+                                                                            onChange={e => renameActivity(sw.id, act.id, e.target.value)}
+                                                                            placeholder="Activity Name"
+                                                                            aria-label="Activity Name"
+                                                                            onClick={(e) => e.stopPropagation()}
+                                                                            className="flex-1 bg-transparent border-none text-[10px] font-semibold text-foreground outline-none truncate placeholder:text-muted-foreground/30"
+                                                                        />
+                                                                        {selectedActivityIds.includes(act.id) && (
+                                                                            <Button
+                                                                                variant="ghost"
+                                                                                size="icon"
+                                                                                className="h-6 w-6 p-0 text-red-500 hover:bg-red-500/10 rounded-md shrink-0"
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    deleteActivity(sw.id, act.id);
+                                                                                    setSelectedActivityIds(prev => prev.filter(id => id !== act.id));
+                                                                                }}
+                                                                            >
+                                                                                <Trash2 size={12} />
+                                                                            </Button>
+                                                                        )}
+                                                                        <div
+                                                                            onMouseDown={onColumnResize}
+                                                                            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize opacity-0 group-hover/col:opacity-100 bg-indigo-500/20 hover:bg-indigo-500 transition-all z-30"
+                                                                        />
+                                                                        <div
+                                                                            onMouseDown={onRowResize}
+                                                                            className="absolute bottom-0 left-0 right-0 h-1 cursor-row-resize opacity-0 group-hover/act:opacity-100 bg-indigo-500/20 hover:bg-indigo-500 transition-all z-30"
+                                                                        />
                                                                     </div>
+                                                                    <div className="relative flex flex-1 h-full shrink-0">
+                                                                        {/* Grid lines */}
+                                                                        <div className="absolute inset-0 flex pointer-events-none">
+                                                                            {months.map((_, i) => (
+                                                                                <div key={i} style={{ width: MONTH_COL_W }} className="shrink-0 border-r border-border/50 h-full" />
+                                                                            ))}
+                                                                        </div>
 
-                                                                    <TooltipProvider>
-                                                                        <Tooltip>
-                                                                            <TooltipTrigger asChild>
-                                                                                <div
-                                                                                    style={{
-                                                                                        left: act.start * MONTH_COL_W,
-                                                                                        width: act.duration * MONTH_COL_W,
-                                                                                        top: rowHeight * 0.25,
-                                                                                        bottom: rowHeight * 0.25,
-                                                                                        background: act.teamIds?.[0] ? teams.find(t => t.id === act.teamIds?.[0])?.color || act.color : act.color,
-                                                                                        boxShadow: `0 4px 15px -3px ${act.teamIds?.[0] ? (teams.find(t => t.id === act.teamIds?.[0])?.color || act.color) : act.color}40`,
-                                                                                    }}
-                                                                                    className={cn(
-                                                                                        "absolute rounded-lg cursor-pointer flex items-center px-4 group/bar transition-all hover:scale-[1.02] active:scale-[0.98] z-10",
-                                                                                        "ring-2 ring-white/10 hover:ring-white/30",
-                                                                                        selectedActivityIds.includes(act.id) ? "ring-indigo-500 ring-offset-4 ring-offset-background scale-[1.03]" : "",
-                                                                                        criticalPathIds.has(act.id) ? "border-2 border-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.2)]" : "",
-                                                                                        "active:transition-none"
-                                                                                    )}
-                                                                                    onMouseDown={e => onBarMouseDown(e, sw.id, act.id, act, 'move')}
-                                                                                    onClick={(e) => {
-                                                                                        e.stopPropagation();
-                                                                                        const isMulti = e.metaKey || e.ctrlKey || e.shiftKey;
-                                                                                        if (isMulti) {
-                                                                                            setSelectedActivityIds(prev => prev.includes(act.id) ? prev.filter(id => id !== act.id) : [...prev, act.id]);
-                                                                                        } else {
-                                                                                            setSelectedActivityIds(prev => prev.length === 1 && prev[0] === act.id ? [] : [act.id]);
-                                                                                            setSelectedSwimlaneIds([]);
-                                                                                        }
-                                                                                    }}
-                                                                                >
-                                                                                    <div className="text-[9px] font-bold text-white uppercase tracking-tighter truncate drop-shadow-md">
-                                                                                        {act.name}
-                                                                                    </div>
+                                                                        <TooltipProvider>
+                                                                            <Tooltip>
+                                                                                <TooltipTrigger asChild>
+                                                                                    <div
+                                                                                        style={{
+                                                                                            left: act.start * MONTH_COL_W,
+                                                                                            width: act.duration * MONTH_COL_W,
+                                                                                            top: rowHeight * 0.25,
+                                                                                            bottom: rowHeight * 0.25,
+                                                                                            background: act.teamIds?.[0] ? teams.find(t => t.id === act.teamIds?.[0])?.color || act.color : act.color,
+                                                                                            boxShadow: `0 4px 15px -3px ${act.teamIds?.[0] ? (teams.find(t => t.id === act.teamIds?.[0])?.color || act.color) : act.color}40`,
+                                                                                        }}
+                                                                                        className={cn(
+                                                                                            "absolute rounded-lg cursor-pointer flex items-center px-4 group/bar transition-all hover:scale-[1.02] active:scale-[0.98] z-10",
+                                                                                            "ring-2 ring-white/10 hover:ring-white/30",
+                                                                                            selectedActivityIds.includes(act.id) ? "ring-indigo-500 ring-offset-4 ring-offset-background scale-[1.03]" : "",
+                                                                                            criticalPathIds.has(act.id) ? "border-2 border-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.2)]" : "",
+                                                                                            "active:transition-none"
+                                                                                        )}
+                                                                                        onMouseDown={e => onBarMouseDown(e, sw.id, act.id, act, 'move')}
+                                                                                        onClick={(e) => {
+                                                                                            e.stopPropagation();
+                                                                                            const isMulti = e.metaKey || e.ctrlKey || e.shiftKey;
+                                                                                            if (isMulti) {
+                                                                                                setSelectedActivityIds(prev => prev.includes(act.id) ? prev.filter(id => id !== act.id) : [...prev, act.id]);
+                                                                                            } else {
+                                                                                                setSelectedActivityIds(prev => prev.length === 1 && prev[0] === act.id ? [] : [act.id]);
+                                                                                                setSelectedSwimlaneIds([]);
+                                                                                            }
+                                                                                        }}
+                                                                                    >
+                                                                                        <div className="text-[9px] font-bold text-white uppercase tracking-tighter truncate drop-shadow-md">
+                                                                                            {act.name}
+                                                                                        </div>
 
-                                                                                    <div
-                                                                                        onMouseDown={e => { e.stopPropagation(); onBarMouseDown(e, sw.id, act.id, act, 'start'); }}
-                                                                                        className="absolute left-1 top-1.5 bottom-1.5 w-1.5 bg-white/30 hover:bg-white/60 rounded-full cursor-ew-resize opacity-0 group/bar:opacity-100 transition-all"
-                                                                                    />
-                                                                                    <div
-                                                                                        onMouseDown={e => { e.stopPropagation(); onBarMouseDown(e, sw.id, act.id, act, 'end'); }}
-                                                                                        className="absolute right-1 top-1.5 bottom-1.5 w-1.5 bg-white/30 hover:bg-white/60 rounded-full cursor-ew-resize opacity-0 group/bar:opacity-100 transition-all"
-                                                                                    />
-                                                                                </div>
-                                                                            </TooltipTrigger>
-                                                                            <TooltipContent className="bg-zinc-950 border-zinc-800 p-4 rounded-2xl shadow-2xl min-w-[200px]">
-                                                                                <div className="space-y-3">
-                                                                                    <div className="flex items-center justify-between gap-4">
-                                                                                        <h4 className="text-xs font-black text-white uppercase tracking-widest">{act.name}</h4>
-                                                                                        <Badge className="bg-white/10 text-[9px] uppercase font-bold tracking-tighter">{act.duration} Months</Badge>
+                                                                                        <div
+                                                                                            onMouseDown={e => { e.stopPropagation(); onBarMouseDown(e, sw.id, act.id, act, 'start'); }}
+                                                                                            className="absolute left-1 top-1.5 bottom-1.5 w-1.5 bg-white/30 hover:bg-white/60 rounded-full cursor-ew-resize opacity-0 group/bar:opacity-100 transition-all"
+                                                                                        />
+                                                                                        <div
+                                                                                            onMouseDown={e => { e.stopPropagation(); onBarMouseDown(e, sw.id, act.id, act, 'end'); }}
+                                                                                            className="absolute right-1 top-1.5 bottom-1.5 w-1.5 bg-white/30 hover:bg-white/60 rounded-full cursor-ew-resize opacity-0 group/bar:opacity-100 transition-all"
+                                                                                        />
                                                                                     </div>
-                                                                                    <div className="space-y-1.5 text-[10px] text-zinc-400 font-bold uppercase tracking-tight">
-                                                                                        <div className="flex items-center gap-2"><Calendar className="h-3 w-3 text-indigo-500" /> Start: {months[act.start]?.label}</div>
-                                                                                        <div className="flex items-center gap-2"><MapPin className="h-3 w-3 text-emerald-500" /> {act.siteIds?.length ? act.siteIds.map(id => sites.find(s => s.id === id)?.name).join(", ") : "Global Scope"}</div>
-                                                                                        <div className="flex items-center gap-2"><Users className="h-3 w-3 text-indigo-500" /> {act.teamIds?.length ? act.teamIds.map(id => teams.find(t => t.id === id)?.name).join(", ") : "General Delivery"}</div>
+                                                                                </TooltipTrigger>
+                                                                                <TooltipContent className="bg-zinc-950 border-zinc-800 p-4 rounded-2xl shadow-2xl min-w-[200px]">
+                                                                                    <div className="space-y-3">
+                                                                                        <div className="flex items-center justify-between gap-4">
+                                                                                            <h4 className="text-xs font-black text-white uppercase tracking-widest">{act.name}</h4>
+                                                                                            <Badge className="bg-white/10 text-[9px] uppercase font-bold tracking-tighter">{act.duration} Months</Badge>
+                                                                                        </div>
+                                                                                        <div className="space-y-1.5 text-[10px] text-zinc-400 font-bold uppercase tracking-tight">
+                                                                                            <div className="flex items-center gap-2"><Calendar className="h-3 w-3 text-indigo-500" /> Start: {months[act.start]?.label}</div>
+                                                                                            <div className="flex items-center gap-2"><MapPin className="h-3 w-3 text-emerald-500" /> {act.siteIds?.length ? act.siteIds.map(id => sites.find(s => s.id === id)?.name).join(", ") : "Global Scope"}</div>
+                                                                                            <div className="flex items-center gap-2"><Users className="h-3 w-3 text-indigo-500" /> {act.teamIds?.length ? act.teamIds.map(id => teams.find(t => t.id === id)?.name).join(", ") : "General Delivery"}</div>
+                                                                                        </div>
                                                                                     </div>
-                                                                                </div>
-                                                                            </TooltipContent>
-                                                                        </Tooltip>
-                                                                    </TooltipProvider>
+                                                                                </TooltipContent>
+                                                                            </Tooltip>
+                                                                        </TooltipProvider>
+                                                                    </div>
                                                                 </div>
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                )}
+                                                            ))}
+                                                        </div>
+                                                    )
+                                                }
                                             </div>
                                         );
                                     })}

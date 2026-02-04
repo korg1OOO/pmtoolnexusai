@@ -149,11 +149,15 @@ const mockAIInsights = [
   { id: '4', category: 'pattern' as const, title: 'Historical Trend', description: 'Similar projects have experienced 15-20% scope creep at this stage. Monitor change requests closely.', confidence: 0.75 },
 ];
 
-export function MorningBriefingView() {
+interface MorningBriefingViewProps {
+  demo?: boolean;
+}
+
+export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) {
   const { toast } = useToast();
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [isCustomizing, setIsCustomizing] = useState(false);
-  
+
   // Local preferences state for when user is not authenticated
   const [localEnabledSections, setLocalEnabledSections] = useState<BriefingSectionId[]>(
     BRIEFING_SECTIONS.filter(s => s.defaultEnabled).map(s => s.id)
@@ -176,18 +180,18 @@ export function MorningBriefingView() {
 
   // AI generation hook
   const { loading: generating, briefingData, generateBriefing } = useBriefingGeneration();
-  
-  // Use local state if preferences not loaded (e.g., user not authenticated)
-  const effectiveEnabledSections = preferences?.enabled_sections ?? localEnabledSections;
-  const effectiveSectionOrder = preferences?.section_order ?? localSectionOrder;
 
-  const isLoading = preferencesLoading;
-  const isGenerating = generating;
+  // Use local state if preferences not loaded (e.g., user not authenticated)
+  const effectiveEnabledSections = demo ? BRIEFING_SECTIONS.map(s => s.id) : (preferences?.enabled_sections ?? localEnabledSections);
+  const effectiveSectionOrder = demo ? BRIEFING_SECTIONS.map(s => s.id) : (preferences?.section_order ?? localSectionOrder);
+
+  const isLoading = !demo && preferencesLoading;
+  const isGenerating = !demo && generating;
 
   // Handle refresh - triggers AI generation
   const handleRefresh = async () => {
     setLastUpdated(new Date());
-    
+
     if (!preferences) return;
 
     // Gather project data for AI analysis
@@ -219,8 +223,8 @@ export function MorningBriefingView() {
     if (preferences) {
       toggleSection(sectionId);
     } else {
-      setLocalEnabledSections(prev => 
-        prev.includes(sectionId) 
+      setLocalEnabledSections(prev =>
+        prev.includes(sectionId)
           ? prev.filter(id => id !== sectionId)
           : [...prev, sectionId]
       );

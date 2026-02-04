@@ -59,6 +59,7 @@ const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Se
 const COLORS = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#ef4444", "#06b6d4", "#f97316"];
 const SWIMLANE_COLORS = ["#1e293b", "#312e81", "#4c1d95", "#1e3a5f", "#14532d", "#450a0a"];
 import { useTimelineGenerator } from "@/hooks/useTimelineGenerator";
+import { useTimelineGenerator } from "@/hooks/useTimelineGenerator";
 
 const SwimlaneDragHandle = () => {
     const controls = useDragControls();
@@ -789,6 +790,19 @@ export function TimelinePlannerTab() {
 
         dispatch({ type: 'SET_INITIAL_DATA', swimlanes, milestones });
         toast({ title: "Snapshot Loaded", description: `Restored state from ${snapshot.name}` });
+    };
+
+    // Geneator Hook
+    const { generatePlan, isGenerating } = useTimelineGenerator();
+
+    const handleGeneratePlan = async () => {
+        if (!settings.id) return;
+        if (!confirm("This will generate a new Project Plan based on this timeline. This will append tasks to your existing plan. Continue?")) return;
+
+        await generatePlan(settings.id, {
+            swimlanes: state.swimlanes,
+            milestones: state.milestones
+        });
     };
 
     // Geneator Hook
@@ -1853,6 +1867,20 @@ export function TimelinePlannerTab() {
                                                                                 <Trash2 size={12} />
                                                                             </Button>
                                                                         )}
+                                                                        <div className="flex items-center gap-2">
+                                                                            <Button variant="outline" size="sm" onClick={() => setIsExporting(true)}>
+                                                                                <Download className="h-4 w-4 mr-1" />
+                                                                                Export
+                                                                            </Button>
+                                                                            <Button variant="outline" size="sm" onClick={handleCreateSnapshot}>
+                                                                                <Copy className="h-4 w-4 mr-1" />
+                                                                                Snapshot
+                                                                            </Button>
+                                                                            <Button variant="default" size="sm" onClick={handleGeneratePlan} disabled={isGenerating} className="bg-indigo-600 hover:bg-indigo-700">
+                                                                                {isGenerating ? <LayoutDashboard className="h-4 w-4 mr-1 animate-spin" /> : <Database className="h-4 w-4 mr-1" />}
+                                                                                Generate Plan
+                                                                            </Button>
+                                                                        </div>
                                                                         <div
                                                                             onMouseDown={onColumnResize}
                                                                             className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize opacity-0 group-hover/col:opacity-100 bg-indigo-500/20 hover:bg-indigo-500 transition-all z-30"

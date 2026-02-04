@@ -45,12 +45,31 @@ export const useScenarios = (projectId?: string) => {
         }
     });
 
+    const promoteMutation = useMutation({
+        mutationFn: async (id: string) => {
+            if (!projectId) throw new Error("Project ID is required");
+            return await scenarioService.promoteScenario(projectId, id);
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ["scenarios", projectId] });
+            queryClient.invalidateQueries({ queryKey: ["tasks", projectId] }); // Invalidate actuals too
+            toast.success("Scenario promoted to live plan");
+        },
+        onError: (error) => {
+            console.error(error);
+            toast.error("Failed to promote scenario");
+        }
+    });
+
     return {
         data,
         isLoading,
         createScenario: createMutation.mutateAsync,
         deleteScenario: deleteMutation.mutateAsync,
         isCreating: createMutation.isPending,
-        isDeleting: deleteMutation.isPending
+        isDeleting: deleteMutation.isPending,
+        promoteScenario: promoteMutation.mutateAsync,
+        isPromoting: promoteMutation.isPending
     };
+};
 };

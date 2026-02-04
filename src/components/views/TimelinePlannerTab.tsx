@@ -695,6 +695,7 @@ export function TimelinePlannerTab() {
     const [addingMonth, setAddingMonth] = useState(false);
     const [isExporting, setIsExporting] = useState(false);
     const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
+    const [snapGuide, setSnapGuide] = useState<number | null>(null);
 
     // Load Snapshots
     useEffect(() => {
@@ -1181,22 +1182,26 @@ export function TimelinePlannerTab() {
             if (mode === "move") {
                 const newStart = Math.max(0, Math.min(months.length - origDur, origStart + monthsDelta));
                 finalStart = newStart;
+                setSnapGuide(newStart);
                 dispatch({ type: 'TRANSFORM_ACTIVITY', swimId, actId, start: newStart });
             } else if (mode === "resize" || mode === "end") {
                 const newDur = Math.max(1, Math.min(months.length - origStart, origDur + monthsDelta));
                 finalDur = newDur;
+                setSnapGuide(origStart + newDur);
                 dispatch({ type: 'TRANSFORM_ACTIVITY', swimId, actId, duration: newDur });
             } else if (mode === "start") {
                 const newStart = Math.max(0, Math.min(origStart + origDur - 1, origStart + monthsDelta));
                 const newDur = origDur - (newStart - origStart);
                 finalStart = newStart;
                 finalDur = newDur;
+                setSnapGuide(newStart);
                 dispatch({ type: 'TRANSFORM_ACTIVITY', swimId, actId, start: newStart, duration: newDur });
             }
         };
         const onUp = () => {
             window.removeEventListener("mousemove", onMove);
             window.removeEventListener("mouseup", onUp);
+            setSnapGuide(null);
 
             if (finalStart !== origStart || finalDur !== origDur) {
                 timelineService.saveActivity({
@@ -1998,6 +2003,20 @@ export function TimelinePlannerTab() {
                                 </div>
 
                             </Card >
+                            {/* Snap Guide Line */}
+                            {snapGuide !== null && (
+                                <div
+                                    className="absolute top-0 bottom-0 w-px bg-indigo-500 z-50 pointer-events-none border-l border-dashed border-indigo-400"
+                                    style={{
+                                        left: columnWidth + (snapGuide * MONTH_COL_W),
+                                        boxShadow: "0 0 10px rgba(99, 102, 241, 0.5)"
+                                    }}
+                                >
+                                    <div className="absolute -top-6 left-1/2 -translate-x-1/2 bg-indigo-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded shadow-sm whitespace-nowrap uppercase tracking-tighter">
+                                        {months[snapGuide]?.label || "Target"}
+                                    </div>
+                                </div>
+                            )}
                         </div >
                         <ScrollBar orientation="horizontal" />
                     </ScrollArea >

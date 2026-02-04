@@ -139,5 +139,34 @@ export const scenarioService = {
             .eq('id', taskId)
             .eq('scenario_id', scenarioId);
         if (error) throw error;
+    },
+
+    async promoteScenario(projectId: string, scenarioId: string) {
+        // 1. Delete current actuals (backup could be done here if we had versioning)
+        // For now, we assume "Actuals" are just tasks where scenario_id is NULL
+        const { error: deleteError } = await supabase
+            .from('tasks')
+            .delete()
+            .eq('project_id', projectId)
+            .is('scenario_id', null);
+
+        if (deleteError) throw deleteError;
+
+        // 2. Convert scenario tasks to actuals
+        const { error: promoteError } = await supabase
+            .from('tasks')
+            .update({ scenario_id: null } as any)
+            .eq('project_id', projectId)
+            .eq('scenario_id', scenarioId);
+
+        if (promoteError) throw promoteError;
+
+        // 3. Update scenario status to archived or promoted
+        const { error: statusError } = await supabase
+            .from('scenarios')
+            .update({ status: 'archived', description: 'Promoted to live plan' })
+            .eq('id', scenarioId);
+
+        if (statusError) throw statusError;
     }
 };

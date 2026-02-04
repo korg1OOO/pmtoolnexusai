@@ -5,8 +5,9 @@ import {
   Play, Plus, Copy, Trash2, ChevronRight,
   Calendar, DollarSign, AlertCircle, CheckCircle2,
   TrendingDown, TrendingUp, BarChart3, Clock,
-  Info, Settings2, Loader2, Sparkles, Filter
+  Info, Settings2, Loader2, Sparkles, Filter, Layout
 } from 'lucide-react';
+import { PlanningView } from '@/components/views/PlanningView';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -26,6 +27,7 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { useProjectContext } from '@/contexts/ProjectContext';
+import { useTasks, DbTask } from '@/hooks/useTasks';
 import { useScenarios } from '@/hooks/useScenarios';
 import { mockScenarios } from '@/data/aiMockData';
 import { aiService } from '@/services/aiService';
@@ -74,9 +76,12 @@ export function ScenariosView() {
     data: fetchedScenarios = [],
     isLoading,
     createScenario,
-    deleteScenario
+    deleteScenario,
+    promoteScenario,
+    isPromoting
   } = useScenarios(settings.id);
 
+  /* State */
   const [scenarios, setScenarios] = useState<any[]>([]);
   const [selectedScenario, setSelectedScenario] = useState<any | null>(null);
   const [compareMode, setCompareMode] = useState(false);
@@ -87,6 +92,17 @@ export function ScenariosView() {
   const [newScenarioDesc, setNewScenarioDesc] = useState('');
   const [isSimulating, setIsSimulating] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
+
+  /* Data Fetching */
+  // Fetch all tasks for diffing (Base Plan)
+  const { data: allTasks = [] } = useTasks(settings.id, null);
+  // Fetch Scenario Plan tasks (only if selected)
+  const { data: scenarioTasks = [] } = useTasks(settings.id, selectedScenario?.id || 'skip');
+
+  /* Derived State */
+  const compareScenario = scenarios.find(s => s.id === compareScenarioId);
+  // Pseudo-baseline for visualization (defaults to 100% metrics)
+  const baselineScenario = { name: 'Plan Baseline', impact: { endDateChange: 0, costChange: 0 } };
 
   // Sync state with fetched data
   useEffect(() => {
@@ -158,13 +174,63 @@ export function ScenariosView() {
     setSelectedScenario(duplicated);
   };
 
+  const generateAdjustments = (): Adjustment[] => {
+    if (!selectedScenario || !allTasks.length || !scenarioTasks.length) return [];
+
+    const adjustments: Adjustment[] = [];
+    const baseMap = new Map(allTasks.map(t => [t.wbs, t])); // Match by WBS for now
+
+    scenarioTasks.forEach(sTask => {
+      const baseTask = baseMap.get(sTask.wbs);
+      if (baseTask) {
+        // Check for Duration/End Date Change
+        if (sTask.duration !== baseTask.duration) {
+          adjustments.push({
+            id: `adj-${sTask.id}-dur`,
+            type: sTask.duration > baseTask.duration ? 'delay' : 'acceleration',
+            taskId: sTask.id,
+            taskName: sTask.name,
+            field: 'Duration',
+            originalValue: baseTask.duration,
+            newValue: sTask.duration,
+            unit: 'days'
+          });
+        }
+        // Check for Cost Change (Budget)
+        if (sTask.budget !== baseTask.budget) {
+          adjustments.push({
+            id: `adj-${sTask.id}-cost`,
+            type: 'resource', // prioritizing simple types
+            taskId: sTask.id,
+            taskName: sTask.name,
+            field: 'Budget',
+            originalValue: baseTask.budget || 0,
+            newValue: sTask.budget,
+            unit: 'USD'
+          });
+        }
+      }
+    });
+    return adjustments;
+  };
+
   const handleRunSimulation = async () => {
     if (!selectedScenario || !settings?.id) return;
 
     setIsSimulating(true);
-    toast.info('AI is simulating scenario impacts...');
+    toast.info('Calculating impacts from your plan changes...');
 
-    const { data, error } = await aiService.simulateScenarios(settings.id, selectedScenario.adjustments);
+    // 1. Calculate Adjustments from Diffs
+    const calculatedAdjustments = generateAdjustments();
+
+    // 2. Update Scenario with these adjustments (so they persist)
+    // We need a way to update the scenario metadata 'data' field.
+    // Assuming we can update it locally or need a backend update?
+    // For now, let's use them for simulation.
+
+    // TODO: Ideally save calculatedAdjustments to DB here
+
+    const { data, error } = await aiService.simulateScenarios(settings.id, calculatedAdjustments);
     setIsSimulating(false);
 
     if (error) {
@@ -172,7 +238,8 @@ export function ScenariosView() {
     } else {
       const updatedScenario = {
         ...selectedScenario,
-        impact: data,
+        adjustments: calculatedAdjustments, // Show the calculated ones
+        impact: data || { endDateChange: 0, costChange: 0, riskLevel: 'low' }, // Use returned impact
         modifiedDate: new Date().toISOString().split('T')[0]
       };
 
@@ -214,6 +281,10 @@ export function ScenariosView() {
             <TabsTrigger value="simulation" className="gap-2">
               <Sparkles className="h-4 w-4" />
               Impact Simulation
+            </TabsTrigger>
+            <TabsTrigger value="planning" className="gap-2">
+              <Layout className="h-4 w-4" />
+              Scenario Planner
             </TabsTrigger>
           </TabsList>
 
@@ -303,6 +374,19 @@ export function ScenariosView() {
                           }}
                         >
                           <Trash2 className="h-4 w-4" /> Delete
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-2 border-primary/20 hover:bg-primary/5 text-primary"
+                          onClick={() => {
+                            if (confirm(`Promote "${selectedScenario.name}" to Live Plan? This will replace current actuals.`)) {
+                              promoteScenario(selectedScenario.id);
+                            }
+                          }}
+                          disabled={isPromoting}
+                        >
+                          <CheckCircle2 className="h-4 w-4" /> Promote
                         </Button>
                         <Button
                           size="sm"
@@ -527,6 +611,16 @@ export function ScenariosView() {
                 )}
               </div>
             </div>
+          </TabsContent>
+
+          <TabsContent value="planning" className="flex-1 overflow-hidden m-0">
+            {selectedScenario ? (
+              <PlanningView scenarioId={selectedScenario.id} />
+            ) : (
+              <div className="flex-1 flex flex-col items-center justify-center gap-4 text-muted-foreground h-full">
+                <p>Select a scenario to view its plan</p>
+              </div>
+            )}
           </TabsContent>
         </Tabs>
       </div>

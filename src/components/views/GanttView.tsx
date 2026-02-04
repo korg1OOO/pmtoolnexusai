@@ -20,6 +20,9 @@ import { Badge } from '@/components/ui/badge';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { useTasks, useDependencies, useCreateDependency, DbTask, DbDependency } from '@/hooks/useTasks';
 import type { Task, TaskType, TaskStatus, Priority } from '@/types/project';
+import { TaskInformationDialog } from '@/components/planning/TaskInformationDialog';
+import { useResources, useTaskResourceAssignments, useCreateResourceAssignment, useDeleteResourceAssignment } from '@/hooks/useResources';
+import { useUpdateTask, useDeleteDependency } from '@/hooks/useTasks';
 
 type TimeScale = 'day' | 'week' | 'month' | 'quarter';
 
@@ -37,7 +40,16 @@ export function GanttView() {
   // Data Fetching
   const { data: dbTasks = [], isLoading: isLoadingTasks } = useTasks(projectId);
   const { data: dbDependencies = [], isLoading: isLoadingDeps } = useDependencies(projectId);
+  const { data: resources = [] } = useResources(projectId);
+  const { data: assignments = [] } = useTaskResourceAssignments(projectId);
+
   const createDependency = useCreateDependency();
+  const updateTask = useUpdateTask();
+  const deleteDependency = useDeleteDependency();
+  const createAssignment = useCreateResourceAssignment();
+  const deleteAssignment = useDeleteResourceAssignment();
+
+  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   const [timeScale, setTimeScale] = useState<TimeScale>('week');
   const [showBaseline, setShowBaseline] = useState(false);
@@ -536,6 +548,10 @@ export function GanttView() {
                                 task.isCritical && showCriticalPath ? 'bg-destructive shadow-sm' : 'bg-primary/90'
                               )}
                               style={barStyle}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setSelectedTaskId(task.id);
+                              }}
                             >
                               {/* Progress */}
                               <div
@@ -592,6 +608,58 @@ export function GanttView() {
           </span>
         </div>
       </div>
-    </div>
+
+      {
+        selectedTaskId && (() => {
+          const task = dbTasks.find(t => t.id === selectedTaskId);
+          if (!task) return null;
+
+          return (
+            <TaskInformationDialog
+              open={!!selectedTaskId}
+              onOpenChange={(open) => !open && setSelectedTaskId(null)}
+              task={task}
+              dependencies={dbDependencies}
+              allTasks={dbTasks}
+              resources={resources}
+              assignments={assignments}
+              onSave={async (updates) => {
+                await updateTask.mutateAsync({ id: task.id, project_id: projectId!, ...updates });
+                setSelectedTaskId(null);
+              }}
+              onAddDependency={async (predecessorId, type, lag) => {
+                await createDependency.mutateAsync({
+                  projectId: projectId!,
+                  dependency: {
+                    task_id: task.id,
+                    predecessor_id: predecessorId,
+                    type,
+                    lag
+                  }
+                });
+              }}
+              onRemoveDependency={async (depId) => {
+                await deleteDependency.mutateAsync({ dependencyId: depId, projectId: projectId! });
+              }}
+              onAddAssignment={async (resourceId, units) => {
+                await createAssignment.mutateAsync({
+                  task_id: task.id,
+                  resource_id: resourceId,
+                  units,
+                  work_hours: 0, // Default
+                  actual_work_hours: 0,
+                  remaining_work_hours: 0,
+                  cost: 0,
+                  actual_cost: 0
+                });
+              }}
+              onRemoveAssignment={async (assignmentId) => {
+                await deleteAssignment.mutateAsync({ id: assignmentId, taskId: task.id });
+              }}
+            />
+          );
+        })()
+      }
+    </div >
   );
 }

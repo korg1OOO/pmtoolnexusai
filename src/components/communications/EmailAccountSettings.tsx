@@ -206,9 +206,10 @@ export function EmailAccountSettings() {
             setShowAddDialog(false);
             setFormData(defaultFormData);
           }
-        } catch (err: any) {
+        } catch (err: unknown) {
           console.error('OAuth callback error:', err);
-          toast.error(err.message || 'Failed to connect account');
+          const message = err instanceof Error ? err.message : 'Failed to connect account';
+          toast.error(message);
         } finally {
           setIsOAuthPending(false);
         }
@@ -269,9 +270,10 @@ export function EmailAccountSettings() {
         'oauth_popup',
         `width=${width},height=${height},left=${left},top=${top},popup=yes`
       );
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('OAuth error:', err);
-      toast.error(err.message || 'Failed to start OAuth flow');
+      const message = err instanceof Error ? err.message : 'Failed to start OAuth flow';
+      toast.error(message);
       setIsOAuthPending(false);
     }
   };

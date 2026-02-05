@@ -64,7 +64,7 @@ export function PMCoachSidebar({ isOpen, onToggle, currentView = 'gantt' }: PMCo
 
   const [activeTab, setActiveTab] = useState<'insights' | 'patterns' | 'learning'>('insights');
   const [isAsking, setIsAsking] = useState(false);
-  const [chatHistory, setChatHistory] = useState<{ role: string, content: string }[]>([]);
+  const [chatHistory, setChatHistory] = useState<{ role: 'user' | 'assistant' | 'system', content: string }[]>([]);
 
   const projectCalendar = useMemo(() => calendars.find(c => c.is_default) || null, [calendars]);
 
@@ -157,18 +157,19 @@ export function PMCoachSidebar({ isOpen, onToggle, currentView = 'gantt' }: PMCo
     toast.info('AI PM Coach is thinking...');
 
     // Add user message to history
-    const userMsg = { role: 'user', content: message };
+    const userMsg: { role: 'user' | 'assistant' | 'system', content: string } = { role: 'user', content: message };
     const updatedHistory = [...chatHistory, userMsg];
     setChatHistory(updatedHistory);
 
-    const { data, error } = await aiService.chat(projectId, message, chatHistory);
+    const { data, error } = await aiService.chat(projectId, message, updatedHistory);
     setIsAsking(false);
 
     if (error) {
       toast.error('Coach failed: ' + error);
     } else {
       // Add assistant message to history
-      setChatHistory([...updatedHistory, { role: 'assistant', content: data?.reply || data || 'No response from coach' }]);
+      const replyContent = typeof data === 'string' ? data : data?.reply || 'No response from coach';
+      setChatHistory([...updatedHistory, { role: 'assistant', content: replyContent }]);
       toast.success('Coach responded');
     }
   };
@@ -251,7 +252,7 @@ export function PMCoachSidebar({ isOpen, onToggle, currentView = 'gantt' }: PMCo
               ].map((tab) => (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id as any)}
+                  onClick={() => setActiveTab(tab.id as 'insights' | 'patterns' | 'learning')}
                   className={cn(
                     'flex-1 flex items-center justify-center gap-1 py-3 text-sm font-medium transition-colors',
                     activeTab === tab.id

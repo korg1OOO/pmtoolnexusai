@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -116,7 +116,7 @@ function hasPermission(userRole: string, requiredPermissions: string[]): boolean
 function getPermissionDenialResponse(userRole: string, action: string, requiredPermission: string): string {
   const alternatives = ROLE_PERMISSIONS[userRole] || [];
   const alternativeActions = [];
-  
+
   if (alternatives.includes("VIEW_ALL")) {
     alternativeActions.push("View project status and timeline");
     alternativeActions.push("Get insights and recommendations");
@@ -125,7 +125,7 @@ function getPermissionDenialResponse(userRole: string, action: string, requiredP
     alternativeActions.push("Summarize meeting notes");
     alternativeActions.push("Track action items");
   }
-  
+
   return `I understand you'd like to ${action}, but your current role (${userRole}) doesn't have the required ${requiredPermission} permission.
 
 What I can help you with instead:
@@ -238,7 +238,7 @@ Only include clarifying_question if needs_clarification is true.`;
 
   const data = await response.json();
   const content = data.choices?.[0]?.message?.content || "";
-  
+
   try {
     // Extract JSON from response
     const jsonMatch = content.match(/\{[\s\S]*\}/);
@@ -262,7 +262,7 @@ Only include clarifying_question if needs_clarification is true.`;
 // =============================================================================
 
 async function buildProjectContext(
-  supabase: any,
+  supabase: SupabaseClient,
   projectId: string,
   agentType: string
 ): Promise<Record<string, unknown>> {
@@ -275,7 +275,7 @@ async function buildProjectContext(
       .select("*")
       .eq("id", projectId)
       .single();
-    
+
     context.project = project;
 
     // Fetch agent-specific data
@@ -419,7 +419,7 @@ If the user wants to modify the schedule, explain the impact but note that chang
 // --- Finance Agent ---
 async function runFinanceAgent(input: AgentInput): Promise<AgentOutput> {
   const project = input.projectContext.project as Record<string, unknown> || {};
-  
+
   const systemPrompt = `You are FinanceAgent, an expert in project financial management and EVM analysis.
 
 Your capabilities:
@@ -635,7 +635,7 @@ async function callLovableAI(
   if (!response.ok) {
     const errorText = await response.text();
     console.error(`${agentType} agent failed:`, errorText);
-    
+
     if (response.status === 429) {
       return {
         response: "I'm currently experiencing high demand. Please try again in a moment.",
@@ -650,7 +650,7 @@ async function callLovableAI(
         confidence: 0,
       };
     }
-    
+
     throw new Error(`Agent ${agentType} failed: ${response.status}`);
   }
 
@@ -736,7 +736,7 @@ serve(async (req) => {
         // Get user's role for this project
         const { data: roleData } = await supabase
           .rpc("get_user_role", { p_user_id: userId, p_project_id: projectId });
-        
+
         if (roleData) {
           userRole = roleData;
         }
@@ -751,7 +751,7 @@ serve(async (req) => {
     // Step 1.5: Handle Clarification Needed
     if (intent.needs_clarification && intent.clarifying_question) {
       console.log("Clarification needed:", intent.clarifying_question);
-      
+
       return new Response(
         JSON.stringify({
           response: intent.clarifying_question.context || "I need a bit more information to help you.",
@@ -824,12 +824,12 @@ serve(async (req) => {
         const secondaryAgent = INTENT_TO_AGENT[secondaryIntent];
         if (secondaryAgent && secondaryAgent !== agentType) {
           const secondaryPermissions = AGENT_PERMISSIONS[secondaryAgent] || ["VIEW_ALL"];
-          
+
           if (hasPermission(userRole, secondaryPermissions)) {
             const secondaryContext = await buildProjectContext(supabase, projectId, secondaryAgent);
             const secondaryInput = { ...agentInput, projectContext: secondaryContext };
             const secondaryOutput = await routeToAgent(secondaryAgent, secondaryInput);
-            
+
             synthesizedResponse += `\n\n---\n\n**Additional Analysis (${secondaryAgent}):**\n${secondaryOutput.response}`;
             agentsUsed.push(secondaryAgent);
           }
@@ -864,7 +864,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("Orchestrator error:", error);
-    
+
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : "An unexpected error occurred",

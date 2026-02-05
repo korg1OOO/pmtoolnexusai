@@ -75,7 +75,7 @@ const AppContent = () => {
     if (urlView !== activeView) {
       setActiveView(urlView);
     }
-  }, [searchParams]);
+  }, [searchParams, activeView]);
 
   // Show loading state
   if (loading) {

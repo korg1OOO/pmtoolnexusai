@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { usePortfolios } from '@/hooks/usePortfolios';
+import { usePortfolios, PortfolioWithPrograms, PortfolioProgram, PortfolioProject } from '@/hooks/usePortfolios';
 import { usePrograms } from '@/hooks/usePrograms';
 import {
   Loader2,
@@ -52,7 +52,7 @@ export function PortfolioView() {
   const { data: permissions } = usePermissions();
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'overview' | 'programs' | 'projects' | 'management'>('overview');
-  const [selectedProject, setSelectedProject] = useState<any | null>(null);
+  const [selectedProject, setSelectedProject] = useState<PortfolioProject | null>(null);
 
   // Set initial selected portfolio if not set
   if (!selectedPortfolioId && portfoliosData && portfoliosData.length > 0) {
@@ -66,16 +66,16 @@ export function PortfolioView() {
   const projects = selectedPortfolio?.programs?.flatMap(p => p.projects || []) || [];
   const programs = selectedPortfolio?.programs || [];
 
-  const totalBudget = projects.reduce((sum: number, p: any) => sum + (p.budget || 0), 0);
-  const totalSpent = projects.reduce((sum: number, p: any) => sum + (p.spent || 0), 0);
+  const totalBudget = projects.reduce((sum: number, p: PortfolioProject) => sum + (p.budget || 0), 0);
+  const totalSpent = projects.reduce((sum: number, p: PortfolioProject) => sum + (p.spent || 0), 0);
   const avgProgress = projects.length > 0
-    ? projects.reduce((sum: number, p: any) => sum + (p.progress || 0), 0) / projects.length
+    ? projects.reduce((sum: number, p: PortfolioProject) => sum + (p.progress || 0), 0) / projects.length
     : 0;
 
   const healthCounts = {
-    green: projects.filter((p: any) => p.health === 'green').length,
-    amber: projects.filter((p: any) => p.health === 'amber').length,
-    red: projects.filter((p: any) => p.health === 'red').length,
+    green: projects.filter((p: PortfolioProject) => p.health === 'green').length,
+    amber: projects.filter((p: PortfolioProject) => p.health === 'amber').length,
+    red: projects.filter((p: PortfolioProject) => p.health === 'red').length,
   };
 
   const formatCurrency = (value: number) => {
@@ -216,9 +216,9 @@ export function PortfolioView() {
               </div>
               <div className="text-right">
                 <p className="text-lg font-semibold text-foreground">
-                  {formatCurrency((portfolio.programs as any[])?.reduce((sum, prog) => sum + (prog.projects?.reduce((pSum: number, p: any) => pSum + (p.budget || 0), 0) || 0), 0) || 0)}
+                  {formatCurrency(portfolio.programs?.reduce((sum, prog) => sum + (prog.projects?.reduce((pSum: number, p: PortfolioProject) => pSum + (p.budget || 0), 0) || 0), 0) || 0)}
                 </p>
-                <p className="text-xs text-muted-foreground">{(portfolio.programs as any[])?.length || 0} Programs</p>
+                <p className="text-xs text-muted-foreground">{portfolio.programs?.length || 0} Programs</p>
               </div>
             </div>
           </motion.button>
@@ -255,7 +255,7 @@ export function PortfolioView() {
           <div className="grid grid-cols-4 gap-4">
             <KPICard title="Total Budget" value={formatCurrency(totalBudget)} subtitle={`${formatCurrency(totalSpent)} spent`} icon={DollarSign} trend={{ value: 2.5, isPositive: true }} status="success" />
             <KPICard title="Portfolio Progress" value={`${Math.round(avgProgress)}%`} subtitle="Average completion" icon={Target} trend={{ value: 5.2, isPositive: true }} status="neutral" />
-            <KPICard title="Active Projects" value={projects.filter((p: any) => p.status === 'active').length.toString()} subtitle={`${projects.filter((p: any) => p.status === 'on-hold').length} on hold`} icon={Layers} status="neutral" />
+            <KPICard title="Active Projects" value={projects.filter((p: PortfolioProject) => p.status === 'active').length.toString()} subtitle={`${projects.filter((p: PortfolioProject) => p.status === 'on-hold').length} on hold`} icon={Layers} status="neutral" />
             <KPICard title="At Risk" value={(healthCounts.amber + healthCounts.red).toString()} subtitle={`${healthCounts.red} critical`} icon={AlertTriangle} status={healthCounts.red > 0 ? 'error' : 'warning'} />
           </div>
 
@@ -313,14 +313,14 @@ export function PortfolioView() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {programs.map((program: any) => {
-                  const pBudget = program.projects?.reduce((sum: number, p: any) => sum + (p.budget || 0), 0) || 0;
-                  const pSpent = program.projects?.reduce((sum: number, p: any) => sum + (p.spent || 0), 0) || 0;
+                {programs.map((program: PortfolioProgram) => {
+                  const pBudget = program.projects?.reduce((sum: number, p: PortfolioProject) => sum + (p.budget || 0), 0) || 0;
+                  const pSpent = program.projects?.reduce((sum: number, p: PortfolioProject) => sum + (p.spent || 0), 0) || 0;
                   const pProgress = program.projects?.length > 0
-                    ? Math.round(program.projects.reduce((sum: number, p: any) => sum + (p.progress || 0), 0) / program.projects.length)
+                    ? Math.round(program.projects.reduce((sum: number, p: PortfolioProject) => sum + (p.progress || 0), 0) / program.projects.length)
                     : 0;
-                  const redHealth = program.projects?.some((p: any) => p.health === 'red');
-                  const amberHealth = program.projects?.some((p: any) => p.health === 'amber');
+                  const redHealth = program.projects?.some((p: PortfolioProject) => p.health === 'red');
+                  const amberHealth = program.projects?.some((p: PortfolioProject) => p.health === 'amber');
                   const health = redHealth ? 'red' : amberHealth ? 'amber' : 'green';
 
                   return (
@@ -354,11 +354,11 @@ export function PortfolioView() {
 
       {viewMode === 'programs' && (
         <div className="grid grid-cols-2 gap-4">
-          {programs.map((program: any) => {
-            const pBudget = program.projects?.reduce((sum: number, p: any) => sum + (p.budget || 0), 0) || 0;
-            const pSpent = program.projects?.reduce((sum: number, p: any) => sum + (p.spent || 0), 0) || 0;
+          {programs.map((program: PortfolioProgram) => {
+            const pBudget = program.projects?.reduce((sum: number, p: PortfolioProject) => sum + (p.budget || 0), 0) || 0;
+            const pSpent = program.projects?.reduce((sum: number, p: PortfolioProject) => sum + (p.spent || 0), 0) || 0;
             const pProgress = program.projects?.length > 0
-              ? Math.round(program.projects.reduce((sum: number, p: any) => sum + (p.progress || 0), 0) / program.projects.length)
+              ? Math.round(program.projects.reduce((sum: number, p: PortfolioProject) => sum + (p.progress || 0), 0) / program.projects.length)
               : 0;
             return (
               <Card key={program.id} variant="interactive">
@@ -378,9 +378,9 @@ export function PortfolioView() {
                   </div>
                   <div className="space-y-2">
                     <p className="text-xs font-medium text-muted-foreground uppercase">Projects</p>
-                    {program.projects?.map((project: any) => (
+                    {program.projects?.map((project: PortfolioProject) => (
                       <div key={project.id} className="flex items-center justify-between p-2 rounded-lg bg-background/50">
-                        <div className="flex items-center gap-2"><StatusIndicator status={project.health} size="sm" /><span className="text-sm">{project.name}</span></div>
+                        <div className="flex items-center gap-2"><StatusIndicator status={project.health || 'green'} size="sm" /><span className="text-sm">{project.name}</span></div>
                         <span className="text-xs text-muted-foreground">{project.progress}%</span>
                       </div>
                     ))}
@@ -411,14 +411,14 @@ export function PortfolioView() {
                 </tr>
               </thead>
               <tbody>
-                {projects.map((project: any) => (
+                {projects.map((project: PortfolioProject) => (
                   <tr
                     key={project.id}
                     className="border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer"
                     onClick={() => setSelectedProject(project)}
                   >
                     <td className="p-4"><div><p className="font-medium">{project.name}</p><p className="text-xs text-muted-foreground">{project.code}</p></div></td>
-                    <td className="p-4"><Badge variant="outline">{(programs as any[]).find(p => p.projects?.some((proj: any) => proj.id === project.id))?.name || 'N/A'}</Badge></td>
+                    <td className="p-4"><Badge variant="outline">{programs.find(p => p.projects?.some((proj: PortfolioProject) => proj.id === project.id))?.name || 'N/A'}</Badge></td>
                     <td className="p-4"><Badge variant={project.status === 'active' ? 'active' : 'pending'}>{project.status}</Badge></td>
                     <td className="p-4"><StatusIndicator status={project.health} /></td>
                     <td className="p-4"><div className="flex items-center gap-2"><Progress value={project.progress} className="h-2 w-20" /><span className="text-sm">{project.progress}%</span></div></td>

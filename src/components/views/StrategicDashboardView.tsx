@@ -52,7 +52,7 @@ export function StrategicDashboardView() {
     }
   };
 
-  const getAttitudeColor = (attitude: string) => {
+  const getAttitudeColor = (attitude: string): string => {
     switch (attitude) {
       case 'champion':
         return 'bg-success/10 text-success border-success/20';
@@ -126,7 +126,7 @@ export function StrategicDashboardView() {
                   <div>
                     <h4 className="text-sm font-medium mb-2">Success Criteria</h4>
                     <div className="space-y-3">
-                      {context.businessCase.successCriteria.map((sc: any) => (
+                      {context.businessCase.successCriteria.map((sc) => (
                         <div key={sc.id} className="p-3 rounded-lg bg-muted/30 border">
                           <div className="flex items-center justify-between mb-1">
                             <span className="text-sm font-medium">{sc.description}</span>
@@ -156,10 +156,10 @@ export function StrategicDashboardView() {
                   <div>
                     <h4 className="text-sm font-medium mb-2">Projected Benefits</h4>
                     <div className="space-y-2">
-                      {context.businessCase.benefits.map((b: any) => (
+                      {context.businessCase.benefits.map((b) => (
                         <div key={b.id} className="flex items-center justify-between p-2 rounded-lg bg-muted/30">
                           <div className="flex items-center gap-2">
-                            <Badge variant={(b.type === 'financial' ? 'success' : b.type === 'strategic' ? 'info' : 'secondary') as any}>
+                            <Badge variant={(b.type === 'financial' ? 'success' : b.type === 'strategic' ? 'outline' : 'secondary')}>
                               {b.type}
                             </Badge>
                             <span className="text-sm">{b.description}</span>
@@ -175,7 +175,7 @@ export function StrategicDashboardView() {
                   <div>
                     <h4 className="text-sm font-medium mb-2">Key Assumptions</h4>
                     <div className="space-y-2">
-                      {context.businessCase.assumptions.map((a: any) => (
+                      {context.businessCase.assumptions.map((a) => (
                         <div key={a.id} className="flex items-start gap-2 p-2 rounded-lg bg-muted/30">
                           {getStatusIcon(a.status)}
                           <div className="flex-1">
@@ -211,7 +211,7 @@ export function StrategicDashboardView() {
                           <Badge
                             variant={(reg.complianceStatus === 'compliant' ? 'success' :
                               reg.complianceStatus === 'partially-compliant' ? 'warning' :
-                                reg.complianceStatus === 'not-assessed' ? 'secondary' : 'destructive') as any}
+                                reg.complianceStatus === 'not-assessed' ? 'secondary' : 'destructive')}
                           >
                             {reg.complianceStatus}
                           </Badge>
@@ -249,7 +249,7 @@ export function StrategicDashboardView() {
                     {context.operatingConstraints.map((oc: any) => (
                       <div key={oc.id} className="flex items-start gap-3 p-3 rounded-lg border">
                         <Badge
-                          variant={(oc.flexibility === 'fixed' ? 'destructive' : oc.flexibility === 'negotiable' ? 'warning' : 'secondary') as any}
+                          variant={(oc.flexibility === 'fixed' ? 'destructive' : oc.flexibility === 'negotiable' ? 'warning' : 'secondary')}
                           className="shrink-0"
                         >
                           {oc.flexibility}
@@ -313,7 +313,7 @@ export function StrategicDashboardView() {
                     <CardDescription>AI-identified risks based on pattern matching and historical project data</CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
-                    {riskDiscovery.discoveredRisks.map((risk: any) => (
+                    {riskDiscovery.discoveredRisks.map((risk) => (
                       <div
                         key={risk.id}
                         className="p-4 rounded-lg border border-primary/20 bg-primary/5 relative overflow-hidden group"
@@ -333,7 +333,7 @@ export function StrategicDashboardView() {
                           <p className="text-xs text-muted-foreground italic truncate">{risk.explanation}</p>
                         </div>
                         <div className="mt-2 flex flex-wrap gap-1">
-                          {risk.dataSupport.map((ds: any, i: number) => (
+                          {risk.dataSupport.map((ds, i: number) => (
                             <Badge key={i} variant="outline" className="text-xs">
                               {ds.description}: {ds.value}
                             </Badge>
@@ -351,7 +351,7 @@ export function StrategicDashboardView() {
                     <CardTitle className="text-base">Inferred Risks</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {riskDiscovery.hiddenRisks.map((risk: any) => (
+                    {riskDiscovery.hiddenRisks.map((risk) => (
                       <div key={risk.id} className="p-3 rounded-lg border border-warning/30 bg-warning/5">
                         <div className="flex items-start justify-between mb-1">
                           <h4 className="font-medium text-sm">{risk.title}</h4>
@@ -378,10 +378,10 @@ export function StrategicDashboardView() {
                     <CardTitle className="text-base">Timing & Sequence Risks</CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-3">
-                    {riskDiscovery.timingRisks.map((risk: any) => (
+                    {riskDiscovery.timingRisks.map((risk) => (
                       <div key={risk.id} className="p-3 rounded-lg border">
                         <div className="flex items-center gap-2 mb-1">
-                          <Badge variant={(risk.type === 'regulatory-deadline' ? 'destructive' : 'warning') as any}>
+                          <Badge variant={(risk.type === 'regulatory-deadline' ? 'destructive' : 'warning')}>
                             {risk.type}
                           </Badge>
                           <span className="text-xs text-muted-foreground">{risk.period}</span>
@@ -402,7 +402,7 @@ export function StrategicDashboardView() {
           {/* Value Engineering Tab */}
           <TabsContent value="value" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {valueEngineering.options.map((option: any) => (
+              {valueEngineering.options.map((option) => (
                 <Card
                   key={option.id}
                   className={cn(
@@ -444,7 +444,7 @@ export function StrategicDashboardView() {
 
                     <div className="space-y-1">
                       <p className="text-xs font-medium">Key Pros:</p>
-                      {option.pros.map((pro: string, i: number) => (
+                      {option.pros.map((pro, i: number) => (
                         <p key={i} className="text-xs text-muted-foreground flex items-center gap-1">
                           <CheckCircle2 className="h-3 w-3 text-success" /> {pro}
                         </p>
@@ -469,7 +469,7 @@ export function StrategicDashboardView() {
                         <span className="text-xs text-muted-foreground">Optimal point marked in blue</span>
                       </div>
                       <div className="h-24 flex items-end gap-1 mb-2">
-                        {valueEngineering.tradeoffAnalysis.costVsTime.points.map((p: any, i: number) => (
+                        {valueEngineering.tradeoffAnalysis.costVsTime.points.map((p, i: number) => (
                           <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
                             <div
                               className={cn(
@@ -490,7 +490,7 @@ export function StrategicDashboardView() {
                     <div>
                       <h4 className="text-sm font-medium mb-4">Risk Profile per Option</h4>
                       <div className="h-24 flex items-end gap-1 mb-2">
-                        {valueEngineering.tradeoffAnalysis.costVsRisk.points.map((p: any, i: number) => (
+                        {valueEngineering.tradeoffAnalysis.costVsRisk.points.map((p, i: number) => (
                           <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
                             <div
                               className={cn(
@@ -525,7 +525,7 @@ export function StrategicDashboardView() {
                       <Button
                         className="w-full gap-2"
                         onClick={() => {
-                          const option = valueEngineering.options.find((o: any) => o.id === selectedOption);
+                          const option = valueEngineering.options.find((o) => o.id === selectedOption);
                           toast.success(`Implementing Value Engineering Option: ${option?.name || 'Selected Option'}`);
                         }}
                       >
@@ -555,7 +555,7 @@ export function StrategicDashboardView() {
                   <div className="space-y-2 p-3 rounded-lg bg-primary/5 border border-primary/10 min-h-[200px]">
                     <h4 className="text-xs font-bold text-primary uppercase tracking-wider mb-3">Champions (Key Influencers)</h4>
                     <div className="space-y-2">
-                      {context.stakeholderPowerMap.stakeholders.filter((s: any) => s.power === 'high' && s.attitude === 'champion').map((s: any) => (
+                      {context.stakeholderPowerMap.stakeholders.filter((s) => s.power === 'high' && s.attitude === 'champion').map((s) => (
                         <div key={s.id} className="p-3 rounded bg-card border">
                           <div className="flex items-center justify-between mb-1">
                             <span className="font-medium">{s.name}</span>
@@ -572,7 +572,7 @@ export function StrategicDashboardView() {
                   <div className="space-y-2 p-3 rounded-lg bg-orange-500/5 border border-orange-500/10 min-h-[200px]">
                     <h4 className="text-xs font-bold text-orange-600 uppercase tracking-wider mb-3">High Power, Medium Interest</h4>
                     <div className="space-y-2">
-                      {context.stakeholderPowerMap.stakeholders.filter((s: any) => s.power === 'high' && s.attitude === 'supporter').map((s: any) => (
+                      {context.stakeholderPowerMap.stakeholders.filter((s) => s.power === 'high' && s.attitude === 'supporter').map((s) => (
                         <div key={s.id} className="p-3 rounded bg-card border">
                           <div className="flex items-center justify-between mb-1">
                             <span className="font-medium">{s.name}</span>
@@ -589,7 +589,7 @@ export function StrategicDashboardView() {
                   <div className="space-y-2 p-3 rounded-lg bg-blue-500/5 border border-blue-500/10 min-h-[200px]">
                     <h4 className="text-xs font-bold text-blue-600 uppercase tracking-wider mb-3">Knowledge Keepers</h4>
                     <div className="space-y-2">
-                      {context.stakeholderPowerMap.stakeholders.filter((s: any) => s.power === 'medium' && s.interest === 'high').map((s: any) => (
+                      {context.stakeholderPowerMap.stakeholders.filter((s) => s.power === 'medium' && s.interest === 'high').map((s) => (
                         <div key={s.id} className="p-3 rounded bg-card border">
                           <div className="flex items-center justify-between mb-1">
                             <span className="font-medium">{s.name}</span>
@@ -606,7 +606,7 @@ export function StrategicDashboardView() {
                   <div className="space-y-2 p-3 rounded-lg bg-muted border min-h-[200px]">
                     <h4 className="text-xs font-bold text-muted-foreground uppercase tracking-wider mb-3">Informed Only</h4>
                     <div className="space-y-2">
-                      {context.stakeholderPowerMap.stakeholders.filter((s: any) => s.interest === 'low').map((s: any) => (
+                      {context.stakeholderPowerMap.stakeholders.filter((s) => s.interest === 'low').map((s) => (
                         <div key={s.id} className="p-3 rounded bg-card border">
                           <div className="flex items-center justify-between mb-1">
                             <span className="font-medium">{s.name}</span>
@@ -623,13 +623,13 @@ export function StrategicDashboardView() {
                 <div className="mt-8">
                   <h4 className="text-sm font-semibold mb-4">Inter-Stakeholder Conflict Analysis</h4>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {context.stakeholderPowerMap.relationships.map((rel: any, i: number) => {
-                      const from = context.stakeholderPowerMap.stakeholders.find((s: any) => s.id === rel.from);
-                      const to = context.stakeholderPowerMap.stakeholders.find((s: any) => s.id === rel.to);
+                    {context.stakeholderPowerMap.relationships.map((rel, i: number) => {
+                      const from = context.stakeholderPowerMap.stakeholders.find((s) => s.id === rel.from);
+                      const to = context.stakeholderPowerMap.stakeholders.find((s) => s.id === rel.to);
                       return (
                         <div key={i} className="flex items-center gap-2 p-2 rounded bg-muted/30 text-sm">
                           <span className="font-medium">{from?.name}</span>
-                          <Badge variant={(rel.type === 'conflicts-with' ? 'destructive' : 'secondary') as any}>
+                          <Badge variant={(rel.type === 'conflicts-with' ? 'destructive' : 'secondary')}>
                             {rel.type}
                           </Badge>
                           <ArrowRight className="h-4 w-4" />

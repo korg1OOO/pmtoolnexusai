@@ -21,9 +21,16 @@ export function useSprints() {
       setLoading(true);
       const { data, error: e } = await supabase.from('sprints').select('*').eq('project_id', projectId).order('start_date', { ascending: false });
       if (e) throw e;
-      setSprints((data || []).map((s: any) => ({ ...s, status: s.status as SprintStatus })));
+      if (e) throw e;
+      setSprints((data || []).map((s) => ({ ...s, status: s.status as SprintStatus })));
       setError(null);
-    } catch (err: any) { setError(err.message); } finally { setLoading(false); }
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unknown error occurred');
+      }
+    } finally { setLoading(false); }
   }, [projectId]);
 
   useEffect(() => { fetchSprints(); }, [fetchSprints]);

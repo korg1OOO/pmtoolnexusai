@@ -8,7 +8,7 @@ export interface UserPreference {
     user_id: string;
     project_id: string;
     preference_key: string;
-    preference_value: any;
+    preference_value: unknown;
     updated_at: string;
 }
 
@@ -38,7 +38,7 @@ export function useUserPreferences(projectId: string | null) {
     });
 
     const updatePreference = useMutation({
-        mutationFn: async ({ key, value }: { key: string; value: any }) => {
+        mutationFn: async ({ key, value }: { key: string; value: unknown }) => {
             if (!projectId || !user) throw new Error('No project or user');
 
             const { data, error } = await supabase

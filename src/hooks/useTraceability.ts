@@ -100,7 +100,7 @@ export const useTraceability = (projectId?: string) => {
 
                 result.push({
                     id,
-                    type: type as any,
+                    type: type as TraceabilityItem['type'],
                     title: info.title,
                     status: info.status,
                     linkedTo

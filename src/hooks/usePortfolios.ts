@@ -4,10 +4,41 @@ import { Database } from "@/integrations/supabase/types";
 
 export type Portfolio = Database["public"]["Tables"]["portfolios"]["Row"];
 
+export interface PortfolioProject {
+  id: string;
+  name: string;
+  budget: number | null;
+  spent: number | null;
+  progress: number | null;
+  health: 'green' | 'amber' | 'red' | string | null;
+  code?: string;
+  status?: string;
+  end_date?: string;
+  description?: string;
+  manager?: string;
+  team?: string[];
+  milestones?: { name: string; date: string; status: string }[];
+  risks?: { name: string; severity: string }[];
+  burndownData?: { week: string; planned: number; actual: number }[];
+  programCode?: string;
+}
+
+export interface PortfolioProgram {
+  id: string;
+  name: string;
+  code?: string;
+  status?: string;
+  projects: PortfolioProject[];
+}
+
+export interface PortfolioWithPrograms extends Portfolio {
+  programs: PortfolioProgram[];
+}
+
 export const usePortfolios = () => {
   return useQuery({
     queryKey: ["portfolios"],
-    queryFn: async () => {
+    queryFn: async (): Promise<PortfolioWithPrograms[]> => {
       const { data, error } = await supabase
         .from("portfolios")
         .select(`
@@ -28,7 +59,7 @@ export const usePortfolios = () => {
         .order("name");
 
       if (error) throw error;
-      return data;
+      return data as unknown as PortfolioWithPrograms[];
     },
   });
 };
@@ -36,7 +67,7 @@ export const usePortfolios = () => {
 export const usePortfolio = (id: string | undefined) => {
   return useQuery({
     queryKey: ["portfolios", id],
-    queryFn: async () => {
+    queryFn: async (): Promise<PortfolioWithPrograms | null> => {
       if (!id) return null;
       const { data, error } = await supabase
         .from("portfolios")
@@ -67,7 +98,7 @@ export const usePortfolio = (id: string | undefined) => {
         .single();
 
       if (error) throw error;
-      return data;
+      return data as unknown as PortfolioWithPrograms;
     },
     enabled: !!id,
   });

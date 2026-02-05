@@ -30,7 +30,9 @@ try {
     console.log('[main.tsx] Root element found, mounting...');
     createRoot(rootElement).render(<App />);
     console.log('[main.tsx] React app mount called');
-} catch (e: any) {
+} catch (e: unknown) {
     console.error('[main.tsx] Fatal Render Error:', e);
-    document.body.innerHTML = `<div style="color:red; padding:20px;"><h1>Fatal Error</h1><pre>${e.message}\n${e.stack}</pre></div>`;
+    const message = e instanceof Error ? e.message : String(e);
+    const stack = e instanceof Error ? e.stack : '';
+    document.body.innerHTML = `<div style="color:red; padding:20px;"><h1>Fatal Error</h1><pre>${message}\n${stack}</pre></div>`;
 }

@@ -25,8 +25,9 @@ const Auth = () => {
                 },
             });
             if (error) throw error;
-        } catch (error: any) {
-            toast.error(error.message || "Authentication failed");
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : "Authentication failed";
+            toast.error(message);
             setIsLoading(false);
         }
     };
@@ -54,8 +55,9 @@ const Auth = () => {
                 if (error) throw error;
                 navigate('/dashboard');
             }
-        } catch (error: any) {
-            toast.error(error.message || "Authentication failed");
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : "Authentication failed";
+            toast.error(message);
         } finally {
             setIsLoading(false);
         }

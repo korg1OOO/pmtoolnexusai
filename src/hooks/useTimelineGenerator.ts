@@ -8,9 +8,23 @@ type TaskType = Database['public']['Enums']['task_type'];
 type TaskStatus = Database['public']['Enums']['task_status'];
 type PriorityLevel = Database['public']['Enums']['priority_level'];
 
+interface Activity {
+    id: string;
+    name: string;
+    start: number;
+    duration: number;
+    notes?: string;
+    dependencies?: { targetId: string; type: string }[];
+}
+
+interface Swimlane {
+    label: string;
+    activities?: Activity[];
+}
+
 interface TimelineData {
-    swimlanes: any[];
-    milestones: any[];
+    swimlanes: Swimlane[];
+    milestones: unknown[];
 }
 
 export function useTimelineGenerator() {
@@ -59,7 +73,7 @@ export function useTimelineGenerator() {
 
                 // 2. Process Activities
                 if (swimlane.activities && swimlane.activities.length > 0) {
-                    const sortedActivities = [...swimlane.activities].sort((a: any, b: any) => a.start - b.start);
+                    const sortedActivities = [...swimlane.activities].sort((a, b) => a.start - b.start);
 
                     for (let aIndex = 0; aIndex < sortedActivities.length; aIndex++) {
                         const activity = sortedActivities[aIndex];
@@ -106,12 +120,18 @@ export function useTimelineGenerator() {
             }
 
             // 3. Process Dependencies
-            const newDependencies: any[] = [];
+            interface NewDependency {
+                task_id: string;
+                predecessor_id: string;
+                type: Database['public']['Enums']['dependency_type'];
+                lag: number;
+            }
+            const newDependencies: NewDependency[] = [];
 
             data.swimlanes.forEach(swimlane => {
-                swimlane.activities?.forEach((activity: any) => {
+                swimlane.activities?.forEach((activity) => {
                     if (activity.dependencies) {
-                        activity.dependencies.forEach((dep: any) => {
+                        activity.dependencies.forEach((dep) => {
                             const successorId = activityIdMap.get(activity.id);
                             const predecessorId = activityIdMap.get(dep.targetId);
 
@@ -119,7 +139,7 @@ export function useTimelineGenerator() {
                                 newDependencies.push({
                                     task_id: successorId,
                                     predecessor_id: predecessorId,
-                                    type: dep.type || 'FS',
+                                    type: (dep.type || 'FS') as Database['public']['Enums']['dependency_type'],
                                     lag: 0
                                 });
                             }
@@ -140,9 +160,10 @@ export function useTimelineGenerator() {
             queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
             queryClient.invalidateQueries({ queryKey: ['dependencies', projectId] });
 
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error("Error generating plan:", error);
-            toast.error(`Failed to generate plan: ${error.message}`);
+            const message = error instanceof Error ? error.message : 'Unknown error';
+            toast.error(`Failed to generate plan: ${message}`);
         } finally {
             setIsGenerating(false);
         }

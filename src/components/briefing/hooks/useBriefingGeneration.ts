@@ -4,14 +4,14 @@ import { useToast } from '@/hooks/use-toast';
 import { BriefingSectionId, AIBriefingResponse } from '../types';
 
 interface ProjectData {
-  project?: any;
-  tasks?: any[];
-  risks?: any[];
-  issues?: any[];
-  actions?: any[];
-  meetings?: any[];
-  resources?: any[];
-  financials?: any;
+  project?: Record<string, unknown>;
+  tasks?: Record<string, unknown>[];
+  risks?: Record<string, unknown>[];
+  issues?: Record<string, unknown>[];
+  actions?: Record<string, unknown>[];
+  meetings?: Record<string, unknown>[];
+  resources?: Record<string, unknown>[];
+  financials?: Record<string, unknown>;
 }
 
 export function useBriefingGeneration() {

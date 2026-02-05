@@ -169,7 +169,7 @@ export interface BriefingData {
   sectionId: BriefingSectionId;
   loading: boolean;
   error?: string;
-  data?: any;
+  data?: unknown;
   aiConfidence?: number;
   generatedAt?: string;
 }

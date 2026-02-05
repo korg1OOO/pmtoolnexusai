@@ -1,13 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Database } from "@/integrations/supabase/types";
+import { PortfolioProgram, PortfolioProject } from "./usePortfolios";
 
 export type Program = Database["public"]["Tables"]["programs"]["Row"];
 
 export const usePrograms = (portfolioId?: string) => {
     return useQuery({
         queryKey: ["programs", portfolioId],
-        queryFn: async () => {
+        queryFn: async (): Promise<PortfolioProgram[]> => {
             let query = supabase
                 .from("programs")
                 .select(`
@@ -33,7 +34,7 @@ export const usePrograms = (portfolioId?: string) => {
             const { data, error } = await query.order("name");
 
             if (error) throw error;
-            return data;
+            return data as unknown as PortfolioProgram[];
         },
     });
 };
@@ -41,7 +42,7 @@ export const usePrograms = (portfolioId?: string) => {
 export const useProgram = (id: string | undefined) => {
     return useQuery({
         queryKey: ["programs", id],
-        queryFn: async () => {
+        queryFn: async (): Promise<PortfolioProgram | null> => {
             if (!id) return null;
             const { data, error } = await supabase
                 .from("programs")
@@ -65,7 +66,7 @@ export const useProgram = (id: string | undefined) => {
                 .single();
 
             if (error) throw error;
-            return data;
+            return data as unknown as PortfolioProgram;
         },
     });
 };

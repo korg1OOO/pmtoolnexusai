@@ -32,8 +32,8 @@ export interface UseChatEngineReturn {
   markAsRead: (messageId: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
   currentUserId: string | undefined;
-  getParentMessage: (parentId: string) => ChatMessage | undefined;
-  jumpToMessage: (messageId: string) => void;
+  getParentMessage: (parentId: string | null | undefined) => ChatMessage | undefined;
+  jumpToMessage: (messageId: string, refs?: Map<string, HTMLDivElement>) => void;
 }
 
 export function useChatEngine({ projectId, channelId, onNewMessage }: UseChatEngineOptions): UseChatEngineReturn {
@@ -156,8 +156,24 @@ export function useChatEngine({ projectId, channelId, onNewMessage }: UseChatEng
   const markAsRead = useCallback(async (): Promise<void> => {}, []);
   const markAllAsRead = useCallback(async (): Promise<void> => {}, []);
 
-  const getParentMessage = useCallback((parentId: string) => messages.find(m => m.id === parentId), [messages]);
-  const jumpToMessage = useCallback(() => {}, []);
+  const getParentMessage = useCallback(
+    (parentId: string | null | undefined) => {
+      if (!parentId) return undefined;
+      return messages.find(m => m.id === parentId);
+    },
+    [messages]
+  );
+
+  const jumpToMessage = useCallback((messageId: string, refs?: Map<string, HTMLDivElement>) => {
+    if (refs) {
+      const el = refs.get(messageId);
+      if (el) {
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('bg-primary/10');
+        setTimeout(() => el.classList.remove('bg-primary/10'), 2000);
+      }
+    }
+  }, []);
 
   return {
     messages,

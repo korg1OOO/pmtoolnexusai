@@ -162,7 +162,7 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
   };
 
   const handleJumpToMessage = (messageId: string) => {
-    jumpToMessage(messageId, messageRefs.current);
+    jumpToMessage(messageId);
   };
 
   // Group messages by sender for compact display

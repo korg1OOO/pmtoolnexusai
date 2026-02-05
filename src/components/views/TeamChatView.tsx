@@ -462,7 +462,7 @@ export function TeamChatView() {
   };
 
   const handleJumpToMessage = (messageId: string) => {
-    jumpToMessage(messageId, messageRefs.current);
+    jumpToMessage(messageId);
   };
 
   // Thread conversion

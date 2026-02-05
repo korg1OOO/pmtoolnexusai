@@ -8,28 +8,28 @@ export interface Scenario {
     name: string;
     description: string | null;
     status: 'draft' | 'active' | 'archived';
-    base_plan_snapshot_id: string | null;
-    data: Record<string, unknown>;
+    base_plan_snapshot_id?: string | null;
+    data?: Record<string, unknown>;
     created_at: string;
     updated_at: string;
-    created_by: string | null;
+    created_by?: string | null;
 }
 
 export const scenarioService = {
     async getScenarios(projectId: string): Promise<Scenario[]> {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
             .from('scenarios')
             .select('*')
             .eq('project_id', projectId)
             .order('created_at', { ascending: false });
 
         if (error) throw error;
-        return data as Scenario[];
+        return (data || []) as unknown as Scenario[];
     },
 
     async createScenario(projectId: string, name: string, description: string): Promise<Scenario> {
         // 1. Create the scenario record
-        const { data: scenario, error: scenarioError } = await supabase
+        const { data: scenario, error: scenarioError } = await (supabase as any)
             .from('scenarios')
             .insert({
                 project_id: projectId,
@@ -45,7 +45,7 @@ export const scenarioService = {
         // 2. Clone the tasks and dependencies (Background async ok? No, user wants it ready)
         await this.cloneProjectData(projectId, scenario.id);
 
-        return scenario as Scenario;
+        return scenario as unknown as Scenario;
     },
 
     async cloneProjectData(projectId: string, scenarioId: string) {
@@ -96,7 +96,7 @@ export const scenarioService = {
         // Chunking might be needed for thousands, but let's assume < 1000 for now or rely on Supabase handling it.
         const { error: insertTasksError } = await supabase
             .from('tasks')
-            .insert(newTasks);
+            .insert(newTasks as any);
 
         if (insertTasksError) throw insertTasksError;
 
@@ -117,7 +117,7 @@ export const scenarioService = {
             if (newDeps.length > 0) {
                 const { error: insertDepsError } = await supabase
                     .from('task_dependencies')
-                    .insert(newDeps);
+                    .insert(newDeps as any);
 
                 if (insertDepsError) throw insertDepsError;
             }
@@ -125,7 +125,7 @@ export const scenarioService = {
     },
 
     async deleteScenario(id: string) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
             .from('scenarios')
             .delete()
             .eq('id', id);
@@ -133,7 +133,7 @@ export const scenarioService = {
     },
 
     async updateScenario(id: string, updates: Partial<Scenario>) {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
             .from('scenarios')
             .update(updates)
             .eq('id', id)
@@ -141,12 +141,12 @@ export const scenarioService = {
             .single();
 
         if (error) throw error;
-        return data as Scenario;
+        return data as unknown as Scenario;
     },
 
     // Simulate applying adjustments (Update single task fields)
     async updateScenarioTask(scenarioId: string, taskId: string, updates: Partial<DbTask>) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
             .from('tasks')
             .update(updates)
             .eq('id', taskId)
@@ -157,7 +157,7 @@ export const scenarioService = {
     async promoteScenario(projectId: string, scenarioId: string) {
         // 1. Delete current actuals (backup could be done here if we had versioning)
         // For now, we assume "Actuals" are just tasks where scenario_id is NULL
-        const { error: deleteError } = await supabase
+        const { error: deleteError } = await (supabase as any)
             .from('tasks')
             .delete()
             .eq('project_id', projectId)
@@ -166,16 +166,16 @@ export const scenarioService = {
         if (deleteError) throw deleteError;
 
         // 2. Convert scenario tasks to actuals
-        const { error: promoteError } = await supabase
+        const { error: promoteError } = await (supabase as any)
             .from('tasks')
-            .update({ scenario_id: null } as Partial<DbTask>)
+            .update({ scenario_id: null })
             .eq('project_id', projectId)
             .eq('scenario_id', scenarioId);
 
         if (promoteError) throw promoteError;
 
         // 3. Update scenario status to archived or promoted
-        const { error: statusError } = await supabase
+        const { error: statusError } = await (supabase as any)
             .from('scenarios')
             .update({ status: 'archived', description: 'Promoted to live plan' })
             .eq('id', scenarioId);

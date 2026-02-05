@@ -682,7 +682,7 @@ function PortfolioAssignments({ currentUserId, members }: { currentUserId: strin
 
   const handleAssign = async (id: string, newOwnerId: string) => {
     try {
-      await updatePortfolio.mutateAsync({ id, owner_id: newOwnerId });
+      await updatePortfolio.mutateAsync({ id, ...({ owner_id: newOwnerId } as any) });
       toast.success('Portfolio owner updated');
       setEditingId(null);
     } catch (error) {

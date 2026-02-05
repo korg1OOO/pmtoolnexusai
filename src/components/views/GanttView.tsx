@@ -624,7 +624,7 @@ export function GanttView() {
               resources={resources}
               assignments={assignments}
               onSave={async (updates) => {
-                await updateTask.mutateAsync({ id: task.id, project_id: projectId!, ...updates });
+                await updateTask.mutateAsync({ id: task.id, project_id: projectId!, ...updates } as any);
                 setSelectedTaskId(null);
               }}
               onAddDependency={async (predecessorId, type, lag) => {

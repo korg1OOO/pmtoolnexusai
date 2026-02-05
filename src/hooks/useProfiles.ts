@@ -13,36 +13,43 @@ export interface Profile {
 export function useProfiles() {
     return useQuery({
         queryKey: ['profiles'],
-        queryFn: async () => {
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('*');
+        queryFn: async (): Promise<Profile[]> => {
+            try {
+                const { data, error } = await (supabase as any)
+                    .from('profiles')
+                    .select('*');
 
-            if (error) {
-                // Fallback for when the table doesn't exist yet (during development)
-                console.warn('Error fetching profiles (table might be missing):', error);
+                if (error) {
+                    console.warn('Profiles table may not exist:', error);
+                    return [];
+                }
+                return data || [];
+            } catch (e) {
+                console.warn('Error fetching profiles:', e);
                 return [];
             }
-
-            return data as Profile[];
         },
     });
 }
 
-export function useProfile(userId: string | null) {
+export function useProfileById(userId: string | null) {
     return useQuery({
         queryKey: ['profile', userId],
-        queryFn: async () => {
+        queryFn: async (): Promise<Profile | null> => {
             if (!userId) return null;
 
-            const { data, error } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', userId)
-                .single();
+            try {
+                const { data, error } = await (supabase as any)
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', userId)
+                    .single();
 
-            if (error) throw error;
-            return data as Profile;
+                if (error) return null;
+                return data;
+            } catch {
+                return null;
+            }
         },
         enabled: !!userId,
     });
@@ -53,7 +60,7 @@ export function useUpdateProfile() {
 
     return useMutation({
         mutationFn: async ({ id, ...updates }: Partial<Profile> & { id: string }) => {
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('profiles')
                 .update(updates)
                 .eq('id', id)

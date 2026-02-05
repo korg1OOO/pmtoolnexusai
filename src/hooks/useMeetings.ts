@@ -346,7 +346,7 @@ export function useMeetings(projectId?: string | null) {
     if (projectId && !isValidUuid(projectId)) {
       console.log("Skipping meetings fetch for invalid/demo projectId:", projectId);
       setMeetings([]); // Or maybe set some demo data? For now, empty.
-      setLoading(false);
+      setIsLoading(false);
       return;
     }
 

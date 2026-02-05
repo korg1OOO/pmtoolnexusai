@@ -47,7 +47,9 @@ import { TeamChatView } from '@/components/views/TeamChatView';
 import { TeamManagementView } from '@/components/views/TeamManagementView';
 import { TrackingView } from '@/components/views/TrackingView';
 import { TimelinePlannerTab } from '@/components/views/TimelinePlannerTab';
+import { ProjectProvider, useProjectContext } from '@/contexts/ProjectContext';
 import { PresenceProvider, usePresenceContext } from '@/contexts/PresenceContext';
+import { EmptyProjectState } from '@/components/dashboard/EmptyProjectState';
 
 const AppContent = () => {
   const [searchParams, setSearchParams] = useSearchParams();

@@ -561,10 +561,11 @@ export function ProgramTimelineView() {
                           {/* Milestones */}
                           {project.milestones.map((milestone, idx) => {
                             if (milestone.date < viewDate || milestone.date > endDate) return null;
-                            const Icon = milestone.status === 'completed' ? CheckCircle2 :
-                              milestone.status === 'at-risk' ? AlertTriangle : Milestone;
-                            const color = milestone.status === 'completed' ? 'text-success' :
-                              milestone.status === 'at-risk' ? 'text-destructive' : 'text-primary';
+                            const msStatus = milestone.status as string;
+                            const Icon = msStatus === 'completed' ? CheckCircle2 :
+                              msStatus === 'at-risk' ? AlertTriangle : Milestone;
+                            const color = msStatus === 'completed' ? 'text-success' :
+                              msStatus === 'at-risk' ? 'text-destructive' : 'text-primary';
 
                             return (
                               <div

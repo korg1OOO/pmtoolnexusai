@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import type { NotebookSpreadsheet, SpreadsheetSheet } from '@/hooks/useSpreadsheets';
+import type { DbTask, TaskType, TaskStatus, PriorityLevel } from '@/hooks/useTasks';
 
 // Project plan column mapping
 export const PROJECT_PLAN_COLUMNS = [
@@ -36,6 +37,8 @@ export interface LinkedSpreadsheetInfo {
   sync_direction: 'spreadsheet' | 'project' | 'both';
 }
 
+export type SpreadsheetCell = string | number | boolean | null;
+
 export function useLinkedSpreadsheet(spreadsheetId: string | null) {
   const [linkInfo, setLinkInfo] = useState<LinkedSpreadsheetInfo | null>(null);
   const [mappings, setMappings] = useState<TaskMapping[]>([]);
@@ -58,7 +61,7 @@ export function useLinkedSpreadsheet(spreadsheetId: string | null) {
         .single();
 
       if (error) throw error;
-      
+
       setLinkInfo({
         linked_project_id: data.linked_project_id,
         linked_at: data.linked_at,
@@ -86,7 +89,7 @@ export function useLinkedSpreadsheet(spreadsheetId: string | null) {
         .order('row_index', { ascending: true });
 
       if (error) throw error;
-      setMappings(data || []);
+      setMappings((data || []) as TaskMapping[]);
     } catch (error) {
       console.error('Error fetching mappings:', error);
     }
@@ -96,7 +99,7 @@ export function useLinkedSpreadsheet(spreadsheetId: string | null) {
   const convertToProjectPlan = useCallback(async (
     projectId: string,
     sheetId: string,
-    sheetData: any[][]
+    sheetData: SpreadsheetCell[][]
   ) => {
     if (!spreadsheetId) return false;
 
@@ -117,21 +120,40 @@ export function useLinkedSpreadsheet(spreadsheetId: string | null) {
       // Create header row if not present
       const headerRow = PROJECT_PLAN_COLUMNS.map(c => c.header);
       const newData = [...sheetData];
-      
+
       // Check if first row is headers
-      const firstRowHasHeaders = sheetData[0]?.some((cell: any) => 
-        PROJECT_PLAN_COLUMNS.some(c => 
-          String(cell).toLowerCase() === c.header.toLowerCase()
+      const firstRowHasHeaders = sheetData[0]?.some((cell: SpreadsheetCell) =>
+        PROJECT_PLAN_COLUMNS.some(c =>
+          String(cell || '').toLowerCase() === c.header.toLowerCase()
         )
       );
 
       if (!firstRowHasHeaders) {
-        newData[0] = headerRow;
+        newData[0] = headerRow as SpreadsheetCell[];
       }
 
       // Parse existing rows and create tasks
-      const tasksToCreate: any[] = [];
-      const mappingsToCreate: any[] = [];
+      interface TaskToCreate {
+        task: {
+          project_id: string;
+          wbs: string;
+          name: string;
+          type: TaskType;
+          status: TaskStatus;
+          priority: PriorityLevel;
+          start_date: string;
+          end_date: string;
+          duration: number;
+          progress: number;
+          is_critical: boolean;
+          notes: string;
+          sort_order: number;
+          level: number;
+        };
+        rowIdx: number;
+      }
+      const tasksToCreate: TaskToCreate[] = [];
+      const mappingsToCreate: { spreadsheet_id: string; sheet_id: string; task_id: string; row_index: number }[] = [];
 
       for (let rowIdx = 1; rowIdx < newData.length; rowIdx++) {
         const row = newData[rowIdx];
@@ -149,7 +171,7 @@ export function useLinkedSpreadsheet(spreadsheetId: string | null) {
             end_date: parseDate(row?.[6]) || new Date().toISOString().split('T')[0],
             duration: parseInt(String(row?.[7] || '1'), 10) || 1,
             progress: Math.min(100, Math.max(0, parseInt(String(row?.[8] || '0'), 10) || 0)),
-            is_critical: String(row?.[10]).toLowerCase() === 'yes',
+            is_critical: String(row?.[10] || '').toLowerCase() === 'yes',
             notes: String(row?.[11] || ''),
             sort_order: rowIdx,
             level: 0,
@@ -205,7 +227,7 @@ export function useLinkedSpreadsheet(spreadsheetId: string | null) {
       return true;
     } catch (error) {
       console.error('Error converting to project plan:', error);
-      
+
       await supabase
         .from('notebook_spreadsheets')
         .update({ sync_status: 'error' })
@@ -219,7 +241,7 @@ export function useLinkedSpreadsheet(spreadsheetId: string | null) {
   }, [spreadsheetId, toast, fetchLinkInfo, fetchMappings]);
 
   // Sync from spreadsheet to project plan
-  const syncToProjectPlan = useCallback(async (sheetId: string, sheetData: any[][]) => {
+  const syncToProjectPlan = useCallback(async (sheetId: string, sheetData: SpreadsheetCell[][]) => {
     if (!spreadsheetId || !linkInfo?.linked_project_id) return false;
 
     try {
@@ -238,7 +260,7 @@ export function useLinkedSpreadsheet(spreadsheetId: string | null) {
         if (!taskName || !String(taskName).trim()) continue;
 
         const existingMapping = mappings.find(m => m.row_index === rowIdx);
-        
+
         const taskData = {
           wbs: String(row?.[0] || `${rowIdx}`),
           name: String(taskName),
@@ -249,7 +271,7 @@ export function useLinkedSpreadsheet(spreadsheetId: string | null) {
           end_date: parseDate(row?.[6]) || new Date().toISOString().split('T')[0],
           duration: parseInt(String(row?.[7] || '1'), 10) || 1,
           progress: Math.min(100, Math.max(0, parseInt(String(row?.[8] || '0'), 10) || 0)),
-          is_critical: String(row?.[10]).toLowerCase() === 'yes',
+          is_critical: String(row?.[10] || '').toLowerCase() === 'yes',
           notes: String(row?.[11] || ''),
         };
 
@@ -298,7 +320,7 @@ export function useLinkedSpreadsheet(spreadsheetId: string | null) {
       return true;
     } catch (error) {
       console.error('Error syncing to project plan:', error);
-      
+
       await supabase
         .from('notebook_spreadsheets')
         .update({ sync_status: 'error' })
@@ -334,11 +356,11 @@ export function useLinkedSpreadsheet(spreadsheetId: string | null) {
 
       // Build new spreadsheet data
       const headerRow = PROJECT_PLAN_COLUMNS.map(c => c.header);
-      const newData: any[][] = [headerRow];
+      const newData: SpreadsheetCell[][] = [headerRow as SpreadsheetCell[]];
 
-      const newMappings: any[] = [];
+      const newMappings: { spreadsheet_id: string; sheet_id: string; task_id: string; row_index: number }[] = [];
 
-      tasks?.forEach((task, idx) => {
+      (tasks || []).forEach((task, idx: number) => {
         const rowIdx = idx + 1;
         newData[rowIdx] = [
           task.wbs,
@@ -399,7 +421,7 @@ export function useLinkedSpreadsheet(spreadsheetId: string | null) {
       return newData;
     } catch (error) {
       console.error('Error syncing to spreadsheet:', error);
-      
+
       await supabase
         .from('notebook_spreadsheets')
         .update({ sync_status: 'error' })
@@ -447,7 +469,7 @@ export function useLinkedSpreadsheet(spreadsheetId: string | null) {
   }, [spreadsheetId, toast]);
 
   // Debounced sync for real-time updates
-  const debouncedSync = useCallback((sheetId: string, sheetData: any[][]) => {
+  const debouncedSync = useCallback((sheetId: string, sheetData: SpreadsheetCell[][]) => {
     if (debounceRef.current) {
       clearTimeout(debounceRef.current);
     }
@@ -505,41 +527,43 @@ export function useLinkedSpreadsheet(spreadsheetId: string | null) {
 }
 
 // Helper functions
-function parseType(value: any): 'task' | 'milestone' | 'summary' {
+function parseType(value: unknown): 'task' | 'milestone' | 'summary' {
   const v = String(value || '').toLowerCase();
   if (v === 'milestone') return 'milestone';
   if (v === 'summary') return 'summary';
   return 'task';
 }
 
-function parseStatus(value: any): 'not-started' | 'in-progress' | 'completed' | 'blocked' | 'on-hold' {
+function parseStatus(value: unknown): 'not-started' | 'in-progress' | 'completed' | 'blocked' | 'on-hold' {
   const v = String(value || '').toLowerCase().replace(/\s+/g, '-');
-  if (['in-progress', 'completed', 'blocked', 'on-hold'].includes(v)) {
-    return v as any;
+  const validStatuses = ['in-progress', 'completed', 'blocked', 'on-hold'] as const;
+  if ((validStatuses as readonly string[]).includes(v)) {
+    return v as typeof validStatuses[number];
   }
   return 'not-started';
 }
 
-function parsePriority(value: any): 'critical' | 'high' | 'medium' | 'low' {
+function parsePriority(value: unknown): 'critical' | 'high' | 'medium' | 'low' {
   const v = String(value || '').toLowerCase();
-  if (['critical', 'high', 'medium', 'low'].includes(v)) {
-    return v as any;
+  const validPriorities = ['critical', 'high', 'medium', 'low'] as const;
+  if ((validPriorities as readonly string[]).includes(v)) {
+    return v as typeof validPriorities[number];
   }
   return 'medium';
 }
 
-function parseDate(value: any): string | null {
+function parseDate(value: unknown): string | null {
   if (!value) return null;
   const str = String(value);
-  
+
   // Try parsing various formats
   const date = new Date(str);
   if (!isNaN(date.getTime())) {
     return date.toISOString().split('T')[0];
   }
-  
+
   // Try DD/MM/YYYY format
-  const parts = str.split(/[\/\-]/);
+  const parts = str.split(/[/-]/);
   if (parts.length === 3) {
     const [d, m, y] = parts;
     const parsed = new Date(`${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`);
@@ -547,6 +571,6 @@ function parseDate(value: any): string | null {
       return parsed.toISOString().split('T')[0];
     }
   }
-  
+
   return null;
 }

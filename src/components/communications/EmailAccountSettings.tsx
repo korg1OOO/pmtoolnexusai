@@ -181,7 +181,7 @@ export function EmailAccountSettings() {
           const { access_token, refresh_token, expires_in, email } = response.data;
 
           // Create the account with OAuth tokens
-          const input: any = {
+          const input: CreateEmailAccountInput = {
             account_type: formData.account_type,
             email_address: email || formData.email_address,
             display_name: formData.display_name || undefined,
@@ -348,7 +348,7 @@ export function EmailAccountSettings() {
   };
 
   const getProviderBadge = (account: EmailAccount) => {
-    const providerType = (account as any).provider_type || 'imap';
+    const providerType = account.provider_type || 'imap';
     switch (providerType) {
       case 'gmail':
         return <Badge variant="secondary" className="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400">Gmail API</Badge>;

@@ -4,10 +4,10 @@ import { toast } from 'sonner';
 import { useEffect } from 'react';
 import type { Database } from '@/integrations/supabase/types';
 
-type TaskType = Database['public']['Enums']['task_type'];
-type TaskStatus = Database['public']['Enums']['task_status'];
-type PriorityLevel = Database['public']['Enums']['priority_level'];
-type ConstraintType = Database['public']['Enums']['constraint_type'];
+export type TaskType = Database['public']['Enums']['task_type'];
+export type TaskStatus = Database['public']['Enums']['task_status'];
+export type PriorityLevel = Database['public']['Enums']['priority_level'];
+export type ConstraintType = Database['public']['Enums']['constraint_type'];
 
 export interface DbTask {
   id: string;

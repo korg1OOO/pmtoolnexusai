@@ -1,0 +1,1682 @@
+[
+  {
+    "name": "App",
+    "path": "src/App.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 29
+  },
+  {
+    "name": "EmptyProjectState",
+    "path": "src/components/EmptyProjectState.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "NavLink",
+    "path": "src/components/NavLink.tsx",
+    "category": "other",
+    "wired": false,
+    "usageCount": 0
+  },
+  {
+    "name": "ThemeProvider",
+    "path": "src/components/ThemeProvider.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "ThemeToggle",
+    "path": "src/components/ThemeToggle.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "AIProviderSettings",
+    "path": "src/components/admin/AIProviderSettings.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "ActionConfirmDialog",
+    "path": "src/components/ai/ActionConfirmDialog.tsx",
+    "category": "modals",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "AgentIndicator",
+    "path": "src/components/ai/AgentIndicator.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "ChatAttachments",
+    "path": "src/components/ai/ChatAttachments.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "ChatMessage",
+    "path": "src/components/ai/ChatMessage.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 5
+  },
+  {
+    "name": "ClarifyingQuestion",
+    "path": "src/components/ai/ClarifyingQuestion.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "CommunicationAISidebar",
+    "path": "src/components/ai/CommunicationAISidebar.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "ContextSelector",
+    "path": "src/components/ai/ContextSelector.tsx",
+    "category": "forms",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "GlobalAISidebar",
+    "path": "src/components/ai/GlobalAISidebar.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 3
+  },
+  {
+    "name": "IntentModeToggle",
+    "path": "src/components/ai/IntentModeToggle.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "MeetingAISidebar",
+    "path": "src/components/ai/MeetingAISidebar.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "PMCoachSidebar",
+    "path": "src/components/ai/PMCoachSidebar.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "PageContextPanel",
+    "path": "src/components/ai/PageContextPanel.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "StrategicAISidebar",
+    "path": "src/components/ai/StrategicAISidebar.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "AuthDialog",
+    "path": "src/components/auth/AuthDialog.tsx",
+    "category": "modals",
+    "wired": false,
+    "usageCount": 0
+  },
+  {
+    "name": "BriefingSectionCard",
+    "path": "src/components/briefing/BriefingSectionCard.tsx",
+    "category": "cards",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "BriefingSettingsPanel",
+    "path": "src/components/briefing/BriefingSettingsPanel.tsx",
+    "category": "reports",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "FlexibleBriefingGrid",
+    "path": "src/components/briefing/FlexibleBriefingGrid.tsx",
+    "category": "reports",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "ResizableBriefingLayout",
+    "path": "src/components/briefing/ResizableBriefingLayout.tsx",
+    "category": "reports",
+    "wired": false,
+    "usageCount": 0
+  },
+  {
+    "name": "AIInsightsSection",
+    "path": "src/components/briefing/sections/AIInsightsSection.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "ActionsSection",
+    "path": "src/components/briefing/sections/ActionsSection.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "BudgetAnalysisSection",
+    "path": "src/components/briefing/sections/BudgetAnalysisSection.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "CriticalAlertsSection",
+    "path": "src/components/briefing/sections/CriticalAlertsSection.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "DecisionsSection",
+    "path": "src/components/briefing/sections/DecisionsSection.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "IssuesSection",
+    "path": "src/components/briefing/sections/IssuesSection.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "MeetingsSection",
+    "path": "src/components/briefing/sections/MeetingsSection.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "ProfitLossSection",
+    "path": "src/components/briefing/sections/ProfitLossSection.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "RiskAssessmentSection",
+    "path": "src/components/briefing/sections/RiskAssessmentSection.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "ScheduleSlippageSection",
+    "path": "src/components/briefing/sections/ScheduleSlippageSection.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "TeamAvailabilitySection",
+    "path": "src/components/briefing/sections/TeamAvailabilitySection.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "ChatAttachment",
+    "path": "src/components/chat/ChatAttachment.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 5
+  },
+  {
+    "name": "ComposeArea",
+    "path": "src/components/chat/ComposeArea.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "EmojiPicker",
+    "path": "src/components/chat/EmojiPicker.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "MentionInput",
+    "path": "src/components/chat/MentionInput.tsx",
+    "category": "forms",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "MessageBubble",
+    "path": "src/components/chat/MessageBubble.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "MessageEditor",
+    "path": "src/components/chat/MessageEditor.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 3
+  },
+  {
+    "name": "MessageForward",
+    "path": "src/components/chat/MessageForward.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 3
+  },
+  {
+    "name": "MessageReactions",
+    "path": "src/components/chat/MessageReactions.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "MessageSearch",
+    "path": "src/components/chat/MessageSearch.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "MessageThread",
+    "path": "src/components/chat/MessageThread.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 3
+  },
+  {
+    "name": "MiniChatWindow",
+    "path": "src/components/chat/MiniChatWindow.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "PinnedMessages",
+    "path": "src/components/chat/PinnedMessages.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 3
+  },
+  {
+    "name": "ReadReceipts",
+    "path": "src/components/chat/ReadReceipts.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "TypingIndicator",
+    "path": "src/components/chat/TypingIndicator.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 3
+  },
+  {
+    "name": "CollaboratorCursors",
+    "path": "src/components/collaboration/CollaboratorCursors.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "ConflictResolutionDialog",
+    "path": "src/components/collaboration/ConflictResolutionDialog.tsx",
+    "category": "modals",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "PresenceIndicator",
+    "path": "src/components/collaboration/PresenceIndicator.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "ProjectChat",
+    "path": "src/components/collaboration/ProjectChat.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 3
+  },
+  {
+    "name": "TaskLockIndicator",
+    "path": "src/components/collaboration/TaskLockIndicator.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "PDFExporter",
+    "path": "src/components/common/PDFExporter.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 10
+  },
+  {
+    "name": "CommunicationsView",
+    "path": "src/components/communications/CommunicationsView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "EmailAccountSettings",
+    "path": "src/components/communications/EmailAccountSettings.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "EmailComposeDialog",
+    "path": "src/components/communications/EmailComposeDialog.tsx",
+    "category": "modals",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "DocumentApprovalWorkflow",
+    "path": "src/components/documents/DocumentApprovalWorkflow.tsx",
+    "category": "other",
+    "wired": false,
+    "usageCount": 0
+  },
+  {
+    "name": "DocumentDetailsPanel",
+    "path": "src/components/documents/DocumentDetailsPanel.tsx",
+    "category": "widgets",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "DocumentGrid",
+    "path": "src/components/documents/DocumentGrid.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "DocumentList",
+    "path": "src/components/documents/DocumentList.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "DocumentMoveDialog",
+    "path": "src/components/documents/DocumentMoveDialog.tsx",
+    "category": "modals",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "DocumentShareDialog",
+    "path": "src/components/documents/DocumentShareDialog.tsx",
+    "category": "modals",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "DocumentSidebar",
+    "path": "src/components/documents/DocumentSidebar.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "DocumentToolbar",
+    "path": "src/components/documents/DocumentToolbar.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 3
+  },
+  {
+    "name": "DocumentUploadDialog",
+    "path": "src/components/documents/DocumentUploadDialog.tsx",
+    "category": "modals",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "FolderCreateDialog",
+    "path": "src/components/documents/FolderCreateDialog.tsx",
+    "category": "modals",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "VersionHistory",
+    "path": "src/components/documents/VersionHistory.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "KPICard",
+    "path": "src/components/enterprise/KPICard.tsx",
+    "category": "cards",
+    "wired": true,
+    "usageCount": 8
+  },
+  {
+    "name": "ProgressRing",
+    "path": "src/components/enterprise/ProgressRing.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 4
+  },
+  {
+    "name": "StatusIndicator",
+    "path": "src/components/enterprise/StatusIndicator.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 8
+  },
+  {
+    "name": "AddBudgetItemDialog",
+    "path": "src/components/financials/AddBudgetItemDialog.tsx",
+    "category": "modals",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "AddInvoiceDialog",
+    "path": "src/components/financials/AddInvoiceDialog.tsx",
+    "category": "modals",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "AppShell",
+    "path": "src/components/layout/AppShell.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "LandingFooter",
+    "path": "src/components/layout/LandingFooter.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "LandingHeader",
+    "path": "src/components/layout/LandingHeader.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "ProjectSwitcher",
+    "path": "src/components/layout/ProjectSwitcher.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "Sidebar",
+    "path": "src/components/layout/Sidebar.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 24
+  },
+  {
+    "name": "TopBar",
+    "path": "src/components/layout/TopBar.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "LinkDialog",
+    "path": "src/components/linking/LinkDialog.tsx",
+    "category": "modals",
+    "wired": true,
+    "usageCount": 3
+  },
+  {
+    "name": "MeetingCreationDialog",
+    "path": "src/components/meetings/MeetingCreationDialog.tsx",
+    "category": "modals",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "MeetingEditDialog",
+    "path": "src/components/meetings/MeetingEditDialog.tsx",
+    "category": "modals",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "MiniCalendarSidebar",
+    "path": "src/components/meetings/MiniCalendarSidebar.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "RecurringEditDialog",
+    "path": "src/components/meetings/RecurringEditDialog.tsx",
+    "category": "modals",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "TranscriptUploadDialog",
+    "path": "src/components/meetings/TranscriptUploadDialog.tsx",
+    "category": "modals",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "ContactFormModal",
+    "path": "src/components/modals/ContactFormModal.tsx",
+    "category": "forms",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "BacklinksSidebar",
+    "path": "src/components/notes/BacklinksSidebar.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "NotebookSidebar",
+    "path": "src/components/notes/NotebookSidebar.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "PageEditor",
+    "path": "src/components/notes/PageEditor.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "PageList",
+    "path": "src/components/notes/PageList.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "RichTextEditor",
+    "path": "src/components/notes/RichTextEditor.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "SpreadsheetEditor",
+    "path": "src/components/notes/SpreadsheetEditor.tsx",
+    "category": "modals",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "ConvertToProjectPlanDialog",
+    "path": "src/components/notes/spreadsheet/ConvertToProjectPlanDialog.tsx",
+    "category": "modals",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "FormulaBar",
+    "path": "src/components/notes/spreadsheet/FormulaBar.tsx",
+    "category": "forms",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "LinkedSpreadsheetIcon",
+    "path": "src/components/notes/spreadsheet/LinkedSpreadsheetIcon.tsx",
+    "category": "modals",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "SpreadsheetToolbar",
+    "path": "src/components/notes/spreadsheet/SpreadsheetToolbar.tsx",
+    "category": "modals",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "SyncStatusIndicator",
+    "path": "src/components/notes/spreadsheet/SyncStatusIndicator.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "NotificationCenter",
+    "path": "src/components/notifications/NotificationCenter.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "CalendarDialog",
+    "path": "src/components/planning/CalendarDialog.tsx",
+    "category": "modals",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "DatabaseGantt",
+    "path": "src/components/planning/DatabaseGantt.tsx",
+    "category": "tabs",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "DatabaseTaskGrid",
+    "path": "src/components/planning/DatabaseTaskGrid.tsx",
+    "category": "tabs",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "DependencyContextMenu",
+    "path": "src/components/planning/DependencyContextMenu.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "LinkChildProjectDialog",
+    "path": "src/components/planning/LinkChildProjectDialog.tsx",
+    "category": "modals",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "MSProjectColumns",
+    "path": "src/components/planning/MSProjectColumns.tsx",
+    "category": "other",
+    "wired": false,
+    "usageCount": 0
+  },
+  {
+    "name": "TaskGrid",
+    "path": "src/components/planning/TaskGrid.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "TaskInformationDialog",
+    "path": "src/components/planning/TaskInformationDialog.tsx",
+    "category": "forms",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "ComponentPicker",
+    "path": "src/components/presentations/ComponentPicker.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "EmbeddedDashboardWidget",
+    "path": "src/components/presentations/EmbeddedDashboardWidget.tsx",
+    "category": "widgets",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "PresentationSidebar",
+    "path": "src/components/presentations/PresentationSidebar.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "PresentationToolbar",
+    "path": "src/components/presentations/PresentationToolbar.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "ShapeLibrary",
+    "path": "src/components/presentations/ShapeLibrary.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "SlideEditor",
+    "path": "src/components/presentations/SlideEditor.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "SlidePropertiesPanel",
+    "path": "src/components/presentations/SlidePropertiesPanel.tsx",
+    "category": "widgets",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "SpeakerNotesPanel",
+    "path": "src/components/presentations/SpeakerNotesPanel.tsx",
+    "category": "widgets",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "MethodologySelector",
+    "path": "src/components/project-creation/MethodologySelector.tsx",
+    "category": "forms",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "TemplateGallery",
+    "path": "src/components/project-creation/TemplateGallery.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "TemplatePreview",
+    "path": "src/components/project-creation/TemplatePreview.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "ReportCard",
+    "path": "src/components/reports/ReportCard.tsx",
+    "category": "cards",
+    "wired": true,
+    "usageCount": 3
+  },
+  {
+    "name": "ReportCategories",
+    "path": "src/components/reports/ReportCategories.tsx",
+    "category": "reports",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "ReportPreview",
+    "path": "src/components/reports/ReportPreview.tsx",
+    "category": "reports",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "ScheduleReportDialog",
+    "path": "src/components/reports/ScheduleReportDialog.tsx",
+    "category": "reports",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "SystemAuditReport",
+    "path": "src/components/reports/SystemAuditReport.tsx",
+    "category": "reports",
+    "wired": false,
+    "usageCount": 0
+  },
+  {
+    "name": "ResourceAssignmentDialog",
+    "path": "src/components/resources/ResourceAssignmentDialog.tsx",
+    "category": "modals",
+    "wired": false,
+    "usageCount": 0
+  },
+  {
+    "name": "ResourceSheet",
+    "path": "src/components/resources/ResourceSheet.tsx",
+    "category": "modals",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "ResourceUsageView",
+    "path": "src/components/resources/ResourceUsageView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "SprintBurndownChart",
+    "path": "src/components/sprint/SprintBurndownChart.tsx",
+    "category": "charts",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "SyncStatusIndicator",
+    "path": "src/components/sync/SyncStatusIndicator.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "BaselineManager",
+    "path": "src/components/tracking/BaselineManager.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "TrackingGantt",
+    "path": "src/components/tracking/TrackingGantt.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "VarianceTable",
+    "path": "src/components/tracking/VarianceTable.tsx",
+    "category": "tabs",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "accordion",
+    "path": "src/components/ui/accordion.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "alert-dialog",
+    "path": "src/components/ui/alert-dialog.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 7
+  },
+  {
+    "name": "alert",
+    "path": "src/components/ui/alert.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 14
+  },
+  {
+    "name": "aspect-ratio",
+    "path": "src/components/ui/aspect-ratio.tsx",
+    "category": "core-ui",
+    "wired": false,
+    "usageCount": 0
+  },
+  {
+    "name": "avatar",
+    "path": "src/components/ui/avatar.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 32
+  },
+  {
+    "name": "badge",
+    "path": "src/components/ui/badge.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 108
+  },
+  {
+    "name": "breadcrumb",
+    "path": "src/components/ui/breadcrumb.tsx",
+    "category": "core-ui",
+    "wired": false,
+    "usageCount": 0
+  },
+  {
+    "name": "button",
+    "path": "src/components/ui/button.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 156
+  },
+  {
+    "name": "calendar",
+    "path": "src/components/ui/calendar.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 16
+  },
+  {
+    "name": "card",
+    "path": "src/components/ui/card.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 95
+  },
+  {
+    "name": "carousel",
+    "path": "src/components/ui/carousel.tsx",
+    "category": "core-ui",
+    "wired": false,
+    "usageCount": 0
+  },
+  {
+    "name": "chart",
+    "path": "src/components/ui/chart.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 11
+  },
+  {
+    "name": "checkbox",
+    "path": "src/components/ui/checkbox.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 13
+  },
+  {
+    "name": "collapsible",
+    "path": "src/components/ui/collapsible.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 8
+  },
+  {
+    "name": "command",
+    "path": "src/components/ui/command.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 7
+  },
+  {
+    "name": "context-menu",
+    "path": "src/components/ui/context-menu.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 3
+  },
+  {
+    "name": "dialog",
+    "path": "src/components/ui/dialog.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 58
+  },
+  {
+    "name": "drawer",
+    "path": "src/components/ui/drawer.tsx",
+    "category": "core-ui",
+    "wired": false,
+    "usageCount": 0
+  },
+  {
+    "name": "dropdown-menu",
+    "path": "src/components/ui/dropdown-menu.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 37
+  },
+  {
+    "name": "form",
+    "path": "src/components/ui/form.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 107
+  },
+  {
+    "name": "hover-card",
+    "path": "src/components/ui/hover-card.tsx",
+    "category": "core-ui",
+    "wired": false,
+    "usageCount": 0
+  },
+  {
+    "name": "input-otp",
+    "path": "src/components/ui/input-otp.tsx",
+    "category": "core-ui",
+    "wired": false,
+    "usageCount": 0
+  },
+  {
+    "name": "input",
+    "path": "src/components/ui/input.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 84
+  },
+  {
+    "name": "label",
+    "path": "src/components/ui/label.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 87
+  },
+  {
+    "name": "menubar",
+    "path": "src/components/ui/menubar.tsx",
+    "category": "core-ui",
+    "wired": false,
+    "usageCount": 0
+  },
+  {
+    "name": "navigation-menu",
+    "path": "src/components/ui/navigation-menu.tsx",
+    "category": "core-ui",
+    "wired": false,
+    "usageCount": 0
+  },
+  {
+    "name": "pagination",
+    "path": "src/components/ui/pagination.tsx",
+    "category": "core-ui",
+    "wired": false,
+    "usageCount": 0
+  },
+  {
+    "name": "popover",
+    "path": "src/components/ui/popover.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 29
+  },
+  {
+    "name": "progress",
+    "path": "src/components/ui/progress.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 53
+  },
+  {
+    "name": "radio-group",
+    "path": "src/components/ui/radio-group.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 4
+  },
+  {
+    "name": "resizable",
+    "path": "src/components/ui/resizable.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 5
+  },
+  {
+    "name": "scroll-area",
+    "path": "src/components/ui/scroll-area.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 53
+  },
+  {
+    "name": "select",
+    "path": "src/components/ui/select.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 102
+  },
+  {
+    "name": "separator",
+    "path": "src/components/ui/separator.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 22
+  },
+  {
+    "name": "sheet",
+    "path": "src/components/ui/sheet.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 20
+  },
+  {
+    "name": "sidebar",
+    "path": "src/components/ui/sidebar.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 10
+  },
+  {
+    "name": "skeleton",
+    "path": "src/components/ui/skeleton.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 11
+  },
+  {
+    "name": "slider",
+    "path": "src/components/ui/slider.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 4
+  },
+  {
+    "name": "sonner",
+    "path": "src/components/ui/sonner.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 44
+  },
+  {
+    "name": "switch",
+    "path": "src/components/ui/switch.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 61
+  },
+  {
+    "name": "table",
+    "path": "src/components/ui/table.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 32
+  },
+  {
+    "name": "tabs",
+    "path": "src/components/ui/tabs.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 43
+  },
+  {
+    "name": "textarea",
+    "path": "src/components/ui/textarea.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 35
+  },
+  {
+    "name": "toast",
+    "path": "src/components/ui/toast.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 52
+  },
+  {
+    "name": "toaster",
+    "path": "src/components/ui/toaster.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "toggle-group",
+    "path": "src/components/ui/toggle-group.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "toggle",
+    "path": "src/components/ui/toggle.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 30
+  },
+  {
+    "name": "tooltip",
+    "path": "src/components/ui/tooltip.tsx",
+    "category": "core-ui",
+    "wired": true,
+    "usageCount": 31
+  },
+  {
+    "name": "ActionsView",
+    "path": "src/components/views/ActionsView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "BacklogView",
+    "path": "src/components/views/BacklogView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "CalendarView",
+    "path": "src/components/views/CalendarView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "ChangeRequestsView",
+    "path": "src/components/views/ChangeRequestsView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "ChildGanttView",
+    "path": "src/components/views/ChildGanttView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "ChildPlansView",
+    "path": "src/components/views/ChildPlansView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "CommunicationIntelligenceView",
+    "path": "src/components/views/CommunicationIntelligenceView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "DashboardHub",
+    "path": "src/components/views/DashboardHub.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "DashboardView",
+    "path": "src/components/views/DashboardView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 5
+  },
+  {
+    "name": "DecisionsView",
+    "path": "src/components/views/DecisionsView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "DeliverablesView",
+    "path": "src/components/views/DeliverablesView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "DocumentCenterView",
+    "path": "src/components/views/DocumentCenterView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "EVMView",
+    "path": "src/components/views/EVMView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "EnhancedMeetingsView",
+    "path": "src/components/views/EnhancedMeetingsView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 3
+  },
+  {
+    "name": "ExecutiveDashboardView",
+    "path": "src/components/views/ExecutiveDashboardView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 3
+  },
+  {
+    "name": "FinalReportView",
+    "path": "src/components/views/FinalReportView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "FinancialsView",
+    "path": "src/components/views/FinancialsView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "GanttView",
+    "path": "src/components/views/GanttView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 3
+  },
+  {
+    "name": "IssuesRegisterView",
+    "path": "src/components/views/IssuesRegisterView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "LessonsLearnedView",
+    "path": "src/components/views/LessonsLearnedView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "MilestonesView",
+    "path": "src/components/views/MilestonesView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "MorningBriefingView",
+    "path": "src/components/views/MorningBriefingView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 3
+  },
+  {
+    "name": "NotesView",
+    "path": "src/components/views/NotesView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 3
+  },
+  {
+    "name": "PlanningView",
+    "path": "src/components/views/PlanningView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 4
+  },
+  {
+    "name": "PlatformAdminView",
+    "path": "src/components/views/PlatformAdminView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "PortfolioManagement",
+    "path": "src/components/views/PortfolioManagement.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "PortfolioView",
+    "path": "src/components/views/PortfolioView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "PresentationsView",
+    "path": "src/components/views/PresentationsView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "ProgramTimelineView",
+    "path": "src/components/views/ProgramTimelineView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "ProjectAdminView",
+    "path": "src/components/views/ProjectAdminView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "ProjectCharterView",
+    "path": "src/components/views/ProjectCharterView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "ProjectCreationView",
+    "path": "src/components/views/ProjectCreationView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "ProjectPlanView",
+    "path": "src/components/views/ProjectPlanView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 3
+  },
+  {
+    "name": "ReportsView",
+    "path": "src/components/views/ReportsView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "ResourcesView",
+    "path": "src/components/views/ResourcesView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "RisksView",
+    "path": "src/components/views/RisksView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "ScenariosView",
+    "path": "src/components/views/ScenariosView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "SprintBoardView",
+    "path": "src/components/views/SprintBoardView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 3
+  },
+  {
+    "name": "StakeholderRegisterView",
+    "path": "src/components/views/StakeholderRegisterView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "StrategicDashboardView",
+    "path": "src/components/views/StrategicDashboardView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 3
+  },
+  {
+    "name": "TeamChatView",
+    "path": "src/components/views/TeamChatView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 4
+  },
+  {
+    "name": "TeamManagementView",
+    "path": "src/components/views/TeamManagementView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "TemplatesAdminView",
+    "path": "src/components/views/TemplatesAdminView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "TimelinePlannerTab",
+    "path": "src/components/views/TimelinePlannerTab.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "TraceabilityMatrixView",
+    "path": "src/components/views/TraceabilityMatrixView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 3
+  },
+  {
+    "name": "TrackingView",
+    "path": "src/components/views/TrackingView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "UserSettingsView",
+    "path": "src/components/views/UserSettingsView.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 2
+  },
+  {
+    "name": "ViewSwitcher",
+    "path": "src/components/views/ViewSwitcher.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "PresenceContext",
+    "path": "src/contexts/PresenceContext.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 6
+  },
+  {
+    "name": "ProjectContext",
+    "path": "src/contexts/ProjectContext.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 39
+  },
+  {
+    "name": "use-mobile",
+    "path": "src/hooks/use-mobile.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "main",
+    "path": "src/main.tsx",
+    "category": "other",
+    "wired": true,
+    "usageCount": 26
+  },
+  {
+    "name": "AboutUs",
+    "path": "src/pages/AboutUs.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "Auth",
+    "path": "src/pages/Auth.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 17
+  },
+  {
+    "name": "ContactUs",
+    "path": "src/pages/ContactUs.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "Debug",
+    "path": "src/pages/Debug.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "Index",
+    "path": "src/pages/Index.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 22
+  },
+  {
+    "name": "LandingPage",
+    "path": "src/pages/LandingPage.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "NotFound",
+    "path": "src/pages/NotFound.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "OAuthCallback",
+    "path": "src/pages/OAuthCallback.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 1
+  },
+  {
+    "name": "PrivacyPolicy",
+    "path": "src/pages/PrivacyPolicy.tsx",
+    "category": "pages",
+    "wired": true,
+    "usageCount": 1
+  }
+]

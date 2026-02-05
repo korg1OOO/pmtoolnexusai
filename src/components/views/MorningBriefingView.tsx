@@ -18,6 +18,8 @@ import {
 } from '@/components/briefing';
 import { useBriefingGeneration } from '@/components/briefing/hooks/useBriefingGeneration';
 import { FlexibleBriefingGrid } from '@/components/briefing/FlexibleBriefingGrid';
+import { ResizableBriefingLayout } from '@/components/briefing/ResizableBriefingLayout';
+import { Layout } from 'lucide-react';
 
 // Section Components
 import { CriticalAlertsSection } from '@/components/briefing/sections/CriticalAlertsSection';
@@ -60,6 +62,7 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
   const { settings } = useProjectContext();
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [isCustomizing, setIsCustomizing] = useState(false);
+  const [isResizable, setIsResizable] = useState(false);
 
   // Hook Data
   const { risks, criticalRisks, openRisks } = useRisks();
@@ -312,8 +315,6 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
     await generateBriefing({
       risks: criticalRisks,
       issues: criticalIssues,
-      risks: criticalRisks,
-      issues: criticalIssues,
       project: settings // Wired to real project context
     });
     setLastUpdated(new Date());
@@ -485,6 +486,15 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setIsResizable(prev => !prev)}
+              className={cn(isResizable && "bg-primary/10 border-primary/30 text-primary")}
+            >
+              <Layout className="h-4 w-4 mr-2" />
+              {isResizable ? 'Standard View' : 'Resizable View'}
+            </Button>
             <BriefingSettingsPanel
               enabledSections={effectiveEnabledSections}
               sectionOrder={effectiveSectionOrder}
@@ -508,14 +518,23 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
       <div className="flex-1 p-6 overflow-auto">
         <div className="max-w-7xl mx-auto">
           {orderedSections.length > 0 ? (
-            <FlexibleBriefingGrid
-              sections={orderedSections}
-              renderContent={renderSectionContent}
-              isGenerating={isGenerating}
-              lastUpdated={lastUpdated}
-              onRefresh={handleRefresh}
-              isCustomizing={isCustomizing}
-            />
+            isResizable ? (
+              <ResizableBriefingLayout
+                sections={orderedSections}
+                renderContent={renderSectionContent}
+                isGenerating={isGenerating}
+                preferences={preferences}
+              />
+            ) : (
+              <FlexibleBriefingGrid
+                sections={orderedSections}
+                renderContent={renderSectionContent}
+                isGenerating={isGenerating}
+                lastUpdated={lastUpdated}
+                onRefresh={handleRefresh}
+                isCustomizing={isCustomizing}
+              />
+            )
           ) : (
             <div className="text-center py-12 text-muted-foreground">
               <Sparkles className="h-12 w-12 mx-auto mb-4 opacity-50" />

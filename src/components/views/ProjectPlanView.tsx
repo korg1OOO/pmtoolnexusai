@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
@@ -212,14 +212,14 @@ export function ProjectPlanView() {
 
   // Sync expanded tasks from DB if needed, but for now we'll just use the local state
   // Or initialize it if it's the first load
-  useMemo(() => {
+  useEffect(() => {
     if (dbTasks.length > 0 && expandedTasks.size === 0) {
       const initialExpanded = new Set(dbTasks.filter(t => t.expanded).map(t => t.id));
       setExpandedTasks(initialExpanded);
     }
-  }, [dbTasks.length === 0]);
+  }, [dbTasks, expandedTasks.size, setExpandedTasks]);
 
-  const toggleTask = (taskId: string) => {
+  const toggleTask = useCallback((taskId: string) => {
     setExpandedTasks((prev) => {
       const next = new Set(prev);
       if (next.has(taskId)) {
@@ -229,9 +229,9 @@ export function ProjectPlanView() {
       }
       return next;
     });
-  };
+  }, []);
 
-  const toggleSelection = (taskId: string, selected: boolean) => {
+  const toggleSelection = useCallback((taskId: string, selected: boolean) => {
     setSelectedTasks((prev) => {
       const next = new Set(prev);
       if (selected) {
@@ -241,9 +241,9 @@ export function ProjectPlanView() {
       }
       return next;
     });
-  };
+  }, []);
 
-  const flattenTasks = (tasks: Task[]): Task[] => {
+  const flattenTasks = useCallback((tasks: Task[]): Task[] => {
     const result: Task[] = [];
     for (const task of tasks) {
       result.push(task);
@@ -252,11 +252,11 @@ export function ProjectPlanView() {
       }
     }
     return result;
-  };
+  }, [expandedTasks]);
 
-  const visibleTasks = useMemo(() => flattenTasks(taskTree), [taskTree, expandedTasks]);
+  const visibleTasks = useMemo(() => flattenTasks(taskTree), [taskTree, flattenTasks]);
 
-  const handleAddTask = async () => {
+  const handleAddTask = useCallback(async () => {
     if (!projectId) return;
 
     const newTask: Omit<DbTask, 'id' | 'created_at' | 'updated_at'> = {
@@ -285,9 +285,9 @@ export function ProjectPlanView() {
     } catch (error) {
       // toast.error handled by mutation
     }
-  };
+  }, [projectId, visibleTasks.length, createTask]);
 
-  const handleBaseline = async () => {
+  const handleBaseline = useCallback(async () => {
     if (!projectId) return;
 
     const name = `Baseline ${new Date().toLocaleDateString()}`;
@@ -297,7 +297,7 @@ export function ProjectPlanView() {
     } catch (error) {
       // toast.error handled by mutation
     }
-  };
+  }, [projectId, saveBaseline]);
 
   if (isLoading) {
     return (

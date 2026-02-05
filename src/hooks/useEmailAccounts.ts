@@ -10,6 +10,7 @@ export interface EmailAccount {
   account_type: 'personal' | 'shared';
   email_address: string;
   display_name: string | null;
+  provider_type: 'imap' | 'gmail' | 'microsoft' | null;
   imap_host: string;
   imap_port: number;
   imap_username: string;
@@ -18,6 +19,11 @@ export interface EmailAccount {
   smtp_port: number | null;
   smtp_username: string | null;
   smtp_encryption: 'ssl' | 'tls' | 'none' | null;
+  oauth_client_id: string | null;
+  oauth_client_secret: string | null;
+  oauth_access_token: string | null;
+  oauth_refresh_token: string | null;
+  oauth_token_expires_at: string | null;
   is_active: boolean;
   last_sync_at: string | null;
   sync_status: 'pending' | 'syncing' | 'success' | 'error';
@@ -30,6 +36,7 @@ export interface CreateEmailAccountInput {
   account_type: 'personal' | 'shared';
   email_address: string;
   display_name?: string;
+  provider_type?: 'imap' | 'gmail' | 'microsoft';
   imap_host: string;
   imap_port: number;
   imap_username: string;
@@ -40,6 +47,11 @@ export interface CreateEmailAccountInput {
   smtp_username?: string;
   smtp_password?: string;
   smtp_encryption?: 'ssl' | 'tls' | 'none';
+  oauth_client_id?: string;
+  oauth_client_secret?: string;
+  oauth_access_token?: string;
+  oauth_refresh_token?: string;
+  oauth_token_expires_at?: string;
   project_id?: string;
 }
 
@@ -51,7 +63,7 @@ export function useEmailAccounts(projectId?: string | null) {
 
   const fetchAccounts = useCallback(async () => {
     if (!user) return;
-    
+
     setIsLoading(true);
     setError(null);
 
@@ -176,9 +188,9 @@ export function useEmailAccounts(projectId?: string | null) {
           .eq('id', id);
 
         // Determine which sync function to call based on provider type
-        const providerType = (account as any).provider_type || 'imap';
+        const providerType = account.provider_type || 'imap';
         let functionName = 'email-sync';
-        
+
         if (providerType === 'gmail') {
           functionName = 'gmail-sync';
         } else if (providerType === 'microsoft') {
@@ -212,7 +224,7 @@ export function useEmailAccounts(projectId?: string | null) {
         });
 
         if (response.error) throw response.error;
-        
+
         return { success: true };
       } catch (err: any) {
         return { success: false, error: err.message || 'Connection failed' };

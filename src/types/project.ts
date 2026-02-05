@@ -8,6 +8,56 @@ export type SprintStatus = 'todo' | 'in-progress' | 'review' | 'done';
 export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
 export type MeetingType = 'online' | 'in-person' | 'hybrid';
 
+// Database types (mapped from Supabase schema)
+export interface DbTask {
+  id: string;
+  project_id: string;
+  wbs: string;
+  name: string;
+  type: TaskType;
+  status: TaskStatus;
+  priority: Priority;
+  start_date: string;
+  end_date: string;
+  duration: number;
+  progress: number;
+  assignee_id?: string;
+  is_critical?: boolean;
+  notes?: string;
+  level: number;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DbRisk {
+  id: string;
+  project_id: string;
+  title: string;
+  description?: string;
+  category?: string;
+  probability: RiskLevel;
+  impact: RiskLevel;
+  status: 'identified' | 'analyzing' | 'mitigating' | 'closed';
+  owner_id?: string;
+  mitigation_plan?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DbDecision {
+  id: string;
+  project_id: string;
+  title: string;
+  context?: string;
+  decision: string;
+  impact?: string;
+  owner_id?: string;
+  status?: 'active' | 'superseded' | 'pending';
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -239,8 +289,8 @@ export interface SlideContent {
 
 export interface ChartData {
   type: 'bar' | 'line' | 'pie' | 'donut' | 'area';
-  data: any;
-  options?: any;
+  data: unknown;
+  options?: unknown;
 }
 
 export interface TableData {

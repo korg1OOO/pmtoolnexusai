@@ -1,5 +1,6 @@
 import { supabase } from "@/integrations/supabase/client";
 import { v4 as uuidv4 } from 'uuid';
+import type { DbTask } from "@/hooks/useTasks";
 
 export interface Scenario {
     id: string;
@@ -8,7 +9,7 @@ export interface Scenario {
     description: string | null;
     status: 'draft' | 'active' | 'archived';
     base_plan_snapshot_id: string | null;
-    data: any;
+    data: Record<string, unknown>;
     created_at: string;
     updated_at: string;
     created_by: string | null;
@@ -144,7 +145,7 @@ export const scenarioService = {
     },
 
     // Simulate applying adjustments (Update single task fields)
-    async updateScenarioTask(scenarioId: string, taskId: string, updates: any) {
+    async updateScenarioTask(scenarioId: string, taskId: string, updates: Partial<DbTask>) {
         const { error } = await supabase
             .from('tasks')
             .update(updates)
@@ -167,7 +168,7 @@ export const scenarioService = {
         // 2. Convert scenario tasks to actuals
         const { error: promoteError } = await supabase
             .from('tasks')
-            .update({ scenario_id: null } as any)
+            .update({ scenario_id: null } as Partial<DbTask>)
             .eq('project_id', projectId)
             .eq('scenario_id', scenarioId);
 

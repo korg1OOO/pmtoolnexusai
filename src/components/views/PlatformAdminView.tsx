@@ -39,6 +39,7 @@ import {
 import { AIProviderSettings } from '@/components/admin/AIProviderSettings';
 import { useAdminUsers, useAdminOrganizations, useAdminAuditLogs, useAdminApiKeys, useUpdateUserRole, useRevokeApiKey } from '@/hooks/useAdmin';
 import { Loader2 } from 'lucide-react';
+import { SystemAuditReport } from '@/components/reports/SystemAuditReport';
 import { toast } from 'sonner';
 import {
   DropdownMenu,
@@ -158,6 +159,10 @@ export function PlatformAdminView() {
             <TabsTrigger value="health" className="gap-2">
               <Activity className="h-4 w-4" />
               System Health
+            </TabsTrigger>
+            <TabsTrigger value="system-audit" className="gap-2">
+              <Activity className="h-4 w-4" />
+              System Integration
             </TabsTrigger>
           </TabsList>
 
@@ -631,6 +636,10 @@ export function PlatformAdminView() {
                 </CardContent>
               </Card>
             </div>
+          </TabsContent>
+
+          <TabsContent value="system-audit" className="m-0">
+            <SystemAuditReport />
           </TabsContent>
         </Tabs>
       </div>

@@ -5,31 +5,90 @@ export interface AIResponse<T> {
     error: string | null;
 }
 
+export interface ProjectSignal {
+    type: 'action' | 'issue' | 'risk' | 'decision';
+    content: string;
+    relevance: number;
+    confidence: number;
+    extractedFrom: string;
+}
+
+export interface RiskDiscovery {
+    id: string;
+    title: string;
+    description: string;
+    severity: 'low' | 'medium' | 'high' | 'critical';
+    mitigation?: string;
+}
+
+export interface RiskAnalysisResult {
+    discoveredRisks: RiskDiscovery[];
+    summary: string;
+    analyzedAt: string;
+}
+
+export interface ExecutiveStatusReport {
+    summary: string;
+    kpis: {
+        label: string;
+        value: string | number;
+        trend: 'up' | 'down' | 'stable';
+        status: 'on-track' | 'at-risk' | 'critical';
+    }[];
+    highlights: string[];
+    blockers: string[];
+    nextSteps: string[];
+}
+
+export interface ScenarioImpact {
+    scenarioId: string;
+    originalValue: number;
+    projectedValue: number;
+    variance: number;
+    impactLevel: 'low' | 'medium' | 'high';
+    justification: string;
+}
+
+export interface ChatMessage {
+    role: 'user' | 'assistant' | 'system';
+    content: string;
+    timestamp?: string;
+}
+
+export interface AIChatResponse {
+    reply: string;
+    suggestions?: string[];
+    context?: Record<string, unknown>;
+}
+
+export interface ScenarioAdjustment {
+    field: string;
+    value: unknown; // Dynamic value depending on field
+}
+
 export const aiService = {
     /**
      * Analyzes communication content (emails, chats) for project signals.
      */
-    async processCommunication(projectId: string, content: string): Promise<AIResponse<any>> {
+    async processCommunication(projectId: string, content: string): Promise<AIResponse<ProjectSignal[]>> {
         try {
             const { data, error } = await supabase.functions.invoke('process-communication', {
                 body: { projectId, content },
             });
 
             if (error) throw error;
-            return { data, error: null };
-        } catch (err: any) {
-            console.error('Error in processCommunication:', err);
-            return { data: null, error: err.message };
+            return { data: data as ProjectSignal[], error: null };
+        } catch (err: unknown) {
+            const error = err as Error;
+            console.error('Error in processCommunication:', error);
+            return { data: null, error: error.message };
         }
     },
 
     /**
      * Analyzes project context for risks and generates hidden insights.
      */
-    /**
-     * Analyzes project context for risks and generates hidden insights.
-     */
-    async analyzeRisks(projectId: string): Promise<AIResponse<any>> {
+    async analyzeRisks(projectId: string): Promise<AIResponse<RiskAnalysisResult>> {
         try {
             const { data, error } = await supabase.functions.invoke('analyze-risks', {
                 body: { projectId },
@@ -38,82 +97,83 @@ export const aiService = {
             if (error) throw error;
 
             // Persist valid result to database
-            if (data && data.discoveredRisks) {
+            if (data && (data as RiskAnalysisResult).discoveredRisks) {
                 // Remove existing risk discovery insights for this project to avoid duplicates
-                // (Assuming we want one active version, or we could keep history)
-                // @ts-ignore
-                await supabase
-                    .from('strategic_insights')
-                    .delete()
-                    .eq('project_id', projectId)
-                    .eq('type', 'risk-discovery');
+                // @ts-expect-error - strategic_insights table may not be in generated types
+                await supabase.from('strategic_insights').delete().eq('project_id', projectId).eq('type', 'risk-discovery');
 
                 // Insert new insight
-                // @ts-ignore
-                const { error: insertError } = await supabase
-                    .from('strategic_insights')
-                    .insert({
-                        project_id: projectId,
-                        type: 'risk-discovery',
-                        data: data
-                    });
+                // @ts-expect-error - strategic_insights table may not be in generated types
+                const { error: insertError } = await supabase.from('strategic_insights').insert({
+                    project_id: projectId,
+                    type: 'risk-discovery',
+                    data: data
+                });
 
                 if (insertError) {
                     console.error('Failed to persist risk analysis:', insertError);
-                    // We still return the data to the UI so the user sees it immediately
                 }
             }
 
-            return { data, error: null };
-        } catch (err: any) {
-            console.error('Error in analyzeRisks:', err);
-            return { data: null, error: err.message };
+            return { data: data as RiskAnalysisResult, error: null };
+        } catch (err: unknown) {
+            const error = err as Error;
+            console.error('Error in analyzeRisks:', error);
+            return { data: null, error: error.message };
         }
     },
 
     /**
      * Generates executive status reports based on latest project data.
      */
-    async generateExecutiveStatus(projectId: string, audience: string): Promise<AIResponse<any>> {
+    async generateExecutiveStatus(projectId: string, audience: string): Promise<AIResponse<ExecutiveStatusReport>> {
         try {
             const { data, error } = await supabase.functions.invoke('generate-status', {
                 body: { projectId, audience },
             });
 
             if (error) throw error;
-            return { data, error: null };
-        } catch (err: any) {
-            console.error('Error in generateExecutiveStatus:', err);
-            return { data: null, error: err.message };
+            return { data: data as ExecutiveStatusReport, error: null };
+        } catch (err: unknown) {
+            const error = err as Error;
+            console.error('Error in generateExecutiveStatus:', error);
+            return { data: null, error: error.message };
         }
     },
 
     /**
      * Simulates project impact for a set of adjustments (What-If scenario).
      */
-    async simulateScenarios(projectId: string, adjustments: any[]): Promise<AIResponse<any>> {
+    async simulateScenarios(projectId: string, adjustments: ScenarioAdjustment[]): Promise<AIResponse<ScenarioImpact[]>> {
         try {
             const { data, error } = await supabase.functions.invoke('simulate-scenarios', {
                 body: { projectId, adjustments },
             });
 
             if (error) throw error;
-            return { data, error: null };
-        } catch (err: any) {
-            console.error('Error in simulateScenarios:', err);
-            return { data: null, error: err.message };
+            return { data: data as ScenarioImpact[], error: null };
+        } catch (err: unknown) {
+            const error = err as Error;
+            console.error('Error in simulateScenarios:', error);
+            return { data: null, error: error.message };
         }
     },
 
-    async chat(projectId: string, message: string, conversationHistory: any[] = []): Promise<AIResponse<any>> {
+    /**
+     * AI Orchestrator Chat
+     */
+    async chat(projectId: string, message: string, conversationHistory: ChatMessage[] = []): Promise<AIResponse<AIChatResponse>> {
         try {
             const { data, error } = await supabase.functions.invoke('ai-orchestrator', {
                 body: { projectId, message, conversationHistory },
             });
-            if (error) return { data: null, error: error.message };
-            return { data, error: null };
-        } catch (err: any) {
-            return { data: null, error: err.message };
+            if (error) {
+                return { data: null, error: (error as Error).message || 'Unknown error' };
+            }
+            return { data: data as AIChatResponse, error: null };
+        } catch (err: unknown) {
+            const error = err as Error;
+            return { data: null, error: error.message };
         }
     },
 };

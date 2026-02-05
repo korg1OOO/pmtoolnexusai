@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { NotebookSidebar, PageList, PageEditor, BacklinksSidebar, SpreadsheetEditor } from '@/components/notes';
 import { useNotebooks, useSections, usePages, useAllPages, usePageLinks } from '@/hooks/useNotebooks';
 import { useSpreadsheets } from '@/hooks/useSpreadsheets';
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { NotebookPage } from '@/hooks/useNotebooks';
+import type { Notebook, NotebookSection, NotebookPage } from '@/hooks/useNotebooks';
 
 type ViewMode = 'pages' | 'spreadsheet';
 
@@ -44,12 +44,10 @@ function saveState(state: Partial<NotesViewState>) {
 
 // Mock Data
 // Mock Data
-const MOCK_NOTEBOOKS: any[] = [
+const MOCK_NOTEBOOKS: Notebook[] = [
   {
     id: 'nb1',
-    title: 'Product Requirements',
     name: 'Product Requirements',
-    description: 'Core specs',
     icon: 'book',
     color: 'blue',
     sort_order: 0,
@@ -61,7 +59,7 @@ const MOCK_NOTEBOOKS: any[] = [
   }
 ];
 
-const MOCK_SECTIONS: any[] = [
+const MOCK_SECTIONS: NotebookSection[] = [
   {
     id: 's1',
     notebook_id: 'nb1',
@@ -73,7 +71,7 @@ const MOCK_SECTIONS: any[] = [
   }
 ];
 
-const MOCK_PAGES: any[] = [
+const MOCK_PAGES: NotebookPage[] = [
   {
     id: 'pg1',
     section_id: 's1',
@@ -118,22 +116,22 @@ export function NotesView({ demo = false }: NotesViewProps) {
   const { pages: realPages, loading: pagesLoading } = usePages(selectedSectionId);
 
   // Use mocks if demo is true
-  const notebooks = demo ? MOCK_NOTEBOOKS : realNotebooks;
-  const sections = demo ? (selectedNotebookId === 'nb1' ? MOCK_SECTIONS : []) : realSections;
-  const pages = demo ? (selectedSectionId === 's1' ? MOCK_PAGES : []) : realPages;
-  const allPages = demo ? MOCK_PAGES : []; // Simplified for demo
+  // Use mocks if demo is true
+  const notebooks = useMemo(() => demo ? MOCK_NOTEBOOKS : realNotebooks, [demo, realNotebooks]);
+  const sections = useMemo(() => demo ? (selectedNotebookId === 'nb1' ? MOCK_SECTIONS : []) : realSections, [demo, selectedNotebookId, realSections]);
+  const pages = useMemo(() => demo ? (selectedSectionId === 's1' ? MOCK_PAGES : []) : realPages, [demo, selectedSectionId, realPages]);
+  const allPages = useMemo(() => demo ? MOCK_PAGES : [], [demo]);
 
   // No-op for mutations in demo mode (or we could mock them, but read-only is fine for a tour)
-  // No-op for mutations in demo mode (or we could mock them, but read-only is fine for a tour)
-  const createNotebook = async (name: string, icon?: string, color?: string) => null;
-  const updateNotebook = async (id: string, updates: any) => { };
-  const deleteNotebook = async (id: string) => { };
-  const createSection = async (name: string, color?: string) => null;
-  const updateSection = async (id: string, updates: any) => { };
-  const deleteSection = async (id: string) => { };
-  const createPage = async (title?: string) => null;
-  const updatePage = async (id: string, updates: any) => { };
-  const deletePage = async (id: string) => { };
+  const createNotebook = useCallback(async (name: string, icon?: string, color?: string) => null, []);
+  const updateNotebook = useCallback(async (id: string, updates: Partial<Notebook>) => { }, []);
+  const deleteNotebook = useCallback(async (id: string) => { }, []);
+  const createSection = useCallback(async (name: string, color?: string) => null, []);
+  const updateSection = useCallback(async (id: string, updates: Partial<NotebookSection>) => { }, []);
+  const deleteSection = useCallback(async (id: string) => { }, []);
+  const createPage = useCallback(async (title?: string) => null, []);
+  const updatePage = useCallback(async (id: string, updates: Partial<NotebookPage>) => { }, []);
+  const deletePage = useCallback(async (id: string) => { }, []);
 
   const { spreadsheets, loading: spreadsheetsLoading, createSpreadsheet, updateSpreadsheet, deleteSpreadsheet } = useSpreadsheets(selectedNotebookId);
 
@@ -142,10 +140,10 @@ export function NotesView({ demo = false }: NotesViewProps) {
     if (demo && !selectedNotebookId) {
       setSelectedNotebookId(MOCK_NOTEBOOKS[0].id);
       setSelectedSectionId(MOCK_SECTIONS[0].id);
-      setSelectedPage(MOCK_PAGES[0] as any);
+      setSelectedPage(MOCK_PAGES[0]);
       setSelectedPageId(MOCK_PAGES[0].id);
     }
-  }, [demo]);
+  }, [demo, selectedNotebookId, setSelectedNotebookId, setSelectedSectionId, setSelectedPage, setSelectedPageId]);
   const { outgoingLinks, incomingLinks } = usePageLinks(selectedPage?.id || null);
 
   // Save state when selections change
@@ -174,7 +172,7 @@ export function NotesView({ demo = false }: NotesViewProps) {
         setSelectedNotebookId(notebooks[0].id);
       }
     }
-  }, [notebooks, selectedNotebookId]);
+  }, [notebooks, selectedNotebookId, setSelectedNotebookId]);
 
   // Restore selected section when sections load
   useEffect(() => {
@@ -198,7 +196,7 @@ export function NotesView({ demo = false }: NotesViewProps) {
         }
       }
     }
-  }, [sections, selectedNotebookId, selectedSectionId, selectedSpreadsheetId]);
+  }, [sections, selectedNotebookId, selectedSectionId, selectedSpreadsheetId, setSelectedSectionId, setViewMode]);
 
   // Restore selected page when pages load
   useEffect(() => {
@@ -216,43 +214,43 @@ export function NotesView({ demo = false }: NotesViewProps) {
     } else if (viewMode === 'pages' && pages.length === 0) {
       setSelectedPage(null);
     }
-  }, [pages, viewMode, selectedPageId]);
+  }, [pages, viewMode, selectedPageId, setSelectedPage]);
 
-  const handleSelectNotebook = (id: string) => {
+  const handleSelectNotebook = useCallback((id: string) => {
     setSelectedNotebookId(id);
     // Reset selections when notebook changes
     setSelectedSectionId(null);
     setSelectedSpreadsheetId(null);
     setSelectedPage(null);
     setSelectedPageId(null);
-  };
+  }, []);
 
-  const handleSelectSection = (id: string) => {
+  const handleSelectSection = useCallback((id: string) => {
     setSelectedSectionId(id);
     setSelectedSpreadsheetId(null);
     setViewMode('pages');
-  };
+  }, []);
 
-  const handleSelectSpreadsheet = (id: string) => {
+  const handleSelectSpreadsheet = useCallback((id: string) => {
     setSelectedSpreadsheetId(id);
     setSelectedSectionId(null);
     setSelectedPage(null);
     setSelectedPageId(null);
     setViewMode('spreadsheet');
-  };
+  }, []);
 
-  const handleSelectPage = (page: NotebookPage) => {
+  const handleSelectPage = useCallback((page: NotebookPage) => {
     setSelectedPage(page);
     setSelectedPageId(page.id);
-  };
+  }, []);
 
-  const handleCreatePage = async () => {
+  const handleCreatePage = useCallback(async () => {
     const newPage = await createPage('Untitled');
     if (newPage) {
-      setSelectedPage(newPage);
+      setSelectedPage(newPage as NotebookPage);
       setSelectedPageId(newPage.id);
     }
-  };
+  }, [createPage]);
 
   const handleNavigateToPage = useCallback((pageId: string) => {
     // Find the page and navigate to it

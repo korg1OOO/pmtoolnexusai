@@ -42,13 +42,29 @@ export interface TimelineMilestone {
     color: string;
 }
 
+export interface TimelineSite {
+    id: string;
+    project_id: string;
+    name: string;
+    location?: string;
+    color?: string;
+}
+
+export interface TimelineTeam {
+    id: string;
+    project_id: string;
+    name: string;
+    color?: string;
+    description?: string;
+}
+
 export interface TimelineSnapshot {
     id: string;
     project_id: string;
     name: string;
     description?: string;
     timestamp: string;
-    data: any;
+    data: Record<string, unknown>;
 }
 
 export const timelineService = {
@@ -72,7 +88,7 @@ export const timelineService = {
         // Actually, fetching all dependencies for the project's activities is robust.
 
         // Get all activity IDs
-        const activityIds = swimlanes?.flatMap(s => s.activities?.map((a: any) => a.id) || []) || [];
+        const activityIds = swimlanes?.flatMap(s => s.activities?.map((a: TimelineActivity) => a.id) || []) || [];
 
         let dependencies: TimelineDependency[] = [];
         if (activityIds.length > 0) {
@@ -210,7 +226,7 @@ export const timelineService = {
         if (error) throw error;
         return data;
     },
-    async saveSite(site: any) {
+    async saveSite(site: Partial<TimelineSite>) {
         const { data, error } = await supabase
             .from('timeline_sites')
             .upsert(site)
@@ -236,7 +252,7 @@ export const timelineService = {
         if (error) throw error;
         return data;
     },
-    async saveTeam(team: any) {
+    async saveTeam(team: Partial<TimelineTeam>) {
         const { data, error } = await supabase
             .from('timeline_teams')
             .upsert(team)

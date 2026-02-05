@@ -49,7 +49,7 @@ const WIDGET_TYPES = [
   { id: 'kpi-risks', name: 'Open Risks (KPI)', icon: AlertTriangle, defaultW: 2, defaultH: 2 },
   { id: 'kpi-util', name: 'Team Utilization (KPI)', icon: Users, defaultW: 2, defaultH: 2 },
   { id: 'kpi-actions', name: 'Actions Due (KPI)', icon: CheckCircle2, defaultW: 2, defaultH: 2 },
-  { id: 'project-progress', name: 'Project Progress Ring', icon: ProgressRing, defaultW: 4, defaultH: 8 },
+  { id: 'project-progress', name: 'Project Progress Ring', icon: BarChart3, defaultW: 4, defaultH: 8 },
   { id: 'budget-overview', name: 'Budget Overview', icon: DollarSign, defaultW: 4, defaultH: 8 },
   { id: 'active-risks', name: 'Active Risks List', icon: AlertTriangle, defaultW: 4, defaultH: 8 },
   { id: 'in-progress', name: 'In Progress Work', icon: LayoutIcon, defaultW: 6, defaultH: 8 },

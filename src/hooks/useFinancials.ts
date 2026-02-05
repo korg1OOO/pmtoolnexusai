@@ -20,7 +20,7 @@ export interface Invoice {
     invoice_number: string;
     date: string;
     amount: number;
-    status: 'paid' | 'sent' | 'pending';
+    status: 'paid' | 'sent' | 'pending' | 'cancelled';
     milestone?: string;
     created_at: string;
     updated_at: string;

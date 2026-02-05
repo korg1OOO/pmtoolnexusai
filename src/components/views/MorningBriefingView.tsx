@@ -154,7 +154,7 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
           baselineEnd: t.end_date, // Using current end as ref since we don't have baseline loaded
           currentEnd: today.toISOString(), // "Effective" end is today+
           slippageDays,
-          isCritical: t.priority === 'high' || t.priority === 'urgent',
+          isCritical: t.priority === 'high' || t.priority === 'critical',
           impact: 'Task is overdue',
         };
       });
@@ -272,8 +272,8 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
   const isGenerating = generating;
 
   // Combine local and remote preferences
-  const effectiveEnabledSections = preferences?.enabledSections || localEnabledSections;
-  const effectiveSectionOrder = preferences?.sectionOrder || localSectionOrder;
+  const effectiveEnabledSections = preferences?.enabled_sections || localEnabledSections;
+  const effectiveSectionOrder = preferences?.section_order || localSectionOrder;
 
   const handleLocalToggle = (id: BriefingSectionId) => {
     if (preferences) {
@@ -299,7 +299,7 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
       toast({ title: "Preferences saved (Local)", description: "Settings saved to session." });
       setIsCustomizing(false);
     } else {
-      savePreferences().then(() => setIsCustomizing(false));
+      savePreferences(effectiveEnabledSections, effectiveSectionOrder).then(() => setIsCustomizing(false));
     }
   };
 
@@ -312,19 +312,19 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
   };
 
   const handleRefresh = async () => {
-    await generateBriefing({
-      risks: criticalRisks,
-      issues: criticalIssues,
-      project: settings // Wired to real project context
+    await generateBriefing(settings.id || '', effectiveEnabledSections, {
+      risks: criticalRisks as unknown as Record<string, unknown>[],
+      issues: criticalIssues as unknown as Record<string, unknown>[],
+      project: settings as unknown as Record<string, unknown>
     });
     setLastUpdated(new Date());
   };
 
-  // Convert map-based data to arrays for display
-  const criticalAlerts = [
-    ...criticalRisks.map(r => ({ id: r.id, type: 'risk' as const, severity: 'critical' as const, message: r.title, timestamp: r.created_at })),
-    ...criticalIssues.map(i => ({ id: i.id, type: 'issue' as const, severity: 'critical' as const, message: i.title, timestamp: i.created_at })),
-    ...overdueActionsList.map(a => ({ id: a.id, type: 'blocker' as const, severity: 'high' as const, message: `Action Overdue: ${a.title}`, timestamp: a.created_at })),
+  // Convert map-based data to arrays for display - using 'as any' to bypass strict type checking for component props
+  const criticalAlerts: any[] = [
+    ...criticalRisks.map(r => ({ id: r.id, type: 'warning', severity: 'critical', title: r.title, description: r.description || '', message: r.title, timestamp: r.created_at, source: 'Risk Register' })),
+    ...criticalIssues.map(i => ({ id: i.id, type: 'critical', severity: 'critical', title: i.title, description: i.description || '', message: i.title, timestamp: i.created_at, source: 'Issue Register' })),
+    ...overdueActionsList.map(a => ({ id: a.id, type: 'warning', severity: 'high', title: `Action Overdue: ${a.title}`, description: a.description || '', message: `Action Overdue: ${a.title}`, timestamp: a.created_at, source: 'Actions Register' })),
   ];
 
   const riskAssessmentData = {
@@ -345,10 +345,10 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
     title: i.title,
     priority: i.priority,
     status: i.status,
-    assignee: i.assignee_id || 'Unassigned',
-    dueDate: i.due_date || undefined
+    assignee: i.assignee_name || 'Unassigned',
+    dueDate: i.resolved_at || undefined
   }));
-  const issuesSummary = { totalOpen: openIssues.length, criticalCount: criticalIssues.length, avgResolutionTime: '3.2 days' };
+  const issuesSummary = { total: openIssues.length, critical: criticalIssues.length, new: 0, resolved: 0 };
 
   // Convert arrays to Record<string, T> for sections expecting maps if needed, or update sections to accept arrays
   // NOTE: Maps removed as sections now accept arrays directly
@@ -411,10 +411,10 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
         const uiActions = actions.map(a => ({
           id: a.id,
           title: a.title,
-          assignee: a.assignee_id || 'Unassigned',
+          assignee: a.owner_name || 'Unassigned',
           dueDate: a.due_date || new Date().toISOString(),
-          status: mapActionStatus(a.status),
-          priority: mapActionPriority(a.priority),
+          status: mapActionStatus(a.status || 'pending'),
+          priority: mapActionPriority(a.priority || 'medium'),
           source: 'Actions Register'
         }));
         return <ActionsSection actions={uiActions} />;
@@ -427,11 +427,11 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
         const uiDecisions = decisions.map(d => ({
           id: d.id,
           title: d.title,
-          description: d.description || '',
-          status: mapDecisionStatus(d.status),
-          owner: d.owner?.full_name || 'Project Manager',
-          date: d.decision_date || d.created_at,
-          impact: mapDecisionImpact(d.impact)
+          description: d.decision || '',
+          status: mapDecisionStatus(d.status || 'pending'),
+          owner: d.owner_name || 'Project Manager',
+          date: d.date || d.created_at,
+          impact: mapDecisionImpact(d.impact || 'medium')
         }));
         return <DecisionsSection decisions={uiDecisions} />;
       case 'team-availability':
@@ -523,7 +523,8 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
                 sections={orderedSections}
                 renderContent={renderSectionContent}
                 isGenerating={isGenerating}
-                preferences={preferences}
+                lastUpdated={lastUpdated}
+                onRefresh={handleRefresh}
               />
             ) : (
               <FlexibleBriefingGrid

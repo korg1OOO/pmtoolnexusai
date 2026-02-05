@@ -646,11 +646,13 @@ export function GanttView() {
                   task_id: task.id,
                   resource_id: resourceId,
                   units,
-                  work_hours: 0, // Default
+                  work_hours: 0,
                   actual_work_hours: 0,
                   remaining_work_hours: 0,
                   cost: 0,
-                  actual_cost: 0
+                  actual_cost: 0,
+                  start_date: task.start_date,
+                  end_date: task.end_date
                 });
               }}
               onRemoveAssignment={async (assignmentId) => {

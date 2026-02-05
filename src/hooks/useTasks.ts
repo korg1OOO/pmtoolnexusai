@@ -52,6 +52,9 @@ export interface DbTask {
   calendar_id?: string | null;
   child_project_id?: string | null;
   scenario_id?: string | null;
+  // Baseline fields
+  baseline_start?: string | null;
+  baseline_end?: string | null;
 }
 
 export interface DbDependency {

@@ -1,9 +1,11 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Tables } from '@/integrations/supabase/types';
+import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 
 export type ChangeRequest = Tables<'change_requests'>;
+export type ChangeRequestInsert = TablesInsert<'change_requests'>;
+export type ChangeRequestUpdate = TablesUpdate<'change_requests'>;
 
 export function useChangeRequests(projectId: string | null) {
     return useQuery({
@@ -23,7 +25,7 @@ export function useChangeRequests(projectId: string | null) {
 export function useCreateChangeRequest() {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: async (cr: Omit<ChangeRequest, 'id' | 'created_at' | 'updated_at'>) => {
+        mutationFn: async (cr: ChangeRequestInsert) => {
             const { data, error } = await supabase
                 .from('change_requests')
                 .insert(cr)
@@ -44,7 +46,7 @@ export function useCreateChangeRequest() {
 export function useUpdateChangeRequest() {
     const queryClient = useQueryClient();
     return useMutation({
-        mutationFn: async ({ id, ...updates }: Partial<ChangeRequest> & { id: string }) => {
+        mutationFn: async ({ id, ...updates }: ChangeRequestUpdate & { id: string }) => {
             const { data, error } = await supabase
                 .from('change_requests')
                 .update(updates)

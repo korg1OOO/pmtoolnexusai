@@ -1,5 +1,6 @@
-import { useState, useRef, lazy, Suspense } from 'react';
+import { useState, useRef, lazy, Suspense, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
 import {
   LayoutDashboard,
   Building2,
@@ -84,6 +85,7 @@ function DashboardSkeleton() {
 export function DashboardHub({ onViewChange }: DashboardHubProps) {
   const [activeDashboard, setActiveDashboard] = useState<DashboardType>('project');
   const contentRef = useRef<HTMLDivElement>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const currentDashboard = dashboardOptions.find(d => d.id === activeDashboard)!;
   const CurrentIcon = currentDashboard.icon;

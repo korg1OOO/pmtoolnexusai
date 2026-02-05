@@ -53,11 +53,9 @@ export function ChangeRequestsView() {
       type: 'scope',
       priority: 'medium',
       status: 'pending',
-      requested_by: 'current-user-id', // This should be the real user ID
+      requested_by_id: 'current-user-id',
       requested_by_name: 'Project Manager',
       requested_at: new Date().toISOString(),
-      justification: 'Justification for the change...',
-      impact_details: { schedule: 0, cost: 0, risk: 'low', scope: 'Minor scope adjustment' }
     });
   };
 
@@ -66,16 +64,27 @@ export function ChangeRequestsView() {
     (cr.description?.toLowerCase() || '').includes(searchQuery.toLowerCase())
   );
 
+  // Helper to safely get impact details
+  const getImpactDetails = (cr: ChangeRequest) => {
+    const details = cr.impact_details as Record<string, unknown> | null;
+    return {
+      cost: Number(details?.cost) || 0,
+      schedule: Number(details?.schedule) || 0,
+      risk: (details?.risk as string) || 'low',
+      scope: (details?.scope as string) || '',
+    };
+  };
+
   const stats = {
     total: changeRequests.length,
     pending: changeRequests.filter(cr => cr.status === 'pending').length,
     approved: changeRequests.filter(cr => cr.status === 'approved').length,
     totalCostImpact: changeRequests
       .filter(cr => cr.status === 'approved')
-      .reduce((sum, cr) => sum + (Number((cr.impact_details as any)?.cost) || 0), 0),
+      .reduce((sum, cr) => sum + getImpactDetails(cr).cost, 0),
     totalScheduleImpact: changeRequests
       .filter(cr => cr.status === 'approved')
-      .reduce((sum, cr) => sum + (Number((cr.impact_details as any)?.schedule) || 0), 0),
+      .reduce((sum, cr) => sum + getImpactDetails(cr).schedule, 0),
   };
 
   const getStatusIcon = (status: string) => {

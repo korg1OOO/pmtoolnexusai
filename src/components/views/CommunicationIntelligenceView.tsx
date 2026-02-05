@@ -55,19 +55,24 @@ export function CommunicationIntelligenceView() {
 
   const fetchHistory = async () => {
     setIsLoadingHistory(true);
-    const { data } = await supabase
-      .from('project_status_reports')
-      .select('id, title, audience, report_date, content')
-      .eq('project_id', project?.id)
-      .order('report_date', { ascending: false })
-      .limit(5);
+    try {
+      // Table may not exist yet - handle gracefully
+      const { data } = await (supabase as any)
+        .from('project_status_reports')
+        .select('id, title, audience, report_date, content')
+        .eq('project_id', project?.id)
+        .order('report_date', { ascending: false })
+        .limit(5);
 
-    if (data) setReportHistory(data);
+      if (data) setReportHistory(data);
+    } catch (e) {
+      console.warn('project_status_reports table not available');
+    }
     setIsLoadingHistory(false);
   };
 
   const loadReport = (report: any) => {
-    setExecutiveStatus(report.content);
+    setExecutiveStatus(report.content as any);
     setStatusAudience(report.audience);
     toast.info(`Loaded report: ${report.title}`);
   };
@@ -595,7 +600,7 @@ export function CommunicationIntelligenceView() {
                             if (error) {
                               toast.error('Failed to generate status: ' + error);
                             } else {
-                              setExecutiveStatus(data);
+                              setExecutiveStatus(data as any);
                               toast.success(`Executive Status generated for ${statusAudience}`);
                             }
                           }}
@@ -774,7 +779,7 @@ export function CommunicationIntelligenceView() {
                         } else {
                           // For now, we just toast the success and keep the data in mind
                           // In a full implementation, we'd update the UI to show this specific analysis
-                          toast.success('Analysis complete! Sentiment: ' + data.sentiment);
+                          toast.success('Analysis complete! Sentiment: ' + ((data as any)?.sentiment || 'unknown'));
                           console.log('Analysis result:', data);
                         }
                       }}

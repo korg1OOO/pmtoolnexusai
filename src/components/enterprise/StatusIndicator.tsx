@@ -1,7 +1,7 @@
 import React, { forwardRef } from 'react';
 import { cn } from '@/lib/utils';
 
-type HealthStatus = 'green' | 'amber' | 'red';
+export type HealthStatus = 'green' | 'amber' | 'red';
 
 export interface StatusIndicatorProps {
   status: HealthStatus;

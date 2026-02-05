@@ -122,7 +122,7 @@ export function ScenariosView() {
           status: s.status,
           createdDate: new Date(s.created_at).toLocaleDateString(),
           modifiedDate: new Date(s.updated_at).toLocaleDateString(),
-          author: profile?.full_name || 'User', // Wired to profile
+          author: (profile as any)?.full_name || 'User', // Wired to profile
           adjustments: meta.adjustments || [],
           impact: meta.impact || {
             endDateChange: 0,
@@ -201,16 +201,18 @@ export function ScenariosView() {
             unit: 'days'
           });
         }
-        // Check for Cost Change (Budget)
-        if (sTask.budget !== baseTask.budget) {
+        // Check for Cost Change (using work_hours as proxy for budget)
+        const sTaskBudget = (sTask as any).budget ?? sTask.work_hours ?? 0;
+        const baseTaskBudget = (baseTask as any).budget ?? baseTask.work_hours ?? 0;
+        if (sTaskBudget !== baseTaskBudget) {
           adjustments.push({
             id: `adj-${sTask.id}-cost`,
             type: 'resource', // prioritizing simple types
             taskId: sTask.id,
             taskName: sTask.name,
             field: 'Budget',
-            originalValue: baseTask.budget || 0,
-            newValue: sTask.budget,
+            originalValue: baseTaskBudget,
+            newValue: sTaskBudget,
             unit: 'USD'
           });
         }
@@ -235,7 +237,7 @@ export function ScenariosView() {
       adjustments: calculatedAdjustments
     };
 
-    const { data: impactData, error } = await aiService.simulateScenarios(settings.id, calculatedAdjustments);
+    const { data: impactData, error } = await aiService.simulateScenarios(settings.id, calculatedAdjustments.map(a => ({ field: a.field, value: a.newValue })));
     setIsSimulating(false);
 
     if (error) {

@@ -118,7 +118,6 @@ interface Swimlane {
     collapsed: boolean;
     activities: Activity[];
     targetDuration?: number;
-    targetDuration?: number;
     siteIds?: string[];
     teamIds?: string[];
 }
@@ -745,8 +744,8 @@ export function TimelinePlannerTab() {
             timelineService.fetchSites(settings.id),
             timelineService.fetchTeams(settings.id)
         ]).then(([loadedSites, loadedTeams]) => {
-            setSites(loadedSites || []);
-            setTeams(loadedTeams || []);
+            setSites((loadedSites || []) as Site[]);
+            setTeams((loadedTeams || []) as Team[]);
         }).catch(console.error);
     }, [settings.id]);
 
@@ -1153,7 +1152,7 @@ export function TimelinePlannerTab() {
     };
     const updateSwimlane = (id: string, updates: Partial<Swimlane>) => {
         dispatch({ type: 'UPDATE_SWIMLANE', id, updates });
-        timelineService.saveSwimlane({ id, ...updates }).catch(console.error);
+        timelineService.saveSwimlane({ id, ...updates } as any).catch(console.error);
     };
     const renameSwimlane = (id: string, label: string) => {
         dispatch({ type: 'RENAME_SWIMLANE', id, label });

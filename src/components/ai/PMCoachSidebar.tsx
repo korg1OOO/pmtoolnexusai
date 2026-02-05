@@ -464,7 +464,7 @@ export function PMCoachSidebar({ isOpen, onToggle, currentView = 'gantt' }: PMCo
                               <div key={lesson.id} className="p-3 rounded-lg border">
                                 <Badge variant="outline" className="mb-2">{lesson.category}</Badge>
                                 <p className="text-sm font-medium">{lesson.description}</p>
-                                <p className="text-xs text-muted-foreground mt-1">Impact: {lesson.impact}</p>
+                                <p className="text-xs text-muted-foreground mt-1">Impact: {lesson.impact_level}</p>
                               </div>
                             ))}
                           </div>

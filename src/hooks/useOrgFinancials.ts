@@ -4,69 +4,69 @@ import { supabase } from '@/integrations/supabase/client';
 export interface MonthlyFinancials {
     month: string;
     actual: number;
-    projected: number; // Placeholder for now or calculated
+    projected: number;
 }
 
 export function useOrgFinancials() {
     return useQuery({
         queryKey: ['org_financials'],
         queryFn: async () => {
-            // Fetch all invoices visible to user
-            const { data: invoices, error: invError } = await supabase
-                .from('project_invoices')
-                .select('amount, date, status');
+            try {
+                // Fetch all invoices visible to user
+                const { data: invoices, error: invError } = await supabase
+                    .from('project_invoices')
+                    .select('amount, due_date, status');
 
-            if (invError) throw invError;
+                if (invError) throw invError;
 
-            // Group by month
-            const months: Record<string, number> = {};
-            const now = new Date();
+                // Group by month
+                const months: Record<string, number> = {};
+                const now = new Date();
 
-            // Initialize last 12 months with 0
-            for (let i = 11; i >= 0; i--) {
-                const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-                const key = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' }); // e.g., "Jan 2024"
-                months[key] = 0;
-            }
-
-            invoices?.forEach(inv => {
-                if (inv.status === 'paid' || inv.status === 'sent') {
-                    const d = new Date(inv.date);
-                    // Only aggregate if within the last 12 months roughly
-                    // Actually, let's just use the key format matches
+                // Initialize last 12 months with 0
+                for (let i = 11; i >= 0; i--) {
+                    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
                     const key = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
-                    if (months[key] !== undefined) {
-                        months[key] += Number(inv.amount);
-                    }
+                    months[key] = 0;
                 }
-            });
 
-            // Transform to array
-            const trendData = Object.entries(months).map(([month, actual]) => ({
-                month: month.split(' ')[0], // Just Month name for display if short
-                fullMonth: month,
-                actual,
-                budget: 0 // We'll calculate this or mock it appropriately if no time-phased budget
-            }));
+                (invoices || []).forEach((inv: any) => {
+                    if (inv.status === 'paid' || inv.status === 'sent') {
+                        const d = new Date(inv.due_date || inv.created_at);
+                        const key = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+                        if (months[key] !== undefined) {
+                            months[key] += Number(inv.amount) || 0;
+                        }
+                    }
+                });
 
-            // Calculate simple linear budget burn or total budget
-            // For now, let's fetch total budget to show as a context
-            const { data: budgetItems, error: budError } = await supabase
-                .from('project_budget_items')
-                .select('planned');
+                const trendData = Object.entries(months).map(([month, actual]) => ({
+                    month: month.split(' ')[0],
+                    fullMonth: month,
+                    actual,
+                    budget: 0
+                }));
 
-            if (budError) throw budError;
+                // Fetch total budget
+                const { data: budgetItems } = await supabase
+                    .from('project_budget_items')
+                    .select('budgeted_amount');
 
-            const totalBudget = budgetItems?.reduce((sum, item) => sum + Number(item.planned), 0) || 0;
-            const monthlyBudget = totalBudget / 12; // Very naive linear distribution for context
+                const totalBudget = (budgetItems || []).reduce((sum, item: any) => sum + (Number(item.budgeted_amount) || 0), 0);
+                const monthlyBudget = totalBudget / 12;
 
-            trendData.forEach(d => d.budget = monthlyBudget); // Naive 'Budget' line
+                trendData.forEach(d => d.budget = monthlyBudget);
 
-            return {
-                trendData,
-                totalBudget,
-                totalActual: invoices?.reduce((sum, inv) => sum + (inv.status === 'paid' || inv.status === 'sent' ? Number(inv.amount) : 0), 0) || 0
-            };
+                return {
+                    trendData,
+                    totalBudget,
+                    totalActual: (invoices || []).reduce((sum, inv: any) => 
+                        sum + ((inv.status === 'paid' || inv.status === 'sent') ? (Number(inv.amount) || 0) : 0), 0)
+                };
+            } catch (e) {
+                console.warn('Org financials error:', e);
+                return { trendData: [], totalBudget: 0, totalActual: 0 };
+            }
         }
     });
 }

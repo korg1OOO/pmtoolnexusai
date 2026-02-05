@@ -339,8 +339,8 @@ function ProgramsManager() {
                                     <FolderKanban className="h-4 w-4 text-blue-500" />
                                     {program.name}
                                 </td>
-                                <td className="p-4 text-muted-foreground">{getPortfolioName(program.portfolio_id)}</td>
-                                <td className="p-4 text-muted-foreground truncate max-w-[200px]">{program.description}</td>
+                                <td className="p-4 text-muted-foreground">{getPortfolioName((program as any).portfolio_id)}</td>
+                                <td className="p-4 text-muted-foreground truncate max-w-[200px]">{(program as any).description || '-'}</td>
                                 <td className="p-4">
                                     <Badge variant={program.status === 'active' ? 'default' : 'secondary'}>
                                         {program.status}

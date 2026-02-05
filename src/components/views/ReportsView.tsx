@@ -354,7 +354,7 @@ export function ReportsView() {
       <div className="flex items-center justify-between">
         <ReportCategories
           selectedCategory={selectedCategory as any}
-          onCategoryChange={(c) => setSelectedCategory(c)}
+          onCategoryChange={(c) => setSelectedCategory(c as any)}
           counts={categoryCounts as any} // Cast if types slightly mismatch
         />
         <div className="relative w-64">

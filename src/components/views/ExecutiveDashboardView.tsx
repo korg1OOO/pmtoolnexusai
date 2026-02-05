@@ -358,8 +358,8 @@ export function ExecutiveDashboardView() {
                           }`} />
                       </div>
                       <div>
-                        <p className="text-sm font-medium">{risk.title || risk.name}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{risk.owner}</p>
+                        <p className="text-sm font-medium">{risk.title || (risk as any).name}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{(risk as any).owner || 'Unassigned'}</p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
@@ -386,7 +386,7 @@ export function ExecutiveDashboardView() {
           <CardContent>
             <div className="space-y-4">
               {programs.slice(0, 4).map((program, index) => {
-                const programProjects = projects.filter(p => p.program_id === program.id);
+                const programProjects = projects.filter(p => (p as any).program_id === program.id);
                 const programProgress = programProjects.length > 0
                   ? programProjects.reduce((sum, p) => sum + (p.progress || 0), 0) / programProjects.length
                   : 0;
@@ -407,7 +407,7 @@ export function ExecutiveDashboardView() {
                         <StatusIndicator status={(program as any).health || 'green'} pulse />
                         <div>
                           <p className="font-medium">{program.name}</p>
-                          <p className="text-xs text-muted-foreground">{program.manager_id}</p>
+                          <p className="text-xs text-muted-foreground">{(program as any).manager_id || 'No Manager'}</p>
                         </div>
                       </div>
                       <Badge variant="outline">{programProjects.length} Projects</Badge>

@@ -33,7 +33,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { KPICard } from '@/components/enterprise/KPICard';
-import { StatusIndicator } from '@/components/enterprise/StatusIndicator';
+import { StatusIndicator, HealthStatus } from '@/components/enterprise/StatusIndicator';
 import { ProgressRing } from '@/components/enterprise/ProgressRing';
 import {
   AreaChart,
@@ -365,7 +365,7 @@ export function PortfolioView() {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <StatusIndicator status={program.health || 'green'} pulse size="lg" />
+                      <StatusIndicator status={((program as any).health || 'green') as HealthStatus} pulse size="lg" />
                       <div><CardTitle className="text-lg">{program.name}</CardTitle><p className="text-sm text-muted-foreground">PROGRAM</p></div>
                     </div>
                     <Badge variant="active">active</Badge>
@@ -380,7 +380,7 @@ export function PortfolioView() {
                     <p className="text-xs font-medium text-muted-foreground uppercase">Projects</p>
                     {program.projects?.map((project: PortfolioProject) => (
                       <div key={project.id} className="flex items-center justify-between p-2 rounded-lg bg-background/50">
-                        <div className="flex items-center gap-2"><StatusIndicator status={project.health || 'green'} size="sm" /><span className="text-sm">{project.name}</span></div>
+                        <div className="flex items-center gap-2"><StatusIndicator status={(project.health || 'green') as HealthStatus} size="sm" /><span className="text-sm">{project.name}</span></div>
                         <span className="text-xs text-muted-foreground">{project.progress}%</span>
                       </div>
                     ))}
@@ -420,7 +420,7 @@ export function PortfolioView() {
                     <td className="p-4"><div><p className="font-medium">{project.name}</p><p className="text-xs text-muted-foreground">{project.code}</p></div></td>
                     <td className="p-4"><Badge variant="outline">{programs.find(p => p.projects?.some((proj: PortfolioProject) => proj.id === project.id))?.name || 'N/A'}</Badge></td>
                     <td className="p-4"><Badge variant={project.status === 'active' ? 'active' : 'pending'}>{project.status}</Badge></td>
-                    <td className="p-4"><StatusIndicator status={project.health} /></td>
+                    <td className="p-4"><StatusIndicator status={(project.health || 'green') as HealthStatus} /></td>
                     <td className="p-4"><div className="flex items-center gap-2"><Progress value={project.progress} className="h-2 w-20" /><span className="text-sm">{project.progress}%</span></div></td>
                     <td className="p-4"><div><p className="text-sm font-medium">{formatCurrency(project.budget)}</p><p className="text-xs text-muted-foreground">{formatCurrency(project.spent)} spent</p></div></td>
                     <td className="p-4 text-sm text-muted-foreground">{project.end_date ? new Date(project.end_date).toLocaleDateString() : 'N/A'}</td>
@@ -463,7 +463,7 @@ export function PortfolioView() {
                 <div className="flex items-start justify-between">
                   <div>
                     <div className="flex items-center gap-3 mb-2">
-                      <StatusIndicator status={selectedProject.health} pulse size="lg" />
+                      <StatusIndicator status={(selectedProject.health || 'green') as HealthStatus} pulse size="lg" />
                       <Badge variant={selectedProject.status === 'active' ? 'active' : 'pending'}>{selectedProject.status}</Badge>
                     </div>
                     <h2 className="text-2xl font-semibold">{selectedProject.name}</h2>
@@ -587,7 +587,7 @@ export function PortfolioView() {
                   </div>
                   <div className="text-right">
                     <p className="text-xs text-muted-foreground">End Date</p>
-                    <p className="text-sm font-medium">{new Date(selectedProject.endDate).toLocaleDateString()}</p>
+                    <p className="text-sm font-medium">{new Date(selectedProject.end_date || new Date()).toLocaleDateString()}</p>
                   </div>
                 </div>
               </div>

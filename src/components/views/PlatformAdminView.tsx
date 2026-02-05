@@ -18,12 +18,8 @@ import {
   RefreshCw,
   Download,
   Filter,
-  ChevronRight,
   Lock,
-  Eye,
-  Edit,
-  Trash2,
-  Bot,
+  Bot
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -41,75 +37,11 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { AIProviderSettings } from '@/components/admin/AIProviderSettings';
+import { useAdminUsers, useAdminOrganizations, useAdminAuditLogs, useAdminApiKeys, useUpdateUserRole, useRevokeApiKey } from '@/hooks/useAdmin';
+import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
-interface User {
-  id: string;
-  name: string;
-  email: string;
-  role: 'admin' | 'manager' | 'member' | 'viewer';
-  status: 'active' | 'inactive' | 'pending';
-  lastActive: string;
-  mfaEnabled: boolean;
-  avatar?: string;
-}
-
-interface Organization {
-  id: string;
-  name: string;
-  plan: 'enterprise' | 'professional' | 'starter';
-  users: number;
-  projects: number;
-  status: 'active' | 'suspended';
-}
-
-interface AuditLog {
-  id: string;
-  action: string;
-  user: string;
-  resource: string;
-  timestamp: string;
-  ip: string;
-  status: 'success' | 'failed';
-}
-
-interface ApiKey {
-  id: string;
-  name: string;
-  prefix: string;
-  created: string;
-  lastUsed: string;
-  status: 'active' | 'revoked';
-  scopes: string[];
-}
-
-const mockUsers: User[] = [
-  { id: '1', name: 'Sarah Chen', email: 'sarah.chen@company.com', role: 'admin', status: 'active', lastActive: '2024-01-15T10:30:00', mfaEnabled: true },
-  { id: '2', name: 'Michael Rodriguez', email: 'm.rodriguez@company.com', role: 'manager', status: 'active', lastActive: '2024-01-15T09:45:00', mfaEnabled: true },
-  { id: '3', name: 'Emily Watson', email: 'e.watson@company.com', role: 'member', status: 'active', lastActive: '2024-01-14T16:20:00', mfaEnabled: false },
-  { id: '4', name: 'David Kim', email: 'd.kim@company.com', role: 'viewer', status: 'pending', lastActive: '-', mfaEnabled: false },
-];
-
-const mockOrganizations: Organization[] = [
-  { id: '1', name: 'Acme Corporation', plan: 'enterprise', users: 150, projects: 45, status: 'active' },
-  { id: '2', name: 'TechStart Inc', plan: 'professional', users: 25, projects: 12, status: 'active' },
-  { id: '3', name: 'Global Solutions', plan: 'enterprise', users: 200, projects: 78, status: 'active' },
-];
-
-const mockAuditLogs: AuditLog[] = [
-  { id: '1', action: 'user.login', user: 'sarah.chen@company.com', resource: 'auth', timestamp: '2024-01-15T10:30:00', ip: '192.168.1.100', status: 'success' },
-  { id: '2', action: 'project.create', user: 'm.rodriguez@company.com', resource: 'project/EPM-2024', timestamp: '2024-01-15T09:45:00', ip: '192.168.1.101', status: 'success' },
-  { id: '3', action: 'user.permission.update', user: 'admin@company.com', resource: 'user/d.kim', timestamp: '2024-01-15T09:30:00', ip: '192.168.1.102', status: 'success' },
-  { id: '4', action: 'api.key.revoke', user: 'sarah.chen@company.com', resource: 'apikey/prod-001', timestamp: '2024-01-14T16:20:00', ip: '192.168.1.100', status: 'success' },
-  { id: '5', action: 'user.login', user: 'unknown@attacker.com', resource: 'auth', timestamp: '2024-01-14T15:00:00', ip: '45.33.32.156', status: 'failed' },
-];
-
-const mockApiKeys: ApiKey[] = [
-  { id: '1', name: 'Production API', prefix: 'pk_live_xxx', created: '2024-01-01', lastUsed: '2024-01-15', status: 'active', scopes: ['read', 'write'] },
-  { id: '2', name: 'CI/CD Pipeline', prefix: 'pk_ci_xxx', created: '2023-12-15', lastUsed: '2024-01-15', status: 'active', scopes: ['read'] },
-  { id: '3', name: 'Analytics Service', prefix: 'pk_analytics_xxx', created: '2023-11-01', lastUsed: '2024-01-10', status: 'revoked', scopes: ['read'] },
-];
-
-const roleColors: Record<User['role'], string> = {
+const roleColors: Record<string, string> = {
   admin: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
   manager: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
   member: 'bg-green-500/20 text-green-400 border-green-500/30',
@@ -128,6 +60,37 @@ export function PlatformAdminView() {
   const [activeTab, setActiveTab] = useState('users');
   const [searchQuery, setSearchQuery] = useState('');
 
+  const { data: users, isLoading: loadingUsers, refetch: refetchUsers } = useAdminUsers();
+  const { data: organizations, isLoading: loadingOrgs, refetch: refetchOrgs } = useAdminOrganizations();
+  const { data: auditLogs, isLoading: loadingLogs, refetch: refetchLogs } = useAdminAuditLogs();
+  const { data: apiKeys, isLoading: loadingKeys, refetch: refetchKeys } = useAdminApiKeys();
+
+  const updateUser = useUpdateUserRole();
+  const revokeKey = useRevokeApiKey();
+
+  const handleRefresh = () => {
+    refetchUsers();
+    refetchOrgs();
+    refetchLogs();
+    refetchKeys();
+    toast.success('Admin data refreshed');
+  };
+
+  const filteredUsers = users?.filter(user =>
+    (user.full_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+    (user.email || '').toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const isLoading = loadingUsers || loadingOrgs || loadingLogs || loadingKeys;
+
+  if (isLoading && !users) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full">
       {/* Header */}
@@ -143,7 +106,7 @@ export function PlatformAdminView() {
             <Download className="h-4 w-4 mr-2" />
             Export
           </Button>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={handleRefresh}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Sync
           </Button>
@@ -215,54 +178,40 @@ export function PlatformAdminView() {
                     <TableHead>User</TableHead>
                     <TableHead>Role</TableHead>
                     <TableHead>Status</TableHead>
-                    <TableHead>MFA</TableHead>
                     <TableHead>Last Active</TableHead>
                     <TableHead className="w-[80px]"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockUsers.map((user) => (
+                  {filteredUsers?.map((user) => (
                     <TableRow key={user.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
-                            <AvatarImage src={user.avatar} />
+                            <AvatarImage src={user.avatar_url || ''} />
                             <AvatarFallback className="text-xs">
-                              {user.name.split(' ').map((n) => n[0]).join('')}
+                              {(user.full_name || user.email || '?').substring(0, 2).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <div className="font-medium text-sm">{user.name}</div>
+                            <div className="font-medium text-sm">{user.full_name || 'Unknown'}</div>
                             <div className="text-xs text-muted-foreground">{user.email}</div>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={cn('capitalize', roleColors[user.role])}>
-                          {user.role}
+                        <Badge variant="outline" className={cn('capitalize', roleColors[(user as any).role || 'member'])}>
+                          {(user as any).role || 'member'}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={cn('capitalize', statusColors[user.status])}>
-                          {user.status}
+                        <Badge variant="outline" className={cn('capitalize', statusColors[(user as any).status || 'active'])}>
+                          {(user as any).status || 'active'}
                         </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {user.mfaEnabled ? (
-                          <Badge variant="outline" className="bg-success/20 text-success border-success/30">
-                            <Check className="h-3 w-3 mr-1" />
-                            Enabled
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline" className="bg-muted text-muted-foreground">
-                            <X className="h-3 w-3 mr-1" />
-                            Disabled
-                          </Badge>
-                        )}
                       </TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {user.lastActive !== '-'
-                          ? new Date(user.lastActive).toLocaleString()
+                        {(user as any).last_active_at
+                          ? new Date((user as any).last_active_at).toLocaleString()
                           : 'Never'}
                       </TableCell>
                       <TableCell>
@@ -272,6 +221,13 @@ export function PlatformAdminView() {
                       </TableCell>
                     </TableRow>
                   ))}
+                  {filteredUsers?.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">
+                        No users found
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </Card>
@@ -291,7 +247,7 @@ export function PlatformAdminView() {
             </div>
 
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {mockOrganizations.map((org) => (
+              {organizations?.map((org) => (
                 <Card key={org.id} className="hover:border-primary/50 transition-colors cursor-pointer">
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between">
@@ -306,7 +262,7 @@ export function PlatformAdminView() {
                           </Badge>
                         </div>
                       </div>
-                      <Badge variant="outline" className={statusColors[org.status]}>
+                      <Badge variant="outline" className={statusColors[org.status || 'active']}>
                         {org.status}
                       </Badge>
                     </div>
@@ -314,17 +270,23 @@ export function PlatformAdminView() {
                   <CardContent>
                     <div className="flex items-center gap-6 text-sm">
                       <div className="flex items-center gap-2">
+                        {/* TODO: Add counts via join or separate query */}
                         <Users className="h-4 w-4 text-muted-foreground" />
-                        <span>{org.users} users</span>
+                        <span>-- users</span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Building2 className="h-4 w-4 text-muted-foreground" />
-                        <span>{org.projects} projects</span>
+                        <span>-- projects</span>
                       </div>
                     </div>
                   </CardContent>
                 </Card>
               ))}
+              {organizations?.length === 0 && (
+                <div className="col-span-full text-center py-12 text-muted-foreground">
+                  No organizations found.
+                </div>
+              )}
             </div>
           </TabsContent>
 
@@ -422,7 +384,6 @@ export function PlatformAdminView() {
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Key Prefix</TableHead>
-                    <TableHead>Scopes</TableHead>
                     <TableHead>Created</TableHead>
                     <TableHead>Last Used</TableHead>
                     <TableHead>Status</TableHead>
@@ -430,35 +391,37 @@ export function PlatformAdminView() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockApiKeys.map((key) => (
+                  {apiKeys?.map((key) => (
                     <TableRow key={key.id}>
                       <TableCell className="font-medium">{key.name}</TableCell>
                       <TableCell className="font-mono text-sm text-muted-foreground">
                         {key.prefix}
                       </TableCell>
-                      <TableCell>
-                        <div className="flex gap-1">
-                          {key.scopes.map((scope) => (
-                            <Badge key={scope} variant="outline" className="text-xs">
-                              {scope}
-                            </Badge>
-                          ))}
-                        </div>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {new Date(key.created_at).toLocaleDateString()}
                       </TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{key.created}</TableCell>
-                      <TableCell className="text-sm text-muted-foreground">{key.lastUsed}</TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {key.last_used_at ? new Date(key.last_used_at).toLocaleDateString() : 'Never'}
+                      </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={statusColors[key.status]}>
+                        <Badge variant="outline" className={statusColors[key.status || 'active']}>
                           {key.status}
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="iconSm">
+                        <Button variant="ghost" size="iconSm" onClick={() => revokeKey.mutate(key.id)}>
                           <MoreHorizontal className="h-4 w-4" />
                         </Button>
                       </TableCell>
                     </TableRow>
                   ))}
+                  {apiKeys?.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        No API keys found
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </Card>
@@ -496,16 +459,18 @@ export function PlatformAdminView() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockAuditLogs.map((log) => (
+                  {auditLogs?.map((log) => (
                     <TableRow key={log.id}>
                       <TableCell className="font-mono text-sm">{log.action}</TableCell>
-                      <TableCell className="text-sm">{log.user}</TableCell>
+                      <TableCell className="text-sm">
+                        {(log as any).profiles?.email || (log as any).user_id}
+                      </TableCell>
                       <TableCell className="font-mono text-sm text-muted-foreground">
                         {log.resource}
                       </TableCell>
-                      <TableCell className="font-mono text-sm text-muted-foreground">{log.ip}</TableCell>
+                      <TableCell className="font-mono text-sm text-muted-foreground">{log.ip_address}</TableCell>
                       <TableCell className="text-sm text-muted-foreground">
-                        {new Date(log.timestamp).toLocaleString()}
+                        {new Date(log.created_at).toLocaleString()}
                       </TableCell>
                       <TableCell>
                         {log.status === 'success' ? (
@@ -522,6 +487,13 @@ export function PlatformAdminView() {
                       </TableCell>
                     </TableRow>
                   ))}
+                  {auditLogs?.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center py-8 text-muted-foreground">
+                        No audit logs found
+                      </TableCell>
+                    </TableRow>
+                  )}
                 </TableBody>
               </Table>
             </Card>

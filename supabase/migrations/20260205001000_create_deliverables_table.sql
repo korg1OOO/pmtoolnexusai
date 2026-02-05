@@ -37,7 +37,7 @@ CREATE POLICY "Users can insert deliverables into their projects"
             SELECT 1 FROM public.user_roles
             WHERE user_id = auth.uid()
             AND project_id = public.deliverables.project_id
-            AND role IN ('owner', 'admin', 'manager', 'lead')
+            AND role IN ('admin', 'pm', 'lead')
         )
     );
 
@@ -48,7 +48,7 @@ CREATE POLICY "Users can update deliverables of their projects"
             SELECT 1 FROM public.user_roles
             WHERE user_id = auth.uid()
             AND project_id = public.deliverables.project_id
-            AND role IN ('owner', 'admin', 'manager', 'lead', 'developer', 'analyst')
+            AND role IN ('admin', 'pm', 'lead', 'developer', 'analyst')
         )
     );
 
@@ -59,7 +59,7 @@ CREATE POLICY "Users can delete deliverables of their projects"
             SELECT 1 FROM public.user_roles
             WHERE user_id = auth.uid()
             AND project_id = public.deliverables.project_id
-            AND role IN ('owner', 'admin')
+            AND role IN ('admin', 'pm')
         )
     );
 

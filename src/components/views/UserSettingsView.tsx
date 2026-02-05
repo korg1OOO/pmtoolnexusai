@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
@@ -25,6 +25,7 @@ import {
   Globe,
   Clock,
   Inbox,
+  Loader2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -38,6 +39,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useTheme } from 'next-themes';
 import { EmailAccountSettings } from '@/components/communications/EmailAccountSettings';
+import { useProfile, useUpdateProfile } from '@/hooks/useProfile';
+import { useForm } from 'react-hook-form'; // Assuming react-hook-form is available or I'll use simple state
 
 interface Session {
   id: string;
@@ -46,17 +49,56 @@ interface Session {
   location: string;
   lastActive: string;
   current: boolean;
+  type: 'desktop' | 'mobile'; // Added strict type
 }
 
 const mockSessions: Session[] = [
-  { id: '1', device: 'MacBook Pro', browser: 'Chrome 120', location: 'New York, US', lastActive: 'Now', current: true },
-  { id: '2', device: 'iPhone 15', browser: 'Safari', location: 'New York, US', lastActive: '2 hours ago', current: false },
-  { id: '3', device: 'Windows PC', browser: 'Firefox 121', location: 'Boston, US', lastActive: '1 day ago', current: false },
+  { id: '1', device: 'MacBook Pro', browser: 'Chrome 120', location: 'New York, US', lastActive: 'Now', current: true, type: 'desktop' },
+  { id: '2', device: 'iPhone 15', browser: 'Safari', location: 'New York, US', lastActive: '2 hours ago', current: false, type: 'mobile' },
+  { id: '3', device: 'Windows PC', browser: 'Firefox 121', location: 'Boston, US', lastActive: '1 day ago', current: false, type: 'desktop' },
 ];
 
 export function UserSettingsView() {
   const [activeTab, setActiveTab] = useState('profile');
   const { theme, setTheme } = useTheme();
+
+  const { data: profile, isLoading } = useProfile();
+  const updateProfile = useUpdateProfile();
+
+  // Simple local state for form values to allow editing
+  const [formData, setFormData] = useState({
+    full_name: '',
+    email: '',
+    phone_number: '',
+    department: '',
+    title: '', // using title as 'location' or similar if needed, or just job title
+    avatar_url: ''
+  });
+
+  useEffect(() => {
+    if (profile) {
+      setFormData({
+        full_name: profile.full_name || '',
+        email: profile.email || '',
+        phone_number: (profile as any).phone_number || '', // Cast as any if TS doesn't see new columns yet
+        department: (profile as any).department || '',
+        title: (profile as any).title || '',
+        avatar_url: profile.avatar_url || ''
+      });
+    }
+  }, [profile]);
+
+  const handleSave = () => {
+    updateProfile.mutate(formData);
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -68,8 +110,8 @@ export function UserSettingsView() {
             Manage your account settings and preferences
           </p>
         </div>
-        <Button>
-          <Save className="h-4 w-4 mr-2" />
+        <Button onClick={handleSave} disabled={updateProfile.isPending}>
+          {updateProfile.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
           Save Changes
         </Button>
       </div>
@@ -115,8 +157,10 @@ export function UserSettingsView() {
                 {/* Avatar */}
                 <div className="flex items-center gap-6">
                   <Avatar className="h-20 w-20">
-                    <AvatarImage src="" />
-                    <AvatarFallback className="text-xl">SC</AvatarFallback>
+                    <AvatarImage src={formData.avatar_url} />
+                    <AvatarFallback className="text-xl">
+                      {(formData.full_name || '?').substring(0, 2).toUpperCase()}
+                    </AvatarFallback>
                   </Avatar>
                   <div className="space-y-2">
                     <Button variant="outline" size="sm">
@@ -132,39 +176,58 @@ export function UserSettingsView() {
                 {/* Form */}
                 <div className="grid gap-4 md:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="firstName">First Name</Label>
-                    <Input id="firstName" defaultValue="Sarah" />
+                    <Label htmlFor="full_name">Full Name</Label>
+                    <Input
+                      id="full_name"
+                      value={formData.full_name}
+                      onChange={e => setFormData({ ...formData, full_name: e.target.value })}
+                    />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="lastName">Last Name</Label>
-                    <Input id="lastName" defaultValue="Chen" />
+                    <Label htmlFor="title">Job Title</Label>
+                    <Input
+                      id="title"
+                      value={formData.title}
+                      onChange={e => setFormData({ ...formData, title: e.target.value })}
+                      placeholder="e.g. Senior Project Manager"
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <div className="relative">
                       <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input id="email" className="pl-9" defaultValue="sarah.chen@company.com" />
+                      <Input
+                        id="email"
+                        className="pl-9"
+                        value={formData.email}
+                        readOnly
+                        disabled
+                        className="bg-muted text-muted-foreground pl-9"
+                      />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="phone">Phone</Label>
                     <div className="relative">
                       <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input id="phone" className="pl-9" defaultValue="+1 (555) 123-4567" />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="location">Location</Label>
-                    <div className="relative">
-                      <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input id="location" className="pl-9" defaultValue="New York, NY" />
+                      <Input
+                        id="phone"
+                        className="pl-9"
+                        value={formData.phone_number}
+                        onChange={e => setFormData({ ...formData, phone_number: e.target.value })}
+                      />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="department">Department</Label>
                     <div className="relative">
                       <Building2 className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input id="department" className="pl-9" defaultValue="Engineering" />
+                      <Input
+                        id="department"
+                        className="pl-9"
+                        value={formData.department}
+                        onChange={e => setFormData({ ...formData, department: e.target.value })}
+                      />
                     </div>
                   </div>
                 </div>
@@ -174,7 +237,7 @@ export function UserSettingsView() {
                   <Textarea
                     id="bio"
                     placeholder="Tell us about yourself..."
-                    defaultValue="Senior Project Manager with 10+ years of experience in enterprise software delivery."
+                    defaultValue=""
                     rows={3}
                   />
                 </div>
@@ -360,7 +423,7 @@ export function UserSettingsView() {
                   >
                     <div className="flex items-center gap-3">
                       <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
-                        {session.device.includes('iPhone') ? (
+                        {session.type === 'mobile' ? (
                           <Smartphone className="h-5 w-5 text-muted-foreground" />
                         ) : (
                           <Monitor className="h-5 w-5 text-muted-foreground" />
@@ -394,6 +457,7 @@ export function UserSettingsView() {
               </CardContent>
             </Card>
 
+            {/* Change Password - TODO: Wire to supabase.auth.updateUser */}
             <Card>
               <CardHeader>
                 <CardTitle>Change Password</CardTitle>
@@ -455,69 +519,6 @@ export function UserSettingsView() {
                         <SelectItem value="cst">Central Time (CT)</SelectItem>
                         <SelectItem value="est">Eastern Time (ET)</SelectItem>
                         <SelectItem value="utc">UTC</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Date Format</Label>
-                    <Select defaultValue="mdy">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="mdy">MM/DD/YYYY</SelectItem>
-                        <SelectItem value="dmy">DD/MM/YYYY</SelectItem>
-                        <SelectItem value="ymd">YYYY-MM-DD</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Time Format</Label>
-                    <Select defaultValue="12h">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="12h">12-hour (AM/PM)</SelectItem>
-                        <SelectItem value="24h">24-hour</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>Default Views</CardTitle>
-                <CardDescription>Set your preferred default views for different modules</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid gap-4 md:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label>Home Page</Label>
-                    <Select defaultValue="dashboard">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="dashboard">Dashboard</SelectItem>
-                        <SelectItem value="executive-dashboard">Executive Dashboard</SelectItem>
-                        <SelectItem value="portfolio">Portfolio</SelectItem>
-                        <SelectItem value="sprints">Sprint Board</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Planning View</Label>
-                    <Select defaultValue="grid">
-                      <SelectTrigger>
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="grid">Grid</SelectItem>
-                        <SelectItem value="gantt">Gantt</SelectItem>
-                        <SelectItem value="board">Board</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

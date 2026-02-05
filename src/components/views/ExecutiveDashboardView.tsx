@@ -31,6 +31,7 @@ import { useProjects } from '@/hooks/useProjects';
 import { usePortfolios } from '@/hooks/usePortfolios';
 import { usePrograms } from '@/hooks/usePrograms';
 import { useRisks } from '@/hooks/useRisks';
+import { useOrgFinancials } from '@/hooks/useOrgFinancials';
 
 export function ExecutiveDashboardView() {
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
@@ -76,19 +77,11 @@ export function ExecutiveDashboardView() {
     return `$${value}`;
   };
 
+  const { data: financials, refetch: refetchFinancials } = useOrgFinancials();
+
   const trendData = useMemo(() => {
-    const data = [];
-    for (let i = 11; i >= 0; i--) {
-      const date = new Date();
-      date.setMonth(date.getMonth() - i);
-      data.push({
-        month: date.toLocaleDateString('en-US', { month: 'short' }),
-        budget: Math.random() * 2000000 + 1000000,
-        actual: Math.random() * 1800000 + 800000,
-      });
-    }
-    return data;
-  }, []);
+    return financials?.trendData || [];
+  }, [financials]);
 
   const maxValue = Math.max(...trendData.map(d => Math.max(d.budget, d.actual)));
 
@@ -269,7 +262,7 @@ export function ExecutiveDashboardView() {
             <div className="h-64 flex items-end gap-2">
               {trendData.map((data, index) => (
                 <div key={index} className="flex-1 flex flex-col items-center gap-1">
-                  <div className="w-full flex gap-1 items-end" style={{ height: '200px' }}>
+                  <div className="w-full flex gap-1 items-end h-[200px]">
                     <motion.div
                       className="flex-1 bg-primary/30 rounded-t"
                       initial={{ height: 0 }}

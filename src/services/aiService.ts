@@ -26,6 +26,9 @@ export const aiService = {
     /**
      * Analyzes project context for risks and generates hidden insights.
      */
+    /**
+     * Analyzes project context for risks and generates hidden insights.
+     */
     async analyzeRisks(projectId: string): Promise<AIResponse<any>> {
         try {
             const { data, error } = await supabase.functions.invoke('analyze-risks', {
@@ -33,6 +36,34 @@ export const aiService = {
             });
 
             if (error) throw error;
+
+            // Persist valid result to database
+            if (data && data.discoveredRisks) {
+                // Remove existing risk discovery insights for this project to avoid duplicates
+                // (Assuming we want one active version, or we could keep history)
+                // @ts-ignore
+                await supabase
+                    .from('strategic_insights')
+                    .delete()
+                    .eq('project_id', projectId)
+                    .eq('type', 'risk-discovery');
+
+                // Insert new insight
+                // @ts-ignore
+                const { error: insertError } = await supabase
+                    .from('strategic_insights')
+                    .insert({
+                        project_id: projectId,
+                        type: 'risk-discovery',
+                        data: data
+                    });
+
+                if (insertError) {
+                    console.error('Failed to persist risk analysis:', insertError);
+                    // We still return the data to the UI so the user sees it immediately
+                }
+            }
+
             return { data, error: null };
         } catch (err: any) {
             console.error('Error in analyzeRisks:', err);

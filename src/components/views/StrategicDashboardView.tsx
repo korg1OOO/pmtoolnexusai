@@ -20,11 +20,10 @@ import { AIRiskDiscovery, ProjectContext, ValueEngineering } from '@/types/ai-pm
 
 export function StrategicDashboardView() {
   const { settings } = useProjectContext();
-  const { data: insights, isLoading } = useStrategicInsights(settings.id);
+  const { data: insights, isLoading, refetch } = useStrategicInsights(settings.id);
   const [selectedOption, setSelectedOption] = useState<string | null>('OPT-001');
   const [showAISidebar, setShowAISidebar] = useState(true);
   const [isAnalyzingRisks, setIsAnalyzingRisks] = useState(false);
-  const [discoveredRisks, setDiscoveredRisks] = useState<AIRiskDiscovery | null>(null);
 
   if (isLoading) {
     return (
@@ -34,9 +33,9 @@ export function StrategicDashboardView() {
     );
   }
 
-  const context = (insights as any)?.context || (mockProjectContext as unknown as ProjectContext);
-  const riskDiscovery = discoveredRisks || (insights as any)?.riskDiscovery || (mockAIRiskDiscovery as unknown as AIRiskDiscovery);
-  const valueEngineering = (insights as any)?.valueEngineering || (mockValueEngineering as unknown as ValueEngineering);
+  const context = insights?.context || mockProjectContext as unknown as ProjectContext;
+  const riskDiscovery = insights?.riskDiscovery || mockAIRiskDiscovery as unknown as AIRiskDiscovery;
+  const valueEngineering = insights?.valueEngineering || mockValueEngineering as unknown as ValueEngineering;
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -290,12 +289,15 @@ export function StrategicDashboardView() {
                           if (!settings?.id) return;
                           setIsAnalyzingRisks(true);
                           toast.info('AI is performing project risk discovery...');
-                          const { data, error } = await aiService.analyzeRisks(settings.id);
-                          setIsAnalyzingRisks(false);
+                          const { error } = await aiService.analyzeRisks(settings.id);
+
                           if (error) {
+                            setIsAnalyzingRisks(false);
                             toast.error('Risk discovery failed: ' + error);
                           } else {
-                            setDiscoveredRisks(data);
+                            // Data persisted by service, now refetch to update UI
+                            await refetch();
+                            setIsAnalyzingRisks(false);
                             toast.success('AI Risk Discovery complete');
                           }
                         }}

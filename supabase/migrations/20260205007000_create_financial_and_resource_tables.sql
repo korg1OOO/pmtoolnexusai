@@ -22,7 +22,7 @@ CREATE POLICY "Users can view budget items of their projects"
 
 CREATE POLICY "Users can manage budget items of their projects"
     ON public.project_budget_items FOR ALL
-    USING (EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND project_id = public.project_budget_items.project_id AND role IN ('owner', 'admin', 'manager')));
+    USING (EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND project_id = public.project_budget_items.project_id AND role::text IN ('admin', 'pm')));
 
 -- Create project_invoices table
 CREATE TABLE IF NOT EXISTS public.project_invoices (
@@ -47,7 +47,7 @@ CREATE POLICY "Users can view invoices of their projects"
 
 CREATE POLICY "Users can manage invoices of their projects"
     ON public.project_invoices FOR ALL
-    USING (EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND project_id = public.project_invoices.project_id AND role IN ('owner', 'admin', 'manager')));
+    USING (EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND project_id = public.project_invoices.project_id AND role::text IN ('admin', 'pm')));
 
 -- Create resources table
 CREATE TABLE IF NOT EXISTS public.resources (
@@ -76,7 +76,7 @@ CREATE POLICY "Users can view resources of their projects"
 
 CREATE POLICY "Users can manage resources of their projects"
     ON public.resources FOR ALL
-    USING (EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND project_id = public.resources.project_id AND role IN ('owner', 'admin', 'manager')));
+    USING (EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND project_id = public.resources.project_id AND role::text IN ('admin', 'pm')));
 
 -- Create resource_assignments table
 CREATE TABLE IF NOT EXISTS public.resource_assignments (
@@ -127,7 +127,7 @@ CREATE POLICY "Users can manage assignments of their project resources"
             JOIN public.user_roles ur ON ur.project_id = r.project_id
             WHERE r.id = public.resource_assignments.resource_id
             AND ur.user_id = auth.uid()
-            AND ur.role IN ('owner', 'admin', 'manager')
+            AND ur.role::text IN ('admin', 'pm')
         )
     );
 

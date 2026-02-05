@@ -26,7 +26,7 @@ CREATE POLICY "Users can view sprints of their projects"
 
 CREATE POLICY "Users can manage sprints of their projects"
     ON public.sprints FOR ALL
-    USING (EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND project_id = public.sprints.project_id AND role IN ('owner', 'admin', 'manager')));
+    USING (EXISTS (SELECT 1 FROM public.user_roles WHERE user_id = auth.uid() AND project_id = public.sprints.project_id AND role::text IN ('admin', 'pm')));
 
 -- Add Agile columns to tasks
 ALTER TABLE public.tasks ADD COLUMN IF NOT EXISTS sprint_id UUID REFERENCES public.sprints(id) ON DELETE SET NULL;

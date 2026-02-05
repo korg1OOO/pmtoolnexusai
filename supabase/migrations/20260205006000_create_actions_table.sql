@@ -50,7 +50,7 @@ CREATE POLICY "Users can insert actions into their projects"
             SELECT 1 FROM public.user_roles
             WHERE user_id = auth.uid()
             AND project_id = public.actions.project_id
-            AND role IN ('owner', 'admin', 'manager', 'member')
+            AND role::text IN ('owner', 'admin', 'manager', 'member')
         )
     );
 
@@ -61,7 +61,7 @@ CREATE POLICY "Users can update actions of their projects"
             SELECT 1 FROM public.user_roles
             WHERE user_id = auth.uid()
             AND project_id = public.actions.project_id
-            AND role IN ('owner', 'admin', 'manager', 'member')
+            AND role::text IN ('owner', 'admin', 'manager', 'member')
         )
     );
 
@@ -72,7 +72,7 @@ CREATE POLICY "Users can delete actions of their projects"
             SELECT 1 FROM public.user_roles
             WHERE user_id = auth.uid()
             AND project_id = public.actions.project_id
-            AND role IN ('owner', 'admin', 'manager')
+            AND role::text IN ('admin', 'pm')
         )
     );
 

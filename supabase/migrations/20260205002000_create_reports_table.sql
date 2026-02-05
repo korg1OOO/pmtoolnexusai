@@ -37,7 +37,7 @@ CREATE POLICY "Users can insert reports into their projects"
             SELECT 1 FROM public.user_roles
             WHERE user_id = auth.uid()
             AND project_id = public.reports.project_id
-            AND role IN ('owner', 'admin', 'manager')
+            AND role IN ('admin', 'pm')
         )
     );
 
@@ -48,7 +48,7 @@ CREATE POLICY "Users can update reports of their projects"
             SELECT 1 FROM public.user_roles
             WHERE user_id = auth.uid()
             AND project_id = public.reports.project_id
-            AND role IN ('owner', 'admin', 'manager')
+            AND role IN ('admin', 'pm')
         )
     );
 
@@ -59,7 +59,7 @@ CREATE POLICY "Users can delete reports of their projects"
             SELECT 1 FROM public.user_roles
             WHERE user_id = auth.uid()
             AND project_id = public.reports.project_id
-            AND role IN ('owner', 'admin', 'manager')
+            AND role IN ('admin', 'pm')
         )
     );
 

@@ -17,6 +17,7 @@ import {
 
 export interface UseChatEngineOptions {
   projectId: string | null;
+  channelId?: string | null; // Added channelId
   onNewMessage?: (msg: ChatMessage) => void;
 }
 
@@ -40,7 +41,7 @@ export interface UseChatEngineReturn {
   deleteMessage: (messageId: string) => Promise<boolean>;
   forwardMessage: (
     originalMessage: ChatMessage,
-    targetProjectId: string,
+    targetProjectId: string, // Kept for logic, but might need channel target in future
     additionalText?: string
   ) => Promise<boolean>;
 
@@ -65,6 +66,7 @@ export interface UseChatEngineReturn {
  */
 export function useChatEngine({
   projectId,
+  channelId,
   onNewMessage,
 }: UseChatEngineOptions): UseChatEngineReturn {
   const { user } = useAuth();
@@ -76,7 +78,10 @@ export function useChatEngine({
 
   // Fetch initial messages
   useEffect(() => {
-    if (!projectId) {
+    // If no channelId, we might want to wait or clear. 
+    // If only projectId is provided, old logic fetched by project_id.
+    // New logic: fetch by channel_id.
+    if (!channelId) {
       setMessages([]);
       return;
     }
@@ -84,9 +89,9 @@ export function useChatEngine({
     const fetchMessages = async () => {
       setIsLoading(true);
       const { data, error } = await supabase
-        .from('project_messages')
+        .from('chat_messages') // Updated table name
         .select('*')
-        .eq('project_id', projectId)
+        .eq('channel_id', channelId) // Updated filter
         .order('created_at', { ascending: true })
         .limit(100);
 
@@ -94,7 +99,7 @@ export function useChatEngine({
         console.error('Error fetching messages:', error);
       } else {
         const parsedMessages = (data || []).map((msg) =>
-          parseMessageJsonFields(msg as DbMessage)
+          parseMessageJsonFields(msg as any) // Type assertion might be needed if types aren't regenerated yet
         );
         setMessages(parsedMessages);
       }
@@ -102,24 +107,24 @@ export function useChatEngine({
     };
 
     fetchMessages();
-  }, [projectId]);
+  }, [channelId]); // Depend on channelId
 
   // Subscribe to realtime messages
   useEffect(() => {
-    if (!projectId) return;
+    if (!channelId) return;
 
     const channel = supabase
-      .channel(`chat_engine:${projectId}`)
+      .channel(`chat_engine:${channelId}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
-          table: 'project_messages',
-          filter: `project_id=eq.${projectId}`,
+          table: 'chat_messages',
+          filter: `channel_id=eq.${channelId}`,
         },
         (payload) => {
-          const newMsg = parseMessageJsonFields(payload.new as DbMessage);
+          const newMsg = parseMessageJsonFields(payload.new as any);
           setMessages((prev) => [...prev, newMsg]);
           onNewMessageRef.current?.(newMsg);
         }
@@ -129,11 +134,11 @@ export function useChatEngine({
         {
           event: 'UPDATE',
           schema: 'public',
-          table: 'project_messages',
-          filter: `project_id=eq.${projectId}`,
+          table: 'chat_messages',
+          filter: `channel_id=eq.${channelId}`,
         },
         (payload) => {
-          const updatedMsg = parseMessageJsonFields(payload.new as DbMessage);
+          const updatedMsg = parseMessageJsonFields(payload.new as any);
           setMessages((prev) =>
             prev.map((m) => (m.id === updatedMsg.id ? updatedMsg : m))
           );
@@ -144,8 +149,8 @@ export function useChatEngine({
         {
           event: 'DELETE',
           schema: 'public',
-          table: 'project_messages',
-          filter: `project_id=eq.${projectId}`,
+          table: 'chat_messages',
+          filter: `channel_id=eq.${channelId}`,
         },
         (payload) => {
           setMessages((prev) => prev.filter((m) => m.id !== (payload.old as any).id));
@@ -156,7 +161,7 @@ export function useChatEngine({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [projectId]);
+  }, [channelId]);
 
   // Send a new message
   const sendMessage = useCallback(
@@ -165,11 +170,11 @@ export function useChatEngine({
       attachment?: AttachmentData | null,
       replyTo?: string | null
     ): Promise<boolean> => {
-      if ((!content.trim() && !attachment) || !user || !projectId) return false;
+      if ((!content.trim() && !attachment) || !user || !channelId) return false;
 
       setIsSending(true);
-      const { error } = await supabase.from('project_messages').insert({
-        project_id: projectId,
+      const { error } = await supabase.from('chat_messages').insert({
+        channel_id: channelId, // Use channelId
         user_id: user.id,
         user_email: user.email || 'Unknown',
         content: content.trim(),
@@ -190,7 +195,7 @@ export function useChatEngine({
 
       return true;
     },
-    [user, projectId]
+    [user, channelId]
   );
 
   // Edit an existing message
@@ -207,7 +212,7 @@ export function useChatEngine({
       const updatedHistory = [...(message.edit_history || []), newHistoryEntry];
 
       const { error } = await supabase
-        .from('project_messages')
+        .from('chat_messages')
         .update({
           content: newContent,
           edited_at: new Date().toISOString(),
@@ -229,7 +234,7 @@ export function useChatEngine({
   // Delete a message (soft delete)
   const deleteMessage = useCallback(async (messageId: string): Promise<boolean> => {
     const { error } = await supabase
-      .from('project_messages')
+      .from('chat_messages')
       .update({
         is_deleted: true,
         deleted_at: new Date().toISOString(),
@@ -246,37 +251,21 @@ export function useChatEngine({
     return true;
   }, []);
 
-  // Forward a message to another project
+  // Forward a message to another project (Adaptation: targetProjectId logic needs review if we forward to channel)
+  // For now we assume we forward to a 'general' channel in the target project or we need targetChannelId
+  // I will keep it but warn it might fail if table expects channel_id. 
+  // IMPORTANT: The table chat_messages needs channel_id. So forwarding to a project_id doesn't make sense unless we resolve a channel.
+  // I will disable forwarding for now or simplistic implementation.
   const forwardMessage = useCallback(
     async (
       originalMessage: ChatMessage,
       targetProjectId: string,
       additionalText?: string
     ): Promise<boolean> => {
-      if (!user) return false;
-
-      const forwardedContent = additionalText
-        ? `${additionalText}\n\n📨 Forwarded from ${originalMessage.user_email.split('@')[0]}:\n"${originalMessage.content}"`
-        : `📨 Forwarded from ${originalMessage.user_email.split('@')[0]}:\n"${originalMessage.content}"`;
-
-      const { error } = await supabase.from('project_messages').insert({
-        project_id: targetProjectId,
-        user_id: user.id,
-        user_email: user.email || 'Unknown',
-        content: forwardedContent,
-        attachment_url: originalMessage.attachment_url,
-        attachment_name: originalMessage.attachment_name,
-        attachment_type: originalMessage.attachment_type,
-        attachment_size: originalMessage.attachment_size,
-      });
-
-      if (error) {
-        toast.error('Failed to forward message');
-        return false;
-      }
-
-      toast.success('Message forwarded successfully');
-      return true;
+      // TODO: Forward needs target Channel ID, not Project ID. 
+      // For now, flagging as not implemented to avoid SQL error
+      toast.error("Forwarding not fully implemented for new channel architecture");
+      return false;
     },
     [user]
   );
@@ -287,7 +276,7 @@ export function useChatEngine({
       if (!user) return;
 
       const { error } = await supabase
-        .from('project_messages')
+        .from('chat_messages')
         .update({
           is_pinned: !currentPinned,
           pinned_at: !currentPinned ? new Date().toISOString() : null,
@@ -317,7 +306,6 @@ export function useChatEngine({
 
       let newReactions: Reaction[];
       if (existingReaction) {
-        // Check if user already reacted
         const alreadyReacted = existingReaction.users.some((u) => u.id === user.id);
         if (alreadyReacted) return;
 
@@ -334,7 +322,7 @@ export function useChatEngine({
       }
 
       await supabase
-        .from('project_messages')
+        .from('chat_messages')
         .update({ reactions: JSON.parse(JSON.stringify(newReactions)) })
         .eq('id', messageId);
     },
@@ -357,7 +345,7 @@ export function useChatEngine({
         .filter((r) => r.users.length > 0);
 
       await supabase
-        .from('project_messages')
+        .from('chat_messages')
         .update({ reactions: JSON.parse(JSON.stringify(newReactions)) })
         .eq('id', messageId);
     },
@@ -381,7 +369,7 @@ export function useChatEngine({
       ];
 
       await supabase
-        .from('project_messages')
+        .from('chat_messages')
         .update({ read_by: JSON.parse(JSON.stringify(newReceipts)) })
         .eq('id', messageId);
     },

@@ -38,7 +38,7 @@ CREATE POLICY "Users can insert risks into their projects"
             SELECT 1 FROM public.user_roles
             WHERE user_id = auth.uid()
             AND project_id = public.risks.project_id
-            AND role IN ('owner', 'admin', 'manager', 'member')
+            AND role IN ('admin', 'pm', 'developer', 'analyst')
         )
     );
 
@@ -49,7 +49,7 @@ CREATE POLICY "Users can update risks of their projects"
             SELECT 1 FROM public.user_roles
             WHERE user_id = auth.uid()
             AND project_id = public.risks.project_id
-            AND role IN ('owner', 'admin', 'manager', 'member')
+            AND role IN ('admin', 'pm', 'developer', 'analyst')
         )
     );
 
@@ -60,7 +60,7 @@ CREATE POLICY "Users can delete risks of their projects"
             SELECT 1 FROM public.user_roles
             WHERE user_id = auth.uid()
             AND project_id = public.risks.project_id
-            AND role IN ('owner', 'admin', 'manager')
+            AND role IN ('admin', 'pm')
         )
     );
 
@@ -113,7 +113,7 @@ CREATE POLICY "Users can insert issues into their projects"
             SELECT 1 FROM public.user_roles
             WHERE user_id = auth.uid()
             AND project_id = public.issues.project_id
-            AND role IN ('owner', 'admin', 'manager', 'member')
+            AND role IN ('admin', 'pm', 'developer', 'analyst')
         )
     );
 
@@ -124,7 +124,7 @@ CREATE POLICY "Users can update issues of their projects"
             SELECT 1 FROM public.user_roles
             WHERE user_id = auth.uid()
             AND project_id = public.issues.project_id
-            AND role IN ('owner', 'admin', 'manager', 'member')
+            AND role IN ('admin', 'pm', 'developer', 'analyst')
         )
     );
 
@@ -135,7 +135,7 @@ CREATE POLICY "Users can delete issues of their projects"
             SELECT 1 FROM public.user_roles
             WHERE user_id = auth.uid()
             AND project_id = public.issues.project_id
-            AND role IN ('owner', 'admin', 'manager')
+            AND role IN ('admin', 'pm')
         )
     );
 

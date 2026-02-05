@@ -74,6 +74,7 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
   const { budget, isLoading: loadingFinancials } = useFinancials(settings.id);
   const { data: tasks = [], isLoading: loadingTasks } = useTasks(settings.id);
   const { meetings, isLoading: loadingMeetings } = useMeetings(settings.id);
+  const { teamMembers } = useTeamMembers(settings.id);
   // Helper functions to map DB statuses to UI types safely
   const mapActionStatus = (status: string): 'open' | 'in-progress' | 'overdue' | 'completed' => {
     const valid = ['open', 'in-progress', 'overdue', 'completed'];
@@ -186,9 +187,8 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
   }, [meetings]);
 
   // 4. Team Availability
-  const teamAvailabilityData = useMemo(() => {
-    // We map real team members to the visual structure
-    const mappedMembers = teamMembers.map(member => {
+  const teamAvailability = useMemo(() => {
+    const mappedMembers = (teamMembers || []).map(member => {
       // Find active tasks for this member
       const memberTasks = tasks.filter(t => t.assignee_id === member.id && t.status !== 'completed');
       const tasksAssigned = memberTasks.length;
@@ -435,7 +435,7 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
         }));
         return <DecisionsSection decisions={uiDecisions} />;
       case 'team-availability':
-        return <TeamAvailabilitySection members={teamAvailabilityData.members} summary={teamAvailabilityData.summary} />;
+        return <TeamAvailabilitySection members={teamAvailability.members} summary={teamAvailability.summary} />;
       default:
         return <p className="text-sm text-muted-foreground">Section content coming soon...</p>;
     }

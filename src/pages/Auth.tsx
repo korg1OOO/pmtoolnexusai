@@ -15,6 +15,15 @@ const Auth = () => {
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
 
+    React.useEffect(() => {
+        // Redirect if already logged in
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            if (session) {
+                navigate('/dashboard');
+            }
+        });
+    }, [navigate]);
+
     const handleOAuthLogin = async (provider: 'google') => {
         setIsLoading(true);
         try {

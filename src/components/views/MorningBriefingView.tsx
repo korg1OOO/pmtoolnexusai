@@ -74,7 +74,7 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
   const { budget, isLoading: loadingFinancials } = useFinancials(settings.id);
   const { data: tasks = [], isLoading: loadingTasks } = useTasks(settings.id);
   const { meetings, isLoading: loadingMeetings } = useMeetings(settings.id);
-  const { teamMembers } = useTeamMembers(settings.id);
+  const { data: teamMembers = [], isLoading: loadingTeam } = useTeamMembers(settings.id);
   // Helper functions to map DB statuses to UI types safely
   const mapActionStatus = (status: string): 'open' | 'in-progress' | 'overdue' | 'completed' => {
     const valid = ['open', 'in-progress', 'overdue', 'completed'];

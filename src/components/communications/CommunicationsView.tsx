@@ -531,10 +531,19 @@ export function CommunicationsView() {
         </ScrollArea>
 
         {/* Sync Button */}
-        <div className="p-2 border-t">
+        <div className="p-2 border-t space-y-1">
           <Button variant="ghost" size="sm" className="w-full" onClick={handleSyncAll}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Sync All
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full text-primary hover:text-primary hover:bg-primary/10"
+            onClick={() => window.location.href = '/?view=communication-intelligence'}
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            AI Intelligence
           </Button>
         </div>
       </div>

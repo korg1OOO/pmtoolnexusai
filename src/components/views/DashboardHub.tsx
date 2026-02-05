@@ -88,6 +88,22 @@ export function DashboardHub({ onViewChange }: DashboardHubProps) {
   const currentDashboard = dashboardOptions.find(d => d.id === activeDashboard)!;
   const CurrentIcon = currentDashboard.icon;
 
+  /* Deep Linking Logic */
+  useEffect(() => {
+    const dashboardParam = searchParams.get('dashboard');
+    if (dashboardParam && ['project', 'executive', 'strategic'].includes(dashboardParam)) {
+      setActiveDashboard(dashboardParam as DashboardType);
+    }
+  }, [searchParams]);
+
+  const handleDashboardChange = (type: DashboardType) => {
+    setActiveDashboard(type);
+    setSearchParams(prev => {
+      prev.set('dashboard', type);
+      return prev;
+    }, { replace: true });
+  };
+
   const renderDashboard = () => {
     switch (activeDashboard) {
       case 'project':

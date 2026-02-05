@@ -143,6 +143,7 @@ const AppContent = () => {
       case 'settings': return <UserSettingsView />;
       case 'create-project': return <ProjectCreationView />;
       case 'timeline-planner': return <TimelinePlannerTab />;
+      case 'communication-intelligence': return <CommunicationIntelligenceView />;
       default: return <DashboardHub />;
     }
   };

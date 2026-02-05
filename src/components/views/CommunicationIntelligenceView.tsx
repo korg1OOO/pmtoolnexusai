@@ -35,11 +35,42 @@ import { useProjectContext } from '@/contexts/ProjectContext';
 import { useEmailAccounts } from '@/hooks/useEmailAccounts';
 import { useEmails, Email } from '@/hooks/useEmails';
 import { aiService } from '@/services/aiService';
+import { supabase } from '@/integrations/supabase/client';
 import { mockExecutiveStatus } from '@/data/aiMockData';
 
 export function CommunicationIntelligenceView() {
   const { settings: project } = useProjectContext();
   const { accounts, syncAccount, isLoading: isLoadingAccounts } = useEmailAccounts(project?.id);
+
+  // History State
+  const [reportHistory, setReportHistory] = useState<any[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+
+  // Fetch History on Mount
+  useEffect(() => {
+    if (project?.id) {
+      fetchHistory();
+    }
+  }, [project?.id]);
+
+  const fetchHistory = async () => {
+    setIsLoadingHistory(true);
+    const { data } = await supabase
+      .from('project_status_reports')
+      .select('id, title, audience, report_date, content')
+      .eq('project_id', project?.id)
+      .order('report_date', { ascending: false })
+      .limit(5);
+
+    if (data) setReportHistory(data);
+    setIsLoadingHistory(false);
+  };
+
+  const loadReport = (report: any) => {
+    setExecutiveStatus(report.content);
+    setStatusAudience(report.audience);
+    toast.info(`Loaded report: ${report.title}`);
+  };
 
   const accountIds = useMemo(() => accounts.map(a => a.id), [accounts]);
   const { emails, isLoading: isLoadingEmails, fetchEmails } = useEmails(accountIds);

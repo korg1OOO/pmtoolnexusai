@@ -29,6 +29,7 @@ import { cn } from '@/lib/utils';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { useTasks, DbTask } from '@/hooks/useTasks';
 import { useScenarios } from '@/hooks/useScenarios';
+import { useProfile } from '@/hooks/useProfile';
 import { mockScenarios } from '@/data/aiMockData';
 import { aiService } from '@/services/aiService';
 
@@ -105,6 +106,9 @@ export function ScenariosView() {
   // Pseudo-baseline for visualization (defaults to 100% metrics)
   const baselineScenario = { name: 'Plan Baseline', impact: { endDateChange: 0, costChange: 0 } };
 
+  /* User Profile for Author field */
+  const { data: profile } = useProfile();
+
   // Sync state with fetched data
   useEffect(() => {
     if (fetchedScenarios) {
@@ -118,7 +122,7 @@ export function ScenariosView() {
           status: s.status,
           createdDate: new Date(s.created_at).toLocaleDateString(),
           modifiedDate: new Date(s.updated_at).toLocaleDateString(),
-          author: 'User', // TODO: Get from created_by
+          author: profile?.full_name || 'User', // Wired to profile
           adjustments: meta.adjustments || [],
           impact: meta.impact || {
             endDateChange: 0,
@@ -141,7 +145,7 @@ export function ScenariosView() {
         if (found) setSelectedScenario(found);
       }
     }
-  }, [fetchedScenarios]);
+  }, [fetchedScenarios, profile]);
 
   const handleCreateScenario = async () => {
     if (!newScenarioName.trim()) return;

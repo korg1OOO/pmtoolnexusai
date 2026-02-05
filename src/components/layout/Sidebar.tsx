@@ -127,6 +127,7 @@ const navItems: NavItem[] = [
       { id: 'resources', label: 'Resources', icon: Users, moduleKey: 'resources' },
       { id: 'team-management', label: 'Team Management', icon: Users, alwaysShow: true },
       { id: 'presentations', label: 'Presentations', icon: Presentation, moduleKey: 'presentations' },
+      { id: 'communication-intelligence', label: 'AI Intelligence', icon: BarChart3, alwaysShow: true },
     ]
   },
   {

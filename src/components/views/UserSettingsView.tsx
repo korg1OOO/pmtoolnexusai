@@ -499,7 +499,7 @@ export function UserSettingsView() {
               </CardContent>
             </Card>
 
-            {/* Change Password - TODO: Wire to supabase.auth.updateUser */}
+            {/* Change Password */}
             <Card>
               <CardHeader>
                 <CardTitle>Change Password</CardTitle>

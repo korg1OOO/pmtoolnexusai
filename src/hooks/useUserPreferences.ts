@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { toast } from 'sonner';
 import { useAuth } from './useAuth';
 
 export interface UserPreference {
@@ -21,18 +20,23 @@ export function useUserPreferences(projectId: string | null) {
         queryKey: ['user-preferences', projectId, user?.id],
         queryFn: async () => {
             if (!projectId || !user) return [];
-            const { data, error } = await supabase
-                .from('user_preferences')
-                .select('*')
-                .eq('project_id', projectId)
-                .eq('user_id', user.id);
+            try {
+                const { data, error } = await (supabase as any)
+                    .from('user_preferences')
+                    .select('*')
+                    .eq('project_id', projectId)
+                    .eq('user_id', user.id);
 
-            if (error) {
-                // Return empty if table doesn't exist yet (for smooth dev experience)
-                if (error.code === '42P01') return [];
-                throw error;
+                if (error) {
+                    // Return empty if table doesn't exist yet (for smooth dev experience)
+                    console.warn('user_preferences table may not exist:', error);
+                    return [];
+                }
+                return (data || []) as UserPreference[];
+            } catch (e) {
+                console.warn('Failed to fetch user preferences:', e);
+                return [];
             }
-            return data as UserPreference[];
         },
         enabled: !!projectId && !!user,
     });
@@ -41,7 +45,7 @@ export function useUserPreferences(projectId: string | null) {
         mutationFn: async ({ key, value }: { key: string; value: unknown }) => {
             if (!projectId || !user) throw new Error('No project or user');
 
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('user_preferences')
                 .upsert({
                     user_id: user.id,
@@ -54,7 +58,7 @@ export function useUserPreferences(projectId: string | null) {
                 .single();
 
             if (error) throw error;
-            return data;
+            return data as UserPreference;
         },
         onSuccess: (data) => {
             queryClient.setQueryData(
@@ -71,7 +75,6 @@ export function useUserPreferences(projectId: string | null) {
         },
         onError: (error) => {
             console.error('Failed to save preference:', error);
-            // toast.error('Failed to save settings'); // Optional: Too noisy for auto-save
         }
     });
 

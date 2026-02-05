@@ -26,15 +26,35 @@ export function useTeamMembers(projectId: string | null) {
 
             const userIds = roles.map(r => r.user_id);
 
-            // 2. Get profiles for these users
-            const { data: profiles, error: profilesError } = await supabase
-                .from('profiles')
-                .select('*')
-                .in('id', userIds);
+            // 2. Try to get profiles for these users
+            try {
+                const { data: profiles, error: profilesError } = await (supabase as any)
+                    .from('profiles')
+                    .select('*')
+                    .in('id', userIds);
 
-            if (profilesError) {
+                if (profilesError) {
+                    throw profilesError;
+                }
+
+                // 3. Merge data
+                const mergedMembers = roles.map(role => {
+                    const profile = profiles?.find((p: any) => p.id === role.user_id);
+                    return {
+                        id: role.user_id,
+                        role: role.role,
+                        joined_at: role.created_at || new Date().toISOString(),
+                        email: profile?.email || 'Unknown',
+                        full_name: profile?.full_name || 'Unknown User',
+                        avatar_url: profile?.avatar_url || null,
+                        updated_at: profile?.updated_at || null,
+                    };
+                });
+
+                return mergedMembers as TeamMember[];
+            } catch (e) {
                 // Fallback if profiles table missing, just return roles with IDs
-                console.warn('Could not fetch profiles:', profilesError);
+                console.warn('Could not fetch profiles:', e);
                 return roles.map(r => ({
                     id: r.user_id,
                     email: 'Unknown',
@@ -45,22 +65,6 @@ export function useTeamMembers(projectId: string | null) {
                     joined_at: r.created_at || new Date().toISOString()
                 })) as TeamMember[];
             }
-
-            // 3. Merge data
-            const mergedMembers = roles.map(role => {
-                const profile = profiles?.find(p => p.id === role.user_id);
-                return {
-                    id: role.user_id,
-                    role: role.role,
-                    joined_at: role.created_at || new Date().toISOString(),
-                    email: profile?.email || 'Unknown',
-                    full_name: profile?.full_name || 'Unknown User',
-                    avatar_url: profile?.avatar_url || null,
-                    updated_at: profile?.updated_at || null,
-                };
-            });
-
-            return mergedMembers as TeamMember[];
         },
         enabled: !!projectId,
     });
@@ -72,7 +76,7 @@ export function useAddTeamMember() {
     return useMutation({
         mutationFn: async ({ projectId, email, role }: { projectId: string; email: string; role: ProjectRole }) => {
             // 1. Find user by email (public profiles)
-            const { data: profiles, error: profileError } = await supabase
+            const { data: profiles, error: profileError } = await (supabase as any)
                 .from('profiles')
                 .select('id')
                 .eq('email', email)

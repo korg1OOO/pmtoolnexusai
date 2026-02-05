@@ -70,7 +70,7 @@ export interface TimelineSnapshot {
 export const timelineService = {
     async fetchTimelineData(projectId: string) {
         // Fetch Swimlanes with Activities
-        const { data: swimlanes, error: swimlaneError } = await supabase
+        const { data: swimlanes, error: swimlaneError } = await (supabase as any)
             .from('timeline_swimlanes')
             .select(`
                 *,
@@ -82,44 +82,74 @@ export const timelineService = {
 
         if (swimlaneError) throw swimlaneError;
 
-        // Fetch Dependencies separately or via nested (dependencies might be cross-swimlane, so fetching all for project or doing a separate fetch is often easier)
-        // For now, let's fetch all activities to get their IDs, then fetch dependencies for them.
-        // Or simpler: fetch all dependencies where source or target is in the fetched activities.
-        // Actually, fetching all dependencies for the project's activities is robust.
-
         // Get all activity IDs
-        const activityIds = swimlanes?.flatMap(s => s.activities?.map((a: TimelineActivity) => a.id) || []) || [];
+        const activityIds = swimlanes?.flatMap((s: any) => s.activities?.map((a: any) => a.id) || []) || [];
 
         let dependencies: TimelineDependency[] = [];
         if (activityIds.length > 0) {
-            const { data: deps, error: depsError } = await supabase
+            const { data: deps, error: depsError } = await (supabase as any)
                 .from('timeline_dependencies')
                 .select('*')
-                .in('source_activity_id', activityIds);
+                .in('from_activity_id', activityIds);
 
             if (depsError) throw depsError;
-            dependencies = deps as TimelineDependency[];
+            
+            // Map database columns to interface
+            dependencies = (deps || []).map((d: any) => ({
+                id: d.id,
+                source_activity_id: d.from_activity_id,
+                target_activity_id: d.to_activity_id,
+                type: d.dependency_type as 'FS' | 'SS' | 'FF' | 'SF',
+            }));
         }
 
-        // Attach dependencies to activities (client-side join for convenience or just return raw)
-        // We will return raw structure and let the component assemble it
-
-        const { data: milestones, error: milestoneError } = await supabase
+        const { data: milestones, error: milestoneError } = await (supabase as any)
             .from('timeline_milestones')
             .select('*')
             .eq('project_id', projectId);
 
         if (milestoneError) throw milestoneError;
 
+        // Map swimlanes to interface
+        const mappedSwimlanes: TimelineSwimlane[] = (swimlanes || []).map((s: any) => ({
+            id: s.id,
+            label: s.label,
+            color: s.color,
+            collapsed: s.collapsed,
+            order_index: s.order_index || 0,
+            project_id: s.project_id,
+            target_duration: s.target_duration,
+            site_ids: s.site_ids,
+            team_ids: s.team_ids,
+            activities: (s.activities || []).map((a: any) => ({
+                id: a.id,
+                swimlane_id: a.swimlane_id,
+                name: a.label || a.name || 'Activity',
+                start_month: a.start_month,
+                duration_months: a.duration_months,
+                color: a.color,
+                order_index: a.order_index || 0,
+            })),
+        }));
+
+        // Map milestones to interface
+        const mappedMilestones: TimelineMilestone[] = (milestones || []).map((m: any) => ({
+            id: m.id,
+            project_id: m.project_id,
+            name: m.label || m.name || 'Milestone',
+            month_index: m.month || m.month_index || 0,
+            color: m.color,
+        }));
+
         return {
-            swimlanes: swimlanes as TimelineSwimlane[],
+            swimlanes: mappedSwimlanes,
             dependencies,
-            milestones: milestones as TimelineMilestone[]
+            milestones: mappedMilestones
         };
     },
 
     async saveSwimlane(swimlane: Partial<TimelineSwimlane>) {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
             .from('timeline_swimlanes')
             .upsert(swimlane)
             .select()
@@ -129,7 +159,7 @@ export const timelineService = {
     },
 
     async deleteSwimlane(id: string) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
             .from('timeline_swimlanes')
             .delete()
             .eq('id', id);
@@ -137,7 +167,7 @@ export const timelineService = {
     },
 
     async saveActivity(activity: Partial<TimelineActivity>) {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
             .from('timeline_activities')
             .upsert(activity)
             .select()
@@ -147,7 +177,7 @@ export const timelineService = {
     },
 
     async deleteActivity(id: string) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
             .from('timeline_activities')
             .delete()
             .eq('id', id);
@@ -155,9 +185,14 @@ export const timelineService = {
     },
 
     async saveDependency(dependency: TimelineDependency) {
-        const { data, error } = await supabase
+        const dbDep = {
+            from_activity_id: dependency.source_activity_id,
+            to_activity_id: dependency.target_activity_id,
+            dependency_type: dependency.type,
+        };
+        const { data, error } = await (supabase as any)
             .from('timeline_dependencies')
-            .upsert(dependency)
+            .upsert(dbDep)
             .select()
             .single();
         if (error) throw error;
@@ -165,17 +200,24 @@ export const timelineService = {
     },
 
     async deleteDependency(sourceId: string, targetId: string) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
             .from('timeline_dependencies')
             .delete()
-            .match({ source_activity_id: sourceId, target_activity_id: targetId });
+            .match({ from_activity_id: sourceId, to_activity_id: targetId });
         if (error) throw error;
     },
 
     async saveMilestone(milestone: Partial<TimelineMilestone>) {
-        const { data, error } = await supabase
+        const dbMilestone = {
+            id: milestone.id,
+            project_id: milestone.project_id,
+            label: milestone.name,
+            month: milestone.month_index,
+            color: milestone.color,
+        };
+        const { data, error } = await (supabase as any)
             .from('timeline_milestones')
-            .upsert(milestone)
+            .upsert(dbMilestone)
             .select()
             .single();
         if (error) throw error;
@@ -183,7 +225,7 @@ export const timelineService = {
     },
 
     async deleteMilestone(id: string) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
             .from('timeline_milestones')
             .delete()
             .eq('id', id);
@@ -191,7 +233,7 @@ export const timelineService = {
     },
 
     async createSnapshot(snapshot: Partial<TimelineSnapshot>) {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
             .from('timeline_snapshots')
             .insert(snapshot)
             .select()
@@ -201,7 +243,7 @@ export const timelineService = {
     },
 
     async getSnapshots(projectId: string) {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
             .from('timeline_snapshots')
             .select('*')
             .eq('project_id', projectId)
@@ -210,7 +252,7 @@ export const timelineService = {
         return data;
     },
     async deleteSnapshot(id: string) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
             .from('timeline_snapshots')
             .delete()
             .eq('id', id);
@@ -219,7 +261,7 @@ export const timelineService = {
 
     // Sites
     async fetchSites(projectId: string) {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
             .from('timeline_sites')
             .select('*')
             .eq('project_id', projectId);
@@ -227,7 +269,7 @@ export const timelineService = {
         return data;
     },
     async saveSite(site: Partial<TimelineSite>) {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
             .from('timeline_sites')
             .upsert(site)
             .select()
@@ -236,7 +278,7 @@ export const timelineService = {
         return data;
     },
     async deleteSite(id: string) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
             .from('timeline_sites')
             .delete()
             .eq('id', id);
@@ -245,7 +287,7 @@ export const timelineService = {
 
     // Teams
     async fetchTeams(projectId: string) {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
             .from('timeline_teams')
             .select('*')
             .eq('project_id', projectId);
@@ -253,7 +295,7 @@ export const timelineService = {
         return data;
     },
     async saveTeam(team: Partial<TimelineTeam>) {
-        const { data, error } = await supabase
+        const { data, error } = await (supabase as any)
             .from('timeline_teams')
             .upsert(team)
             .select()
@@ -262,7 +304,7 @@ export const timelineService = {
         return data;
     },
     async deleteTeam(id: string) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
             .from('timeline_teams')
             .delete()
             .eq('id', id);

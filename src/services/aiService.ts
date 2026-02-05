@@ -99,12 +99,10 @@ export const aiService = {
             // Persist valid result to database
             if (data && (data as RiskAnalysisResult).discoveredRisks) {
                 // Remove existing risk discovery insights for this project to avoid duplicates
-                // @ts-expect-error - strategic_insights table may not be in generated types
-                await supabase.from('strategic_insights').delete().eq('project_id', projectId).eq('type', 'risk-discovery');
+                await (supabase as any).from('strategic_insights').delete().eq('project_id', projectId).eq('type', 'risk-discovery');
 
                 // Insert new insight
-                // @ts-expect-error - strategic_insights table may not be in generated types
-                const { error: insertError } = await supabase.from('strategic_insights').insert({
+                const { error: insertError } = await (supabase as any).from('strategic_insights').insert({
                     project_id: projectId,
                     type: 'risk-discovery',
                     data: data

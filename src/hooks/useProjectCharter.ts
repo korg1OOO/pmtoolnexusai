@@ -26,7 +26,7 @@ export function useUpdateProjectCharter() {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async (charter: Partial<ProjectCharter> & { project_id: string }) => {
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('project_charters')
                 .upsert(charter)
                 .select()
@@ -34,11 +34,11 @@ export function useUpdateProjectCharter() {
             if (error) throw error;
             return data;
         },
-        onSuccess: (data) => {
+        onSuccess: (data: any) => {
             queryClient.invalidateQueries({ queryKey: ['project_charter', data.project_id] });
             toast.success('Project charter updated successfully');
         },
-        onError: (error) => {
+        onError: (error: Error) => {
             toast.error('Failed to update project charter: ' + error.message);
         },
     });

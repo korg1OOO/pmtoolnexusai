@@ -9,13 +9,13 @@ export const usePermissions = () => {
             if (!user) return { canManagePortfolios: false, canManagePrograms: false, hasManagementAccess: false };
 
             // Check if user is owner of any portfolio
-            const { count: portfolioCount } = await supabase
+            const { count: portfolioCount } = await (supabase as any)
                 .from('portfolios')
                 .select('*', { count: 'exact', head: true })
                 .eq('owner_id', user.id);
 
             // Check if user is owner of any program
-            const { count: programCount } = await supabase
+            const { count: programCount } = await (supabase as any)
                 .from('programs')
                 .select('*', { count: 'exact', head: true })
                 .eq('owner_id', user.id);

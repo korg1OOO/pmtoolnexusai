@@ -86,7 +86,7 @@ export function useTasks(projectId: string | null, scenarioId: string | null = n
     queryFn: async () => {
       if (!projectId) return [];
 
-      let builder = supabase
+      let builder = (supabase as any)
         .from('tasks')
         .select('*')
         .eq('project_id', projectId);
@@ -148,7 +148,7 @@ export function useDependencies(projectId: string | null, scenarioId: string | n
         .eq('project_id', projectId);
 
       if (scenarioId) {
-        tasksBuilder = tasksBuilder.eq('scenario_id', scenarioId);
+        tasksBuilder = (tasksBuilder as any).eq('scenario_id', scenarioId);
       } else {
         tasksBuilder = tasksBuilder.is('scenario_id', null);
       }
@@ -224,17 +224,17 @@ export function useCreateTask() {
     mutationFn: async (task: Omit<DbTask, 'id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
         .from('tasks')
-        .insert(task)
+        .insert(task as any)
         .select()
         .single();
 
       if (error) throw error;
       return data;
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['tasks', data.project_id, data.scenario_id] });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error('Failed to create task: ' + error.message);
     },
   });
@@ -247,7 +247,7 @@ export function useUpdateTask() {
     mutationFn: async ({ id, project_id, ...updates }: Partial<DbTask> & { id: string; project_id: string }) => {
       const { data, error } = await supabase
         .from('tasks')
-        .update(updates)
+        .update(updates as any)
         .eq('id', id)
         .select()
         .single();
@@ -255,10 +255,10 @@ export function useUpdateTask() {
       if (error) throw error;
       return { ...data, project_id };
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['tasks', data.project_id] });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error('Failed to update task: ' + error.message);
     },
   });
@@ -274,7 +274,7 @@ export function useBulkUpdateTasks() {
         const { id, ...rest } = task;
         const { error } = await supabase
           .from('tasks')
-          .update(rest)
+          .update(rest as any)
           .eq('id', id);
         if (error) throw error;
         return task;
@@ -286,7 +286,7 @@ export function useBulkUpdateTasks() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['tasks', data.projectId] });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error('Failed to update tasks: ' + error.message);
     },
   });
@@ -309,7 +309,7 @@ export function useDeleteTask() {
       queryClient.invalidateQueries({ queryKey: ['tasks', data.projectId] });
       toast.success('Task deleted');
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error('Failed to delete task: ' + error.message);
     },
   });
@@ -325,7 +325,7 @@ export function useCreateDependency() {
     }) => {
       const { data, error } = await supabase
         .from('task_dependencies')
-        .insert(dependency)
+        .insert(dependency as any)
         .select()
         .single();
 
@@ -336,7 +336,7 @@ export function useCreateDependency() {
       queryClient.invalidateQueries({ queryKey: ['dependencies', result.projectId] });
       toast.success('Dependency created');
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error('Failed to create dependency: ' + error.message);
     },
   });
@@ -359,7 +359,7 @@ export function useDeleteDependency() {
       queryClient.invalidateQueries({ queryKey: ['dependencies', data.projectId] });
       toast.success('Dependency removed');
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error('Failed to delete dependency: ' + error.message);
     },
   });
@@ -392,7 +392,7 @@ export function useUpdateDependency() {
       queryClient.invalidateQueries({ queryKey: ['dependencies', result.projectId] });
       toast.success('Dependency updated');
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error('Failed to update dependency: ' + error.message);
     },
   });
@@ -416,7 +416,7 @@ export function useCreateBaseline() {
       queryClient.invalidateQueries({ queryKey: ['baselines', data.task_id] });
       toast.success('Baseline saved');
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error('Failed to save baseline: ' + error.message);
     },
   });
@@ -472,7 +472,7 @@ export function useSaveProjectBaseline() {
       queryClient.invalidateQueries({ queryKey: ['project-baselines', data.projectId] });
       toast.success('Project baseline saved');
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error('Failed to save baseline: ' + error.message);
     },
   });

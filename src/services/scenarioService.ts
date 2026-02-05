@@ -131,6 +131,18 @@ export const scenarioService = {
         if (error) throw error;
     },
 
+    async updateScenario(id: string, updates: Partial<Scenario>) {
+        const { data, error } = await supabase
+            .from('scenarios')
+            .update(updates)
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+        return data as Scenario;
+    },
+
     // Simulate applying adjustments (Update single task fields)
     async updateScenarioTask(scenarioId: string, taskId: string, updates: any) {
         const { error } = await supabase

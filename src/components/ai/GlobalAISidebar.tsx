@@ -477,9 +477,9 @@ export function GlobalAISidebar({
                       <div className="flex-1">
                         <AgentIndicator agentType={currentAgent} isProcessing />
                         <div className="flex items-center gap-1 mt-2">
-                          <span className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '0ms' }} />
-                          <span className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '150ms' }} />
-                          <span className="w-2 h-2 rounded-full bg-primary animate-bounce" style={{ animationDelay: '300ms' }} />
+                          <span className="w-2 h-2 rounded-full bg-primary animate-bounce delay-[0ms]" />
+                          <span className="w-2 h-2 rounded-full bg-primary animate-bounce delay-[150ms]" />
+                          <span className="w-2 h-2 rounded-full bg-primary animate-bounce delay-[300ms]" />
                         </div>
                       </div>
                     </div>
@@ -506,6 +506,7 @@ export function GlobalAISidebar({
                     <button
                       onClick={() => setSelectedContexts(selectedContexts.filter(c => c.id !== ctx.id))}
                       className="ml-0.5 hover:bg-muted rounded p-0.5"
+                      aria-label="Remove context"
                     >
                       <X className="h-2.5 w-2.5" />
                     </button>

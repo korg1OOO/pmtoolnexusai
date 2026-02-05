@@ -17,7 +17,8 @@ import {
   ArrowUpRight,
   Loader2,
   Trash2,
-  Edit2
+  Edit2,
+  Download // Import Download icon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -110,6 +111,35 @@ export function DeliverablesView() {
       if (selectedDeliverable?.id === id) setSelectedDeliverable(null);
     }
   }
+
+  const downloadTraceability = () => {
+    if (!deliverables) return;
+
+    const headers = ['ID', 'Name', 'Type', 'Status', 'Owner', 'Due Date', 'Criteria Total', 'Criteria Met', 'Criteria Pending'];
+    const rows = deliverables.map(d => [
+      d.id,
+      `"${d.name.replace(/"/g, '""')}"`,
+      d.type,
+      d.status,
+      d.owner?.full_name || 'Unassigned',
+      d.due_date,
+      d.acceptance_criteria?.length || 0,
+      d.acceptance_criteria?.filter(c => c.met).length || 0,
+      d.acceptance_criteria?.filter(c => !c.met).length || 0
+    ]);
+
+    const csvContent = "data:text/csv;charset=utf-8,"
+      + headers.join(",") + "\n"
+      + rows.map(e => e.join(",")).join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", "deliverables_traceability_matrix.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
 
   if (isLoading) {
     return <div className="h-full flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -243,9 +273,9 @@ export function DeliverablesView() {
             className="pl-10"
           />
         </div>
-        <Button variant="outline">
-          <Filter className="h-4 w-4 mr-2" />
-          Filter
+        <Button variant="outline" onClick={downloadTraceability}>
+          <Download className="h-4 w-4 mr-2" />
+          Export Traceability
         </Button>
       </div>
 
@@ -265,7 +295,7 @@ export function DeliverablesView() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   whileHover={{ x: 2 }}
-                  onClick={() => setSelectedDeliverable(deliverable as any)}
+                  onClick={() => setSelectedDeliverable(deliverable)}
                   className={cn(
                     "p-4 rounded-lg border bg-card hover:shadow-md transition-all cursor-pointer group relative",
                     selectedDeliverable?.id === deliverable.id && 'border-primary bg-primary/5'
@@ -308,7 +338,7 @@ export function DeliverablesView() {
                   <div className="flex items-center gap-6 text-sm">
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <User className="h-4 w-4" />
-                      {(deliverable as any).owner?.full_name || 'Unassigned'}
+                      {deliverable.owner?.full_name || 'Unassigned'}
                     </div>
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Calendar className="h-4 w-4" />
@@ -369,12 +399,12 @@ export function DeliverablesView() {
                   <label className="text-xs font-medium text-muted-foreground">Owner</label>
                   <div className="flex items-center gap-2 mt-1">
                     <Avatar className="h-6 w-6">
-                      <AvatarImage src={(selectedDeliverable as any).owner?.avatar_url} />
+                      <AvatarImage src={selectedDeliverable.owner?.avatar_url || ''} />
                       <AvatarFallback className="text-xs">
-                        {((selectedDeliverable as any).owner?.full_name || 'U').split(' ').map((n: string) => n[0]).join('')}
+                        {(selectedDeliverable.owner?.full_name || 'U').split(' ').map((n: string) => n[0]).join('')}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-sm">{(selectedDeliverable as any).owner?.full_name || 'Unassigned'}</span>
+                    <span className="text-sm">{selectedDeliverable.owner?.full_name || 'Unassigned'}</span>
                   </div>
                 </div>
                 <div>

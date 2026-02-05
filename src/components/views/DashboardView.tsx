@@ -40,6 +40,7 @@ import { kpiData as mockKPIData } from '@/data/mockData';
 import { cn } from '@/lib/utils';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useUserPreferences } from '@/hooks/useUserPreferences';
 
 const WIDGET_TYPES = [
   { id: 'kpi-schedule', name: 'Schedule Variance (KPI)', icon: Calendar, defaultW: 2, defaultH: 2 },
@@ -96,15 +97,23 @@ export function DashboardView({ onViewChange }: DashboardViewProps) {
   const { items: backlogItems = [], loading: loadingBacklog } = useBacklogItems();
 
   // --- Dashboard State ---
-  // In a real app, we'd fetch these from the DB. For now, we mock with local state + localStorage persistence simulation
-  const [layout, setLayout] = useState<DashboardWidget[]>(() => {
-    const saved = localStorage.getItem(`dashboard-layout-${projectId}`);
-    return saved ? JSON.parse(saved) : DEFAULT_LAYOUT;
-  });
+  // Using Supabase Persistence
+  const { getPreference, updatePreference, isLoading: loadingPrefs } = useUserPreferences(projectId);
+  const savedLayout = getPreference('dashboard_layout');
+
+  const [layout, setLayout] = useState<DashboardWidget[]>(DEFAULT_LAYOUT);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isAddWidgetOpen, setIsAddWidgetOpen] = useState(false);
 
-  // Save layout on change
+  // Initialize layout from prefs when loaded
+  useEffect(() => {
+    if (savedLayout && Array.isArray(savedLayout)) {
+      setLayout(savedLayout);
+    }
+  }, [savedLayout]);
+
+  // Save layout on change (Debounced manually via timeout if needed, but here simple mutation is fine if not dragging too fast)
+  // React-Grid-Layout triggers this largely on drag end, so direct call is acceptable.
   const handleLayoutChange = (newLayout: Layout[]) => {
     // Merge new positions with existing type data
     const updated = newLayout.map(l => {
@@ -114,8 +123,12 @@ export function DashboardView({ onViewChange }: DashboardViewProps) {
         type: existing?.type || 'unknown'
       };
     });
+
+    // Optimistic update
     setLayout(updated as DashboardWidget[]);
-    localStorage.setItem(`dashboard-layout-${projectId}`, JSON.stringify(updated));
+
+    // Persist
+    updatePreference.mutate({ key: 'dashboard_layout', value: updated });
   };
 
   const handleAddWidget = (typeId: string) => {
@@ -139,7 +152,7 @@ export function DashboardView({ onViewChange }: DashboardViewProps) {
   const handleRemoveWidget = (id: string) => {
     const newLayout = layout.filter(w => w.i !== id);
     setLayout(newLayout);
-    localStorage.setItem(`dashboard-layout-${projectId}`, JSON.stringify(newLayout));
+    updatePreference.mutate({ key: 'dashboard_layout', value: newLayout });
   };
 
 
@@ -297,7 +310,7 @@ export function DashboardView({ onViewChange }: DashboardViewProps) {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium">{meeting.title}</p>
                     <div className="flex items-center gap-2 mt-1">
-                      <span className="text-xs text-muted-foreground">{meeting.startTime} - {meeting.endTime}</span>
+                      <span className="text-xs text-muted-foreground">{meeting.start_time} - {meeting.end_time}</span>
                     </div>
                   </div>
                 </div>

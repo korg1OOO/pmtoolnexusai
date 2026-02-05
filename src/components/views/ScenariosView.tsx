@@ -76,6 +76,7 @@ export function ScenariosView() {
     data: fetchedScenarios = [],
     isLoading,
     createScenario,
+    updateScenario,
     deleteScenario,
     promoteScenario,
     isPromoting
@@ -224,28 +225,48 @@ export function ScenariosView() {
     const calculatedAdjustments = generateAdjustments();
 
     // 2. Update Scenario with these adjustments (so they persist)
-    // We need a way to update the scenario metadata 'data' field.
-    // Assuming we can update it locally or need a backend update?
-    // For now, let's use them for simulation.
+    // We update the 'data' field which holds adjustments and impact
+    const updatedMetadata = {
+      ...selectedScenario.data, // Preserve other possible metadata
+      adjustments: calculatedAdjustments
+    };
 
-    // TODO: Ideally save calculatedAdjustments to DB here
-
-    const { data, error } = await aiService.simulateScenarios(settings.id, calculatedAdjustments);
+    const { data: impactData, error } = await aiService.simulateScenarios(settings.id, calculatedAdjustments);
     setIsSimulating(false);
 
     if (error) {
       toast.error('Simulation failed: ' + error);
     } else {
-      const updatedScenario = {
-        ...selectedScenario,
-        adjustments: calculatedAdjustments, // Show the calculated ones
-        impact: data || { endDateChange: 0, costChange: 0, riskLevel: 'low' }, // Use returned impact
-        modifiedDate: new Date().toISOString().split('T')[0]
-      };
+      const finalImpact = impactData || { endDateChange: 0, costChange: 0, riskLevel: 'low' };
 
-      setScenarios(scenarios.map(s => s.id === selectedScenario.id ? updatedScenario : s));
-      setSelectedScenario(updatedScenario);
-      toast.success('Simulation complete!');
+      // Persist to DB
+      try {
+        await updateScenario({
+          id: selectedScenario.id,
+          updates: {
+            data: {
+              ...updatedMetadata,
+              impact: finalImpact
+            }
+          }
+        });
+
+        toast.success('Simulation complete and saved!');
+
+        // Optimistic UI update (though query invalidation in hook handles it)
+        const updatedScenarioObj = {
+          ...selectedScenario,
+          adjustments: calculatedAdjustments,
+          impact: finalImpact,
+          modifiedDate: new Date().toISOString().split('T')[0]
+        };
+        setScenarios(scenarios.map(s => s.id === selectedScenario.id ? updatedScenarioObj : s));
+        setSelectedScenario(updatedScenarioObj);
+
+      } catch (err) {
+        console.error("Failed to save simulation results", err);
+        toast.warning("Simulation complete but failed to save results.");
+      }
     }
   };
 

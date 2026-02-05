@@ -4,18 +4,12 @@ import { Card } from '@/components/ui/card';
 import { CheckSquare, Clock, AlertTriangle, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface Action {
-  id: string;
-  title: string;
-  assignee: string;
-  dueDate: string;
-  status: 'open' | 'in-progress' | 'overdue' | 'completed';
-  priority: 'low' | 'medium' | 'high' | 'critical';
-  source: string;
-}
+import { BriefingAction } from '@/types/briefing';
+
+// interface Action removed in favor of BriefingAction
 
 interface ActionsSectionProps {
-  actions: Action[];
+  actions: BriefingAction[];
 }
 
 export function ActionsSection({ actions }: ActionsSectionProps) {
@@ -34,7 +28,7 @@ export function ActionsSection({ actions }: ActionsSectionProps) {
       new Date(a.dueDate).toDateString() !== new Date().toDateString()
   );
 
-  const getPriorityColor = (priority: Action['priority']) => {
+  const getPriorityColor = (priority: BriefingAction['priority']) => {
     switch (priority) {
       case 'critical':
         return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
@@ -47,7 +41,7 @@ export function ActionsSection({ actions }: ActionsSectionProps) {
     }
   };
 
-  const renderActionCard = (action: Action) => (
+  const renderActionCard = (action: BriefingAction) => (
     <Card
       key={action.id}
       className={cn(

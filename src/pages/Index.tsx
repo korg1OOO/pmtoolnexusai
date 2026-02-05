@@ -47,14 +47,21 @@ import { TeamChatView } from '@/components/views/TeamChatView';
 import { TeamManagementView } from '@/components/views/TeamManagementView';
 import { TrackingView } from '@/components/views/TrackingView';
 import { TimelinePlannerTab } from '@/components/views/TimelinePlannerTab';
-import { ProjectProvider, useProjectContext } from '@/contexts/ProjectContext';
-import { EmptyProjectState } from '@/components/EmptyProjectState';
+import { PresenceProvider, usePresenceContext } from '@/contexts/PresenceContext';
 
 const AppContent = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const viewFromUrl = searchParams.get('view') || 'dashboard';
   const [activeView, setActiveView] = useState(viewFromUrl);
   const { settings, loading } = useProjectContext();
+  const { setCurrentProjectId } = usePresenceContext();
+
+  // Sync project ID to presence context for real-time features
+  useEffect(() => {
+    if (settings?.id) {
+      setCurrentProjectId(settings.id);
+    }
+  }, [settings?.id, setCurrentProjectId]);
 
   // Sync URL when view changes
   const handleViewChange = useCallback((view: string) => {
@@ -150,7 +157,9 @@ const AppContent = () => {
 const Index = () => {
   return (
     <ProjectProvider>
-      <AppContent />
+      <PresenceProvider>
+        <AppContent />
+      </PresenceProvider>
     </ProjectProvider>
   );
 };

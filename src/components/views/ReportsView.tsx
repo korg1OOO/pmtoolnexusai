@@ -27,6 +27,7 @@ import { KPICard } from '@/components/enterprise/KPICard';
 import { PDFExporter } from '@/components/common/PDFExporter';
 import {
   ReportCard,
+  Report as UIReport,
   ReportPreview,
   ReportCategories,
   ScheduleReportDialog,
@@ -102,13 +103,51 @@ export function ReportsView() {
   const scheduledCount = reports?.filter((r) => r.is_scheduled).length || 0;
 
   const handleGenerate = (report: Report) => {
-    toast.success(`Generating "${report.name}"...`);
-    // In a real app, this would trigger a backend generation process
-    setSelectedReport(report);
+    toast.promise(
+      new Promise((resolve) => setTimeout(resolve, 2000)),
+      {
+        loading: `Generating "${report.name}"...`,
+        success: () => {
+          // In a real app, this would refresh the report data from the backend
+          setSelectedReport(report);
+          return `Report "${report.name}" generated successfully`;
+        },
+        error: 'Failed to generate report'
+      }
+    );
   };
 
   const handleExport = (report: Report) => {
-    toast.success(`Exporting "${report.name}" to PDF...`);
+    try {
+      // Create CSV content from report metadata
+      const headers = ['ID', 'Name', 'Description', 'Type', 'Category', 'Frequency', 'Last Generated'];
+      const row = [
+        report.id,
+        `"${report.name}"`, // Quote to handle commas
+        `"${report.description || ''}"`,
+        report.type,
+        report.category,
+        report.frequency,
+        report.last_generated || 'Never'
+      ];
+
+      const csvContent = "data:text/csv;charset=utf-8,"
+        + headers.join(",") + "\n"
+        + row.join(",");
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `${report.name.replace(/\s+/g, '_').toLowerCase()}_report.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.success(`Exported "${report.name}" to CSV`);
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast.error('Failed to export report');
+    }
   };
 
   const handleCreate = async () => {
@@ -152,6 +191,23 @@ export function ReportsView() {
       default: return FileText;
     }
   };
+
+  const mapToUIReport = (dbReport: Report): UIReport => ({
+    id: dbReport.id,
+    name: dbReport.name,
+    type: (['status', 'financial', 'resource', 'risk', 'custom'].includes(dbReport.type)
+      ? dbReport.type
+      : 'custom') as UIReport['type'],
+    category: dbReport.category,
+    description: dbReport.description || '',
+    lastGenerated: dbReport.last_generated || 'Never',
+    frequency: (['daily', 'weekly', 'monthly', 'on-demand'].includes(dbReport.frequency)
+      ? dbReport.frequency
+      : 'on-demand') as UIReport['frequency'],
+    icon: getIconForType(dbReport.type),
+    isScheduled: dbReport.is_scheduled,
+    nextRun: dbReport.next_run || undefined
+  });
 
   if (isLoading) {
     return <div className="h-full flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
@@ -339,15 +395,7 @@ export function ReportsView() {
             {filteredReports.map((report) => (
               <div key={report.id} className="relative group">
                 <ReportCard
-                  report={{
-                    ...report,
-                    // Adapter for UI component requirements
-                    icon: getIconForType(report.type),
-                    lastGenerated: report.last_generated || 'Never',
-                    frequency: report.frequency || 'on-demand',
-                    isScheduled: report.is_scheduled,
-                    nextRun: report.next_run || undefined
-                  } as any}
+                  report={mapToUIReport(report)}
                   isSelected={selectedReport?.id === report.id}
                   onSelect={() => setSelectedReport(report)}
                   onGenerate={() => handleGenerate(report)}
@@ -374,14 +422,7 @@ export function ReportsView() {
         {/* Report Preview */}
         <div className="col-span-3">
           <ReportPreview
-            report={selectedReport ? {
-              ...selectedReport,
-              icon: getIconForType(selectedReport.type),
-              lastGenerated: selectedReport.last_generated || 'Never',
-              frequency: selectedReport.frequency || 'on-demand',
-              isScheduled: selectedReport.is_scheduled,
-              nextRun: selectedReport.next_run || undefined
-            } as any : null}
+            report={selectedReport ? mapToUIReport(selectedReport) : null}
             onRefresh={() => {
               if (selectedReport) {
                 toast.success('Refreshing report data...');
@@ -393,14 +434,7 @@ export function ReportsView() {
 
       {/* Schedule Dialog */}
       <ScheduleReportDialog
-        report={selectedReport ? {
-          ...selectedReport,
-          icon: getIconForType(selectedReport.type),
-          lastGenerated: selectedReport.last_generated || 'Never',
-          frequency: selectedReport.frequency || 'on-demand',
-          isScheduled: selectedReport.is_scheduled,
-          nextRun: selectedReport.next_run || undefined
-        } as any : null}
+        report={selectedReport ? mapToUIReport(selectedReport) : null}
         open={scheduleDialogOpen}
         onOpenChange={setScheduleDialogOpen}
       />

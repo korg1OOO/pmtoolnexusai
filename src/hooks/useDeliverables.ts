@@ -17,6 +17,10 @@ export interface Deliverable {
     acceptance_criteria: { text: string; met: boolean }[];
     created_at: string;
     updated_at: string;
+    owner?: {
+        full_name: string | null;
+        avatar_url: string | null;
+    } | null;
 }
 
 export function useDeliverables(projectId: string | null) {

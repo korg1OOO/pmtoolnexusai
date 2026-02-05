@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { LayoutGrid, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 export const LandingHeader = ({ onLogoClick, isAuthenticated }: { onLogoClick?: () => void, isAuthenticated: boolean }) => {
     return (
@@ -25,6 +26,7 @@ export const LandingHeader = ({ onLogoClick, isAuthenticated }: { onLogoClick?: 
                 <a href="/about" className="hover:text-foreground transition-colors">About</a>
             </nav>
             <div className="flex items-center gap-2">
+                <ThemeToggle />
                 {isAuthenticated ? (
                     <a href="/dashboard">
                         <Button size="sm" className="gap-2 shadow-md shadow-primary/20">

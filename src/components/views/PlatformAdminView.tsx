@@ -40,6 +40,15 @@ import { AIProviderSettings } from '@/components/admin/AIProviderSettings';
 import { useAdminUsers, useAdminOrganizations, useAdminAuditLogs, useAdminApiKeys, useUpdateUserRole, useRevokeApiKey } from '@/hooks/useAdmin';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuCheckboxItem,
+} from "@/components/ui/dropdown-menu";
 
 const roleColors: Record<string, string> = {
   admin: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
@@ -59,6 +68,8 @@ const statusColors: Record<string, string> = {
 export function PlatformAdminView() {
   const [activeTab, setActiveTab] = useState('users');
   const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
 
   const { data: users, isLoading: loadingUsers, refetch: refetchUsers } = useAdminUsers();
   const { data: organizations, isLoading: loadingOrgs, refetch: refetchOrgs } = useAdminOrganizations();
@@ -76,10 +87,13 @@ export function PlatformAdminView() {
     toast.success('Admin data refreshed');
   };
 
-  const filteredUsers = users?.filter(user =>
-    (user.full_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
-    (user.email || '').toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredUsers = users?.filter(user => {
+    const matchesSearch = (user.full_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (user.email || '').toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesRole = roleFilter === 'all' || (user as any).role === roleFilter;
+    const matchesStatus = statusFilter === 'all' || (user as any).status === statusFilter;
+    return matchesSearch && matchesRole && matchesStatus;
+  });
 
   const isLoading = loadingUsers || loadingOrgs || loadingLogs || loadingKeys;
 
@@ -160,10 +174,41 @@ export function PlatformAdminView() {
                 />
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filter
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Filter className="h-4 w-4 mr-2" />
+                      Filter {(roleFilter !== 'all' || statusFilter !== 'all') && '(Active)'}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuLabel>Filter Users</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className="font-normal text-xs text-muted-foreground">Role</DropdownMenuLabel>
+                    {['all', 'admin', 'manager', 'member', 'viewer'].map(role => (
+                      <DropdownMenuCheckboxItem
+                        key={role}
+                        checked={roleFilter === role}
+                        onCheckedChange={() => setRoleFilter(role)}
+                        className="capitalize"
+                      >
+                        {role}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                    <DropdownMenuSeparator />
+                    <DropdownMenuLabel className="font-normal text-xs text-muted-foreground">Status</DropdownMenuLabel>
+                    {['all', 'active', 'suspended', 'pending'].map(status => (
+                      <DropdownMenuCheckboxItem
+                        key={status}
+                        checked={statusFilter === status}
+                        onCheckedChange={() => setStatusFilter(status)}
+                        className="capitalize"
+                      >
+                        {status}
+                      </DropdownMenuCheckboxItem>
+                    ))}
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <Button size="sm">
                   <Plus className="h-4 w-4 mr-2" />
                   Add User

@@ -31,6 +31,21 @@ export const useScenarios = (projectId?: string) => {
         }
     });
 
+    const updateMutation = useMutation({
+        mutationFn: async ({ id, updates }: { id: string; updates: Partial<Scenario> }) => {
+            return await scenarioService.updateScenario(id, updates);
+        },
+        onSuccess: () => {
+            // Invalidate list to refresh UI
+            queryClient.invalidateQueries({ queryKey: ["scenarios", projectId] });
+            // No toast needed here usually if it's auto-save, but for manual actions maybe?
+        },
+        onError: (error) => {
+            console.error(error);
+            toast.error("Failed to update scenario");
+        }
+    });
+
     const deleteMutation = useMutation({
         mutationFn: async (id: string) => {
             return await scenarioService.deleteScenario(id);
@@ -65,8 +80,10 @@ export const useScenarios = (projectId?: string) => {
         data,
         isLoading,
         createScenario: createMutation.mutateAsync,
+        updateScenario: updateMutation.mutateAsync,
         deleteScenario: deleteMutation.mutateAsync,
         isCreating: createMutation.isPending,
+        isUpdating: updateMutation.isPending,
         isDeleting: deleteMutation.isPending,
         promoteScenario: promoteMutation.mutateAsync,
         isPromoting: promoteMutation.isPending

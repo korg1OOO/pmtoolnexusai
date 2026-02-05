@@ -413,8 +413,8 @@ export function ProgramTimelineView() {
                   <div key={program.id}>
                     {/* Program Row */}
                     <motion.div
-                      className="border-b border-border/50 px-4 flex items-center gap-2 bg-muted/50 cursor-pointer hover:bg-muted transition-colors"
-                      style={{ height: `${summaryRowHeight}px`, minHeight: '40px' }}
+                      className="border-b border-border/50 px-4 flex items-center gap-2 bg-muted/50 cursor-pointer hover:bg-muted transition-colors min-h-[40px]"
+                      style={{ height: `${summaryRowHeight}px` }}
                       onClick={() => toggleProgram(program.id)}
                     >
                       <motion.div

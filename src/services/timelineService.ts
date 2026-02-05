@@ -24,6 +24,7 @@ export interface TimelineActivity {
     notes?: string;
     resources_per_month?: Record<string, number>;
     dependencies?: TimelineDependency[];
+    order_index: number;
 }
 
 export interface TimelineDependency {
@@ -60,7 +61,8 @@ export const timelineService = {
                 activities:timeline_activities(*)
             `)
             .eq('project_id', projectId)
-            .order('order_index');
+            .order('order_index', { foreignTable: 'timeline_swimlanes' })
+            .order('order_index', { foreignTable: 'timeline_activities' });
 
         if (swimlaneError) throw swimlaneError;
 

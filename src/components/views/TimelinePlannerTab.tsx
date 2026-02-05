@@ -70,6 +70,16 @@ const SwimlaneDragHandle = () => {
     );
 };
 
+const ActivityDragHandle = ({ disabled }: { disabled?: boolean }) => {
+    const controls = useDragControls();
+    if (disabled) return <div className="w-5 shrink-0" />;
+    return (
+        <div className="cursor-grab active:cursor-grabbing p-1 hover:bg-zinc-200/50 rounded shrink-0 mr-1" onPointerDown={(e) => controls.start(e)}>
+            <GripVertical className="h-3 w-3 text-zinc-300" />
+        </div>
+    );
+};
+
 interface Activity {
     id: string;
     name: string;
@@ -319,6 +329,7 @@ type TimelineAction =
     | { type: 'UNDO' }
     | { type: 'REDO' }
     | { type: 'REORDER_SWIMLANES', newOrder: Swimlane[] }
+    | { type: 'REORDER_ACTIVITIES', swimId: string, newOrder: Activity[] }
     | { type: 'SET_INITIAL_DATA', swimlanes: Swimlane[], milestones: Milestone[] };
 
 interface TimelineState {
@@ -391,6 +402,15 @@ const timelineReducer = (state: TimelineState, action: TimelineAction): Timeline
         case 'REORDER_SWIMLANES': {
             // When reordering, we need to update the order_index of each swimlane
             const newSwimlanes = action.newOrder.map((s, idx) => ({ ...s, order_index: idx }));
+            return saveToHistory(newSwimlanes);
+        }
+        case 'REORDER_ACTIVITIES': {
+            const newSwimlanes = state.swimlanes.map(s => {
+                if (s.id === action.swimId) {
+                    return { ...s, activities: action.newOrder };
+                }
+                return s;
+            });
             return saveToHistory(newSwimlanes);
         }
         case 'MOVE_ACTIVITY': {
@@ -603,6 +623,10 @@ export function TimelinePlannerTab() {
         historyIndex: 0
     });
 
+    // Ref for latest state access in callbacks
+    const stateRef = useRef(state);
+    stateRef.current = state;
+
     // Load Data from Backend
     useEffect(() => {
         if (!settings.id) return;
@@ -775,9 +799,10 @@ export function TimelinePlannerTab() {
 
         // The snapshot data might be just swimlanes or { swimlanes, milestones }
         // Migration check:
-        const data = snapshot.data as any;
-        let swimlanes = [];
-        let milestones = [];
+        // Migration check:
+        const data = snapshot.data as { swimlanes?: Swimlane[], milestones?: Milestone[] } | Swimlane[];
+        let swimlanes: Swimlane[] = [];
+        let milestones: Milestone[] = [];
 
         if (Array.isArray(data)) {
             swimlanes = data;
@@ -827,7 +852,7 @@ export function TimelinePlannerTab() {
             const wb = XLSX.read(bstr, { type: 'binary' });
             const wsname = wb.SheetNames[0];
             const ws = wb.Sheets[wsname];
-            const data: any[] = XLSX.utils.sheet_to_json(ws);
+            const data: Record<string, any>[] = XLSX.utils.sheet_to_json(ws);
 
             if (data.length > 0) {
                 const choice = window.confirm("Do you want to REPLACE the entire plan? (OK for Replace, Cancel for Append)");
@@ -1163,6 +1188,21 @@ export function TimelinePlannerTab() {
         dispatch({ type: 'REMOVE_MONTH', index });
     };
 
+    const handleReorderEnd = async (swimId: string) => {
+        // Wait for state update to settle
+        setTimeout(() => {
+            const swimlane = stateRef.current.swimlanes.find(s => s.id === swimId);
+            if (!swimlane) return;
+
+            // Save new order
+            const updates = swimlane.activities.map((act, index) =>
+                timelineService.saveActivity({ id: act.id, order_index: index })
+            );
+
+            Promise.all(updates).catch(console.error);
+        }, 100);
+    };
+
     const onBarMouseDown = (e: React.MouseEvent, swimId: string, actId: string, act: Activity, mode: 'move' | 'resize' | 'start' | 'end') => {
         e.preventDefault();
         const startX = e.clientX;
@@ -1295,7 +1335,7 @@ export function TimelinePlannerTab() {
                     <div className="h-8 w-[1px] bg-border mx-1" />
 
                     <div className="flex items-center bg-muted/50 p-0.5 rounded-lg border border-border">
-                        <Tabs value={activeTab} onValueChange={(v: any) => setActiveTab(v)}>
+                        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as 'timeline' | 'resources' | 'analysis' | 'configurations')}>
                             <TabsList className="bg-transparent gap-0.5 h-7">
                                 <TabsTrigger value="timeline" className="rounded-md px-3 h-full text-[10px] font-bold transition-all data-[state=active]:bg-accent data-[state=active]:text-foreground text-muted-foreground">TIMELINE</TabsTrigger>
                                 <TabsTrigger value="resources" className="rounded-md px-3 h-full text-[10px] font-bold transition-all data-[state=active]:bg-accent data-[state=active]:text-foreground text-muted-foreground">RESOURCES</TabsTrigger>
@@ -1799,161 +1839,186 @@ export function TimelinePlannerTab() {
 
                                                     {/* Activities */}
                                                     {!sw.collapsed && (
-                                                        <div className="relative" onClick={(e) => {
-                                                            const isMulti = e.metaKey || e.ctrlKey || e.shiftKey;
-                                                            if (!isMulti) {
-                                                                setSelectedSwimlaneIds([sw.id]);
-                                                                setSelectedActivityIds([]);
-                                                                setSidebarContext('swimlane');
-                                                            }
-                                                        }}>
-                                                            {filteredActivities.map((act) => (
-                                                                <div key={act.id} className="flex items-center border-b border-border group/act hover:bg-accent/30 transition-colors" style={{ height: rowHeight }}>
-                                                                    <div
-                                                                        style={{ width: columnWidth }}
-                                                                        className={cn(
-                                                                            "border-r border-border pl-4 pr-3 flex items-center gap-2 shrink-0 h-full transition-all relative group/col cursor-pointer",
-                                                                            selectedActivityIds.includes(act.id) ? "bg-indigo-500/5 shadow-[inset_4px_0_0_0_#6366f1]" : "bg-muted/20"
-                                                                        )}
-                                                                        onClick={(e) => {
-                                                                            e.stopPropagation();
-                                                                            const isMulti = e.metaKey || e.ctrlKey || e.shiftKey;
-                                                                            if (isMulti) {
-                                                                                setSelectedActivityIds(prev => prev.includes(act.id) ? prev.filter(id => id !== act.id) : [...prev, act.id]);
-                                                                            } else {
-                                                                                // Idempotent selection: Ensure it stays selected!
-                                                                                setSelectedActivityIds([act.id]);
-                                                                                setSelectedSwimlaneIds([]);
-                                                                            }
-                                                                        }}
+                                                        <Reorder.Group
+                                                            axis="y"
+                                                            values={filteredActivities}
+                                                            onReorder={(newOrder) => {
+                                                                // Prevent reorder if we are viewing a filtered subset
+                                                                if (!isFiltered && filteredActivities.length === sw.activities.length) {
+                                                                    dispatch({ type: 'REORDER_ACTIVITIES', swimId: sw.id, newOrder });
+                                                                }
+                                                            }}
+                                                            className="relative"
+                                                            onClick={(e) => {
+                                                                const isMulti = e.metaKey || e.ctrlKey || e.shiftKey;
+                                                                if (!isMulti) {
+                                                                    setSelectedSwimlaneIds([sw.id]);
+                                                                    setSelectedActivityIds([]);
+                                                                    setSidebarContext('swimlane');
+                                                                }
+                                                            }}
+                                                        >
+                                                            {filteredActivities.map((act) => {
+                                                                // Disable drag if filters are active
+                                                                const isDragEnabled = !isFiltered && filteredActivities.length === sw.activities.length;
+
+                                                                return (
+                                                                    <Reorder.Item
+                                                                        key={act.id}
+                                                                        value={act}
+                                                                        dragListener={false}
+                                                                        dragControls={undefined}
+                                                                        onDragEnd={() => handleReorderEnd(sw.id)}
+                                                                        className="flex items-center border-b border-border group/act hover:bg-accent/30 transition-colors relative"
+                                                                        style={{ height: rowHeight }}
                                                                     >
                                                                         <div
-                                                                            style={{
-                                                                                width: 10,
-                                                                                height: 10,
-                                                                                borderRadius: '50%',
-                                                                                background: act.teamIds?.[0] ? teams.find(t => t.id === act.teamIds?.[0])?.color || act.color : act.color,
-                                                                                boxShadow: `0 0 12px ${act.teamIds?.[0] ? (teams.find(t => t.id === act.teamIds?.[0])?.color || act.color) : act.color}80`
+                                                                            style={{ width: columnWidth }}
+                                                                            className={cn(
+                                                                                "border-r border-border pl-2 pr-3 flex items-center gap-2 shrink-0 h-full transition-all relative group/col cursor-pointer",
+                                                                                selectedActivityIds.includes(act.id) ? "bg-indigo-500/5 shadow-[inset_4px_0_0_0_#6366f1]" : "bg-muted/20"
+                                                                            )}
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                const isMulti = e.metaKey || e.ctrlKey || e.shiftKey;
+                                                                                if (isMulti) {
+                                                                                    setSelectedActivityIds(prev => prev.includes(act.id) ? prev.filter(id => id !== act.id) : [...prev, act.id]);
+                                                                                } else {
+                                                                                    // Idempotent selection: Ensure it stays selected!
+                                                                                    setSelectedActivityIds([act.id]);
+                                                                                    setSelectedSwimlaneIds([]);
+                                                                                }
                                                                             }}
-                                                                            className="shrink-0"
-                                                                        />
-                                                                        <input
-                                                                            value={act.name}
-                                                                            onChange={e => renameActivity(sw.id, act.id, e.target.value)}
-                                                                            placeholder="Activity Name"
-                                                                            aria-label="Activity Name"
-                                                                            onClick={(e) => e.stopPropagation()}
-                                                                            className="flex-1 bg-transparent border-none text-[10px] font-semibold text-foreground outline-none truncate placeholder:text-muted-foreground/30"
-                                                                        />
-                                                                        {selectedActivityIds.includes(act.id) && (
-                                                                            <Button
-                                                                                variant="ghost"
-                                                                                size="icon"
-                                                                                className="h-6 w-6 p-0 text-red-500 hover:bg-red-500/10 rounded-md shrink-0"
-                                                                                onClick={(e) => {
-                                                                                    e.stopPropagation();
-                                                                                    deleteActivity(sw.id, act.id);
-                                                                                    setSelectedActivityIds(prev => prev.filter(id => id !== act.id));
+                                                                        >
+                                                                            <ActivityDragHandle disabled={!isDragEnabled} />
+                                                                            <div
+                                                                                style={{
+                                                                                    width: 10,
+                                                                                    height: 10,
+                                                                                    borderRadius: '50%',
+                                                                                    background: act.teamIds?.[0] ? teams.find(t => t.id === act.teamIds?.[0])?.color || act.color : act.color,
+                                                                                    boxShadow: `0 0 12px ${act.teamIds?.[0] ? (teams.find(t => t.id === act.teamIds?.[0])?.color || act.color) : act.color}80`
                                                                                 }}
-                                                                            >
-                                                                                <Trash2 size={12} />
-                                                                            </Button>
-                                                                        )}
-                                                                        <div className="flex items-center gap-2">
-                                                                            <Button variant="outline" size="sm" onClick={() => setIsExporting(true)}>
-                                                                                <Download className="h-4 w-4 mr-1" />
-                                                                                Export
-                                                                            </Button>
-                                                                            <Button variant="outline" size="sm" onClick={handleCreateSnapshot}>
-                                                                                <Copy className="h-4 w-4 mr-1" />
-                                                                                Snapshot
-                                                                            </Button>
-                                                                            <Button variant="default" size="sm" onClick={handleGeneratePlan} disabled={isGenerating} className="bg-indigo-600 hover:bg-indigo-700">
-                                                                                {isGenerating ? <LayoutDashboard className="h-4 w-4 mr-1 animate-spin" /> : <Database className="h-4 w-4 mr-1" />}
-                                                                                Generate Plan
-                                                                            </Button>
+                                                                                className="shrink-0"
+                                                                            />
+                                                                            <input
+                                                                                value={act.name}
+                                                                                onChange={e => renameActivity(sw.id, act.id, e.target.value)}
+                                                                                placeholder="Activity Name"
+                                                                                aria-label="Activity Name"
+                                                                                onClick={(e) => e.stopPropagation()}
+                                                                                className="flex-1 bg-transparent border-none text-[10px] font-semibold text-foreground outline-none truncate placeholder:text-muted-foreground/30"
+                                                                            />
+                                                                            {selectedActivityIds.includes(act.id) && (
+                                                                                <Button
+                                                                                    variant="ghost"
+                                                                                    size="icon"
+                                                                                    className="h-6 w-6 p-0 text-red-500 hover:bg-red-500/10 rounded-md shrink-0"
+                                                                                    onClick={(e) => {
+                                                                                        e.stopPropagation();
+                                                                                        deleteActivity(sw.id, act.id);
+                                                                                        setSelectedActivityIds(prev => prev.filter(id => id !== act.id));
+                                                                                    }}
+                                                                                >
+                                                                                    <Trash2 size={12} />
+                                                                                </Button>
+                                                                            )}
+                                                                            <div className="flex items-center gap-2">
+                                                                                <Button variant="outline" size="sm" onClick={() => setIsExporting(true)}>
+                                                                                    <Download className="h-4 w-4 mr-1" />
+                                                                                    Export
+                                                                                </Button>
+                                                                                <Button variant="outline" size="sm" onClick={handleCreateSnapshot}>
+                                                                                    <Copy className="h-4 w-4 mr-1" />
+                                                                                    Snapshot
+                                                                                </Button>
+                                                                                <Button variant="default" size="sm" onClick={handleGeneratePlan} disabled={isGenerating} className="bg-indigo-600 hover:bg-indigo-700">
+                                                                                    {isGenerating ? <LayoutDashboard className="h-4 w-4 mr-1 animate-spin" /> : <Database className="h-4 w-4 mr-1" />}
+                                                                                    Generate Plan
+                                                                                </Button>
+                                                                            </div>
+                                                                            <div
+                                                                                onMouseDown={onColumnResize}
+                                                                                className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize opacity-0 group-hover/col:opacity-100 bg-indigo-500/20 hover:bg-indigo-500 transition-all z-30"
+                                                                            />
+                                                                            <div
+                                                                                onMouseDown={onRowResize}
+                                                                                className="absolute bottom-0 left-0 right-0 h-1 cursor-row-resize opacity-0 group-hover/act:opacity-100 bg-indigo-500/20 hover:bg-indigo-500 transition-all z-30"
+                                                                            />
                                                                         </div>
-                                                                        <div
-                                                                            onMouseDown={onColumnResize}
-                                                                            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize opacity-0 group-hover/col:opacity-100 bg-indigo-500/20 hover:bg-indigo-500 transition-all z-30"
-                                                                        />
-                                                                        <div
-                                                                            onMouseDown={onRowResize}
-                                                                            className="absolute bottom-0 left-0 right-0 h-1 cursor-row-resize opacity-0 group-hover/act:opacity-100 bg-indigo-500/20 hover:bg-indigo-500 transition-all z-30"
-                                                                        />
-                                                                    </div>
-                                                                    <div className="relative flex flex-1 h-full shrink-0">
-                                                                        {/* Grid lines */}
-                                                                        <div className="absolute inset-0 flex pointer-events-none">
-                                                                            {months.map((_, i) => (
-                                                                                <div key={i} style={{ width: MONTH_COL_W }} className="shrink-0 border-r border-border/50 h-full" />
-                                                                            ))}
+                                                                        <div className="relative flex flex-1 h-full shrink-0">
+                                                                            {/* Grid lines */}
+                                                                            <div className="absolute inset-0 flex pointer-events-none">
+                                                                                {months.map((_, i) => (
+                                                                                    <div key={i} style={{ width: MONTH_COL_W }} className="shrink-0 border-r border-border/50 h-full" />
+                                                                                ))}
+                                                                            </div>
+
+                                                                            <TooltipProvider>
+                                                                                <Tooltip>
+                                                                                    <TooltipTrigger asChild>
+                                                                                        <div
+                                                                                            style={{
+                                                                                                left: act.start * MONTH_COL_W,
+                                                                                                width: act.duration * MONTH_COL_W,
+                                                                                                top: rowHeight * 0.25,
+                                                                                                bottom: rowHeight * 0.25,
+                                                                                                background: act.teamIds?.[0] ? teams.find(t => t.id === act.teamIds?.[0])?.color || act.color : act.color,
+                                                                                                boxShadow: `0 4px 15px -3px ${act.teamIds?.[0] ? (teams.find(t => t.id === act.teamIds?.[0])?.color || act.color) : act.color}40`,
+                                                                                            }}
+                                                                                            className={cn(
+                                                                                                "absolute rounded-lg cursor-pointer flex items-center px-4 group/bar transition-all hover:scale-[1.02] active:scale-[0.98] z-10",
+                                                                                                "ring-2 ring-white/10 hover:ring-white/30",
+                                                                                                selectedActivityIds.includes(act.id) ? "ring-indigo-500 ring-offset-4 ring-offset-background scale-[1.03]" : "",
+                                                                                                criticalPathIds.has(act.id) ? "border-2 border-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.2)]" : "",
+                                                                                                "active:transition-none"
+                                                                                            )}
+                                                                                            onMouseDown={e => onBarMouseDown(e, sw.id, act.id, act, 'move')}
+                                                                                            onClick={(e) => {
+                                                                                                e.stopPropagation();
+                                                                                                const isMulti = e.metaKey || e.ctrlKey || e.shiftKey;
+                                                                                                if (isMulti) {
+                                                                                                    setSelectedActivityIds(prev => prev.includes(act.id) ? prev.filter(id => id !== act.id) : [...prev, act.id]);
+                                                                                                } else {
+                                                                                                    setSelectedActivityIds(prev => prev.length === 1 && prev[0] === act.id ? [] : [act.id]);
+                                                                                                    setSelectedSwimlaneIds([]);
+                                                                                                }
+                                                                                            }}
+                                                                                        >
+                                                                                            <div className="text-[9px] font-bold text-white uppercase tracking-tighter truncate drop-shadow-md">
+                                                                                                {act.name}
+                                                                                            </div>
+
+                                                                                            <div
+                                                                                                onMouseDown={e => { e.stopPropagation(); onBarMouseDown(e, sw.id, act.id, act, 'start'); }}
+                                                                                                className="absolute left-1 top-1.5 bottom-1.5 w-1.5 bg-white/30 hover:bg-white/60 rounded-full cursor-ew-resize opacity-0 group/bar:opacity-100 transition-all"
+                                                                                            />
+                                                                                            <div
+                                                                                                onMouseDown={e => { e.stopPropagation(); onBarMouseDown(e, sw.id, act.id, act, 'end'); }}
+                                                                                                className="absolute right-1 top-1.5 bottom-1.5 w-1.5 bg-white/30 hover:bg-white/60 rounded-full cursor-ew-resize opacity-0 group/bar:opacity-100 transition-all"
+                                                                                            />
+                                                                                        </div>
+                                                                                    </TooltipTrigger>
+                                                                                    <TooltipContent className="bg-zinc-950 border-zinc-800 p-4 rounded-2xl shadow-2xl min-w-[200px]">
+                                                                                        <div className="space-y-3">
+                                                                                            <div className="flex items-center justify-between gap-4">
+                                                                                                <h4 className="text-xs font-black text-white uppercase tracking-widest">{act.name}</h4>
+                                                                                                <Badge className="bg-white/10 text-[9px] uppercase font-bold tracking-tighter">{act.duration} Months</Badge>
+                                                                                            </div>
+                                                                                            <div className="space-y-1.5 text-[10px] text-zinc-400 font-bold uppercase tracking-tight">
+                                                                                                <div className="flex items-center gap-2"><Calendar className="h-3 w-3 text-indigo-500" /> Start: {months[act.start]?.label}</div>
+                                                                                                <div className="flex items-center gap-2"><MapPin className="h-3 w-3 text-emerald-500" /> {act.siteIds?.length ? act.siteIds.map(id => sites.find(s => s.id === id)?.name).join(", ") : "Global Scope"}</div>
+                                                                                                <div className="flex items-center gap-2"><Users className="h-3 w-3 text-indigo-500" /> {act.teamIds?.length ? act.teamIds.map(id => teams.find(t => t.id === id)?.name).join(", ") : "General Delivery"}</div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </TooltipContent>
+                                                                                </Tooltip>
+                                                                            </TooltipProvider>
                                                                         </div>
-
-                                                                        <TooltipProvider>
-                                                                            <Tooltip>
-                                                                                <TooltipTrigger asChild>
-                                                                                    <div
-                                                                                        style={{
-                                                                                            left: act.start * MONTH_COL_W,
-                                                                                            width: act.duration * MONTH_COL_W,
-                                                                                            top: rowHeight * 0.25,
-                                                                                            bottom: rowHeight * 0.25,
-                                                                                            background: act.teamIds?.[0] ? teams.find(t => t.id === act.teamIds?.[0])?.color || act.color : act.color,
-                                                                                            boxShadow: `0 4px 15px -3px ${act.teamIds?.[0] ? (teams.find(t => t.id === act.teamIds?.[0])?.color || act.color) : act.color}40`,
-                                                                                        }}
-                                                                                        className={cn(
-                                                                                            "absolute rounded-lg cursor-pointer flex items-center px-4 group/bar transition-all hover:scale-[1.02] active:scale-[0.98] z-10",
-                                                                                            "ring-2 ring-white/10 hover:ring-white/30",
-                                                                                            selectedActivityIds.includes(act.id) ? "ring-indigo-500 ring-offset-4 ring-offset-background scale-[1.03]" : "",
-                                                                                            criticalPathIds.has(act.id) ? "border-2 border-red-500/50 shadow-[0_0_20px_rgba(239,68,68,0.2)]" : "",
-                                                                                            "active:transition-none"
-                                                                                        )}
-                                                                                        onMouseDown={e => onBarMouseDown(e, sw.id, act.id, act, 'move')}
-                                                                                        onClick={(e) => {
-                                                                                            e.stopPropagation();
-                                                                                            const isMulti = e.metaKey || e.ctrlKey || e.shiftKey;
-                                                                                            if (isMulti) {
-                                                                                                setSelectedActivityIds(prev => prev.includes(act.id) ? prev.filter(id => id !== act.id) : [...prev, act.id]);
-                                                                                            } else {
-                                                                                                setSelectedActivityIds(prev => prev.length === 1 && prev[0] === act.id ? [] : [act.id]);
-                                                                                                setSelectedSwimlaneIds([]);
-                                                                                            }
-                                                                                        }}
-                                                                                    >
-                                                                                        <div className="text-[9px] font-bold text-white uppercase tracking-tighter truncate drop-shadow-md">
-                                                                                            {act.name}
-                                                                                        </div>
-
-                                                                                        <div
-                                                                                            onMouseDown={e => { e.stopPropagation(); onBarMouseDown(e, sw.id, act.id, act, 'start'); }}
-                                                                                            className="absolute left-1 top-1.5 bottom-1.5 w-1.5 bg-white/30 hover:bg-white/60 rounded-full cursor-ew-resize opacity-0 group/bar:opacity-100 transition-all"
-                                                                                        />
-                                                                                        <div
-                                                                                            onMouseDown={e => { e.stopPropagation(); onBarMouseDown(e, sw.id, act.id, act, 'end'); }}
-                                                                                            className="absolute right-1 top-1.5 bottom-1.5 w-1.5 bg-white/30 hover:bg-white/60 rounded-full cursor-ew-resize opacity-0 group/bar:opacity-100 transition-all"
-                                                                                        />
-                                                                                    </div>
-                                                                                </TooltipTrigger>
-                                                                                <TooltipContent className="bg-zinc-950 border-zinc-800 p-4 rounded-2xl shadow-2xl min-w-[200px]">
-                                                                                    <div className="space-y-3">
-                                                                                        <div className="flex items-center justify-between gap-4">
-                                                                                            <h4 className="text-xs font-black text-white uppercase tracking-widest">{act.name}</h4>
-                                                                                            <Badge className="bg-white/10 text-[9px] uppercase font-bold tracking-tighter">{act.duration} Months</Badge>
-                                                                                        </div>
-                                                                                        <div className="space-y-1.5 text-[10px] text-zinc-400 font-bold uppercase tracking-tight">
-                                                                                            <div className="flex items-center gap-2"><Calendar className="h-3 w-3 text-indigo-500" /> Start: {months[act.start]?.label}</div>
-                                                                                            <div className="flex items-center gap-2"><MapPin className="h-3 w-3 text-emerald-500" /> {act.siteIds?.length ? act.siteIds.map(id => sites.find(s => s.id === id)?.name).join(", ") : "Global Scope"}</div>
-                                                                                            <div className="flex items-center gap-2"><Users className="h-3 w-3 text-indigo-500" /> {act.teamIds?.length ? act.teamIds.map(id => teams.find(t => t.id === id)?.name).join(", ") : "General Delivery"}</div>
-                                                                                        </div>
-                                                                                    </div>
-                                                                                </TooltipContent>
-                                                                            </Tooltip>
-                                                                        </TooltipProvider>
-                                                                    </div>
-                                                                </div>
-                                                            ))}
-                                                        </div>
+                                                                    </Reorder.Item>
+                                                                );
+                                                            })}
+                                                        </Reorder.Group>
                                                     )}
                                                 </Reorder.Item>
                                             );

@@ -6,16 +6,9 @@ import { Progress } from '@/components/ui/progress';
 import { Users, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface TeamMember {
-  id: string;
-  name: string;
-  avatar?: string;
-  role: string;
-  status: 'available' | 'busy' | 'away' | 'offline';
-  workload: number; // 0-100 percentage
-  tasksAssigned: number;
-  hoursAllocated: number;
-}
+import { TeamMember } from '@/types/briefing';
+
+// interface TeamMember removed in favor of shared import
 
 interface TeamAvailabilitySectionProps {
   members: TeamMember[];
@@ -142,8 +135,8 @@ export function TeamAvailabilitySection({ members, summary }: TeamAvailabilitySe
                 member.workload > 100
                   ? '[&>div]:bg-red-500'
                   : member.workload > 80
-                  ? '[&>div]:bg-yellow-500'
-                  : ''
+                    ? '[&>div]:bg-yellow-500'
+                    : ''
               )}
             />
           </Card>

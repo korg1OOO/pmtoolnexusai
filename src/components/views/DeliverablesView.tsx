@@ -14,155 +14,106 @@ import {
   Calendar,
   User,
   MoreHorizontal,
-  ChevronRight,
   ArrowUpRight,
+  Loader2,
+  Trash2,
+  Edit2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 
-interface Deliverable {
-  id: string;
-  name: string;
-  description: string;
-  phase: string;
-  type: 'document' | 'system' | 'process' | 'training' | 'other';
-  status: 'not-started' | 'in-progress' | 'review' | 'approved' | 'rejected';
-  owner: string;
-  dueDate: string;
-  completedDate?: string;
-  progress: number;
-  linkedTasks: string[];
-  acceptanceCriteria: { text: string; met: boolean }[];
-}
-
-const mockDeliverables: Deliverable[] = [
-  {
-    id: 'DEL-001',
-    name: 'Cloud Architecture Design Document',
-    description: 'Comprehensive architecture design for the target cloud infrastructure',
-    phase: 'Phase 2: Design',
-    type: 'document',
-    status: 'approved',
-    owner: 'Mike Johnson',
-    dueDate: '2024-04-30',
-    completedDate: '2024-04-28',
-    progress: 100,
-    linkedTasks: ['T-006', 'T-007'],
-    acceptanceCriteria: [
-      { text: 'All components documented', met: true },
-      { text: 'Security review passed', met: true },
-      { text: 'Stakeholder sign-off', met: true },
-    ],
-  },
-  {
-    id: 'DEL-002',
-    name: 'Data Migration Framework',
-    description: 'Automated framework for migrating data from legacy to cloud systems',
-    phase: 'Phase 3: Implementation',
-    type: 'system',
-    status: 'in-progress',
-    owner: 'Emily Brown',
-    dueDate: '2024-09-15',
-    progress: 65,
-    linkedTasks: ['T-013'],
-    acceptanceCriteria: [
-      { text: 'Handles all data types', met: true },
-      { text: 'Rollback capability', met: true },
-      { text: 'Performance benchmarks met', met: false },
-      { text: 'Zero data loss verified', met: false },
-    ],
-  },
-  {
-    id: 'DEL-003',
-    name: 'API Gateway Configuration',
-    description: 'Production-ready API gateway with security and rate limiting',
-    phase: 'Phase 3: Implementation',
-    type: 'system',
-    status: 'review',
-    owner: 'Mike Johnson',
-    dueDate: '2024-08-31',
-    progress: 90,
-    linkedTasks: ['T-011'],
-    acceptanceCriteria: [
-      { text: 'All endpoints configured', met: true },
-      { text: 'Security policies applied', met: true },
-      { text: 'Load testing passed', met: false },
-    ],
-  },
-  {
-    id: 'DEL-004',
-    name: 'User Training Materials',
-    description: 'Complete training documentation and videos for end users',
-    phase: 'Phase 5: Go-Live',
-    type: 'training',
-    status: 'not-started',
-    owner: 'Lisa Chen',
-    dueDate: '2024-11-30',
-    progress: 0,
-    linkedTasks: ['T-016'],
-    acceptanceCriteria: [
-      { text: 'All user roles covered', met: false },
-      { text: 'Video tutorials created', met: false },
-      { text: 'Quick reference guides', met: false },
-    ],
-  },
-  {
-    id: 'DEL-005',
-    name: 'Security Compliance Report',
-    description: 'Documentation demonstrating compliance with security requirements',
-    phase: 'Phase 4: Testing',
-    type: 'document',
-    status: 'in-progress',
-    owner: 'Robert Williams',
-    dueDate: '2024-10-31',
-    progress: 40,
-    linkedTasks: ['T-015'],
-    acceptanceCriteria: [
-      { text: 'All controls documented', met: true },
-      { text: 'Audit evidence collected', met: false },
-      { text: 'External audit passed', met: false },
-    ],
-  },
-];
+import { useProjectContext } from '@/contexts/ProjectContext';
+import { useDeliverables, Deliverable } from '@/hooks/useDeliverables';
+import { useTeamMembers } from '@/hooks/useTeamMembers';
 
 export function DeliverablesView() {
+  const { settings } = useProjectContext();
+  const { data: deliverables, isLoading, createDeliverable, updateDeliverable, deleteDeliverable } = useDeliverables(settings.id);
+  const { data: teamMembers } = useTeamMembers(settings.id);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDeliverable, setSelectedDeliverable] = useState<Deliverable | null>(null);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [newDeliverable, setNewDeliverable] = useState<Partial<Deliverable>>({
+    name: '',
+    description: '',
+    status: 'not-started',
+    type: 'document',
+    progress: 0,
+    acceptance_criteria: []
+  });
 
-  const filteredDeliverables = mockDeliverables.filter(d =>
+  const filteredDeliverables = deliverables?.filter(d =>
     d.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    d.description.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+    (d.description || '').toLowerCase().includes(searchQuery.toLowerCase())
+  ) || [];
 
   const stats = {
-    total: mockDeliverables.length,
-    approved: mockDeliverables.filter(d => d.status === 'approved').length,
-    inProgress: mockDeliverables.filter(d => d.status === 'in-progress').length,
-    review: mockDeliverables.filter(d => d.status === 'review').length,
+    total: filteredDeliverables.length,
+    approved: filteredDeliverables.filter(d => d.status === 'approved').length,
+    inProgress: filteredDeliverables.filter(d => d.status === 'in-progress').length,
+    review: filteredDeliverables.filter(d => d.status === 'review').length,
   };
 
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'approved': return <CheckCircle2 className="h-4 w-4 text-success" />;
-      case 'in-progress': return <Clock className="h-4 w-4 text-primary animate-pulse" />;
-      case 'review': return <AlertTriangle className="h-4 w-4 text-warning" />;
-      case 'rejected': return <AlertTriangle className="h-4 w-4 text-destructive" />;
-      default: return <Clock className="h-4 w-4 text-muted-foreground" />;
-    }
-  };
-
-  const getTypeIcon = (type: string) => {
+  const getTypeIcon = (type: string | null) => {
     switch (type) {
       case 'document': return <FileText className="h-4 w-4" />;
       case 'system': return <Package className="h-4 w-4" />;
       default: return <Package className="h-4 w-4" />;
     }
   };
+
+  const handleCreate = async () => {
+    try {
+      await createDeliverable.mutateAsync(newDeliverable);
+      setIsCreateOpen(false);
+      setNewDeliverable({
+        name: '',
+        description: '',
+        status: 'not-started',
+        type: 'document',
+        progress: 0,
+        acceptance_criteria: []
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (confirm('Are you sure you want to delete this deliverable?')) {
+      await deleteDeliverable.mutateAsync(id);
+      if (selectedDeliverable?.id === id) setSelectedDeliverable(null);
+    }
+  }
+
+  if (isLoading) {
+    return <div className="h-full flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -178,10 +129,78 @@ export function DeliverablesView() {
               <p className="text-muted-foreground">Track project outputs and acceptance criteria</p>
             </div>
           </div>
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Deliverable
-          </Button>
+          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Deliverable
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>New Deliverable</DialogTitle>
+                <DialogDescription>Define a new output for this project.</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-2">
+                <div className="space-y-2">
+                  <Label>Name</Label>
+                  <Input
+                    value={newDeliverable.name}
+                    onChange={(e) => setNewDeliverable({ ...newDeliverable, name: e.target.value })}
+                    placeholder="e.g. Architecture Design"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Type</Label>
+                  <Select
+                    value={newDeliverable.type || 'document'}
+                    onValueChange={(v: any) => setNewDeliverable({ ...newDeliverable, type: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="document">Document</SelectItem>
+                      <SelectItem value="system">System</SelectItem>
+                      <SelectItem value="process">Process</SelectItem>
+                      <SelectItem value="training">Training</SelectItem>
+                      <SelectItem value="other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Owner</Label>
+                  <Select
+                    value={newDeliverable.owner_id || ''}
+                    onValueChange={(v) => setNewDeliverable({ ...newDeliverable, owner_id: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select an owner" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {teamMembers?.map(m => (
+                        <SelectItem key={m.id} value={m.id}>{m.full_name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Description</Label>
+                  <Textarea
+                    value={newDeliverable.description || ''}
+                    onChange={(e) => setNewDeliverable({ ...newDeliverable, description: e.target.value })}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+                <Button onClick={handleCreate} disabled={!newDeliverable.name || createDeliverable.isPending}>
+                  {createDeliverable.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Create
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -234,81 +253,88 @@ export function DeliverablesView() {
       <div className="flex-1 flex overflow-hidden">
         {/* Deliverables List */}
         <div className="flex-1 overflow-auto p-6">
-          <div className="space-y-4">
-            {filteredDeliverables.map((deliverable) => (
-              <motion.div
-                key={deliverable.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                whileHover={{ x: 2 }}
-                onClick={() => setSelectedDeliverable(deliverable)}
-                className={cn(
-                  "p-4 rounded-lg border bg-card hover:shadow-md transition-all cursor-pointer",
-                  selectedDeliverable?.id === deliverable.id && 'border-primary bg-primary/5'
-                )}
-              >
-                <div className="flex items-start justify-between mb-3">
-                  <div className="flex items-start gap-3">
-                    <div className={cn(
-                      "p-2 rounded-lg",
-                      deliverable.status === 'approved' ? 'bg-success/20' :
-                      deliverable.status === 'in-progress' ? 'bg-primary/20' :
-                      deliverable.status === 'review' ? 'bg-warning/20' : 'bg-muted'
-                    )}>
-                      {getTypeIcon(deliverable.type)}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">{deliverable.name}</h3>
-                        <Badge variant={
-                          deliverable.status === 'approved' ? 'success' :
-                          deliverable.status === 'in-progress' ? 'info' :
-                          deliverable.status === 'review' ? 'warning' : 'secondary'
-                        }>
-                          {deliverable.status}
-                        </Badge>
+          {!filteredDeliverables.length ? (
+            <div className="text-center p-12 text-muted-foreground">
+              No deliverables found. Create one to get started.
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {filteredDeliverables.map((deliverable) => (
+                <motion.div
+                  key={deliverable.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  whileHover={{ x: 2 }}
+                  onClick={() => setSelectedDeliverable(deliverable as any)}
+                  className={cn(
+                    "p-4 rounded-lg border bg-card hover:shadow-md transition-all cursor-pointer group relative",
+                    selectedDeliverable?.id === deliverable.id && 'border-primary bg-primary/5'
+                  )}
+                >
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-start gap-3">
+                      <div className={cn(
+                        "p-2 rounded-lg",
+                        deliverable.status === 'approved' ? 'bg-success/20' :
+                          deliverable.status === 'in-progress' ? 'bg-primary/20' :
+                            deliverable.status === 'review' ? 'bg-warning/20' : 'bg-muted'
+                      )}>
+                        {getTypeIcon(deliverable.type)}
                       </div>
-                      <p className="text-sm text-muted-foreground mt-1">{deliverable.description}</p>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold">{deliverable.name}</h3>
+                          <Badge variant={
+                            deliverable.status === 'approved' ? 'success' :
+                              deliverable.status === 'in-progress' ? 'info' :
+                                deliverable.status === 'review' ? 'warning' : 'secondary'
+                          }>
+                            {deliverable.status}
+                          </Badge>
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{deliverable.description}</p>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="iconSm"
+                      className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                      onClick={(e) => handleDelete(deliverable.id, e)}
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+
+                  <div className="flex items-center gap-6 text-sm">
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <User className="h-4 w-4" />
+                      {(deliverable as any).owner?.full_name || 'Unassigned'}
+                    </div>
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Calendar className="h-4 w-4" />
+                      {deliverable.due_date ? `Due: ${new Date(deliverable.due_date).toLocaleDateString()}` : 'No due date'}
                     </div>
                   </div>
-                  <Button variant="ghost" size="iconSm">
-                    <MoreHorizontal className="h-4 w-4" />
-                  </Button>
-                </div>
 
-                <div className="flex items-center gap-6 text-sm">
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <User className="h-4 w-4" />
-                    {deliverable.owner}
+                  <div className="mt-3 flex items-center gap-3">
+                    <Progress value={deliverable.progress} className="flex-1 h-2" />
+                    <span className="text-sm font-medium">{deliverable.progress}%</span>
                   </div>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Calendar className="h-4 w-4" />
-                    Due: {new Date(deliverable.dueDate).toLocaleDateString()}
-                  </div>
-                  <div className="flex items-center gap-2 text-muted-foreground">
-                    <Link2 className="h-4 w-4" />
-                    {deliverable.linkedTasks.length} linked tasks
-                  </div>
-                </div>
 
-                <div className="mt-3 flex items-center gap-3">
-                  <Progress value={deliverable.progress} className="flex-1 h-2" />
-                  <span className="text-sm font-medium">{deliverable.progress}%</span>
-                </div>
-
-                {/* Acceptance Criteria Preview */}
-                <div className="mt-3 pt-3 border-t flex items-center gap-4 text-xs">
-                  <span className="text-muted-foreground">Acceptance Criteria:</span>
-                  <span className="text-success">
-                    {deliverable.acceptanceCriteria.filter(c => c.met).length} met
-                  </span>
-                  <span className="text-muted-foreground">
-                    {deliverable.acceptanceCriteria.filter(c => !c.met).length} pending
-                  </span>
-                </div>
-              </motion.div>
-            ))}
-          </div>
+                  {/* Acceptance Criteria Preview */}
+                  <div className="mt-3 pt-3 border-t flex items-center gap-4 text-xs">
+                    <span className="text-muted-foreground">Acceptance Criteria:</span>
+                    <span className="text-success">
+                      {deliverable.acceptance_criteria?.filter(c => c.met).length || 0} met
+                    </span>
+                    <span className="text-muted-foreground">
+                      {deliverable.acceptance_criteria?.filter(c => !c.met).length || 0} pending
+                    </span>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Detail Panel */}
@@ -316,7 +342,12 @@ export function DeliverablesView() {
           <div className="w-96 border-l p-6 overflow-auto bg-muted/20">
             <div className="flex items-center justify-between mb-4">
               <h2 className="font-semibold">Details</h2>
-              <Badge variant="outline">{selectedDeliverable.id}</Badge>
+              <div className="flex items-center gap-2">
+                {/* Future: Edit button logic */}
+                <Button variant="ghost" size="iconSm" onClick={() => setSelectedDeliverable(null)}>
+                  <ArrowUpRight className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
             <Tabs defaultValue="overview" className="space-y-4">
@@ -328,60 +359,66 @@ export function DeliverablesView() {
               <TabsContent value="overview" className="space-y-4">
                 <div>
                   <label className="text-xs font-medium text-muted-foreground">Phase</label>
-                  <p className="text-sm">{selectedDeliverable.phase}</p>
+                  <p className="text-sm">{selectedDeliverable.phase || 'N/A'}</p>
                 </div>
                 <div>
                   <label className="text-xs font-medium text-muted-foreground">Type</label>
-                  <p className="text-sm capitalize">{selectedDeliverable.type}</p>
+                  <p className="text-sm capitalize">{selectedDeliverable.type || 'Other'}</p>
                 </div>
                 <div>
                   <label className="text-xs font-medium text-muted-foreground">Owner</label>
                   <div className="flex items-center gap-2 mt-1">
                     <Avatar className="h-6 w-6">
+                      <AvatarImage src={(selectedDeliverable as any).owner?.avatar_url} />
                       <AvatarFallback className="text-xs">
-                        {selectedDeliverable.owner.split(' ').map(n => n[0]).join('')}
+                        {((selectedDeliverable as any).owner?.full_name || 'U').split(' ').map((n: string) => n[0]).join('')}
                       </AvatarFallback>
                     </Avatar>
-                    <span className="text-sm">{selectedDeliverable.owner}</span>
+                    <span className="text-sm">{(selectedDeliverable as any).owner?.full_name || 'Unassigned'}</span>
                   </div>
                 </div>
                 <div>
                   <label className="text-xs font-medium text-muted-foreground">Due Date</label>
-                  <p className="text-sm">{new Date(selectedDeliverable.dueDate).toLocaleDateString()}</p>
+                  <p className="text-sm">{selectedDeliverable.due_date ? new Date(selectedDeliverable.due_date).toLocaleDateString() : 'None'}</p>
                 </div>
-                {selectedDeliverable.completedDate && (
+                {selectedDeliverable.completed_date && (
                   <div>
                     <label className="text-xs font-medium text-muted-foreground">Completed</label>
-                    <p className="text-sm">{new Date(selectedDeliverable.completedDate).toLocaleDateString()}</p>
+                    <p className="text-sm">{new Date(selectedDeliverable.completed_date).toLocaleDateString()}</p>
                   </div>
                 )}
-                <div>
-                  <label className="text-xs font-medium text-muted-foreground">Linked Tasks</label>
-                  <div className="mt-1 space-y-1">
-                    {selectedDeliverable.linkedTasks.map((taskId) => (
-                      <div key={taskId} className="flex items-center gap-2 text-sm text-primary cursor-pointer hover:underline">
-                        <Link2 className="h-3 w-3" />
-                        {taskId}
-                        <ArrowUpRight className="h-3 w-3" />
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </TabsContent>
 
               <TabsContent value="criteria" className="space-y-3">
-                {selectedDeliverable.acceptanceCriteria.map((criteria, i) => (
+                {selectedDeliverable.acceptance_criteria?.length === 0 && (
+                  <p className="text-sm text-muted-foreground text-center py-4">No acceptance criteria defined.</p>
+                )}
+                {selectedDeliverable.acceptance_criteria?.map((criteria, i) => (
                   <div key={i} className={cn(
                     "p-3 rounded-lg border",
                     criteria.met ? 'bg-success/10 border-success/30' : 'bg-muted/50'
                   )}>
                     <div className="flex items-start gap-2">
-                      {criteria.met ? (
-                        <CheckCircle2 className="h-4 w-4 text-success mt-0.5" />
-                      ) : (
-                        <Clock className="h-4 w-4 text-muted-foreground mt-0.5" />
-                      )}
-                      <span className="text-sm">{criteria.text}</span>
+                      <div
+                        className="cursor-pointer mt-0.5"
+                        onClick={() => {
+                          const newCriteria = [...selectedDeliverable.acceptance_criteria];
+                          newCriteria[i].met = !newCriteria[i].met;
+                          updateDeliverable.mutate({
+                            id: selectedDeliverable.id,
+                            updates: { acceptance_criteria: newCriteria }
+                          });
+                          // Optimistic UI update in local state for smoothness
+                          setSelectedDeliverable({ ...selectedDeliverable, acceptance_criteria: newCriteria });
+                        }}
+                      >
+                        {criteria.met ? (
+                          <CheckCircle2 className="h-4 w-4 text-success" />
+                        ) : (
+                          <div className="h-4 w-4 rounded-full border border-muted-foreground" />
+                        )}
+                      </div>
+                      <span className={cn("text-sm", criteria.met && "line-through text-muted-foreground")}>{criteria.text}</span>
                     </div>
                   </div>
                 ))}

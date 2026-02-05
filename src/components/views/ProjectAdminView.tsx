@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   Settings,
@@ -13,8 +12,6 @@ import {
   Plus,
   MoreHorizontal,
   Check,
-  AlertCircle,
-  Clock,
   Target,
   Kanban,
   LayoutGrid,
@@ -24,12 +21,12 @@ import {
   User,
   Copy,
   Briefcase,
-  Monitor
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
 import { usePortfolios, useUpdatePortfolio } from '@/hooks/usePortfolios';
 import { usePrograms, useUpdateProgram } from '@/hooks/usePrograms';
+import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -57,14 +54,6 @@ interface TeamMember {
   role: 'owner' | 'admin' | 'manager' | 'member' | 'viewer';
   avatar?: string;
 }
-
-const mockTeam: TeamMember[] = [
-  { id: '1', name: 'Sarah Chen', email: 'sarah.chen@company.com', role: 'owner' },
-  { id: '2', name: 'Michael Rodriguez', email: 'm.rodriguez@company.com', role: 'admin' },
-  { id: '3', name: 'Emily Watson', email: 'e.watson@company.com', role: 'manager' },
-  { id: '4', name: 'David Kim', email: 'd.kim@company.com', role: 'member' },
-  { id: '5', name: 'Lisa Park', email: 'l.park@company.com', role: 'member' },
-];
 
 const methodologyInfo: Record<Methodology, { name: string; description: string; icon: React.ElementType }> = {
   waterfall: {
@@ -146,7 +135,7 @@ const moduleGroups: { category: string; modules: { key: keyof ModuleVisibility; 
   },
 ];
 
-const roleColors: Record<TeamMember['role'], string> = {
+const roleColors: Record<string, string> = {
   owner: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
   admin: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
   manager: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
@@ -158,6 +147,7 @@ export function ProjectAdminView() {
   const [activeTab, setActiveTab] = useState('settings');
   const { settings, updateMethodology, updateModuleVisibility, updateSettings, getDefaultModules } = useProjectContext();
   const [currentUserId, setCurrentUserId] = useState<string>('');
+  const { data: members, isLoading: isLoadingTeam } = useTeamMembers(settings.id);
 
 
   React.useEffect(() => {
@@ -335,24 +325,26 @@ export function ProjectAdminView() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockTeam.map((member) => (
+                  {isLoadingTeam ? (
+                    <TableRow><TableCell colSpan={3} className="text-center p-4">Loading team...</TableCell></TableRow>
+                  ) : (members?.map((member) => (
                     <TableRow key={member.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
-                            <AvatarImage src={member.avatar} />
+                            <AvatarImage src={member.avatar_url || undefined} />
                             <AvatarFallback className="text-xs">
-                              {member.name.split(' ').map((n) => n[0]).join('')}
+                              {(member.full_name || 'U').split(' ').map((n) => n[0]).join('')}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <div className="font-medium text-sm">{member.name}</div>
+                            <div className="font-medium text-sm">{member.full_name || 'Unknown User'}</div>
                             <div className="text-xs text-muted-foreground">{member.email}</div>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={cn('capitalize', roleColors[member.role])}>
+                        <Badge variant="outline" className={cn('capitalize', roleColors[member.role] || roleColors.viewer)}>
                           {member.role}
                         </Badge>
                       </TableCell>
@@ -362,7 +354,10 @@ export function ProjectAdminView() {
                         </Button>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )))}
+                  {!isLoadingTeam && (!members || members.length === 0) && (
+                    <TableRow><TableCell colSpan={3} className="text-center p-4">No team members found.</TableCell></TableRow>
+                  )}
                 </TableBody>
               </Table>
             </Card>
@@ -667,10 +662,10 @@ export function ProjectAdminView() {
                 <TabsTrigger value="programs">Programs</TabsTrigger>
               </TabsList>
               <TabsContent value="portfolios" className="space-y-4">
-                <PortfolioAssignments currentUserId={currentUserId} />
+                <PortfolioAssignments currentUserId={currentUserId} members={members || []} />
               </TabsContent>
               <TabsContent value="programs" className="space-y-4">
-                <ProgramAssignments currentUserId={currentUserId} />
+                <ProgramAssignments currentUserId={currentUserId} members={members || []} />
               </TabsContent>
             </Tabs>
           </TabsContent>
@@ -678,10 +673,9 @@ export function ProjectAdminView() {
       </div>
     </div>
   );
-
 }
 
-function PortfolioAssignments({ currentUserId }: { currentUserId: string }) {
+function PortfolioAssignments({ currentUserId, members }: { currentUserId: string, members: any[] }) {
   const { data: portfolios } = usePortfolios();
   const updatePortfolio = useUpdatePortfolio();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -702,7 +696,7 @@ function PortfolioAssignments({ currentUserId }: { currentUserId: string }) {
         <TableHeader>
           <TableRow>
             <TableHead>Portfolio Name</TableHead>
-            <TableHead>Current Owner ID</TableHead>
+            <TableHead>Current Owner</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -712,6 +706,7 @@ function PortfolioAssignments({ currentUserId }: { currentUserId: string }) {
               key={p.id}
               item={p}
               currentUserId={currentUserId}
+              members={members}
               onAssign={handleAssign}
               isEditing={editingId === p.id}
               setEditing={setEditingId}
@@ -726,7 +721,7 @@ function PortfolioAssignments({ currentUserId }: { currentUserId: string }) {
   );
 }
 
-function ProgramAssignments({ currentUserId }: { currentUserId: string }) {
+function ProgramAssignments({ currentUserId, members }: { currentUserId: string, members: any[] }) {
   const { data: programs } = usePrograms();
   const updateProgram = useUpdateProgram();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -747,7 +742,7 @@ function ProgramAssignments({ currentUserId }: { currentUserId: string }) {
         <TableHeader>
           <TableRow>
             <TableHead>Program Name</TableHead>
-            <TableHead>Current Owner ID</TableHead>
+            <TableHead>Current Owner</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -757,6 +752,7 @@ function ProgramAssignments({ currentUserId }: { currentUserId: string }) {
               key={p.id}
               item={p}
               currentUserId={currentUserId}
+              members={members}
               onAssign={handleAssign}
               isEditing={editingId === p.id}
               setEditing={setEditingId}
@@ -771,30 +767,47 @@ function ProgramAssignments({ currentUserId }: { currentUserId: string }) {
   );
 }
 
-function AssignmentRow({ item, currentUserId, onAssign, isEditing, setEditing }: any) {
-  const [inputValue, setInputValue] = useState(item.owner_id || '');
+function AssignmentRow({ item, currentUserId, members, onAssign, isEditing, setEditing }: any) {
+  const [selectedOwner, setSelectedOwner] = useState(item.owner_id || '');
+  const [inputValue, setInputValue] = useState(item.owner_id || ''); // For "Assign to Me" fallback or manual
+
+  const ownerName = members.find((m: any) => m.id === item.owner_id)?.full_name || item.owner_id || 'Unassigned';
 
   return (
     <TableRow>
       <TableCell className="font-medium">{item.name}</TableCell>
-      <TableCell className="font-mono text-xs text-muted-foreground">
+      <TableCell className="font-mono text-sm">
         {isEditing ? (
-          <Input
-            value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
-            placeholder="Enter User UUID"
-            className="h-8 w-[300px]"
-          />
+          <Select value={selectedOwner} onValueChange={setSelectedOwner}>
+            <SelectTrigger className="h-8 w-[250px]">
+              <SelectValue placeholder="Select user" />
+            </SelectTrigger>
+            <SelectContent>
+              {members.map((m: any) => (
+                <SelectItem key={m.id} value={m.id}>
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-5 w-5">
+                      <AvatarImage src={m.avatar_url || undefined} />
+                      <AvatarFallback className="text-[10px]">
+                        {(m.full_name || 'U').split(' ').map((n: string) => n[0]).join('')}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span>{m.full_name}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
         ) : (
           <div className="flex items-center gap-2">
-            {item.owner_id ? (
-              <>
-                <span className="truncate max-w-[200px]">{item.owner_id}</span>
-                {item.owner_id === currentUserId && <Badge variant="outline" className="text-[10px] h-5">You</Badge>}
-              </>
-            ) : (
-              <span className="italic text-muted-foreground/50">Unassigned</span>
-            )}
+            <Avatar className="h-6 w-6">
+              <AvatarImage src={members.find((m: any) => m.id === item.owner_id)?.avatar_url || undefined} />
+              <AvatarFallback className="text-[10px]">
+                {(ownerName !== 'Unassigned' && ownerName !== item.owner_id) ? ownerName.split(' ').map((n: any) => n[0]).join('') : '?'}
+              </AvatarFallback>
+            </Avatar>
+            <span className="truncate max-w-[200px]">{ownerName}</span>
+            {item.owner_id === currentUserId && <Badge variant="outline" className="text-[10px] h-5">You</Badge>}
           </div>
         )}
       </TableCell>
@@ -802,14 +815,14 @@ function AssignmentRow({ item, currentUserId, onAssign, isEditing, setEditing }:
         {isEditing ? (
           <div className="flex justify-end gap-2">
             <Button variant="ghost" size="sm" onClick={() => setEditing(null)}>Cancel</Button>
-            <Button size="sm" onClick={() => onAssign(item.id, inputValue)}>Save</Button>
+            <Button size="sm" onClick={() => onAssign(item.id, selectedOwner)}>Save</Button>
           </div>
         ) : (
           <div className="flex justify-end gap-2">
-            <Button variant="outline" size="sm" onClick={() => { setInputValue(currentUserId); onAssign(item.id, currentUserId); }}>
+            <Button variant="outline" size="sm" onClick={() => { onAssign(item.id, currentUserId); }}>
               Assign to Me
             </Button>
-            <Button variant="ghost" size="sm" onClick={() => { setInputValue(item.owner_id || ''); setEditing(item.id); }}>
+            <Button variant="ghost" size="sm" onClick={() => { setSelectedOwner(item.owner_id || ''); setEditing(item.id); }}>
               Edit
             </Button>
           </div>
@@ -818,4 +831,3 @@ function AssignmentRow({ item, currentUserId, onAssign, isEditing, setEditing }:
     </TableRow>
   );
 }
-

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
@@ -22,6 +22,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { useFinancials } from '@/hooks/useFinancials';
 import { useResources } from '@/hooks/useResources';
+import { AddBudgetItemDialog } from '@/components/financials/AddBudgetItemDialog';
+import { AddInvoiceDialog } from '@/components/financials/AddInvoiceDialog';
 
 const budgetColors = {
   Personnel: 'bg-blue-500',
@@ -52,9 +54,29 @@ export function FinancialsView() {
   const totalActual = budget.reduce((sum, item) => sum + (item.actual || 0), 0);
   const totalVariance = budget.reduce((sum, item) => sum + (item.variance || 0), 0);
 
-  // Simple burn rate calculation based on actual spend
-  const burnRate = totalActual > 0 ? totalActual / 6 : 0; // Assume 6 months for mock calculation if no dates
-  const projectedTotal = totalActual + burnRate * 6;
+  // Calculate project duration in months
+  const projectDurationMonths = useMemo(() => {
+    if (!settings.startDate || !settings.endDate) return 12; // Default to 12 if missing dates
+    const start = new Date(settings.startDate);
+    const end = new Date(settings.endDate);
+    const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+    return Math.max(1, months);
+  }, [settings.startDate, settings.endDate]);
+
+  // Calculate elapsed months
+  const elapsedMonths = useMemo(() => {
+    if (!settings.startDate) return 0;
+    const start = new Date(settings.startDate);
+    const now = new Date();
+    const months = (now.getFullYear() - start.getFullYear()) * 12 + (now.getMonth() - start.getMonth());
+    return Math.max(0, months);
+  }, [settings.startDate]);
+
+  // Burn Rate Calculation
+  // If we have elapsed time, burn rate = actual / elapsed
+  // If not, simplified assumption 
+  const burnRate = elapsedMonths > 0 ? totalActual / elapsedMonths : (totalActual > 0 ? totalActual : 0);
+  const projectedTotal = totalActual + (burnRate * Math.max(0, projectDurationMonths - elapsedMonths));
 
   if (isFinancialsLoading || isResourcesLoading) {
     return (
@@ -77,10 +99,7 @@ export function FinancialsView() {
             <Download className="h-4 w-4 mr-2" />
             Export Report
           </Button>
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            New Invoice
-          </Button>
+          <AddInvoiceDialog />
         </div>
       </div>
 
@@ -160,8 +179,9 @@ export function FinancialsView() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             {/* Budget Breakdown Chart */}
             <Card className="lg:col-span-2">
-              <CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-base">Budget Breakdown</CardTitle>
+                <AddBudgetItemDialog />
               </CardHeader>
               <CardContent>
                 {budget.length > 0 ? (
@@ -296,8 +316,9 @@ export function FinancialsView() {
 
         <TabsContent value="billing" className="mt-6">
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="text-base">Invoices</CardTitle>
+              <AddInvoiceDialog />
             </CardHeader>
             <CardContent>
               {invoices.length > 0 ? (
@@ -312,7 +333,7 @@ export function FinancialsView() {
                         <div>
                           <div className="flex items-center gap-2">
                             <span className="font-medium">{invoice.invoice_number}</span>
-                            <Badge variant={invoice.status === 'paid' ? 'success' : 'warning'}>
+                            <Badge variant={invoice.status === 'paid' ? 'success' : invoice.status === 'sent' ? 'default' : 'secondary'}>
                               {invoice.status}
                             </Badge>
                           </div>
@@ -375,7 +396,7 @@ export function FinancialsView() {
                       <td className="py-3">
                         <div className="flex items-center gap-2">
                           <div className="h-8 w-8 rounded-full bg-primary/20 flex items-center justify-center text-xs font-medium text-primary">
-                            {resource.name.split(' ').map(n => n[0]).join('')}
+                            {resource.name ? resource.name.split(' ').map(n => n[0]).join('') : '?'}
                           </div>
                           <span className="font-medium">{resource.name}</span>
                         </div>

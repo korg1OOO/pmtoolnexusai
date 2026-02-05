@@ -72,4 +72,4 @@ export const useScenarios = (projectId?: string) => {
         isPromoting: promoteMutation.isPending
     };
 };
-};
+

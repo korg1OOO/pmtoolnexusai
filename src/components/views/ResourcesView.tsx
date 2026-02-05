@@ -37,24 +37,11 @@ import { useProjectContext } from '@/contexts/ProjectContext';
 import { useResources, useTaskResourceAssignments, useCreateResource } from '@/hooks/useResources';
 import type { Resource, ResourceAllocation } from '@/types/project';
 import { toast } from 'sonner';
+import { ResourceSheet } from '../resources/ResourceSheet';
+import { ResourceUsageView } from '../resources/ResourceUsageView';
+import { format, addWeeks, startOfWeek } from 'date-fns';
 
-// Generate weeks for heatmap
-const generateWeeks = () => {
-  const weeks = [];
-  const startDate = new Date('2024-08-05');
-  for (let i = 0; i < 12; i++) {
-    const date = new Date(startDate);
-    date.setDate(date.getDate() + i * 7);
-    weeks.push({
-      id: `W${i + 1}`,
-      label: `W${i + 33}`,
-      startDate: date.toISOString().split('T')[0],
-    });
-  }
-  return weeks;
-};
 
-const weeks = generateWeeks();
 
 const getHeatmapColor = (allocation: number) => {
   if (allocation >= 100) return 'bg-destructive/80';
@@ -80,6 +67,8 @@ export function ResourcesView() {
   const { data: dbResources = [], isLoading: loadingResources } = useResources(projectId);
   const { data: dbAssignments = [], isLoading: loadingAssignments } = useTaskResourceAssignments(projectId);
   const createResource = useCreateResource();
+
+
 
   const [viewMode, setViewMode] = useState<'grid' | 'list' | 'heatmap'>('heatmap');
   const [selectedResource, setSelectedResource] = useState<Resource | null>(null);
@@ -125,28 +114,7 @@ export function ResourcesView() {
     r.allocation.reduce((sum, a) => sum + a.allocation, 0) < 50
   ).length;
 
-  const handleAddResource = async () => {
-    if (!projectId) return;
 
-    const newResource = {
-      project_id: projectId,
-      name: 'New Resource',
-      email: 'resource@company.com',
-      type: 'work' as const,
-      max_units: 100,
-      standard_rate: 100,
-      overtime_rate: 150,
-      cost_per_use: 0,
-      calendar_id: null,
-      notes: 'Skills: React, TypeScript; Role: Developer; Dept: Engineering',
-    };
-
-    try {
-      await createResource.mutateAsync(newResource);
-    } catch (error) {
-      // Error handled by mutation toast
-    }
-  };
 
   const handleExport = () => {
     if (resources.length === 0) {
@@ -208,16 +176,6 @@ export function ResourcesView() {
             <Button variant="outline" size="sm" className="gap-2" onClick={handleExport}>
               <Download className="h-4 w-4" />
               Export
-            </Button>
-            <Button
-              variant="default"
-              size="sm"
-              className="gap-2"
-              onClick={handleAddResource}
-              disabled={createResource.isPending}
-            >
-              {createResource.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-              Add Resource
             </Button>
           </div>
         </div>
@@ -340,95 +298,15 @@ export function ResourcesView() {
                 <p className="text-sm text-muted-foreground mt-1 max-w-xs mx-auto">
                   Start by adding resources to your project team to track capacity and utilization.
                 </p>
-                <Button variant="outline" className="mt-6" onClick={handleAddResource}>
-                  Add Project Resource
+                <Button variant="outline" className="mt-6" onClick={() => setViewMode('list')}>
+                  Manage Resources
                 </Button>
               </div>
             ) : (
               <>
                 {viewMode === 'heatmap' && (
-                  <div className="bg-card rounded-lg border border-border overflow-hidden">
-                    {/* Heatmap Header */}
-                    <div className="flex border-b border-border bg-muted/30">
-                      <div className="w-56 shrink-0 p-3 font-medium text-sm text-muted-foreground border-r border-border">
-                        Resource
-                      </div>
-                      <div className="flex-1 flex">
-                        {weeks.map((week) => (
-                          <div
-                            key={week.id}
-                            className="flex-1 p-2 text-center text-xs text-muted-foreground border-r border-border last:border-r-0"
-                          >
-                            {week.label}
-                          </div>
-                        ))}
-                      </div>
-                      <div className="w-28 shrink-0 p-3 text-center text-xs font-medium text-muted-foreground">
-                        Total
-                      </div>
-                    </div>
-
-                    {/* Heatmap Rows */}
-                    {resources.map((resource) => {
-                      const totalAllocation = resource.allocation.reduce((sum, a) => sum + a.allocation, 0);
-                      const status = getUtilizationStatus(totalAllocation);
-
-                      return (
-                        <motion.div
-                          key={resource.id}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          className="flex border-b border-border last:border-b-0 hover:bg-accent/30 transition-colors cursor-pointer"
-                          onClick={() => setSelectedResource(resource)}
-                        >
-                          <div className="w-56 shrink-0 p-3 border-r border-border">
-                            <div className="flex items-center gap-3">
-                              <Avatar className="h-8 w-8">
-                                <AvatarFallback className="bg-primary/20 text-primary text-xs">
-                                  {resource.name.split(' ').map(n => n[0]).join('')}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="min-w-0">
-                                <p className="font-medium text-sm text-foreground truncate">
-                                  {resource.name}
-                                </p>
-                                <p className="text-xs text-muted-foreground truncate">
-                                  {resource.role}
-                                </p>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="flex-1 flex">
-                            {weeks.map((week) => {
-                              // For live data, we'll just show current allocation across the board for now
-                              // In a real app, this would be time-phasing DB data
-                              return (
-                                <div
-                                  key={week.id}
-                                  className="flex-1 p-1.5 border-r border-border/50 last:border-r-0"
-                                >
-                                  <div
-                                    className={cn(
-                                      'h-8 rounded flex items-center justify-center text-xs font-medium transition-all',
-                                      getHeatmapColor(totalAllocation),
-                                      totalAllocation >= 100 ? 'text-destructive-foreground' :
-                                        totalAllocation >= 70 ? 'text-foreground' : 'text-muted-foreground'
-                                    )}
-                                  >
-                                    {totalAllocation}%
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
-                          <div className="w-28 shrink-0 p-3 flex items-center justify-center">
-                            <Badge variant={status.color as any} className="text-xs">
-                              {totalAllocation}%
-                            </Badge>
-                          </div>
-                        </motion.div>
-                      );
-                    })}
+                  <div className="flex-1 overflow-hidden h-full">
+                    <ResourceUsageView projectId={projectId || ''} />
                   </div>
                 )}
 
@@ -514,83 +392,9 @@ export function ResourcesView() {
                 )}
 
                 {viewMode === 'list' && (
-                  <Card className="border border-border">
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead className="bg-muted/30">
-                          <tr className="border-b border-border">
-                            <th className="text-left p-4 text-xs font-medium text-muted-foreground">Resource</th>
-                            <th className="text-left p-4 text-xs font-medium text-muted-foreground">Role</th>
-                            <th className="text-left p-4 text-xs font-medium text-muted-foreground">Department</th>
-                            <th className="text-left p-4 text-xs font-medium text-muted-foreground">Skills</th>
-                            <th className="text-center p-4 text-xs font-medium text-muted-foreground">Utilization</th>
-                            <th className="text-center p-4 text-xs font-medium text-muted-foreground">Rate</th>
-                            <th className="text-right p-4 text-xs font-medium text-muted-foreground">Actions</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {resources.map((resource) => {
-                            const totalAllocation = resource.allocation.reduce((sum, a) => sum + a.allocation, 0);
-                            const status = getUtilizationStatus(totalAllocation);
-
-                            return (
-                              <tr
-                                key={resource.id}
-                                className="border-b border-border hover:bg-accent/30 cursor-pointer transition-colors"
-                                onClick={() => setSelectedResource(resource)}
-                              >
-                                <td className="p-4">
-                                  <div className="flex items-center gap-3">
-                                    <Avatar className="h-8 w-8">
-                                      <AvatarFallback className="bg-primary/20 text-primary text-xs">
-                                        {resource.name.split(' ').map(n => n[0]).join('')}
-                                      </AvatarFallback>
-                                    </Avatar>
-                                    <div>
-                                      <p className="font-medium text-sm text-foreground">{resource.name}</p>
-                                      <p className="text-xs text-muted-foreground">{resource.email}</p>
-                                    </div>
-                                  </div>
-                                </td>
-                                <td className="p-4 text-sm text-foreground font-medium">{resource.role}</td>
-                                <td className="p-4 text-sm text-muted-foreground">{resource.department}</td>
-                                <td className="p-4">
-                                  <div className="flex flex-wrap gap-1">
-                                    {resource.skills.slice(0, 2).map((skill) => (
-                                      <Badge key={skill} variant="secondary" className="text-xs font-normal">
-                                        {skill}
-                                      </Badge>
-                                    ))}
-                                    {resource.skills.length > 2 && (
-                                      <span className="text-xs text-muted-foreground">
-                                        +{resource.skills.length - 2}
-                                      </span>
-                                    )}
-                                  </div>
-                                </td>
-                                <td className="p-4 text-center">
-                                  <div className="flex flex-col items-center gap-1 min-w-[80px]">
-                                    <Badge variant={status.color as any} className="text-[10px] px-1.5 h-4">
-                                      {totalAllocation}%
-                                    </Badge>
-                                    <Progress value={Math.min(100, totalAllocation)} className="w-16 h-1" />
-                                  </div>
-                                </td>
-                                <td className="p-4 text-center text-sm font-mono text-foreground">
-                                  {resource.hourlyRate > 0 ? `$${resource.hourlyRate}` : '-'}
-                                </td>
-                                <td className="p-4 text-right">
-                                  <Button variant="ghost" size="icon">
-                                    <ChevronRight className="h-4 w-4" />
-                                  </Button>
-                                </td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                    </div>
-                  </Card>
+                  <div className="flex-1 overflow-hidden h-full">
+                    <ResourceSheet projectId={projectId || ''} />
+                  </div>
                 )}
               </>
             )}

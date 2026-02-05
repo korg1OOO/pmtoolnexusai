@@ -8,10 +8,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
-import { mockProject, mockRisks, mockMeetings } from '@/data/mockData';
+import { mockProject, mockMeetings, mockResources as mockTeamMembers } from '@/data/mockData'; // Keeping some mocks for non-scoped items
 
 import {
-  BriefingSectionCard,
   BriefingSettingsPanel,
   useBriefingPreferences,
   BRIEFING_SECTIONS,
@@ -33,63 +32,13 @@ import { DecisionsSection } from '@/components/briefing/sections/DecisionsSectio
 import { TeamAvailabilitySection } from '@/components/briefing/sections/TeamAvailabilitySection';
 import { BudgetAnalysisSection } from '@/components/briefing/sections/BudgetAnalysisSection';
 
-// Mock data for sections (will be replaced by real data and AI generation)
-const mockCriticalAlerts = [
-  {
-    id: '1',
-    type: 'critical' as const,
-    title: 'Data Migration Risk Escalated',
-    description: 'Risk level increased from MEDIUM to HIGH due to complexity findings',
-    source: 'Risk Register',
-    timestamp: new Date().toISOString(),
-  },
-  {
-    id: '2',
-    type: 'warning' as const,
-    title: 'Milestone Deadline Approaching',
-    description: 'Implementation Phase milestone due in 14 days',
-    source: 'Schedule',
-    timestamp: new Date().toISOString(),
-  },
-  {
-    id: '3',
-    type: 'warning' as const,
-    title: 'Overdue Actions',
-    description: '3 action items require immediate attention',
-    source: 'Action Log',
-    timestamp: new Date().toISOString(),
-  },
-];
+// Hooks
+import { useRisks, Risk as DbRisk } from '@/hooks/useRisks';
+import { useIssues, Issue as DbIssue } from '@/hooks/useIssues';
+import { useDecisions, Decision as DbDecision } from '@/hooks/useDecisions';
+import { useActions, Action as DbAction } from '@/hooks/useActions';
 
-const mockActions = [
-  { id: '1', title: 'Review API Gateway configuration', assignee: 'Mike Johnson', dueDate: new Date().toISOString(), status: 'open' as const, priority: 'high' as const, source: 'Meeting' },
-  { id: '2', title: 'Complete data validation scripts', assignee: 'Emily Brown', dueDate: new Date(Date.now() - 86400000).toISOString(), status: 'overdue' as const, priority: 'critical' as const, source: 'Sprint' },
-  { id: '3', title: 'Update stakeholder presentation', assignee: 'Sarah Mitchell', dueDate: new Date(Date.now() + 86400000).toISOString(), status: 'in-progress' as const, priority: 'medium' as const, source: 'Task' },
-];
-
-const mockIssues = [
-  { id: '1', title: 'API Integration timeout issues', severity: 'high' as const, status: 'open' as const, owner: 'Mike Johnson', createdDate: new Date().toISOString(), trending: 'escalating' as const },
-  { id: '2', title: 'Database performance degradation', severity: 'critical' as const, status: 'in-progress' as const, owner: 'Emily Brown', createdDate: new Date().toISOString(), trending: 'stable' as const },
-];
-
-const mockDecisions = [
-  { id: '1', title: 'Adopt microservices architecture', description: 'Team voted to move forward with microservices for Phase 2', status: 'approved' as const, owner: 'John Doe', date: new Date().toISOString(), impact: 'high' as const },
-  { id: '2', title: 'Extend testing phase by 1 week', description: 'Requires stakeholder approval for timeline adjustment', status: 'pending' as const, owner: 'Jane Smith', date: new Date().toISOString(), impact: 'medium' as const },
-];
-
-const mockTeamMembers = [
-  { id: '1', name: 'John Doe', role: 'Project Manager', status: 'available' as const, workload: 85, tasksAssigned: 12, hoursAllocated: 40 },
-  { id: '2', name: 'Jane Smith', role: 'Tech Lead', status: 'busy' as const, workload: 110, tasksAssigned: 18, hoursAllocated: 48 },
-  { id: '3', name: 'Mike Johnson', role: 'Developer', status: 'available' as const, workload: 70, tasksAssigned: 8, hoursAllocated: 32 },
-  { id: '4', name: 'Emily Brown', role: 'QA Lead', status: 'away' as const, workload: 50, tasksAssigned: 5, hoursAllocated: 20 },
-];
-
-const mockMeetingsToday = [
-  { id: '1', title: 'Daily Standup', startTime: new Date().toISOString(), endTime: new Date(Date.now() + 1800000).toISOString(), type: 'online' as const, participants: 8, status: 'in-progress' as const, meetingLink: 'https://meet.google.com' },
-  { id: '2', title: 'Stakeholder Review', startTime: new Date(Date.now() + 7200000).toISOString(), endTime: new Date(Date.now() + 10800000).toISOString(), type: 'hybrid' as const, participants: 12, status: 'upcoming' as const, location: 'Conference Room A' },
-  { id: '3', title: 'Sprint Planning', startTime: new Date(Date.now() + 14400000).toISOString(), endTime: new Date(Date.now() + 18000000).toISOString(), type: 'online' as const, participants: 6, status: 'upcoming' as const, meetingLink: 'https://zoom.us' },
-];
-
+// Mocks for sections not yet wired
 const mockProfitLossData = {
   expectedProfit: 125000,
   expectedLoss: 45000,
@@ -114,21 +63,6 @@ const mockScheduleSlippageData = {
   cascadingDelays: ['API Integration → Integration Testing → UAT', 'Data Migration → System Testing'],
 };
 
-const mockRiskAssessmentData = {
-  totalRisks: 12,
-  criticalRisks: 3,
-  newRisksIdentified: [
-    { id: '1', title: 'Third-party API deprecation', category: 'Technical', probability: 'medium' as const, impact: 'high' as const, status: 'new', trending: 'up' as const },
-  ],
-  escalatedRisks: [
-    { id: '2', title: 'Key resource availability', category: 'Resource', probability: 'high' as const, impact: 'high' as const, status: 'escalated', trending: 'up' as const },
-  ],
-  mitigationSuggestions: [
-    { riskId: '2', riskTitle: 'Key resource availability', suggestion: 'Consider cross-training team members or engaging backup contractors to reduce single-point-of-failure risk.' },
-  ],
-  riskScore: { current: 72, previous: 65, trend: 'worsening' as const },
-};
-
 const mockBudgetData = {
   totalBudget: 500000,
   spent: 225000,
@@ -149,6 +83,12 @@ const mockAIInsights = [
   { id: '4', category: 'pattern' as const, title: 'Historical Trend', description: 'Similar projects have experienced 15-20% scope creep at this stage. Monitor change requests closely.', confidence: 0.75 },
 ];
 
+const mockMeetingsToday = [
+  { id: '1', title: 'Daily Standup', startTime: new Date().toISOString(), endTime: new Date(Date.now() + 1800000).toISOString(), type: 'online' as const, participants: 8, status: 'in-progress' as const, meetingLink: 'https://meet.google.com' },
+  { id: '2', title: 'Stakeholder Review', startTime: new Date(Date.now() + 7200000).toISOString(), endTime: new Date(Date.now() + 10800000).toISOString(), type: 'hybrid' as const, participants: 12, status: 'upcoming' as const, location: 'Conference Room A' },
+  { id: '3', title: 'Sprint Planning', startTime: new Date(Date.now() + 14400000).toISOString(), endTime: new Date(Date.now() + 18000000).toISOString(), type: 'online' as const, participants: 6, status: 'upcoming' as const, meetingLink: 'https://zoom.us' },
+];
+
 interface MorningBriefingViewProps {
   demo?: boolean;
 }
@@ -158,6 +98,12 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
   const [lastUpdated, setLastUpdated] = useState(new Date());
   const [isCustomizing, setIsCustomizing] = useState(false);
 
+  // Hook Data
+  const { risks, criticalRisks, openRisks } = useRisks();
+  const { issues, criticalIssues, openIssues } = useIssues();
+  const { decisions, pendingDecisions } = useDecisions();
+  const { actions, overdueActions } = useActions();
+
   // Local preferences state for when user is not authenticated
   const [localEnabledSections, setLocalEnabledSections] = useState<BriefingSectionId[]>(
     BRIEFING_SECTIONS.filter(s => s.defaultEnabled).map(s => s.id)
@@ -166,7 +112,7 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
     BRIEFING_SECTIONS.map(s => s.id)
   );
 
-  // Preferences hook - using null for global preferences (not project-specific for now)
+  // Preferences hook
   const {
     preferences,
     loading: preferencesLoading,
@@ -175,11 +121,10 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
     reorderSections,
     savePreferences,
     resetToDefaults,
-    getOrderedSections,
   } = useBriefingPreferences(null);
 
   // AI generation hook
-  const { loading: generating, briefingData, generateBriefing } = useBriefingGeneration();
+  const { loading: generating, generateBriefing } = useBriefingGeneration();
 
   // Use local state if preferences not loaded (e.g., user not authenticated)
   const effectiveEnabledSections = demo ? BRIEFING_SECTIONS.map(s => s.id) : (preferences?.enabled_sections ?? localEnabledSections);
@@ -187,6 +132,132 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
 
   const isLoading = !demo && preferencesLoading;
   const isGenerating = !demo && generating;
+
+  // --- Data Mapping Logic ---
+
+  // 1. Critical Alerts (Aggregated from Risks, Issues, Actions)
+  const criticalAlerts = useMemo(() => {
+    const alerts: any[] = [];
+
+    // Critical Risks
+    criticalRisks.forEach(r => {
+      alerts.push({
+        id: `risk-${r.id}`,
+        type: r.impact === 'critical' ? 'critical' : 'warning',
+        title: `Risk: ${r.title}`,
+        description: r.description || `High impact risk in ${r.category || 'project'}`,
+        source: 'Risk Register',
+        timestamp: r.created_at,
+      });
+    });
+
+    // Critical Issues
+    criticalIssues.forEach(i => {
+      alerts.push({
+        id: `issue-${i.id}`,
+        type: i.severity === 'critical' ? 'critical' : 'warning',
+        title: `Issue: ${i.title}`,
+        description: i.description || `Critical issue reported by ${i.reporter_name}`,
+        source: 'Issue Tracker',
+        timestamp: i.created_at,
+      });
+    });
+
+    // Overdue Actions
+    overdueActions.forEach(a => {
+      alerts.push({
+        id: `action-${a.id}`,
+        type: 'warning',
+        title: `Overdue: ${a.title}`,
+        description: `Action overdue since ${new Date(a.due_date!).toLocaleDateString()}`,
+        source: 'Action Log',
+        timestamp: a.updated_at,
+      });
+    });
+
+    return alerts.slice(0, 5); // Limit to top 5
+  }, [criticalRisks, criticalIssues, overdueActions]);
+
+  // 2. Risk Assessment Data
+  const riskAssessmentData = useMemo(() => {
+    const newRisks = risks.filter(r => {
+      const created = new Date(r.created_at);
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      return created > oneWeekAgo;
+    });
+
+    return {
+      totalRisks: risks.length,
+      criticalRisks: criticalRisks.length,
+      newRisksIdentified: newRisks.map(r => ({
+        id: r.id,
+        title: r.title,
+        category: r.category || 'General',
+        probability: r.probability,
+        impact: r.impact,
+        status: r.status,
+        trending: 'stable' as const, // Placeholder logic
+      })),
+      escalatedRisks: criticalRisks.slice(0, 2).map(r => ({ // Show top critical as escalated for now
+        id: r.id,
+        title: r.title,
+        category: r.category || 'General',
+        probability: r.probability,
+        impact: r.impact,
+        status: r.status,
+        trending: 'up' as const,
+      })),
+      mitigationSuggestions: [], // AI suggested, keeping empty for now
+      riskScore: { current: 100 - (risks.length * 2), previous: 90, trend: 'worsening' as const }, // Mock scoring
+    };
+  }, [risks, criticalRisks]);
+
+  // 3. Issues Data
+  const issuesData = useMemo(() => {
+    return issues.map(i => ({
+      id: i.id,
+      title: i.title,
+      severity: i.severity as any,
+      status: i.status as any,
+      owner: i.assignee_name || 'Unassigned',
+      createdDate: i.created_at,
+      trending: 'stable' as const,
+    }));
+  }, [issues]);
+
+  const issuesSummary = {
+    total: issues.length,
+    critical: criticalIssues.length,
+    new: issues.filter(i => new Date(i.created_at) > new Date(Date.now() - 86400000)).length,
+    resolved: issues.filter(i => i.status === 'resolved' || i.status === 'closed').length,
+  };
+
+  // 4. Decisions Data
+  const decisionsMap = useMemo(() => {
+    return decisions.map(d => ({
+      id: d.id,
+      title: d.title,
+      description: d.decision,
+      status: d.status,
+      owner: d.owner_name || 'Unassigned',
+      date: d.date,
+      impact: d.impact ? (d.impact.toLowerCase().includes('high') ? 'high' : 'medium') : 'medium',
+    }));
+  }, [decisions]);
+
+  // 5. Actions Data
+  const actionsMap = useMemo(() => {
+    return actions.map(a => ({
+      id: a.id,
+      title: a.title,
+      assignee: a.owner_name || 'Unassigned',
+      dueDate: a.due_date || new Date().toISOString(),
+      status: a.status,
+      priority: a.priority,
+      source: a.source_type || 'Manual',
+    }));
+  }, [actions]);
 
   // Handle refresh - triggers AI generation
   const handleRefresh = async () => {
@@ -198,7 +269,9 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
     const projectData = {
       project: mockProject,
       tasks: [], // Would come from real data
-      risks: mockRisks,
+      risks: risks,
+      issues: issues,
+      decisions: decisions,
       meetings: mockMeetings,
       resources: mockTeamMembers,
       financials: mockBudgetData,
@@ -250,16 +323,11 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
     }
   };
 
-  // Get section config by ID
-  const getSectionConfig = (id: BriefingSectionId) => {
-    return BRIEFING_SECTIONS.find(s => s.id === id);
-  };
-
   // Render section content based on ID
   const renderSectionContent = (sectionId: BriefingSectionId) => {
     switch (sectionId) {
       case 'critical-alerts':
-        return <CriticalAlertsSection alerts={mockCriticalAlerts} />;
+        return <CriticalAlertsSection alerts={criticalAlerts} />;
       case 'ai-insights':
         return <AIInsightsSection insights={mockAIInsights} summary="Here's what AI predicts for your project based on current trends and historical data." />;
       case 'profit-loss':
@@ -269,15 +337,15 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
       case 'budget-analysis':
         return <BudgetAnalysisSection data={mockBudgetData} />;
       case 'risk-assessment':
-        return <RiskAssessmentSection data={mockRiskAssessmentData} />;
+        return <RiskAssessmentSection data={riskAssessmentData} />;
       case 'actions-due':
-        return <ActionsSection actions={mockActions} />;
+        return <ActionsSection actions={actionsMap as any} />;
       case 'issues-summary':
-        return <IssuesSection issues={mockIssues} summary={{ total: 8, critical: 2, new: 3, resolved: 5 }} />;
+        return <IssuesSection issues={issuesData as any} summary={issuesSummary} />;
       case 'meetings-today':
         return <MeetingsSection meetings={mockMeetingsToday} />;
       case 'recent-decisions':
-        return <DecisionsSection decisions={mockDecisions} />;
+        return <DecisionsSection decisions={decisionsMap as any} />;
       case 'team-availability':
         return <TeamAvailabilitySection members={mockTeamMembers} summary={{ totalMembers: 12, available: 8, overloaded: 2, averageWorkload: 78 }} />;
       default:

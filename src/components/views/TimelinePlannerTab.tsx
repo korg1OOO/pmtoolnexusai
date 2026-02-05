@@ -382,7 +382,7 @@ const timelineReducer = (state: TimelineState, action: TimelineAction): Timeline
             swimlanes: resolved,
             milestones: finalMilestones,
             history: [...newHistory, { swimlanes: resolved, milestones: finalMilestones }].slice(-50),
-            history: [...newHistory, { swimlanes: resolved, milestones: finalMilestones }].slice(-50),
+
             historyIndex: Math.min(newHistory.length, 49)
         };
     };
@@ -486,10 +486,8 @@ const timelineReducer = (state: TimelineState, action: TimelineAction): Timeline
             const newSwimlanes = state.swimlanes.filter(s => s.id !== action.id);
             return saveToHistory(newSwimlanes);
         }
-        case 'RENAME_SWIMLANE': {
-            const newSwimlanes = state.swimlanes.map(s => s.id === action.id ? { ...s, label: action.label } : s);
-            return saveToHistory(newSwimlanes);
-        }
+
+
         case 'TOGGLE_COLLAPSE': {
             return {
                 ...state,

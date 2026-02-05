@@ -37,10 +37,20 @@ export interface ProjectSettings {
   id: string | null;
   name: string;
   code: string;
+  startDate?: string;
+  endDate?: string;
   methodology: Methodology;
   modules: ModuleVisibility;
   defaultView: string;
 }
+
+// ... (keep GlobalPanelType and ProjectContextType)
+
+
+
+// ... (ProjectProvider logic)
+
+
 
 export type GlobalPanelType = 'chat' | 'ai' | 'settings' | null;
 
@@ -124,6 +134,8 @@ const defaultSettings: ProjectSettings = {
   defaultView: 'dashboard',
 };
 
+
+
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
 
 const STORAGE_KEY = 'projectoye-settings';
@@ -162,6 +174,8 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
               id: storedProject.id,
               name: storedProject.name,
               code: storedProject.code,
+              startDate: storedProject.start_date,
+              endDate: storedProject.end_date,
               methodology,
               modules: getDefaultModulesInternal(methodology),
               defaultView: methodology === 'waterfall' ? 'gantt' : methodology === 'scrum' ? 'sprints' : 'dashboard',
@@ -184,6 +198,8 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
             id: project.id,
             name: project.name,
             code: project.code,
+            startDate: project.start_date,
+            endDate: project.end_date,
             methodology,
             modules: getDefaultModulesInternal(methodology),
             defaultView: methodology === 'waterfall' ? 'gantt' : methodology === 'scrum' ? 'sprints' : 'dashboard',
@@ -230,6 +246,8 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
         id: project.id,
         name: project.name,
         code: project.code,
+        startDate: project.start_date,
+        endDate: project.end_date,
         methodology,
         modules: getDefaultModulesInternal(methodology),
         defaultView: methodology === 'waterfall' ? 'gantt' : methodology === 'scrum' ? 'sprints' : 'dashboard',

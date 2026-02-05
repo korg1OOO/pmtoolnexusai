@@ -13,6 +13,7 @@ import ContactUs from "./pages/ContactUs";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import LandingPage from "./pages/LandingPage";
 import Auth from "./pages/Auth";
+import ProductTour from "./pages/ProductTour";
 import { ProjectProvider } from "@/contexts/ProjectContext";
 import { PresenceProvider } from "@/contexts/PresenceContext";
 
@@ -34,6 +35,7 @@ const App = () => (
               </ProjectProvider>
             } />
             <Route path="/dashboard" element={<Index />} />
+            <Route path="/product-tour" element={<ProductTour />} />
             <Route path="/login" element={<Auth />} />
             <Route path="/about" element={<AboutUs />} />
             <Route path="/contact" element={<ContactUs />} />

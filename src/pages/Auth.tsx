@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Zap, ShieldCheck, LayoutGrid } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
 import { LandingHeader } from '@/components/layout/LandingHeader';
 import { LandingFooter } from '@/components/layout/LandingFooter';
@@ -15,14 +15,17 @@ const Auth = () => {
     const [isLoading, setIsLoading] = useState(false);
     const navigate = useNavigate();
 
+    const location = useLocation();
+
     React.useEffect(() => {
         // Redirect if already logged in
         supabase.auth.getSession().then(({ data: { session } }) => {
             if (session) {
-                navigate('/dashboard');
+                const from = (location.state as any)?.from?.pathname || '/dashboard';
+                navigate(from, { replace: true });
             }
         });
-    }, [navigate]);
+    }, [navigate, location]);
 
     const handleOAuthLogin = async (provider: 'google') => {
         setIsLoading(true);
@@ -62,7 +65,8 @@ const Auth = () => {
             } else {
                 const { error } = await supabase.auth.signInWithPassword({ email, password });
                 if (error) throw error;
-                navigate('/dashboard');
+                const from = (location.state as any)?.from?.pathname || '/dashboard';
+                navigate(from, { replace: true });
             }
         } catch (error: unknown) {
             const message = error instanceof Error ? error.message : "Authentication failed";

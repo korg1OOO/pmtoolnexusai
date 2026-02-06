@@ -14,6 +14,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import LandingPage from "./pages/LandingPage";
 import Auth from "./pages/Auth";
 import ProductTour from "./pages/ProductTour";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { ProjectProvider } from "@/contexts/ProjectContext";
 import { PresenceProvider } from "@/contexts/PresenceContext";
 
@@ -34,8 +35,18 @@ const App = () => (
                 </PresenceProvider>
               </ProjectProvider>
             } />
-            <Route path="/dashboard" element={<Index />} />
-            <Route path="/product-tour" element={<ProductTour />} />
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Index />
+              </ProtectedRoute>
+            } />
+            <Route path="/product-tour" element={
+              <ProjectProvider>
+                <PresenceProvider>
+                  <ProductTour />
+                </PresenceProvider>
+              </ProjectProvider>
+            } />
             <Route path="/login" element={<Auth />} />
             <Route path="/about" element={<AboutUs />} />
             <Route path="/contact" element={<ContactUs />} />

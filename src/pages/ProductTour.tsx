@@ -114,7 +114,7 @@ export default function ProductTour() {
                         color="from-indigo-500/20 via-blue-500/5"
                         onNextClick={() => scrollToSection(2)}
                     >
-                        <TimelinePlannerTab />
+                        <TimelinePlannerTab demo={true} />
                     </Section>
                 </div>
 
@@ -143,23 +143,24 @@ export default function ProductTour() {
                 </div>
 
                 {/* 4. Reports */}
+                {/* 4. Reports */}
                 <div id="section-4" className="snap-start">
                     <Section
-                        title="Advanced Analytics"
-                        description="Real-time reporting on EVM metrics, financial health, and portfolio performance."
-                        color="from-rose-500/20 via-red-500/5"
+                        title="Automated Reporting"
+                        description="Generate status reports and insights with a single click."
+                        color="from-rose-500/20 via-pink-500/5"
                         onNextClick={() => scrollToSection(5)}
                     >
-                        <ReportsView />
+                        <ReportsView demo={true} />
                     </Section>
                 </div>
 
                 {/* 5. Traceability */}
                 <div id="section-5" className="snap-start">
                     <Section
-                        title="Full Traceability"
-                        description="Maintain a golden thread from requirements to deliverables, ensuring compliance and scope control."
-                        color="from-cyan-500/20 via-sky-500/5"
+                        title="Traceability Matrix"
+                        description="Track requirements from inception to delivery."
+                        color="from-cyan-500/20 via-teal-500/5"
                         onNextClick={() => scrollToSection(6)}
                     >
                         <TraceabilityMatrixView demo={true} />
@@ -169,9 +170,9 @@ export default function ProductTour() {
                 {/* 6. Meetings */}
                 <div id="section-6" className="snap-start">
                     <Section
-                        title="Intelligent Meetings"
-                        description="AI-enhanced meeting management with automated minutes, decision tracking, and sentiment analysis."
-                        color="from-violet-500/20 via-fuchsia-500/5"
+                        title="AI Meeting Assistant"
+                        description="Automated transcripts, summaries, and action items."
+                        color="from-violet-500/20 via-purple-500/5"
                         onNextClick={() => scrollToSection(7)}
                     >
                         <EnhancedMeetingsView demo={true} />
@@ -181,9 +182,9 @@ export default function ProductTour() {
                 {/* 7. Notes */}
                 <div id="section-7" className="snap-start">
                     <Section
-                        title="Smart Documentation"
-                        description="Collaborative notes and documentation that link directly to your project artifacts and decisions."
-                        color="from-pink-500/20 via-rose-500/5"
+                        title="Project Notebook"
+                        description="Keep all your documentation in one place."
+                        color="from-yellow-500/20 via-amber-500/5"
                     >
                         <NotesView demo={true} />
                     </Section>

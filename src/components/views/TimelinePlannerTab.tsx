@@ -608,9 +608,11 @@ const timelineReducer = (state: TimelineState, action: TimelineAction): Timeline
 
 // ─── MAIN COMPONENT ──────────────────────────────────────────────────────────
 
+interface TimelinePlannerTabProps {
+    demo?: boolean;
+}
 
-
-export function TimelinePlannerTab() {
+export function TimelinePlannerTab({ demo = false }: TimelinePlannerTabProps) {
     const { settings, activeGlobalPanel, setActiveGlobalPanel } = useProjectContext();
     const [state, dispatch] = React.useReducer(timelineReducer, {
         swimlanes: [], // Initial empty state, will load from DB
@@ -626,8 +628,13 @@ export function TimelinePlannerTab() {
     const stateRef = useRef(state);
     stateRef.current = state;
 
-    // Load Data from Backend
+    // Load Data from Backend or Demo
     useEffect(() => {
+        if (demo) {
+            dispatch({ type: 'SET_INITIAL_DATA', swimlanes: initialSwimlanes, milestones: [] });
+            return;
+        }
+
         if (!settings.id) return;
 
         const loadData = async () => {

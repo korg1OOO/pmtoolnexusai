@@ -36,7 +36,7 @@ import { useEmailAccounts } from '@/hooks/useEmailAccounts';
 import { useEmails, Email } from '@/hooks/useEmails';
 import { aiService } from '@/services/aiService';
 import { supabase } from '@/integrations/supabase/client';
-import { mockExecutiveStatus } from '@/data/aiMockData';
+
 
 export function CommunicationIntelligenceView() {
   const { settings: project } = useProjectContext();
@@ -118,8 +118,7 @@ export function CommunicationIntelligenceView() {
   const [isAnalyzingContent, setIsAnalyzingContent] = useState(false);
   const [executiveStatus, setExecutiveStatus] = useState<ExecutiveStatus | null>(null);
 
-  // Use mock only if no status generated yet
-  const displayStatus = executiveStatus || (mockExecutiveStatus as unknown as ExecutiveStatus);
+  const displayStatus = executiveStatus;
 
   const handleSync = async () => {
     if (accountIds.length > 0) {

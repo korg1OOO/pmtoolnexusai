@@ -30,7 +30,6 @@ import { useProjectContext } from '@/contexts/ProjectContext';
 import { useTasks, DbTask } from '@/hooks/useTasks';
 import { useScenarios } from '@/hooks/useScenarios';
 import { useProfile } from '@/hooks/useProfile';
-import { mockScenarios } from '@/data/aiMockData';
 import { aiService } from '@/services/aiService';
 
 interface Adjustment {

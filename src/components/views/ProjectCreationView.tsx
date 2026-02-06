@@ -38,8 +38,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { TemplateGallery } from '@/components/project-creation/TemplateGallery';
 import { MethodologySelector } from '@/components/project-creation/MethodologySelector';
 import { TemplatePreview } from '@/components/project-creation/TemplatePreview';
-import { projectTemplates, methodologyOptions } from '@/data/templateData';
+import { templateCategories, methodologyOptions } from '@/data/templateData';
 import type { ProjectTemplate, Methodology, GovernanceLevel, ProjectCreationData } from '@/types/templates';
+import { useTemplates, useCreateProjectFromTemplate } from '@/hooks/useTemplates';
 
 type CreationPath = 'template' | 'custom' | null;
 type Step = 'path' | 'template-select' | 'methodology' | 'details' | 'team' | 'review';
@@ -64,6 +65,9 @@ const priorityOptions = [
 ];
 
 export function ProjectCreationView() {
+  const { data: templates, isLoading: isLoadingTemplates } = useTemplates();
+  const createProjectMutation = useCreateProjectFromTemplate();
+
   const [creationPath, setCreationPath] = useState<CreationPath>(null);
   const [currentStep, setCurrentStep] = useState<Step>('path');
   const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
@@ -163,27 +167,49 @@ export function ProjectCreationView() {
 
   const handleCreateProject = async () => {
     try {
-      const { data, error } = await supabase.from('projects').insert({
-        name: formData.name,
-        code: formData.code,
-        description: formData.description,
-        methodology: formData.methodology || 'hybrid',
-        status: 'active',
-        start_date: formData.startDate,
-        end_date: formData.targetEndDate || null,
-      }).select().single();
+      if (creationPath === 'template' && selectedTemplate) {
+        // Use RPC for template-based creation
+        const data = await createProjectMutation.mutateAsync({
+          templateId: selectedTemplate.id,
+          name: formData.name || 'New Project',
+          description: formData.description || '',
+          ownerId: formData.owner || '', // Should ideally get current user ID
+          organizationId: formData.organizationId,
+          startDate: new Date(formData.startDate || Date.now()),
+        });
 
-      if (error) throw error;
+        toast.success('Project Created Successfully!', {
+          description: `${data.name} has been created from template.`,
+        });
 
-      toast.success('Project Created Successfully!', {
-        description: `${formData.name} has been created and is ready for planning.`,
-      });
+        if (data) {
+          localStorage.setItem('projectoye_selected_project', data.id);
+          setTimeout(() => window.location.href = '/', 1000);
+        }
 
-      // Store the new project ID and reload the page
-      if (data) {
-        localStorage.setItem('projectoye_selected_project', data.id);
-        // Reload to pick up the new project
-        setTimeout(() => window.location.href = '/', 1000);
+      } else {
+        // Existing logic for custom project (or fallback)
+        const { data, error } = await supabase.from('projects').insert({
+          name: formData.name,
+          code: formData.code,
+          description: formData.description,
+          methodology: formData.methodology || 'hybrid',
+          status: 'planning', // Default to planning
+          start_date: formData.startDate,
+          end_date: formData.targetEndDate || null,
+          owner_id: formData.owner || null, // Ensure owner is handled if exists in formData
+        }).select().single();
+
+        if (error) throw error;
+
+        toast.success('Project Created Successfully!', {
+          description: `${formData.name} has been created.`,
+        });
+
+        if (data) {
+          localStorage.setItem('projectoye_selected_project', data.id);
+          setTimeout(() => window.location.href = '/', 1000);
+        }
       }
     } catch (error: any) {
       console.error('Error creating project:', error);
@@ -308,13 +334,14 @@ export function ProjectCreationView() {
       </div>
 
       <TemplateGallery
-        templates={projectTemplates}
+        templates={templates || []}
         selectedTemplate={selectedTemplate}
         onSelect={handleTemplateSelect}
         onPreview={(template) => {
           setSelectedTemplate(template);
           setShowTemplatePreview(true);
         }}
+        isLoading={isLoadingTemplates}
       />
 
       {showTemplatePreview && selectedTemplate && (

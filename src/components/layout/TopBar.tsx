@@ -10,6 +10,7 @@ import { NotificationCenter } from '@/components/notifications/NotificationCente
 import { PresenceIndicator } from '@/components/collaboration/PresenceIndicator';
 import { usePresenceContext } from '@/contexts/PresenceContext';
 import { ProjectSwitcher } from '@/components/layout/ProjectSwitcher';
+import { useProfile } from '@/hooks/useProfile';
 
 interface TopBarProps {
   projectName?: string;
@@ -22,6 +23,10 @@ interface TopBarProps {
 export function TopBar({ projectName, projectCode, className, onCreateProject, onOpenChat }: TopBarProps) {
   const [showNotifications, setShowNotifications] = useState(false);
   const { users } = usePresenceContext();
+  const { data: profile } = useProfile();
+  const userName = profile?.full_name || 'User';
+  const userInitials = (userName).substring(0, 2).toUpperCase();
+  const userEmail = profile?.email || '';
 
   return (
     <header className={cn('flex h-14 items-center justify-between gap-4 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 px-4', className)}>
@@ -55,13 +60,13 @@ export function TopBar({ projectName, projectCode, className, onCreateProject, o
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" className="gap-2 pl-2 pr-1">
-              <Avatar className="h-7 w-7"><AvatarFallback className="bg-primary/20 text-primary text-xs">SM</AvatarFallback></Avatar>
-              <span className="text-sm font-medium hidden md:inline">Sarah M.</span>
+              <Avatar className="h-7 w-7"><AvatarFallback className="bg-primary/20 text-primary text-xs">{userInitials}</AvatarFallback></Avatar>
+              <span className="text-sm font-medium hidden md:inline">{userName}</span>
               <ChevronDown className="h-4 w-4 text-muted-foreground" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
-            <DropdownMenuLabel><div className="flex flex-col"><span>Sarah Mitchell</span><span className="text-xs font-normal text-muted-foreground">sarah.mitchell@company.com</span></div></DropdownMenuLabel>
+            <DropdownMenuLabel><div className="flex flex-col"><span>{userName}</span><span className="text-xs font-normal text-muted-foreground">{userEmail}</span></div></DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem><User className="mr-2 h-4 w-4" />Profile</DropdownMenuItem>
             <DropdownMenuItem><Maximize2 className="mr-2 h-4 w-4" />Fullscreen</DropdownMenuItem>

@@ -93,7 +93,7 @@ export const timelineService = {
                 .in('from_activity_id', activityIds);
 
             if (depsError) throw depsError;
-            
+
             // Map database columns to interface
             dependencies = (deps || []).map((d: any) => ({
                 id: d.id,

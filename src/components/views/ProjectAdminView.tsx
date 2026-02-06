@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { supabase } from '@/integrations/supabase/client';
+import { useProjects, useUpdateProject } from '@/hooks/useProjects';
 import { usePortfolios, useUpdatePortfolio } from '@/hooks/usePortfolios';
 import { usePrograms, useUpdateProgram } from '@/hooks/usePrograms';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
@@ -148,6 +149,28 @@ export function ProjectAdminView() {
   const { settings, updateMethodology, updateModuleVisibility, updateSettings, getDefaultModules } = useProjectContext();
   const [currentUserId, setCurrentUserId] = useState<string>('');
   const { data: members, isLoading: isLoadingTeam } = useTeamMembers(settings.id);
+  const updateProjectMutation = useUpdateProject();
+
+  const handleSave = async () => {
+    if (!settings.id) {
+      toast.error('No project selected to update');
+      return;
+    }
+
+    try {
+      await updateProjectMutation.mutateAsync({
+        id: settings.id,
+        name: settings.name,
+        code: settings.code,
+        methodology: settings.methodology,
+        // Add other fields as they become available in settings/types
+      });
+      toast.success('Project settings saved successfully');
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      toast.error('Failed to save project settings');
+    }
+  };
 
 
   React.useEffect(() => {
@@ -186,8 +209,9 @@ export function ProjectAdminView() {
             Configure project settings, team, and methodology
           </p>
         </div>
-        <Button>
-          <Save className="h-4 w-4 mr-2" />
+        <Button onClick={handleSave} disabled={updateProjectMutation.isPending}>
+          {updateProjectMutation.isPending && <RefreshCw className="h-4 w-4 mr-2 animate-spin" />}
+          {!updateProjectMutation.isPending && <Save className="h-4 w-4 mr-2" />}
           Save Changes
         </Button>
       </div>

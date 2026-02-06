@@ -102,17 +102,8 @@ const roles: Role[] = [
   },
 ];
 
-// Placeholder for Teams until schema exists
-const teams: Team[] = [
-  {
-    id: 'core',
-    name: 'Core Team',
-    description: 'Primary project delivery team',
-    lead: '1',
-    members: [],
-    color: 'bg-primary/20',
-  },
-];
+// Teams are currently derived dynamically from user roles
+
 
 export function TeamManagementView() {
   const { settings } = useProjectContext();

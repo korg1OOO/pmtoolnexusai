@@ -49,14 +49,23 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { projectTemplates, templateCategories, methodologyOptions } from '@/data/templateData';
-import type { ProjectTemplate } from '@/types/templates';
+import { useTemplates } from '@/hooks/useTemplates';
 
 export function TemplatesAdminView() {
-  const [templates, setTemplates] = useState<ProjectTemplate[]>(projectTemplates);
+  const { data: fetchedTemplates, isLoading } = useTemplates();
+  const [localTemplates, setLocalTemplates] = useState<ProjectTemplate[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('templates');
+
+  // Sync fetched templates to local state for client-side filtering/manipulation (for now)
+  React.useEffect(() => {
+    if (fetchedTemplates) {
+      setLocalTemplates(fetchedTemplates);
+    }
+  }, [fetchedTemplates]);
+
+  const templates = localTemplates;
 
   const filteredTemplates = templates.filter((template) => {
     const matchesSearch =

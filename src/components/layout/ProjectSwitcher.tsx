@@ -17,14 +17,7 @@ import {
     PopoverTrigger,
 } from '@/components/ui/popover';
 import { useProjectContext } from '@/contexts/ProjectContext';
-import { supabase } from '@/integrations/supabase/client';
-
-interface Project {
-    id: string;
-    name: string;
-    code: string;
-    methodology: string;
-}
+import { useProjects, Project } from '@/hooks/useProjects';
 
 interface ProjectSwitcherProps {
     className?: string;
@@ -33,27 +26,9 @@ interface ProjectSwitcherProps {
 export function ProjectSwitcher({ className }: ProjectSwitcherProps) {
     const { settings, selectProject } = useProjectContext();
     const [open, setOpen] = useState(false);
-    const [projects, setProjects] = useState<Project[]>([]);
-    const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        if (open) {
-            setLoading(true);
-            const fetchProjects = async () => {
-                const { data, error } = await supabase
-                    .from('projects')
-                    .select('id, name, code, methodology')
-                    .order('name');
-
-                if (!error && data) {
-                    setProjects(data as Project[]);
-                }
-                setLoading(false);
-            };
-
-            fetchProjects();
-        }
-    }, [open]);
+    // Use the hook to fetch projects
+    const { data: projects = [], isLoading } = useProjects();
 
     const handleSelect = (projectId: string) => {
         selectProject(projectId);

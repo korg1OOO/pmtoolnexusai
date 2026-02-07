@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
@@ -18,9 +18,6 @@ import {
   XCircle,
   Layers,
   GitBranch,
-  Target,
-  ExternalLink,
-  RefreshCw,
   Target,
   ExternalLink,
   RefreshCw,

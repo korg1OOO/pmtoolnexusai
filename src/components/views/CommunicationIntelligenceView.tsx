@@ -579,6 +579,7 @@ export function CommunicationIntelligenceView() {
                           value={statusAudience}
                           onChange={(e) => setStatusAudience(e.target.value)}
                           className="text-sm border rounded-md px-2 py-1 bg-background"
+                          aria-label="Select Status Audience"
                         >
                           <option value="steering-committee">Steering Committee</option>
                           <option value="sponsor">Sponsor</option>

@@ -14,7 +14,7 @@ This release focuses on stabilizers, schema integrity, and wiring the final mock
 - **Contact Form**: The `ContactFormModal` is now fully wired to the Supabase `support_tickets` table. Submissions are persisted to the database.
 
 ### 3. Stability
-- **Build**: Fixed syntax errors in `ChildPlansView.tsx` that were blocking production builds.
+- **Build**: Fixed syntax and duplicate identifier errors in `ChildPlansView.tsx` that were blocking production builds.
 - **Type Safety**: Full `tsc` pass with zero errors.
 
 ## Deployment Instructions

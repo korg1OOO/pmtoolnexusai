@@ -61,14 +61,7 @@ interface Scenario {
   };
 }
 
-const mockTasks = [
-  { id: 'T-010', name: 'System Architecture' },
-  { id: 'T-011', name: 'Database Design' },
-  { id: 'T-012', name: 'Wave 2 Migration' },
-  { id: 'T-013', name: 'Data Migration' },
-  { id: 'T-014', name: 'API Integration' },
-  { id: 'T-015', name: 'Testing & Validation' },
-];
+
 
 export function ScenariosView() {
   const { settings } = useProjectContext();

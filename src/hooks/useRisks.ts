@@ -20,9 +20,22 @@ export function useRisks() {
     if (!projectId) { setRisks([]); setLoading(false); return; }
     try {
       setLoading(true);
-      const { data, error: e } = await supabase.from('risks').select('*').eq('project_id', projectId).order('created_at', { ascending: false });
+      const { data, error: e } = await supabase
+        .from('risks')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false });
+
       if (e) throw e;
-      setRisks((data || []).map((r: any) => ({ ...r, probability: r.probability as RiskLevel, impact: r.impact as RiskLevel, status: r.status as RiskStatus, linked_items: Array.isArray(r.linked_items) ? r.linked_items : [] })));
+
+      // Map database types to frontend model
+      setRisks((data || []).map((r) => ({
+        ...r,
+        probability: r.probability as RiskLevel,
+        impact: r.impact as RiskLevel,
+        status: r.status as RiskStatus,
+        linked_items: Array.isArray(r.linked_items) ? r.linked_items : []
+      })));
       setError(null);
     } catch (err: any) { setError(err.message); } finally { setLoading(false); }
   }, [projectId]);

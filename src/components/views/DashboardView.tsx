@@ -157,28 +157,127 @@ export function DashboardView({ onViewChange }: DashboardViewProps) {
 
 
   // --- Derived Data ---
-  const kpis = useMemo(() => {
-    if (!project) return mockKPIData;
-    const activeRisksCount = risks.filter(r => r.status !== 'closed').length;
-    const criticalRisks = risks.filter(r => r.status !== 'closed' && r.impact === 'critical').length;
-    const openActions = actions.filter(a => a.status === 'pending' || a.status === 'in-progress').length;
-    const overdueActions = actions.filter(a => (a.status === 'pending' || a.status === 'in-progress') && a.due_date && new Date(a.due_date) < new Date()).length;
+  const { data: sprints = [] } = useQuery({
+    queryKey: ['sprints', projectId],
+    queryFn: async () => {
+      if (!projectId) return [];
+      const { data, error } = await supabase
+        .from('sprints')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('end_date', { ascending: false }); // Latest first
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!projectId
+  });
 
-    // Simple cost variance calculation
-    const budgetTotal = project.budget || 0;
-    const spentTotal = project.spent || 0;
-    const costVariance = budgetTotal > 0 ? ((budgetTotal - spentTotal) / budgetTotal) * 100 : 0;
+  const kpis = useMemo(() => {
+    // defaults
+    const defaults = {
+      scheduleVariance: 0,
+      costVariance: 0,
+      sprintVelocity: 0,
+      avgVelocity: 0,
+      openRisks: 0,
+      criticalRisks: 0,
+      openActions: 0,
+      overdueActions: 0,
+      teamUtilization: 0,
+      burnRate: 0, // In $/month
+    };
+
+    if (!project) return defaults;
+
+    // 1. Risks
+    const activeRisksCount = risks.filter(r => r.status !== 'closed').length;
+    const criticalRisksVal = risks.filter(r => r.status !== 'closed' && (r.impact === 'critical' || r.probability === 'critical')).length;
+
+    // 2. Actions
+    const openActionsVal = actions.filter(a => a.status === 'pending' || a.status === 'in-progress').length;
+    const overdueActionsVal = actions.filter(a => (a.status === 'pending' || a.status === 'in-progress') && a.due_date && new Date(a.due_date) < new Date()).length;
+
+    // 3. Cost & Burn Rate
+    const budgetTotal = project.budget || 0; // Total budget
+    const spentTotal = project.spent || 0;   // Incurred actual cost
+    // Cost Variance %: Positive means under budget (Check PMBOK: CV = EV - AC. % = CV/EV. Here using simplified (Budget - Spent)/Budget for visual)
+    // Actually, simple variance: (Planned - Actual) / Planned.
+    // Let's assume progress based EV. EV = Budget * Progress.
+    const ev = budgetTotal * ((project.progress || 0) / 100);
+    const cv = ev - spentTotal;
+    const cvPercent = ev > 0 ? (cv / ev) * 100 : 0;
+
+    // Burn Rate: Spent / Months passed
+    const startDate = new Date(project.start_date);
+    const now = new Date();
+    const monthsPassed = Math.max(1, (now.getFullYear() - startDate.getFullYear()) * 12 + (now.getMonth() - startDate.getMonth()));
+    const burnRateVal = spentTotal / monthsPassed;
+
+    // 4. Schedule Variance
+    // SV % = (EV - PV) / PV. 
+    // Or simple comparison of Duration vs Baseline? 
+    // Let's use simple logic: If tasks are overdue vs baseline.
+    // Iterate tasks with baseline_end
+    let totalTaskVariance = 0;
+    let baselinedTasks = 0;
+    tasks.forEach(t => {
+      if (t.baseline_end && t.end_date) {
+        const base = new Date(t.baseline_end).getTime();
+        const current = new Date(t.end_date).getTime();
+        // diff in days. Negative means delayed (end > baseline).
+        // Actually, Variance > 0 is good (Ahead). So Baseline - Current?
+        // If Baseline is 10th and Current is 12th (delayed), 10-12 = -2. Correct.
+        const diff = (base - current) / (1000 * 60 * 60 * 24);
+        totalTaskVariance += diff;
+        baselinedTasks++;
+      }
+    });
+    const avgScheduleVarianceDays = baselinedTasks > 0 ? totalTaskVariance / baselinedTasks : 0;
+    // Map days to a rough % score for the widget (e.g. 1 day = 1%? Arbitrary but visual)
+    // Better: Portfolio level Schedule Performance Index (SPI) = EV / PV.
+    // Let's stick to days variance for valid visual or just keep the existing % if mock was %.
+    // Let's use avgScheduleVarianceDays as the metric, maybe capped.
+    const scheduleVarianceVal = parseFloat(avgScheduleVarianceDays.toFixed(1));
+
+
+    // 5. Velocity
+    // Get closed sprints
+    const closedSprints = sprints.filter((s: any) => s.status === 'completed');
+    // Compute velocity for last 3
+    // We need backlog items per sprint.
+    // backlogItems has `sprint_id` and `story_points` and `status`.
+    // Velocity = Sum of points of DONE items in that sprint.
+    let lastVelocity = 0;
+    let totalVelocity = 0;
+    const velocitySamples = closedSprints.slice(0, 3); // last 3
+
+    velocitySamples.forEach((s: any, idx: number) => {
+      const sprintItems = backlogItems.filter(i => i.sprint_id === s.id && i.status === 'done');
+      const points = sprintItems.reduce((sum, i) => sum + (i.story_points || 0), 0);
+      totalVelocity += points;
+      if (idx === 0) lastVelocity = points;
+    });
+
+    const avgVelocityVal = velocitySamples.length > 0 ? totalVelocity / velocitySamples.length : 0;
+
+    // 6. Utilization (Hard to calc without Timesheets, mock for now or use task assignments count)
+    // assigning 100% if > 3 tasks? 
+    // Let's keep 85% mock or randomize slightly to look alive, or avg progress of active tasks?
+    const teamUtilizationVal = 85;
 
     return {
-      ...mockKPIData,
-      costVariance: parseFloat(costVariance.toFixed(1)),
+      scheduleVariance: scheduleVarianceVal,
+      costVariance: parseFloat(cvPercent.toFixed(1)),
+      sprintVelocity: lastVelocity,
+      avgVelocity: parseFloat(avgVelocityVal.toFixed(1)),
       openRisks: activeRisksCount,
-      criticalRisks,
-      openActions,
-      overdueActions,
-      teamUtilization: 85,
+      criticalRisks: criticalRisksVal,
+      openActions: openActionsVal,
+      overdueActions: overdueActionsVal,
+      teamUtilization: teamUtilizationVal,
+      burnRate: burnRateVal
     };
-  }, [project, risks, actions]);
+  }, [project, risks, actions, tasks, backlogItems, sprints]);
 
   const activeProject = project || { name: settings.name, health: 'green', description: 'No description.', methodology: settings.methodology, progress: 0, start_date: new Date().toISOString(), end_date: new Date().toISOString(), spent: 0, budget: 0 };
   const inProgressItems = backlogItems.filter(t => t.status === 'in-progress');

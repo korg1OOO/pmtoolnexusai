@@ -42,52 +42,8 @@ function saveState(state: Partial<NotesViewState>) {
   }
 }
 
-// Mock Data
-// Mock Data
-const MOCK_NOTEBOOKS: Notebook[] = [
-  {
-    id: 'nb1',
-    name: 'Product Requirements',
-    icon: 'book',
-    color: 'blue',
-    sort_order: 0,
-    is_shared: false,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-    project_id: 'demo',
-    user_id: 'demo'
-  }
-];
-
-const MOCK_SECTIONS: NotebookSection[] = [
-  {
-    id: 's1',
-    notebook_id: 'nb1',
-    name: 'Phase 1: MVP',
-    color: 'blue',
-    sort_order: 0,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  }
-];
-
-const MOCK_PAGES: NotebookPage[] = [
-  {
-    id: 'pg1',
-    section_id: 's1',
-    title: 'Functional Specs',
-    content: '# Functional Specifications\n\n- User Auth\n- Dashboard',
-    content_html: '<h1>Functional Specifications</h1><ul><li>User Auth</li><li>Dashboard</li></ul>',
-    tags: ['specs', 'v1'],
-    is_favorite: false,
-    is_pinned: false,
-    created_by: 'Demo User',
-    created_by_user_id: 'demo',
-    sort_order: 0,
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  }
-];
+// Import Mocks
+import { MOCK_NOTEBOOKS, MOCK_SECTIONS, MOCK_PAGES } from '@/data/mockData';
 
 interface NotesViewProps {
   demo?: boolean;

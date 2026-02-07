@@ -17,19 +17,20 @@ export interface Scenario {
 
 export const scenarioService = {
     async getScenarios(projectId: string): Promise<Scenario[]> {
-        const { data, error } = await (supabase as any)
+        const { data, error } = await supabase
             .from('scenarios')
             .select('*')
             .eq('project_id', projectId)
             .order('created_at', { ascending: false });
 
         if (error) throw error;
+        // The return type is inferred from the DB schema, but we cast to our interface to match
         return (data || []) as unknown as Scenario[];
     },
 
     async createScenario(projectId: string, name: string, description: string): Promise<Scenario> {
         // 1. Create the scenario record
-        const { data: scenario, error: scenarioError } = await (supabase as any)
+        const { data: scenario, error: scenarioError } = await supabase
             .from('scenarios')
             .insert({
                 project_id: projectId,
@@ -125,7 +126,7 @@ export const scenarioService = {
     },
 
     async deleteScenario(id: string) {
-        const { error } = await (supabase as any)
+        const { error } = await supabase
             .from('scenarios')
             .delete()
             .eq('id', id);
@@ -133,7 +134,7 @@ export const scenarioService = {
     },
 
     async updateScenario(id: string, updates: Partial<Scenario>) {
-        const { data, error } = await (supabase as any)
+        const { data, error } = await supabase
             .from('scenarios')
             .update(updates)
             .eq('id', id)
@@ -146,7 +147,7 @@ export const scenarioService = {
 
     // Simulate applying adjustments (Update single task fields)
     async updateScenarioTask(scenarioId: string, taskId: string, updates: Partial<DbTask>) {
-        const { error } = await (supabase as any)
+        const { error } = await supabase
             .from('tasks')
             .update(updates)
             .eq('id', taskId)
@@ -157,7 +158,7 @@ export const scenarioService = {
     async promoteScenario(projectId: string, scenarioId: string) {
         // 1. Delete current actuals (backup could be done here if we had versioning)
         // For now, we assume "Actuals" are just tasks where scenario_id is NULL
-        const { error: deleteError } = await (supabase as any)
+        const { error: deleteError } = await supabase
             .from('tasks')
             .delete()
             .eq('project_id', projectId)
@@ -166,7 +167,7 @@ export const scenarioService = {
         if (deleteError) throw deleteError;
 
         // 2. Convert scenario tasks to actuals
-        const { error: promoteError } = await (supabase as any)
+        const { error: promoteError } = await supabase
             .from('tasks')
             .update({ scenario_id: null })
             .eq('project_id', projectId)
@@ -175,7 +176,7 @@ export const scenarioService = {
         if (promoteError) throw promoteError;
 
         // 3. Update scenario status to archived or promoted
-        const { error: statusError } = await (supabase as any)
+        const { error: statusError } = await supabase
             .from('scenarios')
             .update({ status: 'archived', description: 'Promoted to live plan' })
             .eq('id', scenarioId);

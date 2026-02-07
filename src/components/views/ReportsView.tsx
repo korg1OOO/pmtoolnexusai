@@ -56,54 +56,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 
 
-// Mock Data for Demo Mode
-const MOCK_REPORTS: Report[] = [
-  {
-    id: 'r1',
-    project_id: 'demo',
-    name: 'Weekly Status Report',
-    description: 'Weekly executive summary of project health, risks, and milestones',
-    type: 'status',
-    category: 'Status',
-    frequency: 'weekly',
-    last_generated: new Date().toISOString(),
-    next_run: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
-    is_scheduled: true,
-    config: {},
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-  {
-    id: 'r2',
-    project_id: 'demo',
-    name: 'Financial Overview',
-    description: 'Budget vs Actuals, burn rate, and forecast',
-    type: 'financial',
-    category: 'Financial',
-    frequency: 'monthly',
-    last_generated: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    next_run: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(),
-    is_scheduled: true,
-    config: {},
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  },
-  {
-    id: 'r3',
-    project_id: 'demo',
-    name: 'Risk Register',
-    description: 'Active risks and mitigation plans',
-    type: 'risk',
-    category: 'Risk',
-    frequency: 'on-demand',
-    last_generated: null,
-    next_run: null,
-    is_scheduled: false,
-    config: {},
-    created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
-  }
-];
+// Import Mocks
+import { MOCK_REPORTS } from '@/data/mockData';
 
 interface ReportsViewProps {
   demo?: boolean;

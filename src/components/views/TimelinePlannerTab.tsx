@@ -1899,13 +1899,10 @@ export function TimelinePlannerTab({ demo = false }: TimelinePlannerTabProps) {
                                                                             <ActivityDragHandle disabled={!isDragEnabled} />
                                                                             <div
                                                                                 style={{
-                                                                                    width: 10,
-                                                                                    height: 10,
-                                                                                    borderRadius: '50%',
                                                                                     background: act.teamIds?.[0] ? teams.find(t => t.id === act.teamIds?.[0])?.color || act.color : act.color,
                                                                                     boxShadow: `0 0 12px ${act.teamIds?.[0] ? (teams.find(t => t.id === act.teamIds?.[0])?.color || act.color) : act.color}80`
                                                                                 }}
-                                                                                className="shrink-0"
+                                                                                className="shrink-0 w-2.5 h-2.5 rounded-full"
                                                                             />
                                                                             <input
                                                                                 value={act.name}
@@ -2038,10 +2035,8 @@ export function TimelinePlannerTab({ demo = false }: TimelinePlannerTabProps) {
                                             key={m.id}
                                             style={{
                                                 left: m.monthIndex * MONTH_COL_W + columnWidth + (MONTH_COL_W / 2),
-                                                top: 0,
-                                                bottom: 0,
                                             }}
-                                            className="absolute w-[2px] bg-indigo-500/20 z-20"
+                                            className="absolute inset-y-0 w-[2px] bg-indigo-500/20 z-20"
                                         >
                                             <TooltipProvider>
                                                 <Tooltip>

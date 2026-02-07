@@ -21,6 +21,10 @@ import {
   Target,
   ExternalLink,
   RefreshCw,
+  Target,
+  ExternalLink,
+  RefreshCw,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -49,208 +53,28 @@ interface ChildTask {
   expanded?: boolean;
 }
 
-const mockParentTask = {
-  id: 'T-009',
-  wbs: '3',
-  name: 'Phase 3: Implementation',
-  type: 'summary' as const,
-  status: 'in-progress' as const,
-  priority: 'critical' as const,
-  startDate: '2024-06-01',
-  endDate: '2024-10-31',
-  duration: 152,
-  progress: 35,
-  owner: 'John Doe',
-};
 
-const mockChildTasks: ChildTask[] = [
-  {
-    id: 'T-010',
-    wbs: '3.1',
-    name: 'Infrastructure Provisioning',
-    type: 'summary',
-    status: 'completed',
-    priority: 'critical',
-    startDate: '2024-06-01',
-    endDate: '2024-07-15',
-    duration: 44,
-    progress: 100,
-    assignee: 'David Wilson',
-    sprintLink: { id: 'SP-010', name: 'Sprint 10' },
-    level: 0,
-    expanded: true,
-    children: [
-      {
-        id: 'T-010-1',
-        wbs: '3.1.1',
-        name: 'VPC Configuration',
-        type: 'task',
-        status: 'completed',
-        priority: 'high',
-        startDate: '2024-06-01',
-        endDate: '2024-06-15',
-        duration: 14,
-        progress: 100,
-        assignee: 'David Wilson',
-        sprintLink: { id: 'SP-010', name: 'Sprint 10' },
-        level: 1,
-      },
-      {
-        id: 'T-010-2',
-        wbs: '3.1.2',
-        name: 'Kubernetes Cluster Setup',
-        type: 'task',
-        status: 'completed',
-        priority: 'critical',
-        startDate: '2024-06-10',
-        endDate: '2024-07-01',
-        duration: 21,
-        progress: 100,
-        assignee: 'Mike Johnson',
-        sprintLink: { id: 'SP-010', name: 'Sprint 10' },
-        level: 1,
-      },
-      {
-        id: 'T-010-3',
-        wbs: '3.1.3',
-        name: 'Infrastructure Complete',
-        type: 'milestone',
-        status: 'completed',
-        priority: 'high',
-        startDate: '2024-07-15',
-        endDate: '2024-07-15',
-        duration: 0,
-        progress: 100,
-        level: 1,
-      },
-    ],
-  },
-  {
-    id: 'T-011',
-    wbs: '3.2',
-    name: 'Application Migration - Wave 1',
-    type: 'summary',
-    status: 'in-progress',
-    priority: 'critical',
-    startDate: '2024-07-01',
-    endDate: '2024-08-31',
-    duration: 61,
-    progress: 65,
-    assignee: 'John Doe',
-    sprintLink: { id: 'SP-012', name: 'Sprint 12' },
-    level: 0,
-    expanded: true,
-    children: [
-      {
-        id: 'T-011-1',
-        wbs: '3.2.1',
-        name: 'Containerize Core Services',
-        type: 'task',
-        status: 'completed',
-        priority: 'critical',
-        startDate: '2024-07-01',
-        endDate: '2024-07-20',
-        duration: 19,
-        progress: 100,
-        assignee: 'Jane Smith',
-        sprintLink: { id: 'SP-011', name: 'Sprint 11' },
-        level: 1,
-      },
-      {
-        id: 'T-011-2',
-        wbs: '3.2.2',
-        name: 'API Migration',
-        type: 'task',
-        status: 'in-progress',
-        priority: 'critical',
-        startDate: '2024-07-15',
-        endDate: '2024-08-15',
-        duration: 31,
-        progress: 60,
-        assignee: 'Mike Johnson',
-        sprintLink: { id: 'SP-012', name: 'Sprint 12' },
-        level: 1,
-      },
-      {
-        id: 'T-011-3',
-        wbs: '3.2.3',
-        name: 'Integration Testing',
-        type: 'task',
-        status: 'not-started',
-        priority: 'high',
-        startDate: '2024-08-10',
-        endDate: '2024-08-31',
-        duration: 21,
-        progress: 0,
-        assignee: 'Emily Brown',
-        level: 1,
-      },
-    ],
-  },
-  {
-    id: 'T-012',
-    wbs: '3.3',
-    name: 'Application Migration - Wave 2',
-    type: 'summary',
-    status: 'not-started',
-    priority: 'high',
-    startDate: '2024-08-15',
-    endDate: '2024-10-15',
-    duration: 61,
-    progress: 0,
-    assignee: 'Jane Smith',
-    level: 0,
-    expanded: false,
-  },
-  {
-    id: 'T-013',
-    wbs: '3.4',
-    name: 'Data Migration',
-    type: 'summary',
-    status: 'in-progress',
-    priority: 'high',
-    startDate: '2024-07-15',
-    endDate: '2024-09-30',
-    duration: 77,
-    progress: 40,
-    assignee: 'Emily Brown',
-    sprintLink: { id: 'SP-012', name: 'Sprint 12' },
-    level: 0,
-    expanded: true,
-    children: [
-      {
-        id: 'T-013-1',
-        wbs: '3.4.1',
-        name: 'Data Profiling',
-        type: 'task',
-        status: 'completed',
-        priority: 'high',
-        startDate: '2024-07-15',
-        endDate: '2024-07-31',
-        duration: 16,
-        progress: 100,
-        assignee: 'Emily Brown',
-        sprintLink: { id: 'SP-011', name: 'Sprint 11' },
-        level: 1,
-      },
-      {
-        id: 'T-013-2',
-        wbs: '3.4.2',
-        name: 'ETL Pipeline Development',
-        type: 'task',
-        status: 'in-progress',
-        priority: 'critical',
-        startDate: '2024-08-01',
-        endDate: '2024-09-15',
-        duration: 45,
-        progress: 35,
-        assignee: 'David Wilson',
-        sprintLink: { id: 'SP-012', name: 'Sprint 12' },
-        level: 1,
-      },
-    ],
-  },
-];
+import { useProjectContext } from '@/contexts/ProjectContext';
+import { useTasks, DbTask } from '@/hooks/useTasks';
+
+interface ChildTask {
+  id: string;
+  wbs: string;
+  name: string;
+  type: 'task' | 'milestone' | 'summary';
+  status: 'not-started' | 'in-progress' | 'completed' | 'blocked' | 'on-hold';
+  priority: 'critical' | 'high' | 'medium' | 'low';
+  startDate: string;
+  endDate: string;
+  duration: number;
+  progress: number;
+  assignee?: string;
+  sprintLink?: { id: string; name: string };
+  children?: ChildTask[];
+  level: number;
+  expanded?: boolean;
+}
+
 
 const statusIcons: Record<string, React.ReactNode> = {
   'not-started': <Circle className="h-4 w-4 text-muted-foreground" />,
@@ -378,11 +202,73 @@ function ChildTaskRow({ task, expanded, onToggle, selected, onSelect, onSprintCl
   );
 }
 
+
+
 export function ChildPlansView() {
-  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(
-    new Set(mockChildTasks.filter(t => t.expanded).map(t => t.id))
-  );
+  const { settings } = useProjectContext();
+  const { data: tasks = [], isLoading } = useTasks(settings?.id || null);
+
+  // Transform flat tasks to hierarchy
+  const hierarchy = React.useMemo(() => {
+    if (!tasks.length) return [];
+
+    const taskMap = new Map<string, ChildTask>();
+    const rootTasks: ChildTask[] = [];
+
+    // First pass: create nodes
+    tasks.forEach(t => {
+      taskMap.set(t.id, {
+        id: t.id,
+        wbs: t.wbs,
+        name: t.name,
+        type: t.type as any, // Cast to match interface or update interface
+        status: t.status as any,
+        priority: t.priority as any,
+        startDate: t.start_date,
+        endDate: t.end_date,
+        duration: t.duration,
+        progress: t.progress,
+        assignee: t.assignee_id || 'Unassigned', // Using ID as name fallback for now
+        level: t.level,
+        children: [],
+        expanded: t.expanded || false
+      });
+    });
+
+    // Second pass: build tree
+    tasks.forEach(t => {
+      const node = taskMap.get(t.id)!;
+      if (t.parent_id && taskMap.has(t.parent_id)) {
+        const parent = taskMap.get(t.parent_id)!;
+        parent.children = parent.children || [];
+        parent.children.push(node);
+      } else {
+        rootTasks.push(node);
+      }
+    });
+
+    return rootTasks.sort((a, b) => a.wbs.localeCompare(b.wbs, undefined, { numeric: true }));
+  }, [tasks]);
+
+  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
+
+  // Initialize expanded state on load
+  useEffect(() => {
+    if (hierarchy.length > 0 && expandedTasks.size === 0) {
+      const initialExpanded = new Set<string>();
+      const traverse = (nodes: ChildTask[]) => {
+        nodes.forEach(n => {
+          if (n.children?.length) {
+            initialExpanded.add(n.id);
+            traverse(n.children);
+          }
+        });
+      };
+      traverse(hierarchy);
+      setExpandedTasks(initialExpanded);
+    }
+  }, [hierarchy.length]); // Run once when hierarchy loads
 
   const toggleTask = (taskId: string) => {
     setExpandedTasks((prev) => {
@@ -408,19 +294,31 @@ export function ChildPlansView() {
     });
   };
 
-  const flattenTasks = (tasks: ChildTask[]): ChildTask[] => {
+  const flattenTasks = (nodes: ChildTask[]): ChildTask[] => {
     const result: ChildTask[] = [];
-    for (const task of tasks) {
+    for (const task of nodes) {
       result.push(task);
-      if (task.children && expandedTasks.has(task.id)) {
+      if (task.children && task.children.length > 0 && expandedTasks.has(task.id)) {
         result.push(...flattenTasks(task.children));
       }
     }
     return result;
   };
 
-  const visibleTasks = flattenTasks(mockChildTasks);
+  const visibleTasks = React.useMemo(() => flattenTasks(hierarchy), [hierarchy, expandedTasks]);
   const linkedSprintCount = visibleTasks.filter(t => t.sprintLink).length;
+
+  // Derive parent task / summary metrics from root tasks or project settings
+  const parentSummary = {
+    wbs: 'P-1', // Placeholder or use project code
+    priority: 'high',
+    name: settings?.name || 'Project Plan',
+    progress: Math.round(visibleTasks.reduce((acc, t) => acc + (t.progress || 0), 0) / (visibleTasks.length || 1))
+  };
+
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-full"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+  }
 
   return (
     <div className="flex flex-col h-full">
@@ -437,18 +335,18 @@ export function ChildPlansView() {
             </div>
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <Badge variant="outline">{mockParentTask.wbs}</Badge>
-                <Badge variant="destructive">{mockParentTask.priority}</Badge>
+                <Badge variant="outline">{parentSummary.wbs}</Badge>
+                <Badge variant="destructive">{parentSummary.priority}</Badge>
               </div>
-              <h1 className="text-lg font-semibold">{mockParentTask.name}</h1>
+              <h1 className="text-lg font-semibold">{parentSummary.name}</h1>
             </div>
           </div>
           <div className="flex items-center gap-4">
             <div className="text-right">
               <p className="text-sm text-muted-foreground">Progress</p>
               <div className="flex items-center gap-2">
-                <Progress value={mockParentTask.progress} className="w-32 h-2" />
-                <span className="font-medium">{mockParentTask.progress}%</span>
+                <Progress value={parentSummary.progress} className="w-32 h-2" />
+                <span className="font-medium">{parentSummary.progress}%</span>
               </div>
             </div>
             <div className="text-right">

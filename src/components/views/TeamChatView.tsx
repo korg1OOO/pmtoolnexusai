@@ -86,14 +86,9 @@ import { useProjectContext } from '@/contexts/ProjectContext';
 import { useChatChannels, useCreateChannel, type ChatChannel } from '@/hooks/useChatChannels';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
-// Mock data (Keep for Members sidebar until we wire user list from project members)
-const mockMembers = [
-  { id: 'u-1', name: 'Sarah Mitchell', role: 'Project Manager', status: 'online' as const },
-  { id: 'u-2', name: 'John Doe', role: 'Tech Lead', status: 'online' as const },
-  { id: 'u-3', name: 'Emily Brown', role: 'Designer', status: 'away' as const },
-  { id: 'u-4', name: 'Mike Johnson', role: 'DevOps Engineer', status: 'online' as const },
-  { id: 'u-5', name: 'Jane Smith', role: 'Developer', status: 'offline' as const },
-];
+import { useProjectMembers } from '@/hooks/useProjectMembers';
+// Mock members removed - using useProjectMembers hook
+
 
 // Create Channel Dialog
 function CreateChannelDialog({ projectId, onOpenChange }: { projectId: string; onOpenChange: (open: boolean) => void }) {
@@ -247,15 +242,31 @@ function ChannelSidebar({
   );
 }
 
-// Members Sidebar Component (Mocked for now)
-function MembersSidebar() {
-  const onlineMembers = mockMembers.filter((m) => m.status === 'online');
-  const awayMembers = mockMembers.filter((m) => m.status === 'away');
-  const offlineMembers = mockMembers.filter((m) => m.status === 'offline');
+// Members Sidebar Component (Wired)
+function MembersSidebar({ projectId }: { projectId: string }) {
+  const { members, isLoading } = useProjectMembers(projectId);
+  const { onlineUsers } = useChatPresence(projectId); // Assuming useChatPresence provides online user IDs or similar
 
-  const renderMemberList = (members: typeof mockMembers, status: 'online' | 'away' | 'offline') => (
+  // Map real members to display format
+  // We need to determine status from onlineUsers presence map
+  const mappedMembers = members?.map(m => {
+    const isOnline = onlineUsers?.some(u => u.user_id === m.user_id);
+    return {
+      id: m.user_id,
+      name: m.profile.full_name || m.profile.email || 'Unknown',
+      role: m.role,
+      status: isOnline ? 'online' : 'offline', // Simplified status for now
+      avatar: m.profile.avatar_url,
+      email: m.profile.email
+    };
+  }) || [];
+
+  const onlineMembers = mappedMembers.filter((m) => m.status === 'online');
+  const offlineMembers = mappedMembers.filter((m) => m.status === 'offline');
+
+  const renderMemberList = (list: typeof mappedMembers, status: 'online' | 'offline') => (
     <div className="mt-2 space-y-1">
-      {members.map((member) => (
+      {list.map((member) => (
         <div
           key={member.id}
           className={cn(
@@ -266,7 +277,7 @@ function MembersSidebar() {
           <div className="relative">
             <Avatar className="h-7 w-7">
               <AvatarFallback className="text-xs">
-                {member.name.split(' ').map((n) => n[0]).join('')}
+                {getInitials(member.name || member.email || '?')}
               </AvatarFallback>
             </Avatar>
             {status !== 'offline' && (
@@ -292,25 +303,22 @@ function MembersSidebar() {
       <div className="p-4 border-b">
         <h3 className="font-medium text-sm flex items-center gap-2">
           <Users className="h-4 w-4" />
-          Members ({mockMembers.length})
+          Members ({mappedMembers.length})
         </h3>
       </div>
       <ScrollArea className="flex-1">
         <div className="p-3 space-y-4">
-          <div>
-            <span className="text-xs font-medium text-muted-foreground uppercase px-2">
-              Online — {onlineMembers.length}
-            </span>
-            {renderMemberList(onlineMembers, 'online')}
-          </div>
-          {awayMembers.length > 0 && (
+          {isLoading && <Loader2 className="h-4 w-4 animate-spin mx-auto" />}
+
+          {onlineMembers.length > 0 && (
             <div>
               <span className="text-xs font-medium text-muted-foreground uppercase px-2">
-                Away — {awayMembers.length}
+                Online — {onlineMembers.length}
               </span>
-              {renderMemberList(awayMembers, 'away')}
+              {renderMemberList(onlineMembers, 'online')}
             </div>
           )}
+
           {offlineMembers.length > 0 && (
             <div>
               <span className="text-xs font-medium text-muted-foreground uppercase px-2">
@@ -746,7 +754,7 @@ export function TeamChatView() {
         </div>
       </div>
 
-      {showMembers && <MembersSidebar />}
+      {showMembers && <MembersSidebar projectId={projectId} />}
     </div>
   );
 }

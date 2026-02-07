@@ -54,11 +54,8 @@ interface Session {
   type: 'desktop' | 'mobile'; // Added strict type
 }
 
-const mockSessions: Session[] = [
-  { id: '1', device: 'MacBook Pro', browser: 'Chrome 120', location: 'New York, US', lastActive: 'Now', current: true, type: 'desktop' },
-  { id: '2', device: 'iPhone 15', browser: 'Safari', location: 'New York, US', lastActive: '2 hours ago', current: false, type: 'mobile' },
-  { id: '3', device: 'Windows PC', browser: 'Firefox 121', location: 'Boston, US', lastActive: '1 day ago', current: false, type: 'desktop' },
-];
+// Mocks removed - Session management handled by Supabase Auth
+
 
 export function UserSettingsView() {
   const [activeTab, setActiveTab] = useState('profile');
@@ -455,47 +452,14 @@ export function UserSettingsView() {
                 <CardDescription>Manage your active login sessions</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                {mockSessions.map((session) => (
-                  <div
-                    key={session.id}
-                    className={cn(
-                      'flex items-center justify-between p-3 rounded-lg border',
-                      session.current && 'bg-primary/5 border-primary/30'
-                    )}
-                  >
-                    <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
-                        {session.type === 'mobile' ? (
-                          <Smartphone className="h-5 w-5 text-muted-foreground" />
-                        ) : (
-                          <Monitor className="h-5 w-5 text-muted-foreground" />
-                        )}
-                      </div>
-                      <div>
-                        <div className="font-medium text-sm flex items-center gap-2">
-                          {session.device} - {session.browser}
-                          {session.current && (
-                            <Badge variant="outline" className="text-xs bg-primary/20 text-primary border-primary/30">
-                              Current
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                          {session.location} • {session.lastActive}
-                        </div>
-                      </div>
-                    </div>
-                    {!session.current && (
-                      <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive">
-                        <LogOut className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                ))}
-                <Button variant="outline" className="w-full mt-2">
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Sign Out All Other Sessions
-                </Button>
+                <div className="p-4 rounded-lg border bg-muted/20 text-center">
+                  <Shield className="h-8 w-8 mx-auto text-primary mb-2" />
+                  <p className="font-medium">Session Management</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Your sessions are managed securely by your identity provider.
+                    Check your provider dashboard for active session details.
+                  </p>
+                </div>
               </CardContent>
             </Card>
 

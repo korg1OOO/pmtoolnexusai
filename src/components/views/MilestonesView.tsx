@@ -56,73 +56,14 @@ import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { useMilestones, Milestone } from '@/hooks/useMilestones';
+import { useStageGates, StageGate, GateCriteria } from '@/hooks/useStageGates';
 import { toast } from 'sonner';
 
-// Stage Gate Interfaces (Mock/Future)
-interface StageGate {
-  id: string;
-  name: string;
-  description: string;
-  phase: string;
-  status: 'pending' | 'in-review' | 'approved' | 'rejected' | 'deferred';
-  approvers: Approver[];
-  criteria: GateCriteria[];
-  scheduledDate: string;
-  actualDate?: string;
-  comments: GateComment[];
-}
+// Removed local interfaces in favor of hook types
 
-interface Approver {
-  id: string;
-  name: string;
-  role: string;
-  avatar?: string;
-  decision?: 'approved' | 'rejected' | 'pending';
-  date?: string;
-  comment?: string;
-}
 
-interface GateCriteria {
-  id: string;
-  description: string;
-  status: 'met' | 'not-met' | 'partial' | 'na';
-  evidence?: string;
-}
+// Mocks removed - using useStageGates hook
 
-interface GateComment {
-  id: string;
-  author: string;
-  date: string;
-  content: string;
-}
-
-// Temporary mocks for Stage Gates until backend is ready
-const mockStageGates: StageGate[] = [
-  {
-    id: 'gate-1',
-    name: 'Phase 1 Gate: Discovery Complete',
-    description: 'Approval to proceed from Discovery to Architecture & Design phase',
-    phase: 'Discovery',
-    status: 'approved',
-    scheduledDate: '2024-03-15',
-    actualDate: '2024-03-15',
-    approvers: [
-      { id: 'a1', name: 'Sarah Mitchell', role: 'Project Sponsor', decision: 'approved', date: '2024-03-14', comment: 'Excellent discovery work' },
-      { id: 'a2', name: 'James Wilson', role: 'Technical Director', decision: 'approved', date: '2024-03-15' },
-      { id: 'a3', name: 'Lisa Chen', role: 'Business Owner', decision: 'approved', date: '2024-03-14' },
-    ],
-    criteria: [
-      { id: 'c1', description: 'Current state analysis completed', status: 'met', evidence: 'Document: CSA-Report-v1.pdf' },
-      { id: 'c2', description: 'Infrastructure inventory documented', status: 'met', evidence: 'Spreadsheet: Infra-Inventory.xlsx' },
-      { id: 'c3', description: 'Risk assessment performed', status: 'met', evidence: 'Risk Register updated' },
-      { id: 'c4', description: 'Stakeholder sign-off obtained', status: 'met', evidence: '3/3 stakeholders approved' },
-    ],
-    comments: [
-      { id: 'cm1', author: 'Sarah Mitchell', date: '2024-03-14', content: 'Team did a thorough job on the discovery phase. Ready to proceed.' },
-    ],
-  },
-  // ... (Keeping simplified mocks to avoid bloat, can re-add full list later if needed)
-];
 
 const getStatusColor = (status: Milestone['status']) => {
   switch (status) {
@@ -163,7 +104,9 @@ const getCriteriaIcon = (status: GateCriteria['status']) => {
 
 export function MilestonesView() {
   const { settings } = useProjectContext();
-  const { data: milestones, isLoading, createMilestone, updateMilestone, deleteMilestone } = useMilestones(settings.id);
+  const { data: milestones, isLoading: milestonesLoading, createMilestone, updateMilestone, deleteMilestone } = useMilestones(settings.id);
+  const { gates, isLoading: gatesLoading, approveGate } = useStageGates(settings.id);
+  const isLoading = milestonesLoading || gatesLoading;
 
   const [viewMode, setViewMode] = useState<'timeline' | 'list' | 'gates'>('timeline');
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
@@ -216,9 +159,28 @@ export function MilestonesView() {
     }
   };
 
-  const handleApprove = (gate: StageGate) => {
+  const handleApprove = async (gate: StageGate) => {
+    // Determine if we approve or start review
+    if (gate.status === 'pending') {
+      // Logic to start review could be added here
+    }
     setSelectedGate(gate);
     setApprovalDialogOpen(true);
+  };
+
+  const confirmApproval = async (status: 'approved' | 'rejected') => {
+    if (!selectedGate) return;
+    try {
+      await approveGate.mutateAsync({
+        gateId: selectedGate.id,
+        status,
+        comments: approvalComment
+      });
+      setApprovalDialogOpen(false);
+      setApprovalComment('');
+    } catch (e) {
+      // handled in hook
+    }
   };
 
   if (isLoading) {
@@ -303,8 +265,8 @@ export function MilestonesView() {
         />
         <KPICard
           title="Stage Gates"
-          value={mockStageGates.length.toString()}
-          subtitle={`${mockStageGates.filter(g => g.status === 'in-review').length} awaiting approval`}
+          value={(gates?.length || 0).toString()}
+          subtitle={`${gates?.filter(g => g.status === 'in-review').length || 0} awaiting approval`}
           icon={Shield}
           status="neutral"
         />
@@ -324,8 +286,8 @@ export function MilestonesView() {
             key={mode}
             onClick={() => setViewMode(mode)}
             className={`px-4 py-2 rounded-md text-sm font-medium transition-all capitalize ${viewMode === mode
-                ? 'bg-background text-foreground shadow-sm'
-                : 'text-muted-foreground hover:text-foreground'
+              ? 'bg-background text-foreground shadow-sm'
+              : 'text-muted-foreground hover:text-foreground'
               }`}
           >
             {mode === 'gates' ? 'Stage Gates' : mode}
@@ -374,13 +336,12 @@ export function MilestonesView() {
         </div>
       )}
 
-      {/* Stage Gates View */}
       {viewMode === 'gates' && (
         <div className="space-y-6">
-          {mockStageGates.map((gate, index) => {
+          {(gates || []).map((gate, index) => {
             const gateStatus = getGateStatusBadge(gate.status);
-            const metCriteria = gate.criteria.filter(c => c.status === 'met').length;
-            const approvedCount = gate.approvers.filter(a => a.decision === 'approved').length;
+            const metCriteria = gate.criteria?.filter(c => c.status === 'met').length || 0;
+            const approvedCount = gate.approvers?.filter(a => a.status === 'approved').length || 0;
 
             return (
               <motion.div
@@ -563,20 +524,30 @@ export function MilestonesView() {
         </div>
       )}
 
-      {/* Gate Review Dialog (Simplified for mock) */}
-      <Dialog open={!!selectedGate && !approvalDialogOpen} onOpenChange={() => setSelectedGate(null)}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-auto">
-          {selectedGate && (
-            <>
-              <DialogHeader>
-                <DialogTitle>{selectedGate.name}</DialogTitle>
-                <DialogDescription>Mock Gate Data</DialogDescription>
-              </DialogHeader>
-              <div className="py-4">
-                Gate details rendering is simplified in this view.
-              </div>
-            </>
-          )}
+      {/* Gate Review Dialog */}
+      <Dialog open={!!selectedGate && approvalDialogOpen} onOpenChange={(open) => !open && setApprovalDialogOpen(false)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Approve Gate: {selectedGate?.name}</DialogTitle>
+            <DialogDescription>
+              Provide your decision and comments for this stage gate.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <Label>Comments / Conditions</Label>
+              <Textarea
+                value={approvalComment}
+                onChange={(e) => setApprovalComment(e.target.value)}
+                placeholder="Enter approval notes or rejection reasons..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setApprovalDialogOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={() => confirmApproval('rejected')}>Reject</Button>
+            <Button className="bg-success hover:bg-success/90" onClick={() => confirmApproval('approved')}>Approve</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>

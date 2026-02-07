@@ -1,6 +1,6 @@
-import type { 
-  Project, Task, Sprint, SprintItem, Meeting, Risk, Decision, 
-  Resource, BudgetItem, Note, Program, Portfolio, PortfolioProject 
+import type {
+  Project, Task, Sprint, SprintItem, Meeting, Risk, Decision,
+  Resource, BudgetItem, Note, Program, Portfolio, PortfolioProject
 } from '@/types/project';
 
 export const mockProject: Project = {
@@ -802,6 +802,105 @@ export const mockPrograms: Program[] = [
     projectIds: ['PRJ-003'],
     budget: { approved: 950000, forecast: 920000, actual: 780000 },
   },
+];
+
+// Mock Data for NotesView
+import type { Notebook, NotebookSection, NotebookPage } from '@/hooks/useNotebooks';
+
+export const MOCK_NOTEBOOKS: Notebook[] = [
+  {
+    id: 'nb1',
+    name: 'Product Requirements',
+    icon: 'book',
+    color: 'blue',
+    sort_order: 0,
+    is_shared: false,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    project_id: 'demo',
+    user_id: 'demo'
+  }
+];
+
+export const MOCK_SECTIONS: NotebookSection[] = [
+  {
+    id: 's1',
+    notebook_id: 'nb1',
+    name: 'Phase 1: MVP',
+    color: 'blue',
+    sort_order: 0,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }
+];
+
+export const MOCK_PAGES: NotebookPage[] = [
+  {
+    id: 'pg1',
+    section_id: 's1',
+    title: 'Functional Specs',
+    content: '# Functional Specifications\n\n- User Auth\n- Dashboard',
+    content_html: '<h1>Functional Specifications</h1><ul><li>User Auth</li><li>Dashboard</li></ul>',
+    tags: ['specs', 'v1'],
+    is_favorite: false,
+    is_pinned: false,
+    created_by: 'Demo User',
+    created_by_user_id: 'demo',
+    sort_order: 0,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }
+];
+
+// Mock Data for ReportsView
+import type { Report } from '@/hooks/useReports';
+
+export const MOCK_REPORTS: Report[] = [
+  {
+    id: 'r1',
+    project_id: 'demo',
+    name: 'Weekly Status Report',
+    description: 'Weekly executive summary of project health, risks, and milestones',
+    type: 'status',
+    category: 'Status',
+    frequency: 'weekly',
+    last_generated: new Date().toISOString(),
+    next_run: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+    is_scheduled: true,
+    config: {},
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'r2',
+    project_id: 'demo',
+    name: 'Financial Overview',
+    description: 'Budget vs Actuals, burn rate, and forecast',
+    type: 'financial',
+    category: 'Financial',
+    frequency: 'monthly',
+    last_generated: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
+    next_run: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(),
+    is_scheduled: true,
+    config: {},
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  },
+  {
+    id: 'r3',
+    project_id: 'demo',
+    name: 'Risk Register',
+    description: 'Active risks and mitigation plans',
+    type: 'risk',
+    category: 'Risk',
+    frequency: 'on-demand',
+    last_generated: null,
+    next_run: null,
+    is_scheduled: false,
+    config: {},
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }
 ];
 
 export const mockPortfolios: Portfolio[] = [

@@ -39,8 +39,8 @@ import { TemplateGallery } from '@/components/project-creation/TemplateGallery';
 import { MethodologySelector } from '@/components/project-creation/MethodologySelector';
 import { TemplatePreview } from '@/components/project-creation/TemplatePreview';
 import { templateCategories, methodologyOptions } from '@/data/templateData';
-import type { ProjectTemplate, Methodology, GovernanceLevel, ProjectCreationData } from '@/types/templates';
-import { useTemplates, useCreateProjectFromTemplate } from '@/hooks/useTemplates';
+import type { Methodology, GovernanceLevel, ProjectCreationData } from '@/types/templates';
+import { useTemplates, useCreateProjectFromTemplate, type ProjectTemplate } from '@/hooks/useTemplates';
 
 type CreationPath = 'template' | 'custom' | null;
 type Step = 'path' | 'template-select' | 'methodology' | 'details' | 'team' | 'review';
@@ -133,14 +133,14 @@ export function ProjectCreationView() {
     }
   };
 
-  const handleTemplateSelect = (template: ProjectTemplate) => {
+  const handleTemplateSelect = (template: any) => {
     setSelectedTemplate(template);
     setFormData((prev) => ({
       ...prev,
-      methodology: template.methodology,
+      methodology: template.methodology as Methodology,
       templateId: template.id,
       name: '',
-      enabledPhases: template.phases.map((p) => p.id),
+      enabledPhases: (template.phases || []).map((p: any) => p.id),
     }));
   };
 
@@ -334,19 +334,18 @@ export function ProjectCreationView() {
       </div>
 
       <TemplateGallery
-        templates={templates || []}
-        selectedTemplate={selectedTemplate}
+        templates={(templates || []) as any}
+        selectedTemplate={selectedTemplate as any}
         onSelect={handleTemplateSelect}
-        onPreview={(template) => {
+        onPreview={(template: any) => {
           setSelectedTemplate(template);
           setShowTemplatePreview(true);
         }}
-        isLoading={isLoadingTemplates}
       />
 
       {showTemplatePreview && selectedTemplate && (
         <TemplatePreview
-          template={selectedTemplate}
+          template={selectedTemplate as any}
           open={showTemplatePreview}
           onClose={() => setShowTemplatePreview(false)}
           onSelect={() => {

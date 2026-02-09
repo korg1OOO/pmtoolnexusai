@@ -147,7 +147,7 @@ export const scenarioService = {
 
     // Simulate applying adjustments (Update single task fields)
     async updateScenarioTask(scenarioId: string, taskId: string, updates: Partial<DbTask>) {
-        const { error } = await supabase
+        const { error } = await (supabase as any)
             .from('tasks')
             .update(updates)
             .eq('id', taskId)
@@ -167,7 +167,7 @@ export const scenarioService = {
         if (deleteError) throw deleteError;
 
         // 2. Convert scenario tasks to actuals
-        const { error: promoteError } = await supabase
+        const { error: promoteError } = await (supabase as any)
             .from('tasks')
             .update({ scenario_id: null })
             .eq('project_id', projectId)

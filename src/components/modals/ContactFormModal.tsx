@@ -34,7 +34,7 @@ export function ContactFormModal({ children, defaultSubject = "General Inquiry",
         const message = formData.get('message') as string;
 
         try {
-            const { error } = await supabase
+            const { error } = await (supabase as any)
                 .from('support_tickets')
                 .insert({
                     name,

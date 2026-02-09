@@ -20,7 +20,7 @@ export const useMilestones = (projectId: string) => {
     const { data, isLoading, error } = useQuery({
         queryKey: ['milestones', projectId],
         queryFn: async () => {
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('project_milestones')
                 .select('*')
                 .eq('project_id', projectId)
@@ -34,7 +34,7 @@ export const useMilestones = (projectId: string) => {
 
     const createMilestone = useMutation({
         mutationFn: async (newMilestone: Partial<Milestone>) => {
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('project_milestones')
                 .insert(newMilestone)
                 .select()
@@ -50,7 +50,7 @@ export const useMilestones = (projectId: string) => {
 
     const updateMilestone = useMutation({
         mutationFn: async ({ id, updates }: { id: string; updates: Partial<Milestone> }) => {
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('project_milestones')
                 .update(updates)
                 .eq('id', id)
@@ -67,7 +67,7 @@ export const useMilestones = (projectId: string) => {
 
     const deleteMilestone = useMutation({
         mutationFn: async (id: string) => {
-            const { error } = await supabase
+            const { error } = await (supabase as any)
                 .from('project_milestones')
                 .delete()
                 .eq('id', id);

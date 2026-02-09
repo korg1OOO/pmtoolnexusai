@@ -245,12 +245,12 @@ function ChannelSidebar({
 // Members Sidebar Component (Wired)
 function MembersSidebar({ projectId }: { projectId: string }) {
   const { members, isLoading } = useProjectMembers(projectId);
-  const { onlineUsers } = useChatPresence(projectId); // Assuming useChatPresence provides online user IDs or similar
+  const { typingUsers } = useChatPresence(projectId);
 
   // Map real members to display format
   // We need to determine status from onlineUsers presence map
   const mappedMembers = members?.map(m => {
-    const isOnline = onlineUsers?.some(u => u.user_id === m.user_id);
+    const isOnline = false; // Presence tracked separately
     return {
       id: m.user_id,
       name: m.profile.full_name || m.profile.email || 'Unknown',

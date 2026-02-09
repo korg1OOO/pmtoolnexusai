@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { useTasks } from '@/hooks/useTasks';
 import { Loader2 } from 'lucide-react';
@@ -46,7 +47,7 @@ export function ChildGanttView() {
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set(['T-010', 'T-011', 'T-013']));
 
   const { settings } = useProjectContext();
-  const { tasks, isLoading } = useTasks(settings.id);
+  const { data: tasks, isLoading } = useTasks(settings.id);
 
   // Transform tasks to ChildTask format (Simple flat mapping for now, assuming useTasks returns a flat list)
   // In a real implementation, we would build the tree structure based on parent_id
@@ -67,7 +68,7 @@ export function ChildGanttView() {
       endDate: t.end_date || new Date().toISOString(),
       progress: t.progress || 0,
       isCritical: false, // Calculate critical path if needed
-      level: t.indentation || 0,
+      level: (t as any).indentation || 0,
       // sprintLink - would need join or separate fetch
     }));
 

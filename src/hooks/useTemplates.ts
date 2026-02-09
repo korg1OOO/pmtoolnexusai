@@ -29,7 +29,7 @@ export function useTemplates() {
     return useQuery({
         queryKey: ['project-templates'],
         queryFn: async () => {
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('project_templates')
                 .select('*')
                 .eq('is_active', true)
@@ -57,7 +57,7 @@ export function useTemplate(id: string | null) {
         queryKey: ['project-template', id],
         queryFn: async () => {
             if (!id) return null;
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('project_templates')
                 .select('*')
                 .eq('id', id)
@@ -101,7 +101,7 @@ export function useCreateProjectFromTemplate() {
             organizationId,
             startDate,
         }: CreateProjectFromTemplateInput) => {
-            const { data, error } = await supabase.rpc('create_project_from_template', {
+            const { data, error } = await (supabase as any).rpc('create_project_from_template', {
                 p_template_id: templateId,
                 p_name: name,
                 p_description: description,

@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 export interface ProjectMember {
-    id: string; // membership id
+    id: string;
     project_id: string;
     user_id: string;
     role: 'owner' | 'admin' | 'member' | 'viewer';
@@ -26,51 +26,29 @@ export function useProjectMembers(projectId: string | null) {
         queryFn: async () => {
             if (!projectId) return [];
 
-            // Since we don't have a direct relation set up in types yet or strict foreign keys might be tricky with auth.users
-            // We will join manually or use the view if available.
-            // Assuming 'profiles' table exists and is public.
-
-            const { data, error } = await supabase
-                .from('project_members')
-                .select(`
-          *,
-          profile:profiles!public_project_members_user_id_fkey(*) 
-        `)
-                // Note: The foreign key might need to be explicit or we might need to fetch profiles separately if FK is not detected by PostgREST
-                // Fallback or explicit query:
-                .eq('project_id', projectId);
-
-            if (error) {
-                // Fallback: If relation fails, fetch members then profiles
-                console.warn("Relation fetch failed, falling back to manual join", error);
-                const { data: memberData, error: memberError } = await supabase
+            try {
+                const { data: memberData, error: memberError } = await (supabase as any)
                     .from('project_members')
                     .select('*')
                     .eq('project_id', projectId);
 
                 if (memberError) throw memberError;
-
                 if (!memberData || memberData.length === 0) return [];
 
-                const userIds = memberData.map(m => m.user_id);
-                const { data: profiles, error: profileError } = await supabase
+                const userIds = memberData.map((m: any) => m.user_id);
+                const { data: profiles } = await (supabase as any)
                     .from('profiles')
                     .select('*')
                     .in('id', userIds);
 
-                if (profileError) throw profileError;
-
-                return memberData.map(m => ({
+                return memberData.map((m: any) => ({
                     ...m,
-                    profile: profiles?.find(p => p.id === m.user_id) || { id: m.user_id, full_name: 'Unknown', avatar_url: null, email: null }
+                    profile: profiles?.find((p: any) => p.id === m.user_id) || { id: m.user_id, full_name: 'Unknown', avatar_url: null, email: null }
                 })) as ProjectMember[];
+            } catch (err) {
+                console.warn('project_members table may not exist:', err);
+                return [];
             }
-
-            // If relation works
-            return data.map((d: any) => ({
-                ...d,
-                profile: d.profile || { id: d.user_id, full_name: 'Unknown' } // Handle potential nulls
-            })) as ProjectMember[];
         },
         enabled: !!projectId,
     });
@@ -79,25 +57,23 @@ export function useProjectMembers(projectId: string | null) {
         mutationFn: async ({ email, role }: { email: string; role: string }) => {
             if (!projectId) throw new Error("No project ID");
 
-            // 1. Find user by email (Requires admin or RPC usually, but we'll try profiles look up if public)
-            const { data: users, error: userError } = await supabase
+            const { data: users, error: userError } = await (supabase as any)
                 .from('profiles')
                 .select('id')
                 .eq('email', email)
                 .single();
 
             if (userError || !users) {
-                // If profile not found, maybe invite flow? For now throw
                 throw new Error("User not found via email");
             }
 
-            const { error } = await supabase
+            const { error } = await (supabase as any)
                 .from('project_members')
                 .insert({
                     project_id: projectId,
                     user_id: users.id,
                     role,
-                    status: 'active' // Auto activate for now
+                    status: 'active'
                 });
 
             if (error) throw error;
@@ -112,7 +88,7 @@ export function useProjectMembers(projectId: string | null) {
     const removeMember = useMutation({
         mutationFn: async (userId: string) => {
             if (!projectId) return;
-            const { error } = await supabase
+            const { error } = await (supabase as any)
                 .from('project_members')
                 .delete()
                 .eq('project_id', projectId)

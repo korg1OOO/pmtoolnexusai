@@ -49,7 +49,24 @@ import {
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { toast } from 'sonner';
-import { useTemplates } from '@/hooks/useTemplates';
+import { useTemplates, type ProjectTemplate } from '@/hooks/useTemplates';
+
+const templateCategories = [
+  { id: 'software', name: 'Software', icon: '💻' },
+  { id: 'construction', name: 'Construction', icon: '🏗️' },
+  { id: 'marketing', name: 'Marketing', icon: '📢' },
+  { id: 'consulting', name: 'Consulting', icon: '💼' },
+  { id: 'research', name: 'Research', icon: '🔬' },
+  { id: 'operations', name: 'Operations', icon: '⚙️' },
+];
+
+const methodologyOptions = [
+  { id: 'agile', name: 'Agile' },
+  { id: 'waterfall', name: 'Waterfall' },
+  { id: 'hybrid', name: 'Hybrid' },
+  { id: 'prince2', name: 'PRINCE2' },
+  { id: 'lean', name: 'Lean' },
+];
 
 export function TemplatesAdminView() {
   const { data: fetchedTemplates, isLoading } = useTemplates();
@@ -77,9 +94,9 @@ export function TemplatesAdminView() {
   });
 
   const handleToggleActive = (templateId: string) => {
-    setTemplates((prev) =>
+    setLocalTemplates((prev) =>
       prev.map((t) =>
-        t.id === templateId ? { ...t, isActive: !t.isActive } : t
+        t.id === templateId ? { ...t, isActive: !t.is_active, is_active: !t.is_active } : t
       )
     );
     toast.success('Template status updated');
@@ -90,16 +107,17 @@ export function TemplatesAdminView() {
       ...template,
       id: `TPL-${Date.now()}`,
       name: `${template.name} (Copy)`,
+      usage_count: 0,
       usageCount: 0,
-      createdAt: new Date().toISOString().split('T')[0],
-      updatedAt: new Date().toISOString().split('T')[0],
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     };
-    setTemplates((prev) => [...prev, newTemplate]);
+    setLocalTemplates((prev) => [...prev, newTemplate]);
     toast.success('Template duplicated');
   };
 
   const handleDelete = (templateId: string) => {
-    setTemplates((prev) => prev.filter((t) => t.id !== templateId));
+    setLocalTemplates((prev) => prev.filter((t) => t.id !== templateId));
     toast.success('Template deleted');
   };
 

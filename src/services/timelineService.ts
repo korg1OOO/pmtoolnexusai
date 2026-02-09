@@ -76,9 +76,7 @@ export const timelineService = {
                 *,
                 activities:timeline_activities(*)
             `)
-            .eq('project_id', projectId)
-            .order('order_index')
-            .order('order_index', { foreignTable: 'activities' });
+            .eq('project_id', projectId);
 
         if (swimlaneError) throw swimlaneError;
 

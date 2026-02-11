@@ -18,6 +18,26 @@ import MLAnalyticsHub from "./components/views/MLAnalyticsHub";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { ProjectProvider } from "@/contexts/ProjectContext";
 import { PresenceProvider } from "@/contexts/PresenceContext";
+import { AdminPanel } from "@/components/admin/AdminPanel";
+import {
+  AdminDashboard,
+  AdminUsers,
+  AdminProUsers,
+  AdminHealthCheck,
+  AdminAIUsage,
+  AdminContentManagement,
+  AdminLicenseKeys,
+  AdminSecurityAudit,
+  AdminBilling,
+  AdminDiscountCodes,
+  AdminManagement,
+  AdminRequests,
+  AdminAnalytics,
+  AdminMarketing,
+  AdminEmailAutomation,
+  AdminAffiliates,
+  AdminBackups,
+} from "@/components/admin/pages";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +83,30 @@ const App = () => (
                 </ProjectProvider>
               </ProtectedRoute>
             } />
+            {/* Admin Panel Routes */}
+            <Route path="/admin" element={
+              <ProtectedRoute>
+                <AdminPanel />
+              </ProtectedRoute>
+            }>
+              <Route index element={<AdminDashboard />} />
+              <Route path="health" element={<AdminHealthCheck />} />
+              <Route path="ai-usage" element={<AdminAIUsage />} />
+              <Route path="users" element={<AdminUsers />} />
+              <Route path="pro-users" element={<AdminProUsers />} />
+              <Route path="content" element={<AdminContentManagement />} />
+              <Route path="licenses" element={<AdminLicenseKeys />} />
+              <Route path="security" element={<AdminSecurityAudit />} />
+              <Route path="billing" element={<AdminBilling />} />
+              <Route path="discounts" element={<AdminDiscountCodes />} />
+              <Route path="management" element={<AdminManagement />} />
+              <Route path="requests" element={<AdminRequests />} />
+              <Route path="analytics" element={<AdminAnalytics />} />
+              <Route path="marketing" element={<AdminMarketing />} />
+              <Route path="email" element={<AdminEmailAutomation />} />
+              <Route path="affiliates" element={<AdminAffiliates />} />
+              <Route path="backups" element={<AdminBackups />} />
+            </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

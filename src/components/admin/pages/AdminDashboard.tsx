@@ -1,0 +1,205 @@
+/**
+ * Admin Dashboard
+ * Main landing page for admin panel with key metrics and overview
+ */
+
+import React from 'react';
+import { MetricCard } from '../components/MetricCard';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import {
+    Users,
+    DollarSign,
+    Activity,
+    FolderKanban,
+    TrendingUp,
+    AlertCircle,
+    CheckCircle,
+    RefreshCw,
+} from 'lucide-react';
+import { useAdminUsers } from '@/hooks/useAdmin';
+
+export function AdminDashboard() {
+    const { data: users } = useAdminUsers();
+
+    // Mock data - replace with real data from API
+    const metrics = {
+        totalUsers: users?.length || 0,
+        activeUsers: Math.floor((users?.length || 0) * 0.42),
+        mrr: 13380,
+        totalProjects: 156,
+    };
+
+    const recentActivity = [
+        { user: 'john@example.com', action: 'Upgraded to Pro', time: '2 minutes ago', type: 'success' },
+        { user: 'sarah@example.com', action: 'Created new project', time: '15 minutes ago', type: 'info' },
+        { user: 'mike@example.com', action: 'Payment failed', time: '1 hour ago', type: 'error' },
+        { user: 'emma@example.com', action: 'Signed up', time: '2 hours ago', type: 'success' },
+    ];
+
+    const systemStatus = [
+        { service: 'API Server', status: 'operational', uptime: '99.9%' },
+        { service: 'Database', status: 'operational', uptime: '100%' },
+        { service: 'File Storage', status: 'operational', uptime: '99.8%' },
+        { service: 'Email Service', status: 'degraded', uptime: '98.5%' },
+    ];
+
+    return (
+        <div className="p-6 space-y-6">
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div>
+                    <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+                    <p className="text-muted-foreground mt-1">
+                        Overview of platform metrics and activity
+                    </p>
+                </div>
+                <Button variant="outline" size="sm">
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Refresh
+                </Button>
+            </div>
+
+            {/* Key Metrics */}
+            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                <MetricCard
+                    title="Total Users"
+                    value={metrics.totalUsers}
+                    subtitle="All registered users"
+                    icon={Users}
+                    trend={{ value: 12.5, label: 'vs last month', positive: true }}
+                />
+                <MetricCard
+                    title="Active Users (7d)"
+                    value={metrics.activeUsers}
+                    subtitle="Users active in last 7 days"
+                    icon={Activity}
+                    trend={{ value: 8.2, label: 'vs last week', positive: true }}
+                />
+                <MetricCard
+                    title="Monthly Revenue"
+                    value={`$${metrics.mrr.toLocaleString()}`}
+                    subtitle="MRR from subscriptions"
+                    icon={DollarSign}
+                    trend={{ value: 15.3, label: 'vs last month', positive: true }}
+                />
+                <MetricCard
+                    title="Total Projects"
+                    value={metrics.totalProjects}
+                    subtitle="Projects created"
+                    icon={FolderKanban}
+                    trend={{ value: 22.1, label: 'vs last month', positive: true }}
+                />
+            </div>
+
+            <div className="grid gap-6 lg:grid-cols-2">
+                {/* Recent Activity */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>Recent Activity</CardTitle>
+                        <CardDescription>Latest user actions and events</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-4">
+                            {recentActivity.map((activity, idx) => (
+                                <div key={idx} className="flex items-start gap-3">
+                                    <div
+                                        className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${activity.type === 'success'
+                                                ? 'bg-success/20'
+                                                : activity.type === 'error'
+                                                    ? 'bg-destructive/20'
+                                                    : 'bg-primary/20'
+                                            }`}
+                                    >
+                                        {activity.type === 'success' ? (
+                                            <CheckCircle className="h-4 w-4 text-success" />
+                                        ) : activity.type === 'error' ? (
+                                            <AlertCircle className="h-4 w-4 text-destructive" />
+                                        ) : (
+                                            <TrendingUp className="h-4 w-4 text-primary" />
+                                        )}
+                                    </div>
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium">{activity.user}</p>
+                                        <p className="text-sm text-muted-foreground">{activity.action}</p>
+                                    </div>
+                                    <span className="text-xs text-muted-foreground flex-shrink-0">
+                                        {activity.time}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* System Status */}
+                <Card>
+                    <CardHeader>
+                        <CardTitle>System Status</CardTitle>
+                        <CardDescription>Service health and uptime</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <div className="space-y-4">
+                            {systemStatus.map((service, idx) => (
+                                <div key={idx} className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                        <div
+                                            className={`h-2 w-2 rounded-full ${service.status === 'operational'
+                                                    ? 'bg-success'
+                                                    : service.status === 'degraded'
+                                                        ? 'bg-warning'
+                                                        : 'bg-destructive'
+                                                }`}
+                                        />
+                                        <span className="text-sm font-medium">{service.service}</span>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <span className="text-xs text-muted-foreground">{service.uptime}</span>
+                                        <Badge
+                                            variant="outline"
+                                            className={`capitalize ${service.status === 'operational'
+                                                    ? 'bg-success/20 text-success border-success/30'
+                                                    : 'bg-warning/20 text-warning border-warning/30'
+                                                }`}
+                                        >
+                                            {service.status}
+                                        </Badge>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+
+            {/* Quick Actions */}
+            <Card>
+                <CardHeader>
+                    <CardTitle>Quick Actions</CardTitle>
+                    <CardDescription>Common admin tasks</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="flex flex-wrap gap-3">
+                        <Button variant="outline" size="sm">
+                            <Users className="h-4 w-4 mr-2" />
+                            Add User
+                        </Button>
+                        <Button variant="outline" size="sm">
+                            <RefreshCw className="h-4 w-4 mr-2" />
+                            Sync Stripe
+                        </Button>
+                        <Button variant="outline" size="sm">
+                            <DollarSign className="h-4 w-4 mr-2" />
+                            Create Invoice
+                        </Button>
+                        <Button variant="outline" size="sm">
+                            <Activity className="h-4 w-4 mr-2" />
+                            Run Health Check
+                        </Button>
+                    </div>
+                </CardContent>
+            </Card>
+        </div>
+    );
+}

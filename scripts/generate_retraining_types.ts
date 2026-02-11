@@ -1,113 +1,24 @@
+/**
+ * Generate TypeScript types for retraining tables
+ */
 
-    ml_predictions: {
-      Row: {
-        id: string;
-        project_id: string;
-        prediction_type: string;
-        prediction_data: Json;
-        confidence_score: number;
-        created_at: string;
-        expires_at: string;
-        created_by: string | null;
-      };
-      Insert: {
-        id?: string;
-        project_id: string;
-        prediction_type: string;
-        prediction_data: Json;
-        confidence_score: number;
-        created_at?: string;
-        expires_at?: string;
-        created_by?: string | null;
-      };
-      Update: {
-        id?: string;
-        project_id?: string;
-        prediction_type?: string;
-        prediction_data?: Json;
-        confidence_score?: number;
-        created_at?: string;
-        expires_at?: string;
-        created_by?: string | null;
-      };
-      Relationships: [
-        {
-          foreignKeyName: "ml_predictions_project_id_fkey";
-          columns: ["project_id"];
-          isOneToOne: false;
-          referencedRelation: "projects";
-          referencedColumns: ["id"];
-        }
-      ];
-    };
-   ml_model_metadata: {
-      Row: {
-        id: string;
-        model_type: string;
-        model_version: string;
-        algorithm: string;
-        accuracy_metrics: Json;
-        is_active: boolean;
-        training_date: string;
-        training_data_period_start: string | null;
-        training_data_period_end: string | null;
-        hyperparameters: Json | null;
-        feature_importance: Json | null;
-        validation_score: number | null;
-        created_at: string;
-        created_by: string | null;
-      };
-      Insert: {
-        id?: string;
-        model_type: string;
-        model_version: string;
-        algorithm: string;
-        accuracy_metrics: Json;
-        is_active?: boolean;
-        training_date?: string;
-        training_data_period_start?: string | null;
-        training_data_period_end?: string | null,
-        hyperparameters?: Json | null;
-        feature_importance?: Json | null;
-        validation_score?: number | null;
-        created_at?: string;
-        created_by?: string | null;
-      };
-      Update: {
-        id?: string;
-        model_type?: string;
-        model_version?: string;
-        algorithm?: string;
-        accuracy_metrics?: Json;
-        is_active?: boolean;
-        training_date?: string;
-        training_data_period_start?: string | null;
-        training_data_period_end?: string | null;
-        hyperparameters?: Json | null;
-        feature_importance?: Json | null;
-        validation_score?: number | null;
-        created_at?: string;
-        created_by?: string | null;
-      };
-      Relationships: [];
-    };
-    ml_training_data: {
-      Row: {
-        id: string;
-        project_id: string;
-        snapshot_date: string;
-        snapshot_data: Json;
-        data_quality_score: number;
-        created_at: string;
-      };
-      Insert: {
-        id?: string;
-        project_id: string;
-        snapshot_date?: string;
-        snapshot_data: Json;
-        data_quality_score: number;
-        created_at?: string;
-      
+import { readFileSync, writeFileSync } from 'fs';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+async function addRetrainingTypes() {
+    try {
+        console.log('📝 Adding retraining table types...\n');
+
+        // Read existing types file
+        const typesPath = join(__dirname, '../src/integrations/supabase/types.ts');
+        let existingTypes = readFileSync(typesPath, 'utf-8');
+
+        // Generate new type definitions for retraining tables
+        const retrainingTypesAddition = `
     ml_retraining_jobs: {
       Row: {
         id: string;
@@ -268,23 +179,25 @@
         created_at?: string;
       };
       Relationships: [];
-    };
-};
-      Update: {
-        id?: string;
-        project_id?: string;
-        snapshot_date?: string;
-        snapshot_data?: Json;
-        data_quality_score?: number;
-        created_at?: string;
-      };
-      Relationships: [
-        {
-          foreignKeyName: "ml_training_data_project_id_fkey";
-          columns: ["project_id"];
-          isOneToOne: false;
-          referencedRelation: "projects";
-          referencedColumns: ["id"];
-        }
-      ];
-    };
+    };`;
+
+        // Find where to insert the types (after ml_training_data)
+        const insertPosition = existingTypes.indexOf('ml_training_data:');
+        const mlTrainingDataEnd = existingTypes.indexOf('};', insertPosition);
+        const closingBrace = existingTypes.indexOf('}', mlTrainingDataEnd + 3);
+
+        const updatedTypes = existingTypes.substring(0, closingBrace) + retrainingTypesAddition + '\n' + existingTypes.substring(closingBrace);
+
+        // Write updated types
+        writeFileSync(typesPath, updatedTypes, 'utf-8');
+
+        console.log('✅ Types generated and saved to src/integrations/supabase/types.ts\n');
+        console.log('🎉 Type generation completed!\n');
+
+    } catch (error: any) {
+        console.error('❌ Type generation failed:', error.message);
+        process.exit(1);
+    }
+}
+
+addRetrainingTypes();

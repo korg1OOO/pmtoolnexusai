@@ -14,6 +14,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import LandingPage from "./pages/LandingPage";
 import Auth from "./pages/Auth";
 import ProductTour from "./pages/ProductTour";
+import MLAnalyticsHub from "./components/views/MLAnalyticsHub";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { ProjectProvider } from "@/contexts/ProjectContext";
 import { PresenceProvider } from "@/contexts/PresenceContext";
@@ -53,6 +54,15 @@ const App = () => (
             <Route path="/privacy" element={<PrivacyPolicy />} />
             <Route path="/oauth/callback" element={<OAuthCallback />} />
             <Route path="/debug" element={<Debug />} />
+            <Route path="/ml-analytics/:projectId" element={
+              <ProtectedRoute>
+                <ProjectProvider>
+                  <PresenceProvider>
+                    <MLAnalyticsHub />
+                  </PresenceProvider>
+                </ProjectProvider>
+              </ProtectedRoute>
+            } />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

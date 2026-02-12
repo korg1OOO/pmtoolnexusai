@@ -27,7 +27,7 @@ interface TestResult {
     error?: string;
 }
 
-export function AIAgentTester({ agent Id, onClose }: AIAgentTesterProps) {
+export function AIAgentTester({ agentId, onClose }: AIAgentTesterProps) {
     const { data: agent } = useAIAgent(agentId || "");
     const [query, setQuery] = useState("");
     const [isLoading, setIsLoading] = useState(false);

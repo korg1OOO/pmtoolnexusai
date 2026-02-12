@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase as _supabase } from '@/integrations/supabase/client';
 const supabase = _supabase as any;
 import { toast } from 'sonner';
+import { useAuth } from './useAuth';
 
 // Types
 export interface Announcement {
@@ -365,12 +366,35 @@ export function useDeleteFeatureFlag() {
 // Helper to check if feature is enabled for current user
 export function useIsFeatureEnabled(flagName: string): boolean {
     const { data: flag } = useFeatureFlagByName(flagName);
+    const { user } = useAuth();
 
     if (!flag || !flag.is_enabled) return false;
 
-    // TODO: Add tier checking and rollout percentage logic
-    // For now, just return if enabled globally
-    return flag.rollout_percentage === 100;
+    // Check rollout percentage (0-100)
+    // Generate a deterministic number from user ID for consistent experience
+    if (flag.rollout_percentage < 100) {
+        if (!user?.id) return false;
+
+        // Use hash of user ID to get a number between 0-99
+        const hash = user.id.split('').reduce((acc, char) => {
+            return ((acc << 5) - acc) + char.charCodeAt(0);
+        }, 0);
+        const userPercentile = Math.abs(hash % 100);
+
+        if (userPercentile >= flag.rollout_percentage) {
+            return false;
+        }
+    }
+
+    // Check tier restrictions if specified
+    if (flag.target_tiers && flag.target_tiers.length > 0) {
+        // TODO: Fetch user's subscription tier from subscription_tiers table
+        // For now, assume all users have access
+        // In production, you would query the user's tier and check against target_tiers
+        return true;
+    }
+
+    return true;
 }
 
 // ============ MARKETING CAMPAIGNS ============

@@ -42,9 +42,6 @@ function saveState(state: Partial<NotesViewState>) {
   }
 }
 
-// Import Mocks
-import { MOCK_NOTEBOOKS, MOCK_SECTIONS, MOCK_PAGES } from '@/data/mockData';
-
 interface NotesViewProps {
   demo?: boolean;
 }
@@ -73,10 +70,11 @@ export function NotesView({ demo = false }: NotesViewProps) {
 
   // Use mocks if demo is true
   // Use mocks if demo is true
-  const notebooks = useMemo(() => demo ? MOCK_NOTEBOOKS : realNotebooks, [demo, realNotebooks]);
-  const sections = useMemo(() => demo ? (selectedNotebookId === 'nb1' ? MOCK_SECTIONS : []) : realSections, [demo, selectedNotebookId, realSections]);
-  const pages = useMemo(() => demo ? (selectedSectionId === 's1' ? MOCK_PAGES : []) : realPages, [demo, selectedSectionId, realPages]);
-  const allPages = useMemo(() => demo ? MOCK_PAGES : [], [demo]);
+  // Demo mode disabled - always use real data
+  const notebooks = realNotebooks;
+  const sections = realSections;
+  const pages = realPages;
+  const allPages: any[] = [];
 
   // No-op for mutations in demo mode (or we could mock them, but read-only is fine for a tour)
   const createNotebook = useCallback(async (name: string, icon?: string, color?: string) => null, []);
@@ -91,15 +89,7 @@ export function NotesView({ demo = false }: NotesViewProps) {
 
   const { spreadsheets, loading: spreadsheetsLoading, createSpreadsheet, updateSpreadsheet, deleteSpreadsheet } = useSpreadsheets(selectedNotebookId);
 
-  // Derived state updates for demo mode initialization
-  useEffect(() => {
-    if (demo && !selectedNotebookId) {
-      setSelectedNotebookId(MOCK_NOTEBOOKS[0].id);
-      setSelectedSectionId(MOCK_SECTIONS[0].id);
-      setSelectedPage(MOCK_PAGES[0]);
-      setSelectedPageId(MOCK_PAGES[0].id);
-    }
-  }, [demo, selectedNotebookId, setSelectedNotebookId, setSelectedSectionId, setSelectedPage, setSelectedPageId]);
+
   const { outgoingLinks, incomingLinks } = usePageLinks(selectedPage?.id || null);
 
   // Save state when selections change

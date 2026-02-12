@@ -154,9 +154,27 @@ export function AdminProUsers() {
         console.log(`Exported ${filteredSubscribers.length} subscribers to CSV`);
     };
 
-    const handleStripeSync = () => {
-        // TODO: Implement Stripe sync
-        console.log('Syncing with Stripe...');
+    const handleStripeSync = async () => {
+        try {
+            toast.loading('Syncing with Stripe...');
+
+            // Call Supabase Edge Function to sync Stripe data
+            const { data, error } = await (supabase as any).functions.invoke('stripe-sync', {
+                body: { action: 'sync_subscriptions' }
+            });
+
+            if (error) throw error;
+
+            toast.dismiss();
+            toast.success(`Synced ${data?.synced_count || 0} subscriptions from Stripe`);
+
+            // Refresh the subscribers list
+            refetch();
+        } catch (error: any) {
+            toast.dismiss();
+            console.error('Stripe sync error:', error);
+            toast.error(`Failed to sync with Stripe: ${error.message || 'Unknown error'}`);
+        }
     };
 
     return (

@@ -106,6 +106,9 @@ export interface AIOrchestratorResponse {
 }
 
 // Agent display configuration
+// @deprecated This is now loaded from the database via useAIAgents() hook.
+// Kept for backward compatibility and type definitions only.
+// Use src/hooks/useAIAgents.ts instead for dynamic agent configuration.
 export const AGENT_DISPLAY_INFO: Record<AgentType, { label: string; icon: string; color: string }> = {
   scheduler: { label: 'Scheduler', icon: 'Calendar', color: 'text-blue-500' },
   finance: { label: 'Finance', icon: 'DollarSign', color: 'text-green-500' },

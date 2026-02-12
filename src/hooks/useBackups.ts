@@ -115,7 +115,20 @@ export function useTriggerBackup() {
 
             if (error) throw error;
 
-            // TODO: Trigger actual backup via Edge Function or external service
+            // Trigger the backup Edge Function
+            const { error: functionError } = await supabase.functions.invoke('database-backup', {
+                body: { backup_job_id: data.id }
+            });
+
+            if (functionError) {
+                console.error('Backup function error:', functionError);
+                // Update job status to failed
+                await supabase
+                    .from('backup_jobs')
+                    .update({ status: 'failed' })
+                    .eq('id', data.id);
+                throw functionError;
+            }
 
             return data as BackupJob;
         },

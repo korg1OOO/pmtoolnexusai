@@ -55,20 +55,13 @@ import {
 import { Textarea } from '@/components/ui/textarea';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 
-
-// Import Mocks
-import { MOCK_REPORTS } from '@/data/mockData';
-
 interface ReportsViewProps {
   demo?: boolean;
 }
 
 export function ReportsView({ demo = false }: ReportsViewProps) {
   const { settings } = useProjectContext();
-  const { data: realReports, isLoading: isRealLoading, createReport, deleteReport } = useReports(settings.id);
-
-  const reports = demo ? MOCK_REPORTS : realReports;
-  const isLoading = demo ? false : isRealLoading;
+  const { data: reports, isLoading, createReport, deleteReport } = useReports(settings.id);
 
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<ReportCategory | 'all'>('all');

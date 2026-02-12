@@ -37,7 +37,6 @@ import { useMeetings } from '@/hooks/useMeetings';
 import { useActions } from '@/hooks/useActions';
 import { useBacklogItems } from '@/hooks/useBacklogItems';
 import { useFinancials } from '@/hooks/useFinancials';
-import { kpiData as mockKPIData } from '@/data/mockData';
 import { cn } from '@/lib/utils';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';

@@ -8,6 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { forecastCosts } from "@/services/mlAnalyticsService";
 import type { CostForecast } from "@/types/mlAnalytics";
+import { toast } from "sonner";
 
 interface CostForecastingPanelProps {
     projectId: string;
@@ -51,9 +52,102 @@ export default function CostForecastingPanel({ projectId }: CostForecastingPanel
         }).format(value);
     };
 
-    const handleExport = () => {
-        // TODO: Implement export to Excel/PDF
-        console.log("Export forecast data");
+    const handleExport = async () => {
+        if (!forecast) return;
+
+        try {
+            const XLSX = await import('xlsx');
+            const jsPDF = (await import('jspdf')).default;
+            const autoTable = (await import('jspdf-autotable')).default;
+
+            // Create workbook for Excel
+            const wb = XLSX.utils.book_new();
+
+            // Summary sheet
+            const summaryData = [
+                ['Cost Forecast Summary', ''],
+                ['', ''],
+                ['Total Budget', formatCurrency(forecast.total_budget)],
+                ['Total Forecast', formatCurrency(forecast.total_forecast)],
+                ['Variance', formatCurrency(forecast.total_variance)],
+                ['Variance %', `${forecast.variance_percent.toFixed(1)}%`],
+                ['Confidence Score', `${(confidenceScore * 100).toFixed(0)}%`],
+                ['', ''],
+                ['Timeline Data', ''],
+                ['Date', 'Budget', 'Forecast', 'Actual'],
+            ];
+
+            forecast.timeline.forEach(t => {
+                summaryData.push([
+                    t.date,
+                    t.budgeted?.toString() || '',
+                    t.forecast?.toString() || '',
+                    t.actual?.toString() || ''
+                ]);
+            });
+
+            const summaryWs = XLSX.utils.aoa_to_sheet(summaryData);
+            XLSX.utils.book_append_sheet(wb, summaryWs, 'Summary');
+
+            // Variance by category sheet
+            const categoryData = [
+                ['Category', 'Budgeted', 'Forecast', 'Variance', 'Variance %'],
+                ...forecast.variance_by_category.map(c => [
+                    c.category,
+                    c.budgeted,
+                    c.forecast,
+                    c.variance,
+                    c.variance_percent
+                ])
+            ];
+            const categoryWs = XLSX.utils.aoa_to_sheet(categoryData);
+            XLSX.utils.book_append_sheet(wb, categoryWs, 'Variance by Category');
+
+            // Export Excel
+            XLSX.writeFile(wb, `cost-forecast-${new Date().toISOString().split('T')[0]}.xlsx`);
+
+            // Export PDF
+            const doc = new jsPDF();
+
+            doc.setFontSize(18);
+            doc.text('Cost Forecast Report', 14, 20);
+
+            doc.setFontSize(11);
+            doc.text(`Generated: ${new Date().toLocaleDateString()}`, 14, 30);
+            doc.text(`Confidence: ${(confidenceScore * 100).toFixed(0)}%`, 14, 36);
+
+            // Summary table
+            autoTable(doc, {
+                startY: 45,
+                head: [['Metric', 'Value']],
+                body: [
+                    ['Total Budget', formatCurrency(forecast.total_budget)],
+                    ['Total Forecast', formatCurrency(forecast.total_forecast)],
+                    ['Variance', formatCurrency(forecast.total_variance)],
+                    ['Variance %', `${forecast.variance_percent.toFixed(1)}%`],
+                ],
+            });
+
+            // Variance by category table
+            autoTable(doc, {
+                startY: (doc as any).lastAutoTable.finalY + 10,
+                head: [['Category', 'Budgeted', 'Forecast', 'Variance', 'Variance %']],
+                body: forecast.variance_by_category.map(c => [
+                    c.category,
+                    formatCurrency(c.budgeted),
+                    formatCurrency(c.forecast),
+                    formatCurrency(c.variance),
+                    `${c.variance_percent.toFixed(1)}%`
+                ]),
+            });
+
+            doc.save(`cost-forecast-${new Date().toISOString().split('T')[0]}.pdf`);
+
+            toast.success('Forecast exported successfully (Excel & PDF)');
+        } catch (error) {
+            console.error('Export failed:', error);
+            toast.error('Failed to export forecast data');
+        }
     };
 
     if (isLoading) {

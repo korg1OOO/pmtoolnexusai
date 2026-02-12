@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Zap, ShieldCheck, LayoutGrid } from 'lucide-react';
+import { Loader2, Zap, ShieldCheck, LayoutGrid, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -13,6 +13,8 @@ import { LandingFooter } from '@/components/layout/LandingFooter';
 
 const Auth = () => {
     const [isLoading, setIsLoading] = useState(false);
+    const [showLoginPassword, setShowLoginPassword] = useState(false);
+    const [showSignupPassword, setShowSignupPassword] = useState(false);
     const navigate = useNavigate();
 
     const location = useLocation();
@@ -159,7 +161,12 @@ const Auth = () => {
                                                 <Label htmlFor="password">Password</Label>
                                                 <a href="#" className="text-xs text-indigo-400 hover:text-indigo-300">Forgot password?</a>
                                             </div>
-                                            <Input id="password" name="password" type="password" required className="h-11" />
+                                            <div className="relative">
+                                                <Input id="password" name="password" type={showLoginPassword ? "text" : "password"} required className="h-11 pr-10" />
+                                                <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowLoginPassword(!showLoginPassword)} tabIndex={-1}>
+                                                    {showLoginPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                                </button>
+                                            </div>
                                         </div>
                                         <Button className="w-full h-11 bg-indigo-600 hover:bg-indigo-500 font-bold text-white" type="submit" disabled={isLoading}>
                                             {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -199,7 +206,12 @@ const Auth = () => {
                                         </div>
                                         <div className="space-y-2">
                                             <Label htmlFor="signup-password">Password</Label>
-                                            <Input id="signup-password" name="password" type="password" required className="h-11" />
+                                            <div className="relative">
+                                                <Input id="signup-password" name="password" type={showSignupPassword ? "text" : "password"} required className="h-11 pr-10" />
+                                                <button type="button" className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground" onClick={() => setShowSignupPassword(!showSignupPassword)} tabIndex={-1}>
+                                                    {showSignupPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                                </button>
+                                            </div>
                                         </div>
                                         <div className="space-y-2">
                                             <ul className="text-xs text-muted-foreground list-disc pl-4 space-y-1">

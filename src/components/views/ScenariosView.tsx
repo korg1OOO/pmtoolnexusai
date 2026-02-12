@@ -30,7 +30,7 @@ import { useProjectContext } from '@/contexts/ProjectContext';
 import { useTasks, DbTask } from '@/hooks/useTasks';
 import { useScenarios } from '@/hooks/useScenarios';
 import { useProfile } from '@/hooks/useProfile';
-import { aiService } from '@/services/aiService';
+import { TrackedAIService } from '@/services/trackedAIService';
 
 interface Adjustment {
   id: string;
@@ -229,7 +229,7 @@ export function ScenariosView() {
       adjustments: calculatedAdjustments
     };
 
-    const { data: impactData, error } = await aiService.simulateScenarios(settings.id, calculatedAdjustments.map(a => ({ field: a.field, value: a.newValue })));
+    const { data: impactData, error } = await TrackedAIService.simulateScenarios(settings.id, calculatedAdjustments.map(a => ({ field: a.field, value: a.newValue })));
     setIsSimulating(false);
 
     if (error) {

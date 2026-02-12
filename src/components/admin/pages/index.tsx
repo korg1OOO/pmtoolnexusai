@@ -19,8 +19,8 @@ const PlaceholderPage = ({ title }: { title: string }) => {
     );
 };
 
-export const AdminHealthCheck = () => <PlaceholderPage title="Health Check" />;
-export const AdminAIUsage = () => <PlaceholderPage title="AI Usage & Costs" />;
+export { AdminHealthCheck } from './AdminHealthCheck';
+export { AdminAIUsage } from './AdminAIUsage';
 export const AdminContentManagement = () => <PlaceholderPage title="Content Management" />;
 export const AdminSecurityAudit = () => <PlaceholderPage title="Security & Audit" />;
 export const AdminBilling = () => <PlaceholderPage title="Billing" />;

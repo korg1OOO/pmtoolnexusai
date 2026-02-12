@@ -14,7 +14,7 @@ import { useStrategicInsights } from '@/hooks/useStrategicInsights';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { StrategicAISidebar } from '@/components/ai/StrategicAISidebar';
-import { aiService } from '@/services/aiService';
+import { TrackedAIService } from '@/services/trackedAIService';
 import { AIRiskDiscovery, ProjectContext, ValueEngineering } from '@/types/ai-pm';
 import { AlertCircle, Plus } from 'lucide-react';
 
@@ -308,7 +308,7 @@ export function StrategicDashboardView() {
                     if (!settings?.id) return;
                     setIsAnalyzingRisks(true);
                     toast.info('AI is performing project risk discovery...');
-                    const { error } = await aiService.analyzeRisks(settings.id);
+                    const { error } = await TrackedAIService.analyzeRisks(settings.id);
 
                     if (error) {
                       setIsAnalyzingRisks(false);
@@ -348,7 +348,7 @@ export function StrategicDashboardView() {
                             if (!settings?.id) return;
                             setIsAnalyzingRisks(true);
                             toast.info('AI is performing project risk discovery...');
-                            const { error } = await aiService.analyzeRisks(settings.id);
+                            const { error } = await TrackedAIService.analyzeRisks(settings.id);
 
                             if (error) {
                               setIsAnalyzingRisks(false);

@@ -34,7 +34,7 @@ import type { CommunicationIngest, ExecutiveStatus, CommunicationAnalysis } from
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { useEmailAccounts } from '@/hooks/useEmailAccounts';
 import { useEmails, Email } from '@/hooks/useEmails';
-import { aiService } from '@/services/aiService';
+import { TrackedAIService } from '@/services/trackedAIService';
 import { supabase } from '@/integrations/supabase/client';
 
 
@@ -594,7 +594,7 @@ export function CommunicationIntelligenceView() {
                           onClick={async () => {
                             if (!project?.id) return;
                             setIsGeneratingStatus(true);
-                            const { data, error } = await aiService.generateExecutiveStatus(project.id, statusAudience);
+                            const { data, error } = await TrackedAIService.generateExecutiveStatus(project.id, statusAudience);
                             setIsGeneratingStatus(false);
 
                             if (error) {
@@ -771,7 +771,7 @@ export function CommunicationIntelligenceView() {
                         setIsAnalyzingContent(true);
                         toast.info('Analyzing communication content...');
 
-                        const { data, error } = await aiService.processCommunication(project?.id || 'manual', emailContent);
+                        const { data, error } = await TrackedAIService.processCommunication(project?.id || 'manual', emailContent);
                         setIsAnalyzingContent(false);
 
                         if (error) {

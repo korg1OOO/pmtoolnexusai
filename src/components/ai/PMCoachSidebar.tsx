@@ -33,7 +33,7 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Progress } from '@/components/ui/progress';
 import { useProjectContext } from '@/contexts/ProjectContext';
-import { aiService } from '@/services/aiService';
+import { TrackedAIService } from '@/services/trackedAIService';
 import { useTasks, useDependencies } from '@/hooks/useTasks';
 import { useLessonsLearned } from '@/hooks/useLessonsLearned';
 import { useCalculateCriticalPath } from '@/hooks/useCriticalPath';
@@ -161,7 +161,7 @@ export function PMCoachSidebar({ isOpen, onToggle, currentView = 'gantt' }: PMCo
     const updatedHistory = [...chatHistory, userMsg];
     setChatHistory(updatedHistory);
 
-    const { data, error } = await aiService.chat(projectId, message, updatedHistory);
+    const { data, error } = await TrackedAIService.chat(projectId, message, updatedHistory);
     setIsAsking(false);
 
     if (error) {

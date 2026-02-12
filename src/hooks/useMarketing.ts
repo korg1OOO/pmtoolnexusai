@@ -371,3 +371,191 @@ export function useIsFeatureEnabled(flagName: string): boolean {
     // For now, just return if enabled globally
     return flag.rollout_percentage === 100;
 }
+
+// ============ MARKETING CAMPAIGNS ============
+
+export interface MarketingCampaign {
+    id: string;
+    name: string;
+    type: 'email' | 'sms' | 'push' | 'in_app';
+    status: 'draft' | 'scheduled' | 'running' | 'paused' | 'completed' | 'cancelled';
+    subject: string | null;
+    content: any;
+    target_audience: any;
+    scheduled_at: string | null;
+    started_at: string | null;
+    completed_at: string | null;
+    created_by: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface CampaignAnalytics {
+    total_recipients: number;
+    sent_count: number;
+    delivered_count: number;
+    opened_count: number;
+    clicked_count: number;
+    converted_count: number;
+    bounced_count: number;
+    unsubscribed_count: number;
+    open_rate: number;
+    click_rate: number;
+    conversion_rate: number;
+}
+
+export function useCampaigns(status?: string) {
+    return useQuery({
+        queryKey: ['marketing-campaigns', status],
+        queryFn: async () => {
+            let query = supabase
+                .from('marketing_campaigns')
+                .select('*')
+                .order('created_at', { ascending: false });
+
+            if (status) {
+                query = query.eq('status', status);
+            }
+
+            const { data, error } = await query;
+            if (error) throw error;
+            return data as MarketingCampaign[];
+        }
+    });
+}
+
+export function useCampaign(id: string | undefined) {
+    return useQuery({
+        queryKey: ['marketing-campaign', id],
+        queryFn: async () => {
+            if (!id) return null;
+
+            const { data, error } = await supabase
+                .from('marketing_campaigns')
+                .select('*')
+                .eq('id', id)
+                .single();
+
+            if (error) throw error;
+            return data as MarketingCampaign;
+        },
+        enabled: !!id
+    });
+}
+
+export function useCampaignAnalytics(campaignId: string | undefined) {
+    return useQuery({
+        queryKey: ['campaign-analytics', campaignId],
+        queryFn: async () => {
+            if (!campaignId) return null;
+
+            const { data, error } = await supabase
+                .rpc('get_campaign_metrics', { p_campaign_id: campaignId });
+
+            if (error) throw error;
+            return data?.[0] as CampaignAnalytics;
+        },
+        enabled: !!campaignId,
+        refetchInterval: 30000 // Refetch every 30s for live campaigns
+    });
+}
+
+export function useCreateCampaign() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (campaignData: Partial<MarketingCampaign>) => {
+            const { data, error } = await supabase
+                .from('marketing_campaigns')
+                .insert(campaignData)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data as MarketingCampaign;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['marketing-campaigns'] });
+            toast.success('Campaign created successfully');
+        },
+        onError: (error: any) => {
+            toast.error(`Failed to create campaign: ${error.message}`);
+        }
+    });
+}
+
+export function useUpdateCampaign() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async ({ id, updates }: { id: string; updates: Partial<MarketingCampaign> }) => {
+            const { data, error } = await supabase
+                .from('marketing_campaigns')
+                .update(updates)
+                .eq('id', id)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data as MarketingCampaign;
+        },
+        onSuccess: (_, variables) => {
+            queryClient.invalidateQueries({ queryKey: ['marketing-campaigns'] });
+            queryClient.invalidateQueries({ queryKey: ['marketing-campaign', variables.id] });
+            toast.success('Campaign updated successfully');
+        },
+        onError: (error: any) => {
+            toast.error(`Failed to update campaign: ${error.message}`);
+        }
+    });
+}
+
+export function useExecuteCampaign() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (campaignId: string) => {
+            const { data, error } = await supabase.functions.invoke('execute-campaign', {
+                body: { campaignId }
+            });
+
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: (_, campaignId) => {
+            queryClient.invalidateQueries({ queryKey: ['marketing-campaigns'] });
+            queryClient.invalidateQueries({ queryKey: ['marketing-campaign', campaignId] });
+            queryClient.invalidateQueries({ queryKey: ['campaign-analytics', campaignId] });
+            toast.success('Campaign executed successfully');
+        },
+        onError: (error: any) => {
+            toast.error(`Failed to execute campaign: ${error.message}`);
+        }
+    });
+}
+
+export function usePauseCampaign() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (campaignId: string) => {
+            const { data, error } = await supabase
+                .from('marketing_campaigns')
+                .update({ status: 'paused' })
+                .eq('id', campaignId)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data as MarketingCampaign;
+        },
+        onSuccess: (_, campaignId) => {
+            queryClient.invalidateQueries({ queryKey: ['marketing-campaigns'] });
+            queryClient.invalidateQueries({ queryKey: ['marketing-campaign', campaignId] });
+            toast.success('Campaign paused');
+        },
+        onError: (error: any) => {
+            toast.error(`Failed to pause campaign: ${error.message}`);
+        }
+    });
+}

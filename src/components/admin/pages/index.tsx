@@ -35,5 +35,5 @@ export { AdminAnalytics } from './AdminAnalytics';
 export { AdminMarketing } from './AdminMarketing';
 export { AdminEmailAutomation } from './AdminEmailAutomation';
 export { AdminReferrals } from './AdminReferrals';
-export const AdminAffiliates = () => <PlaceholderPage title="Affiliates" />;
+export { AdminAffiliates } from './AdminAffiliates';
 export { AdminBackups } from './AdminBackups';

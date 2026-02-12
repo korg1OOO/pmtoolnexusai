@@ -19,31 +19,35 @@ import {
     RefreshCw,
 } from 'lucide-react';
 import { useAdminUsers } from '@/hooks/useAdmin';
+import { useRecentActivity, useSystemStatus } from '@/hooks/useAdminDashboard';
 
 export function AdminDashboard() {
     const { data: users } = useAdminUsers();
+    const { data: recentActivity = [], isLoading: activityLoading } = useRecentActivity(4);
+    const { data: systemStatus = [], isLoading: statusLoading } = useSystemStatus();
 
-    // Mock data - replace with real data from API
+    // Metrics - some derived from live data
     const metrics = {
         totalUsers: users?.length || 0,
         activeUsers: Math.floor((users?.length || 0) * 0.42),
-        mrr: 13380,
-        totalProjects: 156,
+        mrr: 13380, // TODO: Wire to billing system
+        totalProjects: 156, // TODO: Wire to projects count
     };
 
-    const recentActivity = [
-        { user: 'john@example.com', action: 'Upgraded to Pro', time: '2 minutes ago', type: 'success' },
-        { user: 'sarah@example.com', action: 'Created new project', time: '15 minutes ago', type: 'info' },
-        { user: 'mike@example.com', action: 'Payment failed', time: '1 hour ago', type: 'error' },
-        { user: 'emma@example.com', action: 'Signed up', time: '2 hours ago', type: 'success' },
-    ];
+    // Format relative time for activity
+    const formatRelativeTime = (timestamp: string) => {
+        const now = new Date();
+        const then = new Date(timestamp);
+        const diffMs = now.getTime() - then.getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
 
-    const systemStatus = [
-        { service: 'API Server', status: 'operational', uptime: '99.9%' },
-        { service: 'Database', status: 'operational', uptime: '100%' },
-        { service: 'File Storage', status: 'operational', uptime: '99.8%' },
-        { service: 'Email Service', status: 'degraded', uptime: '98.5%' },
-    ];
+        if (diffMins < 1) return 'Just now';
+        if (diffMins < 60) return `${diffMins} minutes ago`;
+        if (diffHours < 24) return `${diffHours} hours ago`;
+        return then.toLocaleDateString();
+    };
+
 
     return (
         <div className="p-6 space-y-6">
@@ -106,10 +110,10 @@ export function AdminDashboard() {
                                 <div key={idx} className="flex items-start gap-3">
                                     <div
                                         className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${activity.type === 'success'
-                                                ? 'bg-success/20'
-                                                : activity.type === 'error'
-                                                    ? 'bg-destructive/20'
-                                                    : 'bg-primary/20'
+                                            ? 'bg-success/20'
+                                            : activity.type === 'error'
+                                                ? 'bg-destructive/20'
+                                                : 'bg-primary/20'
                                             }`}
                                     >
                                         {activity.type === 'success' ? (
@@ -146,10 +150,10 @@ export function AdminDashboard() {
                                     <div className="flex items-center gap-3">
                                         <div
                                             className={`h-2 w-2 rounded-full ${service.status === 'operational'
-                                                    ? 'bg-success'
-                                                    : service.status === 'degraded'
-                                                        ? 'bg-warning'
-                                                        : 'bg-destructive'
+                                                ? 'bg-success'
+                                                : service.status === 'degraded'
+                                                    ? 'bg-warning'
+                                                    : 'bg-destructive'
                                                 }`}
                                         />
                                         <span className="text-sm font-medium">{service.service}</span>
@@ -159,8 +163,8 @@ export function AdminDashboard() {
                                         <Badge
                                             variant="outline"
                                             className={`capitalize ${service.status === 'operational'
-                                                    ? 'bg-success/20 text-success border-success/30'
-                                                    : 'bg-warning/20 text-warning border-warning/30'
+                                                ? 'bg-success/20 text-success border-success/30'
+                                                : 'bg-warning/20 text-warning border-warning/30'
                                                 }`}
                                         >
                                             {service.status}

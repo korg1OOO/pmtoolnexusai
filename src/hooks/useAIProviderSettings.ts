@@ -49,7 +49,7 @@ export function useAIProviderSettings() {
     return useQuery({
         queryKey: ['ai-provider-settings'],
         queryFn: async (): Promise<AIProviderSettings | null> => {
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('ai_provider_settings')
                 .select('*')
                 .single();
@@ -72,7 +72,7 @@ export function useAIProviderApiKeys() {
     return useQuery({
         queryKey: ['ai-provider-api-keys'],
         queryFn: async (): Promise<AIProviderApiKey[]> => {
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('ai_provider_api_keys')
                 .select('*');
 
@@ -91,7 +91,7 @@ export function useUpdateAISettings() {
     return useMutation({
         mutationFn: async (settings: UpdateAISettingsData) => {
             // Upsert (insert or update)
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('ai_provider_settings')
                 .upsert({
                     ...settings,
@@ -124,7 +124,7 @@ export function useUpsertAPIKey() {
             const userId = (await supabase.auth.getUser()).data.user?.id;
 
             // Upsert API key
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('ai_provider_api_keys')
                 .upsert({
                     ...keyData,
@@ -155,7 +155,7 @@ export function useDeleteAPIKey() {
 
     return useMutation({
         mutationFn: async (providerId: AIProviderApiKey['provider_id']) => {
-            const { error } = await supabase
+            const { error } = await (supabase as any)
                 .from('ai_provider_api_keys')
                 .delete()
                 .eq('provider_id', providerId);

@@ -27,6 +27,8 @@ import {
     ChevronLeft,
     ArrowLeft,
     Brain,
+    Building2,
+    Shield,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -52,9 +54,13 @@ const navItems: NavItem[] = [
     { id: 'ml-models', label: 'ML Models', icon: Brain, path: '/admin/ml' },
     { id: 'users', label: 'Users', icon: Users, path: '/admin/users' },
     { id: 'pro-users', label: 'Pro Users', icon: Crown, path: '/admin/pro-users' },
+    { id: 'organizations', label: 'Organizations', icon: Building2, path: '/admin/organizations' },
     { id: 'content', label: 'Content Management', icon: FileText, path: '/admin/content' },
     { id: 'licenses', label: 'License Keys', icon: Key, path: '/admin/licenses' },
-    { id: 'security', label: 'Security & Audit', icon: ShieldCheck, path: '/admin/security' },
+    { id: 'security-settings', label: 'Security Settings', icon: Shield, path: '/admin/security' },
+    { id: 'api-keys', label: 'API Keys', icon: Key, path: '/admin/api-keys' },
+    { id: 'audit-logs', label: 'Audit Logs', icon: FileText, path: '/admin/audit-logs' },
+    { id: 'security', label: 'Security & Audit', icon: ShieldCheck, path: '/admin/management' },
     { id: 'billing', label: 'Billing', icon: CreditCard, path: '/admin/billing' },
     { id: 'discounts', label: 'Discount Codes', icon: Percent, path: '/admin/discounts' },
     { id: 'admin-mgmt', label: 'Admin Management', icon: UserCog, path: '/admin/management' },

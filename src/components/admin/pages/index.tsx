@@ -37,3 +37,12 @@ export { AdminEmailAutomation } from './AdminEmailAutomation';
 export { AdminReferrals } from './AdminReferrals';
 export { AdminAffiliates } from './AdminAffiliates';
 export { AdminBackups } from './AdminBackups';
+export { AdminOrganizations } from './AdminOrganizations';
+export { AdminSecurity } from './AdminSecurity';
+export { AdminAPIKeys } from './AdminAPIKeys';
+export { AdminAuditLogs } from './AdminAuditLogs';
+export { TicketDetail } from './TicketDetail';
+export { EmailTemplateEditor } from './EmailTemplateEditor';
+export { EmailCampaignBuilder } from './EmailCampaignBuilder';
+export { EmailCampaignDetail } from './EmailCampaignDetail';
+

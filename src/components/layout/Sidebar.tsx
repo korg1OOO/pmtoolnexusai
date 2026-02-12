@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import {
@@ -147,7 +148,7 @@ const adminItems: NavItem[] = [
     label: 'Administration',
     icon: Shield,
     children: [
-      { id: 'admin-platform', label: 'Platform Admin', icon: Building2, alwaysShow: true },
+      { id: 'admin-redirect', label: 'Platform Admin', icon: Building2, alwaysShow: true },
       { id: 'admin-project', label: 'Project Admin', icon: Settings, alwaysShow: true },
       { id: 'admin-templates', label: 'Templates Admin', icon: FolderKanban, alwaysShow: true },
     ]
@@ -164,6 +165,7 @@ interface SidebarProps {
 export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(true); // Collapsed by default
   const { isModuleVisible } = useProjectContext();
+  const navigate = useNavigate();
 
   // Find which group contains the active item
   const findParentGroup = useMemo(() => {
@@ -225,6 +227,9 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
         onClick={() => {
           if (hasVisibleChildren) {
             toggleGroup(item.id);
+          } else if (item.id === 'admin-redirect') {
+            // Special handling: redirect to /admin route
+            navigate('/admin');
           } else {
             onItemClick(item.id);
           }

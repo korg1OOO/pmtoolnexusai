@@ -44,6 +44,10 @@ import {
   AdminEmailAutomation,
   AdminAffiliates,
   AdminBackups,
+  AdminOrganizations,
+  AdminSecurity,
+  AdminAPIKeys,
+  AdminAuditLogs,
 } from "@/components/admin/pages";
 import { MLDashboard } from "@/components/ml";
 import { HelmetProvider } from 'react-helmet-async';
@@ -132,6 +136,10 @@ const App = () => (
                 <Route path="email/campaigns/:id" element={<EmailCampaignDetail />} />
                 <Route path="affiliates" element={<AdminAffiliates />} />
                 <Route path="backups" element={<AdminBackups />} />
+                <Route path="organizations" element={<AdminOrganizations />} />
+                <Route path="security" element={<AdminSecurity />} />
+                <Route path="api-keys" element={<AdminAPIKeys />} />
+                <Route path="audit-logs" element={<AdminAuditLogs />} />
               </Route>
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

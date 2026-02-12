@@ -25,7 +25,6 @@ import { ActionsView } from '@/components/views/ActionsView';
 import { TraceabilityMatrixView } from '@/components/views/TraceabilityMatrixView';
 import { ChildPlansView } from '@/components/views/ChildPlansView';
 import { ChildGanttView } from '@/components/views/ChildGanttView';
-import { PlatformAdminView } from '@/components/views/PlatformAdminView';
 import { UserSettingsView } from '@/components/views/UserSettingsView';
 import { ProjectAdminView } from '@/components/views/ProjectAdminView';
 import { PlanningView } from '@/components/views/PlanningView';
@@ -139,7 +138,6 @@ const AppContent = () => {
       case 'presentations': return <PresentationsView />;
       case 'final-report': return <FinalReportView />;
       case 'lessons-learned': return <LessonsLearnedView />;
-      case 'admin-platform': return <PlatformAdminView />;
       case 'admin-project': return <ProjectAdminView />;
       case 'admin-templates': return <TemplatesAdminView />;
       case 'settings': return <UserSettingsView />;

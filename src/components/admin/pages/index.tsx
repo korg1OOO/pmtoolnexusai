@@ -46,3 +46,8 @@ export { EmailTemplateEditor } from './EmailTemplateEditor';
 export { EmailCampaignBuilder } from './EmailCampaignBuilder';
 export { EmailCampaignDetail } from './EmailCampaignDetail';
 
+// Email Template Management System
+export { EmailTemplateManager } from '../settings/EmailTemplateManager';
+export { IMAPConfigurationManager } from '../settings/IMAPConfigurationManager';
+export { NotificationAnalyticsDashboard } from '../analytics/NotificationAnalyticsDashboard';
+

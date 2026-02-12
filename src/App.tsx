@@ -48,6 +48,9 @@ import {
   AdminSecurity,
   AdminAPIKeys,
   AdminAuditLogs,
+  EmailTemplateManager,
+  IMAPConfigurationManager,
+  NotificationAnalyticsDashboard,
 } from "@/components/admin/pages";
 import { MLDashboard } from "@/components/ml";
 import { HelmetProvider } from 'react-helmet-async';
@@ -134,6 +137,10 @@ const App = () => (
                 <Route path="email/templates/:id" element={<EmailTemplateEditor />} />
                 <Route path="email/campaigns/new" element={<EmailCampaignBuilder />} />
                 <Route path="email/campaigns/:id" element={<EmailCampaignDetail />} />
+                {/* Email Template Management System */}
+                <Route path="email-templates" element={<EmailTemplateManager />} />
+                <Route path="imap-config" element={<IMAPConfigurationManager />} />
+                <Route path="notification-analytics" element={<NotificationAnalyticsDashboard />} />
                 <Route path="affiliates" element={<AdminAffiliates />} />
                 <Route path="backups" element={<AdminBackups />} />
                 <Route path="organizations" element={<AdminOrganizations />} />

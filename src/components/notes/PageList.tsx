@@ -23,6 +23,8 @@ import {
   Trash2,
   Copy,
   Share2,
+  Table2,
+  ChevronDown,
 } from 'lucide-react';
 import type { NotebookPage } from '@/hooks/useNotebooks';
 import { formatDistanceToNow } from 'date-fns';
@@ -33,6 +35,7 @@ interface PageListProps {
   sectionName: string;
   onSelectPage: (page: NotebookPage) => void;
   onCreatePage: () => void;
+  onCreateSpreadsheet?: () => void;
   onUpdatePage: (id: string, updates: Partial<NotebookPage>) => void;
   onDeletePage: (id: string) => void;
   loading: boolean;
@@ -44,6 +47,7 @@ export function PageList({
   sectionName,
   onSelectPage,
   onCreatePage,
+  onCreateSpreadsheet,
   onUpdatePage,
   onDeletePage,
   loading,
@@ -76,9 +80,25 @@ export function PageList({
       <div className="p-4 border-b border-border space-y-3">
         <div className="flex items-center justify-between">
           <h3 className="font-medium text-foreground">{sectionName || 'Pages'}</h3>
-          <Button variant="ghost" size="iconSm" onClick={onCreatePage}>
-            <Plus className="h-4 w-4" />
-          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="iconSm">
+                <Plus className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={onCreatePage}>
+                <FileText className="h-4 w-4 mr-2" />
+                New Page
+              </DropdownMenuItem>
+              {onCreateSpreadsheet && (
+                <DropdownMenuItem onClick={onCreateSpreadsheet}>
+                  <Table2 className="h-4 w-4 mr-2" />
+                  New Spreadsheet
+                </DropdownMenuItem>
+              )}
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         <div className="relative">

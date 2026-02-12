@@ -66,26 +66,26 @@
     --text-primary: 210 40% 98%;
     --text-secondary: 215 20% 65%;
     --text-tertiary: 215 20% 45%;
-    
+
     /* Priority Colors */
     --priority-critical: 0 72% 51%;
     --priority-high: 25 95% 53%;
     --priority-medium: 38 92% 50%;
     --priority-low: 142 71% 45%;
-    
+
     /* Status Badge Colors */
     --status-active: 142 71% 45%;
     --status-pending: 38 92% 50%;
     --status-blocked: 0 72% 51%;
     --status-completed: 217 91% 60%;
-    
+
     /* Gantt Colors */
     --gantt-task: 217 91% 50%;
     --gantt-milestone: 280 87% 65%;
     --gantt-critical: 0 72% 51%;
     --gantt-baseline: 215 20% 35%;
     --gantt-summary: 199 89% 48%;
-    
+
     /* Sprint Colors */
     --sprint-todo: 217 33% 25%;
     --sprint-progress: 217 91% 60%;
@@ -177,9 +177,10 @@
 }
 
 @layer utilities {
+
   /* Enterprise Grid Lines */
   .grid-lines {
-    background-image: 
+    background-image:
       linear-gradient(to right, hsl(var(--border)) 1px, transparent 1px),
       linear-gradient(to bottom, hsl(var(--border)) 1px, transparent 1px);
     background-size: 24px 24px;
@@ -206,7 +207,7 @@
   /* Glow effects */
   .glow-primary {
     box-shadow: 0 0 20px hsl(var(--primary) / 0.3),
-                0 0 40px hsl(var(--primary) / 0.1);
+      0 0 40px hsl(var(--primary) / 0.1);
   }
 
   .glow-success {
@@ -223,14 +224,14 @@
 
   /* Elevation shadows */
   .shadow-elevated {
-    box-shadow: 
+    box-shadow:
       0 1px 2px hsl(222 47% 0% / 0.3),
       0 4px 8px hsl(222 47% 0% / 0.2),
-      0 8px 16px hsl(222 47% 0% / 0.1);
+      0 8px 16px hsl(var(--primary) / 0.1);
   }
 
   .shadow-overlay {
-    box-shadow: 
+    box-shadow:
       0 4px 6px hsl(222 47% 0% / 0.4),
       0 10px 20px hsl(222 47% 0% / 0.3),
       0 20px 40px hsl(222 47% 0% / 0.2);
@@ -305,46 +306,61 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
-  from { 
+  from {
     opacity: 0;
     transform: translateY(10px);
   }
-  to { 
+
+  to {
     opacity: 1;
     transform: translateY(0);
   }
 }
 
 @keyframes slideRight {
-  from { 
+  from {
     opacity: 0;
     transform: translateX(-10px);
   }
-  to { 
+
+  to {
     opacity: 1;
     transform: translateX(0);
   }
 }
 
 @keyframes scaleIn {
-  from { 
+  from {
     opacity: 0;
     transform: scale(0.95);
   }
-  to { 
+
+  to {
     opacity: 1;
     transform: scale(1);
   }
 }
 
 @keyframes pulseSoft {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.7; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.7;
+  }
 }
 
 /* TipTap Editor Styles */
@@ -441,19 +457,19 @@
   gap: 0.5em;
 }
 
-.ProseMirror ul[data-type="taskList"] li > label {
+.ProseMirror ul[data-type="taskList"] li>label {
   flex-shrink: 0;
   user-select: none;
 }
 
-.ProseMirror ul[data-type="taskList"] li > label input[type="checkbox"] {
+.ProseMirror ul[data-type="taskList"] li>label input[type="checkbox"] {
   cursor: pointer;
   width: 1em;
   height: 1em;
   margin-top: 0.25em;
 }
 
-.ProseMirror ul[data-type="taskList"] li > div {
+.ProseMirror ul[data-type="taskList"] li>div {
   flex: 1;
 }
 
@@ -483,4 +499,145 @@
 
 .ProseMirror s {
   text-decoration: line-through;
+}
+
+/* ========================================
+   Enhanced React Grid Layout Styles 
+   ======================================== */
+
+/* Make resize handles more visible and easier to grab */
+.react-grid-item>.react-resizable-handle {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  z-index: 10;
+}
+
+.react-grid-item:hover>.react-resizable-handle {
+  opacity: 1;
+}
+
+/* Enhanced resize handle styling */
+.react-resizable-handle {
+  background-color: hsl(var(--primary));
+  border-radius: 2px;
+}
+
+/* Corner handles - larger and more visible */
+.react-resizable-handle-se,
+.react-resizable-handle-sw,
+.react-resizable-handle-ne,
+.react-resizable-handle-nw {
+  width: 12px !important;
+  height: 12px !important;
+  border: 2px solid hsl(var(--primary));
+  background: hsl(var(--background));
+  box-shadow: 0 0 4px hsl(var(--primary) / 0.5);
+}
+
+.react-resizable-handle-se {
+  bottom: 0;
+  right: 0;
+  cursor: nwse-resize;
+}
+
+.react-resizable-handle-sw {
+  bottom: 0;
+  left: 0;
+  cursor: nesw-resize;
+}
+
+.react-resizable-handle-ne {
+  top: 0;
+  right: 0;
+  cursor: nesw-resize;
+}
+
+.react-resizable-handle-nw {
+  top: 0;
+  left: 0;
+  cursor: nwse-resize;
+}
+
+/* Edge handles - thicker bars */
+.react-resizable-handle-e,
+.react-resizable-handle-w,
+.react-resizable-handle-n,
+.react-resizable-handle-s {
+  background: linear-gradient(to right, transparent, hsl(var(--primary) / 0.5), transparent);
+}
+
+.react-resizable-handle-e,
+.react-resizable-handle-w {
+  width: 6px !important;
+  top: 0;
+  height: 100%;
+}
+
+.react-resizable-handle-e {
+  right: 0;
+  cursor: ew-resize;
+}
+
+.react-resizable-handle-w {
+  left: 0;
+  cursor: ew-resize;
+}
+
+.react-resizable-handle-n,
+.react-resizable-handle-s {
+  height: 6px !important;
+  left: 0;
+  width: 100%;
+}
+
+.react-resizable-handle-n {
+  top: 0;
+  cursor: ns-resize;
+}
+
+.react-resizable-handle-s {
+  bottom: 0;
+  cursor: ns-resize;
+}
+
+/* Smooth resizing animation */
+.react-grid-item {
+  transition: all 200ms ease;
+  transition-property: left, top, width, height;
+}
+
+.react-grid-item.resizing {
+  transition: none;
+  z-index: 100;
+  will-change: width, height;
+}
+
+.react-grid-item.react-draggable-dragging {
+  transition: none;
+  z-index: 100;
+  will-change: transform;
+}
+
+/* Placeholder styling during drag/resize */
+.react-grid-placeholder {
+  background: hsl(var(--primary) / 0.2);
+  border: 2px dashed hsl(var(--primary));
+  border-radius: 0.5rem;
+  z-index: 2;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  transition: all 100ms ease;
+}
+
+/* Grid layout container */
+.react-grid-layout {
+  position: relative;
+  transition: height 200ms ease;
+}
+
+/* Edit mode enhancements */
+.layout {
+  min-height: 600px;
 }

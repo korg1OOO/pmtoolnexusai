@@ -481,34 +481,77 @@ export function DashboardView({ onViewChange }: DashboardViewProps) {
         layout={layout}
         cols={12}
         rowHeight={30}
-        width={1200} // This ideally should be responsive/measured ref
+        width={typeof window !== 'undefined' ? window.innerWidth - 280 : 1200} // Responsive: subtract sidebar width
+        margin={[16, 16]} // 16px margin between widgets
+        containerPadding={[0, 0]}
+        compactType={null} // Disable auto-compaction to prevent overlap
+        preventCollision={true} // Prevent widgets from overlapping
         isDraggable={isEditMode}
         isResizable={isEditMode}
         onLayoutChange={handleLayoutChange}
         draggableHandle=".drag-handle"
+        resizeHandles={['se', 'sw', 'ne', 'nw', 's', 'e', 'w', 'n']} // All 8 resize handles
+        // Min/Max constraints per widget type
+        onResizeStop={(layout, oldItem, newItem) => {
+          // Optional: Add custom logic on resize complete
+          console.log('Resized:', newItem);
+        }}
       >
-        {layout.map(widget => (
-          <div key={widget.i} className={cn("bg-background/50 rounded-lg", isEditMode && "ring-1 ring-border border-dashed")}>
-            <div className="h-full relative group">
-              {isEditMode && (
-                <>
-                  <div className="drag-handle absolute top-2 left-2 z-20 cursor-move p-1 bg-background/80 rounded hover:bg-background border opacity-0 group-hover:opacity-100 transition-opacity">
-                    <GripVertical className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <Button
-                    variant="destructive"
-                    size="icon"
-                    className="absolute top-2 right-2 z-20 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
-                    onClick={() => handleRemoveWidget(widget.i)}
-                  >
-                    <X className="h-3 w-3" />
-                  </Button>
-                </>
+        {layout.map(widget => {
+          // Define min/max sizes per widget type
+          const widgetType = WIDGET_TYPES.find(t => t.id === widget.type);
+          const minW = widget.type.startsWith('kpi-') ? 2 : 3; // KPIs minimum 2 cols, others 3
+          const minH = widget.type.startsWith('kpi-') ? 2 : 4; // KPIs minimum 2 rows, others 4
+          const maxW = 12; // Full width
+          const maxH = 20; // Reasonable max height
+
+          return (
+            <div
+              key={widget.i}
+              className={cn(
+                "bg-background/50 rounded-lg transition-all duration-200",
+                isEditMode && "ring-2 ring-primary/20 border-dashed hover:ring-primary/40",
+                "relative" // Ensure proper positioning context
               )}
-              {renderWidget(widget)}
+              style={{
+                zIndex: 1 // All widgets at same level to prevent overlaps
+              }}
+              data-grid={{
+                ...widget,
+                minW,
+                minH,
+                maxW,
+                maxH,
+                // Enable resize handles to show on all corners and edges
+                resizeHandles: isEditMode ? ['se', 'sw', 'ne', 'nw', 's', 'e', 'w', 'n'] : [],
+                static: !isEditMode // Lock widgets when not in edit mode
+              }}
+            >
+              <div className="h-full relative group">
+                {isEditMode && (
+                  <>
+                    <div className="drag-handle absolute top-2 left-2 z-20 cursor-move p-1.5 bg-background/90 rounded-md hover:bg-background border shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-200">
+                      <GripVertical className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <Button
+                      variant="destructive"
+                      size="icon"
+                      className="absolute top-2 right-2 z-20 h-7 w-7 opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-sm"
+                      onClick={() => handleRemoveWidget(widget.i)}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                    {/* Resize indicator */}
+                    <div className="absolute bottom-2 right-2 z-10 text-xs text-muted-foreground/50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+                      {widget.w}×{widget.h}
+                    </div>
+                  </>
+                )}
+                {renderWidget(widget)}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </GridLayout>
 
       {/* Manual Full Report Link (If needed) */}

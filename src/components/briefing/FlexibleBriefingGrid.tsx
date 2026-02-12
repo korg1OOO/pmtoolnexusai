@@ -95,10 +95,27 @@ export function FlexibleBriefingGrid({
   return (
     <div className="briefing-grid-container w-full" ref={containerRef}>
       <style>{`
+        .briefing-grid-container .react-grid-item {
+          z-index: 1;
+          transition: all 200ms ease;
+        }
+        .briefing-grid-container .react-grid-item.react-dragging,
+        .briefing-grid-container .react-grid-item.resizing {
+          z-index: 100;
+          transition: none;
+        }
         .briefing-grid-container .react-grid-item.react-grid-placeholder {
-          background: hsl(var(--primary) / 0.2);
-          border: 2px dashed hsl(var(--primary));
-          border-radius: 0.5rem;
+          background: hsl(var(--primary) / 0.15);
+          border: 2px dashed hsl(var(--primary) / 0.6);
+          border-radius: 0.75rem;
+          z-index: 2;
+        }
+        .briefing-grid-container .react-resizable-handle {
+          opacity: 0;
+          transition: opacity 200ms ease;
+        }
+        .briefing-grid-container .react-grid-item:hover .react-resizable-handle {
+          opacity: 1;
         }
         .briefing-grid-container .react-resizable-handle::after {
           border-color: hsl(var(--muted-foreground) / 0.5) !important;
@@ -106,7 +123,11 @@ export function FlexibleBriefingGrid({
         .briefing-grid-container .react-grid-item:hover .react-resizable-handle::after {
           border-color: hsl(var(--primary)) !important;
         }
-        .drag-handle { cursor: grab; }
+        .drag-handle { 
+          cursor: grab;
+          background: linear-gradient(to bottom, hsl(var(--background) / 0.95), transparent);
+          backdrop-filter: blur(4px);
+        }
         .drag-handle:active { cursor: grabbing; }
       `}</style>
       <GridLayout
@@ -119,14 +140,20 @@ export function FlexibleBriefingGrid({
         draggableHandle=".drag-handle"
         isResizable={isCustomizing}
         isDraggable={isCustomizing}
-        compactType="vertical"
-        margin={[16, 16]}
+        compactType={null}
+        preventCollision={true}
+        margin={[20, 20]}
+        containerPadding={[0, 0]}
       >
         {sections.map((sectionId) => (
-          <div key={sectionId}>
+          <div key={sectionId} className="relative">
             <div className="h-full flex flex-col relative">
               {isCustomizing && (
-                <div className="drag-handle absolute top-0 left-0 right-0 h-12 z-10 cursor-grab active:cursor-grabbing" />
+                <div className="drag-handle absolute top-0 left-0 right-0 h-12 z-20 rounded-t-lg flex items-center justify-center">
+                  <div className="text-xs text-muted-foreground font-medium">
+                    Drag to reposition
+                  </div>
+                </div>
               )}
               {renderSection(sectionId)}
             </div>

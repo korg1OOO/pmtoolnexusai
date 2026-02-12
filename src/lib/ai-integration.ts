@@ -33,7 +33,7 @@ export async function callOpenAI(
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.OPENAI_API_KEY}`,
+                'Authorization': `Bearer ${import.meta.env.VITE_OPENAI_API_KEY}`,
             },
             body: JSON.stringify({
                 model,
@@ -183,7 +183,7 @@ export async function callGoogleAI(
 
     try {
         const response = await fetch(
-            `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${process.env.GOOGLE_AI_API_KEY}`,
+            `https://generativelanguage.googleapis.com/v1/models/${model}:generateContent?key=${import.meta.env.VITE_GOOGLE_AI_API_KEY}`,
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

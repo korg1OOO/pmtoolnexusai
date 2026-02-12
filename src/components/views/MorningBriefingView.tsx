@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, lazy, Suspense } from 'react';
 import { cn } from '@/lib/utils';
 import {
   Sun,
@@ -21,18 +21,18 @@ import { FlexibleBriefingGrid } from '@/components/briefing/FlexibleBriefingGrid
 import { ResizableBriefingLayout } from '@/components/briefing/ResizableBriefingLayout';
 import { Layout } from 'lucide-react';
 
-// Section Components
-import { CriticalAlertsSection } from '@/components/briefing/sections/CriticalAlertsSection';
-import { AIInsightsSection } from '@/components/briefing/sections/AIInsightsSection';
-import { ProfitLossSection } from '@/components/briefing/sections/ProfitLossSection';
-import { ScheduleSlippageSection } from '@/components/briefing/sections/ScheduleSlippageSection';
-import { RiskAssessmentSection } from '@/components/briefing/sections/RiskAssessmentSection';
-import { ActionsSection } from '@/components/briefing/sections/ActionsSection';
-import { IssuesSection } from '@/components/briefing/sections/IssuesSection';
-import { MeetingsSection } from '@/components/briefing/sections/MeetingsSection';
-import { DecisionsSection } from '@/components/briefing/sections/DecisionsSection';
-import { TeamAvailabilitySection } from '@/components/briefing/sections/TeamAvailabilitySection';
-import { BudgetAnalysisSection } from '@/components/briefing/sections/BudgetAnalysisSection';
+// Lazy-loaded Section Components for better performance
+const CriticalAlertsSection = lazy(() => import('@/components/briefing/sections/CriticalAlertsSection').then(m => ({ default: m.CriticalAlertsSection })));
+const AIInsightsSection = lazy(() => import('@/components/briefing/sections/AIInsightsSection').then(m => ({ default: m.AIInsightsSection })));
+const ProfitLossSection = lazy(() => import('@/components/briefing/sections/ProfitLossSection').then(m => ({ default: m.ProfitLossSection })));
+const ScheduleSlippageSection = lazy(() => import('@/components/briefing/sections/ScheduleSlippageSection').then(m => ({ default: m.ScheduleSlippageSection })));
+const RiskAssessmentSection = lazy(() => import('@/components/briefing/sections/RiskAssessmentSection').then(m => ({ default: m.RiskAssessmentSection })));
+const ActionsSection = lazy(() => import('@/components/briefing/sections/ActionsSection').then(m => ({ default: m.ActionsSection })));
+const IssuesSection = lazy(() => import('@/components/briefing/sections/IssuesSection').then(m => ({ default: m.IssuesSection })));
+const MeetingsSection = lazy(() => import('@/components/briefing/sections/MeetingsSection').then(m => ({ default: m.MeetingsSection })));
+const DecisionsSection = lazy(() => import('@/components/briefing/sections/DecisionsSection').then(m => ({ default: m.DecisionsSection })));
+const TeamAvailabilitySection = lazy(() => import('@/components/briefing/sections/TeamAvailabilitySection').then(m => ({ default: m.TeamAvailabilitySection })));
+const BudgetAnalysisSection = lazy(() => import('@/components/briefing/sections/BudgetAnalysisSection').then(m => ({ default: m.BudgetAnalysisSection })));
 
 // Hooks
 import { useProjectContext } from '@/contexts/ProjectContext';
@@ -316,12 +316,12 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
     setLastUpdated(new Date());
   };
 
-  // Convert map-based data to arrays for display - using 'as any' to bypass strict type checking for component props
-  const criticalAlerts: any[] = [
+  // Convert map-based data to arrays for display - MEMOIZED for performance
+  const criticalAlerts: any[] = useMemo(() => [
     ...criticalRisks.map(r => ({ id: r.id, type: 'warning', severity: 'critical', title: r.title, description: r.description || '', message: r.title, timestamp: r.created_at, source: 'Risk Register' })),
     ...criticalIssues.map(i => ({ id: i.id, type: 'critical', severity: 'critical', title: i.title, description: i.description || '', message: i.title, timestamp: i.created_at, source: 'Issue Register' })),
     ...overdueActionsList.map(a => ({ id: a.id, type: 'warning', severity: 'high', title: `Action Overdue: ${a.title}`, description: a.description || '', message: `Action Overdue: ${a.title}`, timestamp: a.created_at, source: 'Actions Register' })),
-  ];
+  ], [criticalRisks, criticalIssues, overdueActionsList]);
 
   const riskAssessmentData = {
     totalRisks: risks.length,
@@ -336,15 +336,15 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
     }
   };
 
-  const issuesData = openIssues.map(i => ({
+  const issuesData = useMemo(() => openIssues.map(i => ({
     id: i.id,
     title: i.title,
     priority: i.priority,
     status: i.status,
     assignee: i.assignee_name || 'Unassigned',
     dueDate: i.resolved_at || undefined
-  }));
-  const issuesSummary = { total: openIssues.length, critical: criticalIssues.length, new: 0, resolved: 0 };
+  })), [openIssues]);
+  const issuesSummary = useMemo(() => ({ total: openIssues.length, critical: criticalIssues.length, new: 0, resolved: 0 }), [openIssues, criticalIssues]);
 
   // Convert arrays to Record<string, T> for sections expecting maps if needed, or update sections to accept arrays
   // NOTE: Maps removed as sections now accept arrays directly
@@ -485,15 +485,6 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setIsResizable(prev => !prev)}
-              className={cn(isResizable && "bg-primary/10 border-primary/30 text-primary")}
-            >
-              <Layout className="h-4 w-4 mr-2" />
-              {isResizable ? 'Standard View' : 'Resizable View'}
-            </Button>
             <BriefingSettingsPanel
               enabledSections={effectiveEnabledSections}
               sectionOrder={effectiveSectionOrder}
@@ -514,27 +505,29 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
       </div>
 
       {/* Content */}
-      <div className="flex-1 p-6 overflow-auto">
-        <div className="max-w-7xl mx-auto">
+      <div className="flex-1 p-8 overflow-auto">
+        <div className="w-full"> {/* Removed max-w-7xl to utilize full width */}
           {orderedSections.length > 0 ? (
-            isResizable ? (
-              <ResizableBriefingLayout
-                sections={orderedSections}
-                renderContent={renderSectionContent}
-                isGenerating={isGenerating}
-                lastUpdated={lastUpdated}
-                onRefresh={handleRefresh}
-              />
-            ) : (
-              <FlexibleBriefingGrid
-                sections={orderedSections}
-                renderContent={renderSectionContent}
-                isGenerating={isGenerating}
-                lastUpdated={lastUpdated}
-                onRefresh={handleRefresh}
-                isCustomizing={isCustomizing}
-              />
-            )
+            <Suspense fallback={<div className="grid grid-cols-1 lg:grid-cols-2 gap-4"><Skeleton className="h-64" /><Skeleton className="h-64" /><Skeleton className="h-64" /><Skeleton className="h-64" /></div>}>
+              {isResizable ? (
+                <ResizableBriefingLayout
+                  sections={orderedSections}
+                  renderContent={renderSectionContent}
+                  isGenerating={isGenerating}
+                  lastUpdated={lastUpdated}
+                  onRefresh={handleRefresh}
+                />
+              ) : (
+                <FlexibleBriefingGrid
+                  sections={orderedSections}
+                  renderContent={renderSectionContent}
+                  isGenerating={isGenerating}
+                  lastUpdated={lastUpdated}
+                  onRefresh={handleRefresh}
+                  isCustomizing={isCustomizing}
+                />
+              )}
+            </Suspense>
           ) : (
             <div className="text-center py-12 text-muted-foreground">
               <Sparkles className="h-12 w-12 mx-auto mb-4 opacity-50" />

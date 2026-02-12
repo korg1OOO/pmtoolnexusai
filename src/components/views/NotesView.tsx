@@ -198,6 +198,15 @@ export function NotesView({ demo = false }: NotesViewProps) {
     }
   }, [createPage]);
 
+  const handleCreateSpreadsheet = useCallback(async () => {
+    const newSpreadsheet = await createSpreadsheet('Untitled Spreadsheet');
+    if (newSpreadsheet) {
+      setSelectedSpreadsheetId(newSpreadsheet.id);
+      setViewMode('spreadsheet');
+    }
+  }, [createSpreadsheet]);
+
+
   const handleNavigateToPage = useCallback((pageId: string) => {
     // Find the page and navigate to it
     const page = allPages.find(p => p.id === pageId);
@@ -286,6 +295,7 @@ export function NotesView({ demo = false }: NotesViewProps) {
                   sectionName={currentSection?.name || 'Pages'}
                   onSelectPage={handleSelectPage}
                   onCreatePage={handleCreatePage}
+                  onCreateSpreadsheet={handleCreateSpreadsheet}
                   onUpdatePage={updatePage}
                   onDeletePage={deletePage}
                   loading={pagesLoading}

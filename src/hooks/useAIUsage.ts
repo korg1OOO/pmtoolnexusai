@@ -116,7 +116,7 @@ export function useAIUsageLogs(filters?: {
     return useQuery({
         queryKey: ['ai-usage-logs', filters],
         queryFn: async () => {
-            let query = supabase
+            let query = (supabase as any)
                 .from('ai_usage_logs')
                 .select('*')
                 .order('created_at', { ascending: false })
@@ -162,7 +162,7 @@ export function useLogAIUsage() {
         }) => {
             const { data: { user } } = await supabase.auth.getUser();
 
-            const { data, error } = await supabase.rpc('log_ai_usage', {
+            const { data, error } = await (supabase as any).rpc('log_ai_usage', {
                 p_user_id: user?.id,
                 p_provider: usageData.provider,
                 p_model: usageData.model,
@@ -195,7 +195,7 @@ export function useAIUsageSummary() {
     return useQuery({
         queryKey: ['ai-usage-summary'],
         queryFn: async () => {
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('ai_usage_summary')
                 .select('*')
                 .order('usage_date', { ascending: false });
@@ -211,7 +211,7 @@ export function useAICostByProvider() {
     return useQuery({
         queryKey: ['ai-cost-by-provider'],
         queryFn: async () => {
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('ai_cost_by_provider')
                 .select('*');
 
@@ -226,7 +226,7 @@ export function useAIUsageByUser() {
     return useQuery({
         queryKey: ['ai-usage-by-user'],
         queryFn: async () => {
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('ai_usage_by_user')
                 .select('*');
 
@@ -245,7 +245,7 @@ export function useProviderCosts() {
     return useQuery({
         queryKey: ['provider-costs'],
         queryFn: async () => {
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('ai_provider_costs')
                 .select('*')
                 .order('provider')
@@ -269,7 +269,7 @@ export function useUpdateProviderCost() {
             completion_token_cost: number;
             notes?: string;
         }) => {
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('ai_provider_costs')
                 .insert([costData])
                 .select()
@@ -303,7 +303,7 @@ export function useAIBudgets() {
     return useQuery({
         queryKey: ['ai-budgets'],
         queryFn: async () => {
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('ai_budgets')
                 .select('*')
                 .order('created_at', { ascending: false });
@@ -318,7 +318,7 @@ export function useBudgetStatus() {
     return useQuery({
         queryKey: ['budget-status'],
         queryFn: async () => {
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('ai_budget_status')
                 .select('*');
 
@@ -344,7 +344,7 @@ export function useCreateBudget() {
             start_date: string;
             end_date?: string;
         }) => {
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('ai_budgets')
                 .insert([budgetData])
                 .select()
@@ -385,7 +385,7 @@ export function useUpdateBudget() {
             alert_threshold?: number;
             is_active?: boolean;
         }) => {
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('ai_budgets')
                 .update(updates)
                 .eq('id', id)
@@ -423,12 +423,12 @@ export function useUserMonthlyCost(userId?: string) {
         queryFn: async () => {
             if (!userId) return 0;
 
-            const { data, error } = await supabase.rpc('get_user_monthly_cost', {
+            const { data, error } = await (supabase as any).rpc('get_user_monthly_cost', {
                 p_user_id: userId,
             });
 
             if (error) throw error;
-            return data as number;
+            return (data as unknown) as number;
         },
         enabled: !!userId,
         refetchInterval: 60000,

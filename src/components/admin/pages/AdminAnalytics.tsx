@@ -41,7 +41,7 @@ export function AdminAnalytics() {
     const { data: mrrData } = useQuery({
         queryKey: ['analytics-mrr', dateRange],
         queryFn: async () => {
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('analytics_mrr_daily')
                 .select('*')
                 .order('date', { ascending: true })
@@ -56,7 +56,7 @@ export function AdminAnalytics() {
     const { data: churnData } = useQuery({
         queryKey: ['analytics-churn'],
         queryFn: async () => {
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('analytics_churn')
                 .select('*')
                 .order('month', { ascending: true })
@@ -71,7 +71,7 @@ export function AdminAnalytics() {
     const { data: discountData } = useQuery({
         queryKey: ['analytics-discount'],
         queryFn: async () => {
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('analytics_discount_performance')
                 .select('*')
                 .limit(10);
@@ -85,7 +85,7 @@ export function AdminAnalytics() {
     const { data: licenseData } = useQuery({
         queryKey: ['analytics-license'],
         queryFn: async () => {
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('analytics_license_usage')
                 .select('*');
 

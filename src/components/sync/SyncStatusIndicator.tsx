@@ -19,63 +19,9 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { useSyncHistory, useLatestSync, useTriggerSync, type SyncHistoryEntry } from '@/hooks/useSyncHistory';
 
-export type SyncStatus = 'synced' | 'syncing' | 'partial' | 'failed' | 'pending';
-
-interface SyncHistoryEntry {
-  id: string;
-  timestamp: string;
-  status: SyncStatus;
-  message: string;
-  itemsProcessed?: number;
-  itemsTotal?: number;
-  errors?: string[];
-}
-
-const mockSyncHistory: SyncHistoryEntry[] = [
-  {
-    id: 'sync-1',
-    timestamp: '2024-01-20T14:30:00Z',
-    status: 'synced',
-    message: 'All items synchronized successfully',
-    itemsProcessed: 12,
-    itemsTotal: 12,
-  },
-  {
-    id: 'sync-2',
-    timestamp: '2024-01-20T10:15:00Z',
-    status: 'synced',
-    message: 'Sprint items linked to plan tasks',
-    itemsProcessed: 8,
-    itemsTotal: 8,
-  },
-  {
-    id: 'sync-3',
-    timestamp: '2024-01-19T16:45:00Z',
-    status: 'partial',
-    message: 'Some items could not be synced',
-    itemsProcessed: 5,
-    itemsTotal: 7,
-    errors: ['ISS-003: Missing assignee', 'ACT-004: Invalid status'],
-  },
-  {
-    id: 'sync-4',
-    timestamp: '2024-01-19T09:00:00Z',
-    status: 'failed',
-    message: 'Sync failed due to connection timeout',
-    itemsProcessed: 0,
-    itemsTotal: 10,
-    errors: ['Connection timeout after 30s'],
-  },
-  {
-    id: 'sync-5',
-    timestamp: '2024-01-18T14:00:00Z',
-    status: 'synced',
-    message: 'Initial synchronization complete',
-    itemsProcessed: 15,
-    itemsTotal: 15,
-  },
-];
+// Mock data removed - now using live database via useSyncHistory hook
 
 const statusConfig: Record<SyncStatus, { icon: React.ElementType; color: string; label: string }> = {
   synced: { icon: Check, color: 'text-success', label: 'Synced' },
@@ -85,9 +31,10 @@ const statusConfig: Record<SyncStatus, { icon: React.ElementType; color: string;
   pending: { icon: Clock, color: 'text-muted-foreground', label: 'Pending' },
 };
 
+
 interface SyncStatusIndicatorProps {
+  projectId?: string;
   status?: SyncStatus;
-  lastSynced?: string;
   onSync?: () => void;
   showHistory?: boolean;
   compact?: boolean;
@@ -95,26 +42,32 @@ interface SyncStatusIndicatorProps {
 }
 
 export function SyncStatusIndicator({
-  status = 'synced',
-  lastSynced = '2024-01-20T14:30:00Z',
+  projectId,
+  status: externalStatus,
   onSync,
   showHistory = true,
   compact = false,
   className,
 }: SyncStatusIndicatorProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [isSyncing, setIsSyncing] = useState(false);
 
-  const config = statusConfig[isSyncing ? 'syncing' : status];
+  // Fetch sync history and latest sync
+  const { data: syncHistory = [], isLoading } = useSyncHistory(projectId);
+  const { data: latestSync } = useLatestSync(projectId);
+  const triggerSync = useTriggerSync(projectId);
+
+  // Use external status or derive from latest sync
+  const currentStatus = externalStatus || latestSync?.status || 'synced';
+  const lastSynced = latestSync?.created_at || new Date().toISOString();
+  const isSyncing = triggerSync.isPending || currentStatus === 'syncing';
+
+  const config = statusConfig[isSyncing ? 'syncing' : currentStatus];
   const StatusIcon = config.icon;
 
   const handleSync = async () => {
     if (isSyncing) return;
-    setIsSyncing(true);
     onSync?.();
-    // Simulate sync
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    setIsSyncing(false);
+    await triggerSync.mutateAsync();
   };
 
   const formatRelativeTime = (timestamp: string) => {
@@ -150,9 +103,10 @@ export function SyncStatusIndicator({
         </PopoverTrigger>
         <PopoverContent align="end" className="w-80">
           <SyncHistoryPanel
-            history={mockSyncHistory}
+            history={syncHistory}
             onSync={handleSync}
             isSyncing={isSyncing}
+            isLoading={isLoading}
           />
         </PopoverContent>
       </Popover>
@@ -185,14 +139,15 @@ export function SyncStatusIndicator({
         {showHistory && (
           <PopoverContent align="end" className="w-96">
             <SyncHistoryPanel
-              history={mockSyncHistory}
+              history={syncHistory}
               onSync={handleSync}
               isSyncing={isSyncing}
+              isLoading={isLoading}
             />
           </PopoverContent>
         )}
       </Popover>
-      
+
       <Button
         variant="ghost"
         size="iconSm"
@@ -209,9 +164,10 @@ interface SyncHistoryPanelProps {
   history: SyncHistoryEntry[];
   onSync: () => void;
   isSyncing: boolean;
+  isLoading?: boolean;
 }
 
-function SyncHistoryPanel({ history, onSync, isSyncing }: SyncHistoryPanelProps) {
+function SyncHistoryPanel({ history, onSync, isSyncing, isLoading }: SyncHistoryPanelProps) {
   return (
     <div>
       <div className="flex items-center justify-between mb-3">
@@ -231,62 +187,74 @@ function SyncHistoryPanel({ history, onSync, isSyncing }: SyncHistoryPanelProps)
       </div>
 
       <ScrollArea className="h-64">
-        <div className="space-y-2">
-          {history.map((entry) => {
-            const config = statusConfig[entry.status];
-            const StatusIcon = config.icon;
+        {isLoading ? (
+          <div className="flex items-center justify-center h-full text-muted-foreground">
+            <RefreshCw className="h-6 w-6 animate-spin" />
+          </div>
+        ) : history.length === 0 ? (
+          <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-center p-4">
+            <History className="h-8 w-8 mb-2 opacity-50" />
+            <p className="text-sm">No sync history yet</p>
+            <p className="text-xs mt-1">Sync events will appear here</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {history.map((entry) => {
+              const config = statusConfig[entry.status];
+              const StatusIcon = config.icon;
 
-            return (
-              <motion.div
-                key={entry.id}
-                initial={{ opacity: 0, y: 5 }}
-                animate={{ opacity: 1, y: 0 }}
-                className="p-3 rounded-lg border bg-card"
-              >
-                <div className="flex items-start gap-3">
-                  <div className={cn(
-                    'h-8 w-8 rounded-full flex items-center justify-center shrink-0',
-                    entry.status === 'synced' ? 'bg-success/10' :
-                    entry.status === 'partial' ? 'bg-warning/10' :
-                    entry.status === 'failed' ? 'bg-destructive/10' : 'bg-muted'
-                  )}>
-                    <StatusIcon className={cn('h-4 w-4', config.color)} />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between mb-1">
-                      <Badge variant={
-                        entry.status === 'synced' ? 'success' :
-                        entry.status === 'partial' ? 'warning' :
-                        entry.status === 'failed' ? 'destructive' : 'secondary'
-                      }>
-                        {config.label}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground">
-                        {new Date(entry.timestamp).toLocaleString()}
-                      </span>
+              return (
+                <motion.div
+                  key={entry.id}
+                  initial={{ opacity: 0, y: 5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-3 rounded-lg border bg-card"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className={cn(
+                      'h-8 w-8 rounded-full flex items-center justify-center shrink-0',
+                      entry.status === 'synced' ? 'bg-success/10' :
+                        entry.status === 'partial' ? 'bg-warning/10' :
+                          entry.status === 'failed' ? 'bg-destructive/10' : 'bg-muted'
+                    )}>
+                      <StatusIcon className={cn('h-4 w-4', config.color)} />
                     </div>
-                    <p className="text-sm">{entry.message}</p>
-                    {entry.itemsTotal && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        {entry.itemsProcessed}/{entry.itemsTotal} items processed
-                      </p>
-                    )}
-                    {entry.errors && entry.errors.length > 0 && (
-                      <div className="mt-2 space-y-1">
-                        {entry.errors.map((error, i) => (
-                          <p key={i} className="text-xs text-destructive flex items-center gap-1">
-                            <X className="h-3 w-3" />
-                            {error}
-                          </p>
-                        ))}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between mb-1">
+                        <Badge variant={
+                          entry.status === 'synced' ? 'success' :
+                            entry.status === 'partial' ? 'warning' :
+                              entry.status === 'failed' ? 'destructive' : 'secondary'
+                        }>
+                          {config.label}
+                        </Badge>
+                        <span className="text-xs text-muted-foreground">
+                          {new Date(entry.created_at).toLocaleString()}
+                        </span>
                       </div>
-                    )}
+                      <p className="text-sm">{entry.message}</p>
+                      {entry.items_total && (
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {entry.items_processed}/{entry.items_total} items processed
+                        </p>
+                      )}
+                      {entry.errors && entry.errors.length > 0 && (
+                        <div className="mt-2 space-y-1">
+                          {entry.errors.map((error, i) => (
+                            <p key={i} className="text-xs text-destructive flex items-center gap-1">
+                              <X className="h-3 w-3" />
+                              {error}
+                            </p>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </div>
-                </div>
-              </motion.div>
-            );
-          })}
-        </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
       </ScrollArea>
     </div>
   );

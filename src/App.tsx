@@ -46,6 +46,7 @@ import {
   AdminBackups,
 } from "@/components/admin/pages";
 import { HelmetProvider } from 'react-helmet-async';
+import { TicketDetail } from '@/components/admin/pages/TicketDetail';
 
 const queryClient = new QueryClient();
 
@@ -116,6 +117,7 @@ const App = () => (
                 <Route path="discounts" element={<AdminDiscountCodes />} />
                 <Route path="management" element={<AdminManagement />} />
                 <Route path="requests" element={<AdminRequests />} />
+                <Route path="tickets/:id" element={<TicketDetail />} />
                 <Route path="analytics" element={<AdminAnalytics />} />
                 <Route path="marketing" element={<AdminMarketing />} />
                 <Route path="email" element={<AdminEmailAutomation />} />

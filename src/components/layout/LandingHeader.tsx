@@ -23,6 +23,9 @@ export const LandingHeader = ({ onLogoClick, isAuthenticated }: { onLogoClick?: 
                 <a href="/" className="hover:text-foreground transition-colors">Home</a>
                 <a href="/#features" className="hover:text-foreground transition-colors">Features</a>
                 <a href="/#pricing" className="hover:text-foreground transition-colors">Pricing</a>
+                <a href="/faqs" className="hover:text-foreground transition-colors">FAQs</a>
+                <a href="/blog" className="hover:text-foreground transition-colors">Blog</a>
+                <a href="/docs" className="hover:text-foreground transition-colors">Docs</a>
                 <a href="/about" className="hover:text-foreground transition-colors">About</a>
             </nav>
             <div className="flex items-center gap-2">

@@ -8,6 +8,9 @@ export const LandingFooter = () => (
     >
         <div className="flex items-center gap-4">
             <span>© 2026 ProjectOye Inc.</span>
+            <a href="/faqs" className="hover:underline">FAQs</a>
+            <a href="/blog" className="hover:underline">Blog</a>
+            <a href="/docs" className="hover:underline">Docs</a>
             <a href="/privacy" className="hover:underline">Privacy</a>
             <a href="/contact" className="hover:underline">Contact</a>
             <a href="/about" className="hover:underline">About</a>

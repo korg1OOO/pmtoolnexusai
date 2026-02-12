@@ -45,6 +45,7 @@ import {
   AdminAffiliates,
   AdminBackups,
 } from "@/components/admin/pages";
+import { MLDashboard } from "@/components/ml";
 import { HelmetProvider } from 'react-helmet-async';
 import { TicketDetail } from '@/components/admin/pages/TicketDetail';
 import { EmailTemplateEditor } from '@/components/admin/pages/EmailTemplateEditor';
@@ -109,6 +110,7 @@ const App = () => (
                 <Route index element={<AdminDashboard />} />
                 <Route path="health" element={<AdminHealthCheck />} />
                 <Route path="ai-usage" element={<AdminAIUsage />} />
+                <Route path="ml" element={<MLDashboard />} />
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="pro-users" element={<AdminProUsers />} />
                 <Route path="content" element={<AdminContentManagement />} />

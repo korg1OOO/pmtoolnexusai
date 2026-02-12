@@ -26,6 +26,7 @@ import {
     Database,
     ChevronLeft,
     ArrowLeft,
+    Brain,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -48,6 +49,7 @@ const navItems: NavItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, path: '/admin' },
     { id: 'health', label: 'Health Check', icon: Activity, path: '/admin/health' },
     { id: 'ai-usage', label: 'AI Usage & Costs', icon: Bot, path: '/admin/ai-usage' },
+    { id: 'ml-models', label: 'ML Models', icon: Brain, path: '/admin/ml' },
     { id: 'users', label: 'Users', icon: Users, path: '/admin/users' },
     { id: 'pro-users', label: 'Pro Users', icon: Crown, path: '/admin/pro-users' },
     { id: 'content', label: 'Content Management', icon: FileText, path: '/admin/content' },

@@ -11,7 +11,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useCategories, useFAQs } from '@/hooks/useContentManagement';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+const supabase = _supabase as any;
 import { toast } from 'sonner';
 
 export default function PublicFAQs() {

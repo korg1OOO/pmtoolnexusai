@@ -3,7 +3,8 @@
  * Extends notificationService with all recommended notifications
  */
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+const supabase = _supabase as any;
 import { NotificationTriggers as BaseNotificationTriggers } from './notificationService';
 
 // Re-export base triggers
@@ -251,7 +252,7 @@ export const ExtendedNotificationTriggers = {
                 p_recipients: [{ email: user.email, name: user.full_name || 'User' }],
                 p_subject: 'We Miss You at ProjectOye!',
                 p_data: {
-                    user_name user.full_name || 'User',
+                    user_name: user.full_name || 'User',
                     last_active: lastActiveDate,
                     dashboard_url: `${window.location.origin}/dashboard`,
                     whats_new_url: `${window.location.origin}/whats-new`,

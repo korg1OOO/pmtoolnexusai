@@ -12,7 +12,7 @@ import { useNotificationPreferences, useUpdateNotificationPreferences } from '@/
 import { toast } from 'sonner';
 
 export function NotificationPreferences() {
-    const { data: preferences, isLoading } = useNotificationPreferences();
+    const { data: preferences, isLoading } = useNotificationPreferences() as any;
     const updatePreferences = useUpdateNotificationPreferences();
 
     const handleToggle = async (key: string, value: boolean) => {

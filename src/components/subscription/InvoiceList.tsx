@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/table';
 import { Download, ExternalLink, FileText } from 'lucide-react';
 import { useInvoices, formatInvoiceAmount, getInvoiceStatusColor } from '@/hooks/useInvoices';
-import { Skeleton } from '@/components/ui/button';
+// Skeleton removed - using inline loading state
 
 export function InvoiceList() {
     const { data: invoices = [], isLoading } = useInvoices();

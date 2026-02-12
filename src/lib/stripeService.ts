@@ -3,7 +3,8 @@
  * Wrapper for Stripe payment processing
  */
 
-import { loadStripe, Stripe } from '@stripe/stripe-js';
+import { loadStripe } from '@stripe/stripe-js';
+type Stripe = any;
 
 // Initialize Stripe (use your publishable key)
 let stripePromise: Promise<Stripe | null>;

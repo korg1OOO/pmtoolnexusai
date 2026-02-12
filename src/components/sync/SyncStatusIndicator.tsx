@@ -19,7 +19,7 @@ import {
   PopoverTrigger,
 } from '@/components/ui/popover';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { useSyncHistory, useLatestSync, useTriggerSync, type SyncHistoryEntry } from '@/hooks/useSyncHistory';
+import { useSyncHistory, useLatestSync, useTriggerSync, type SyncHistoryEntry, type SyncStatus } from '@/hooks/useSyncHistory';
 
 // Mock data removed - now using live database via useSyncHistory hook
 
@@ -34,7 +34,7 @@ const statusConfig: Record<SyncStatus, { icon: React.ElementType; color: string;
 
 interface SyncStatusIndicatorProps {
   projectId?: string;
-  status?: SyncStatus;
+  status?: string;
   onSync?: () => void;
   showHistory?: boolean;
   compact?: boolean;

@@ -316,7 +316,7 @@ export function AdminProUsers() {
                             <TableBody>
                                 {filteredSubscribers.map((subscriber) => (
                                     <TableRow key={subscriber.id}>
-                                        <TableCell className="font-medium">{subscriber.name}</TableCell>
+                                        <TableCell className="font-medium">{(subscriber as any).full_name || (subscriber as any).email}</TableCell>
                                         <TableCell className="text-muted-foreground">{subscriber.email}</TableCell>
                                         <TableCell>
                                             <Badge
@@ -338,10 +338,10 @@ export function AdminProUsers() {
                                             ${subscriber.mrr}
                                         </TableCell>
                                         <TableCell className="text-muted-foreground">
-                                            {subscriber.articlesPerMonth}
+                                            {(subscriber as any).usage_stats?.articles_per_month || 0}
                                         </TableCell>
                                         <TableCell className="text-sm text-muted-foreground">
-                                            {new Date(subscriber.joinDate).toLocaleDateString()}
+                                            {new Date((subscriber as any).joined_at).toLocaleDateString()}
                                         </TableCell>
                                         <TableCell>
                                             <div className="flex items-center gap-2">

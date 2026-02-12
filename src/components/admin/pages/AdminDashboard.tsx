@@ -110,27 +110,27 @@ export function AdminDashboard() {
                             {recentActivity.map((activity, idx) => (
                                 <div key={idx} className="flex items-start gap-3">
                                     <div
-                                        className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${activity.type === 'success'
+                                        className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${(activity as any).action_type === 'success'
                                             ? 'bg-success/20'
-                                            : activity.type === 'error'
+                                            : (activity as any).action_type === 'error'
                                                 ? 'bg-destructive/20'
                                                 : 'bg-primary/20'
                                             }`}
                                     >
-                                        {activity.type === 'success' ? (
+                                        {(activity as any).action_type === 'success' ? (
                                             <CheckCircle className="h-4 w-4 text-success" />
-                                        ) : activity.type === 'error' ? (
+                                        ) : (activity as any).action_type === 'error' ? (
                                             <AlertCircle className="h-4 w-4 text-destructive" />
                                         ) : (
                                             <TrendingUp className="h-4 w-4 text-primary" />
                                         )}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium">{activity.user}</p>
+                                        <p className="text-sm font-medium">{(activity as any).user_email || 'System'}</p>
                                         <p className="text-sm text-muted-foreground">{activity.action}</p>
                                     </div>
                                     <span className="text-xs text-muted-foreground flex-shrink-0">
-                                        {activity.time}
+                                        {formatRelativeTime((activity as any).created_at)}
                                     </span>
                                 </div>
                             ))}
@@ -157,10 +157,10 @@ export function AdminDashboard() {
                                                     : 'bg-destructive'
                                                 }`}
                                         />
-                                        <span className="text-sm font-medium">{service.service}</span>
+                                        <span className="text-sm font-medium">{(service as any).service_name}</span>
                                     </div>
                                     <div className="flex items-center gap-3">
-                                        <span className="text-xs text-muted-foreground">{service.uptime}</span>
+                                        <span className="text-xs text-muted-foreground">{(service as any).uptime_percentage}%</span>
                                         <Badge
                                             variant="outline"
                                             className={`capitalize ${service.status === 'operational'

@@ -3,7 +3,8 @@
  * Service for managing IMAP account configurations
  */
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+const supabase = _supabase as any;
 
 export interface IMAPAccount {
     id: string;

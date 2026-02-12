@@ -14,7 +14,8 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { Loader2, Mail, Lock, User, Check } from 'lucide-react';
 import { type SubscriptionTier } from '@/hooks/useFeatureAccess';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+const supabase = _supabase as any;
 import { cn } from '@/lib/utils';
 
 interface AuthDialogProps {
@@ -49,7 +50,7 @@ export function AuthDialog({ open, onOpenChange, defaultTier }: AuthDialogProps)
         toast.success('Signed in successfully');
       } else {
         // Sign up user
-        const { data } = await signUp(email, password);
+        const { data } = await signUp(email, password) as any;
 
         // Create subscription record
         if (data?.user) {

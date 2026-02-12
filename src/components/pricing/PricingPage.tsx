@@ -150,10 +150,10 @@ export function PricingPage() {
                         return (
                             <Card
                                 key={tier}
-                                className={`relative ${config.popular ? 'border-2 border-primary shadow-xl scale-105' : 'hover:shadow-lg'
+                                className={`relative ${(config as any).popular ? 'border-2 border-primary shadow-xl scale-105' : 'hover:shadow-lg'
                                     } transition-all duration-300`}
                             >
-                                {config.popular && (
+                                {(config as any).popular && (
                                     <div className="absolute -top-4 left-1/2 -translate-x-1/2">
                                         <Badge className="bg-gradient-to-r from-primary to-primary/80">
                                             Most Popular
@@ -186,7 +186,7 @@ export function PricingPage() {
                                 <CardContent>
                                     <Button
                                         className="w-full mb-6"
-                                        variant={config.popular ? 'default' : 'outline'}
+                                        variant={(config as any).popular ? 'default' : 'outline'}
                                         onClick={() => handleSelectTier(tier)}
                                         disabled={loadingTier !== null}
                                     >

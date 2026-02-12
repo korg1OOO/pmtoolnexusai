@@ -3,14 +3,11 @@
  * Handles model versioning, performance tracking, A/B testing, and monitoring
  */
 
-import { supabase } from "@/integrations/supabase/client";
-// Note: ML table types will be available after migration is applied
-// Using type casting workaround until then
-// import type { Database } from "@/integrations/supabase/types";
+import { supabase as _supabase } from "@/integrations/supabase/client";
 
-// type MLModelMetadata = Database['public']['Tables']['ml_model_metadata']['Row'];
-// type MLModelMetadataInsert = Database['public']['Tables']['ml_model_metadata']['Insert'];
+const supabase = _supabase as any;
 type PredictionType = 'risk' | 'cost' | 'schedule';
+type MLModelMetadataInsert = Record<string, any>;
 
 export interface ModelVersion {
     id: string;

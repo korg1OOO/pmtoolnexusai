@@ -10,7 +10,8 @@ import {
     ToggleLeft,
     Bell,
     Eye,
-    Percent
+    Percent,
+    Loader2
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,32 +27,27 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { Slider } from '@/components/ui/slider';
+import {
+    useAnnouncements,
+    useToggleAnnouncement,
+    useFeatureFlags,
+    useToggleFeatureFlag,
+    useUpdateFeatureFlag,
+} from '@/hooks/useMarketing';
 
-// Placeholder data - will be connected to real hooks
-const mockAnnouncements = [
-    {
-        id: '1',
-        title: 'New Pro Features Available',
-        message: 'Check out the latest AI-powered insights!',
-        type: 'feature',
-        is_active: true,
-        dismissal_count: 42
-    }
-];
-
-const mockFeatureFlags = [
-    {
-        id: '1',
-        name: 'ml_analytics_v2',
-        description: 'Next-gen ML analytics dashboard',
-        is_enabled: true,
-        rollout_percentage: 50,
-        target_tiers: ['pro']
-    }
-];
+// Mock data removed - now using live database
 
 export function AdminMarketing() {
     const [selectedFlag, setSelectedFlag] = useState<string | null>(null);
+
+    // Fetch data from database
+    const { data: announcements = [], isLoading: announcementsLoading } = useAnnouncements();
+    const { data: featureFlags = [], isLoading: flagsLoading } = useFeatureFlags();
+    const toggleAnnouncement = useToggleAnnouncement();
+    const toggleFlag = useToggleFeatureFlag();
+    const updateFlag = useUpdateFeatureFlag();
+
+    const isLoading = announcementsLoading || flagsLoading;
 
     const getTypeColor = (type: string) => {
         switch (type) {
@@ -86,7 +82,7 @@ export function AdminMarketing() {
                         <Bell className="h-4 w-4 text-blue-600" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{mockAnnouncements.filter(a => a.is_active).length}</div>
+                        <div className="text-2xl font-bold">{announcements.filter(a => a.is_active).length}</div>
                         <p className="text-xs text-muted-foreground">Showing to users</p>
                     </CardContent>
                 </Card>
@@ -97,7 +93,7 @@ export function AdminMarketing() {
                         <ToggleLeft className="h-4 w-4 text-green-600" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{mockFeatureFlags.filter(f => f.is_enabled).length}</div>
+                        <div className="text-2xl font-bold">{featureFlags.filter(f => f.is_enabled).length}</div>
                         <p className="text-xs text-muted-foreground">Currently enabled</p>
                     </CardContent>
                 </Card>
@@ -108,7 +104,13 @@ export function AdminMarketing() {
                         <Eye className="h-4 w-4 text-purple-600" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">12%</div>
+                        <div className="text-2xl font-bold">
+                            {announcements.length > 0
+                                ? Math.round(
+                                    (announcements.reduce((sum, a) => sum + (a.dismissal_count || 0), 0) / announcements.length / 100) * 100
+                                )
+                                : 0}%
+                        </div>
                         <p className="text-xs text-muted-foreground">Of active announcements</p>
                     </CardContent>
                 </Card>
@@ -119,7 +121,13 @@ export function AdminMarketing() {
                         <Percent className="h-4 w-4 text-orange-600" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">73%</div>
+                        <div className="text-2xl font-bold">
+                            {featureFlags.length > 0
+                                ? Math.round(
+                                    featureFlags.reduce((sum, f) => sum + f.rollout_percentage, 0) / featureFlags.length
+                                )
+                                : 0}%
+                        </div>
                         <p className="text-xs text-muted-foreground">Average across flags</p>
                     </CardContent>
                 </Card>
@@ -145,34 +153,54 @@ export function AdminMarketing() {
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <div className="space-y-4">
-                                {mockAnnouncements.map((announcement) => (
-                                    <Card key={announcement.id}>
-                                        <CardContent className="pt-6">
-                                            <div className="flex items-start justify-between">
-                                                <div className="flex-1">
-                                                    <div className="flex items-center gap-2 mb-2">
-                                                        <h3 className="font-semibold">{announcement.title}</h3>
-                                                        <Badge className={getTypeColor(announcement.type)}>
-                                                            {announcement.type}
-                                                        </Badge>
-                                                        {announcement.is_active && (
-                                                            <Badge variant="outline">Active</Badge>
-                                                        )}
+                            {isLoading ? (
+                                <div className="flex items-center justify-center py-12">
+                                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                                </div>
+                            ) : announcements.length === 0 ? (
+                                <div className="text-center py-12 text-muted-foreground">
+                                    <Bell className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                                    <p className="text-sm">No announcements yet</p>
+                                    <p className="text-xs">Create your first announcement to engage users</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {announcements.map((announcement) => (
+                                        <Card key={announcement.id}>
+                                            <CardContent className="pt-6">
+                                                <div className="flex items-start justify-between">
+                                                    <div className="flex-1">
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <h3 className="font-semibold">{announcement.title}</h3>
+                                                            <Badge className={getTypeColor(announcement.type)}>
+                                                                {announcement.type}
+                                                            </Badge>
+                                                            {announcement.is_active && (
+                                                                <Badge variant="outline">Active</Badge>
+                                                            )}
+                                                        </div>
+                                                        <p className="text-sm text-muted-foreground mb-2">
+                                                            {announcement.message}
+                                                        </p>
+                                                        <div className="text-xs text-muted-foreground">
+                                                            {announcement.dismissal_count} dismissals
+                                                        </div>
                                                     </div>
-                                                    <p className="text-sm text-muted-foreground mb-2">
-                                                        {announcement.message}
-                                                    </p>
-                                                    <div className="text-xs text-muted-foreground">
-                                                        {announcement.dismissal_count} dismissals
-                                                    </div>
+                                                    <Switch
+                                                        checked={announcement.is_active}
+                                                        onCheckedChange={(checked) => {
+                                                            toggleAnnouncement.mutate({
+                                                                id: announcement.id,
+                                                                isActive: checked,
+                                                            });
+                                                        }}
+                                                    />
                                                 </div>
-                                                <Switch checked={announcement.is_active} />
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                ))}
-                            </div>
+                                            </CardContent>
+                                        </Card>
+                                    ))}
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -190,48 +218,73 @@ export function AdminMarketing() {
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <Table>
-                                <TableHeader>
-                                    <TableRow>
-                                        <TableHead>Flag Name</TableHead>
-                                        <TableHead>Description</TableHead>
-                                        <TableHead>Rollout %</TableHead>
-                                        <TableHead>Target Tiers</TableHead>
-                                        <TableHead>Status</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {mockFeatureFlags.map((flag) => (
-                                        <TableRow key={flag.id}>
-                                            <TableCell className="font-mono text-sm">{flag.name}</TableCell>
-                                            <TableCell>{flag.description}</TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-2">
-                                                    <div className="w-24">
-                                                        <Slider
-                                                            value={[flag.rollout_percentage]}
-                                                            max={100}
-                                                            step={10}
-                                                            disabled
-                                                        />
-                                                    </div>
-                                                    <span className="text-sm">{flag.rollout_percentage}%</span>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex gap-1">
-                                                    {flag.target_tiers.map(tier => (
-                                                        <Badge key={tier} variant="outline">{tier}</Badge>
-                                                    ))}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Switch checked={flag.is_enabled} />
-                                            </TableCell>
+                            {isLoading ? (
+                                <div className="flex items-center justify-center py-12">
+                                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                                </div>
+                            ) : featureFlags.length === 0 ? (
+                                <div className="text-center py-12 text-muted-foreground">
+                                    <ToggleLeft className="h-10 w-10 mx-auto mb-3 opacity-50" />
+                                    <p className="text-sm">No feature flags yet</p>
+                                    <p className="text-xs">Create feature flags for gradual rollouts</p>
+                                </div>
+                            ) : (
+                                <Table>
+                                    <TableHeader>
+                                        <TableRow>
+                                            <TableHead>Flag Name</TableHead>
+                                            <TableHead>Description</TableHead>
+                                            <TableHead>Rollout %</TableHead>
+                                            <TableHead>Target Tiers</TableHead>
+                                            <TableHead>Status</TableHead>
                                         </TableRow>
-                                    ))}
-                                </TableBody>
-                            </Table>
+                                    </TableHeader>
+                                    <TableBody>
+                                        {featureFlags.map((flag) => (
+                                            <TableRow key={flag.id}>
+                                                <TableCell className="font-mono text-sm">{flag.name}</TableCell>
+                                                <TableCell>{flag.description}</TableCell>
+                                                <TableCell>
+                                                    <div className="flex items-center gap-2">
+                                                        <div className="w-24">
+                                                            <Slider
+                                                                value={[flag.rollout_percentage]}
+                                                                max={100}
+                                                                step={10}
+                                                                onValueChange={([value]) => {
+                                                                    updateFlag.mutate({
+                                                                        id: flag.id,
+                                                                        updates: { rollout_percentage: value },
+                                                                    });
+                                                                }}
+                                                            />
+                                                        </div>
+                                                        <span className="text-sm">{flag.rollout_percentage}%</span>
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <div className="flex gap-1">
+                                                        {(flag.target_tiers || []).map((tier, idx) => (
+                                                            <Badge key={idx} variant="outline">{tier}</Badge>
+                                                        ))}
+                                                    </div>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Switch
+                                                        checked={flag.is_enabled}
+                                                        onCheckedChange={(checked) => {
+                                                            toggleFlag.mutate({
+                                                                id: flag.id,
+                                                                isEnabled: checked,
+                                                            });
+                                                        }}
+                                                    />
+                                                </TableCell>
+                                            </TableRow>
+                                        ))}
+                                    </TableBody>
+                                </Table>
+                            )}
                         </CardContent>
                     </Card>
                 </TabsContent>

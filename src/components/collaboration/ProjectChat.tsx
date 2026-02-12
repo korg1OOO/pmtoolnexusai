@@ -7,10 +7,10 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 
-// Chat Engine
 import { useChatEngine } from '@/hooks/useChatEngine';
 import { useChatPresence } from '@/hooks/useChatPresence';
 import { useMentionNotifications } from '@/hooks/useMentionNotifications';
+import { useTeamMembers } from '@/hooks/useTeamMembers';
 import {
   type ChatMessage,
   type AttachmentData,
@@ -29,14 +29,7 @@ import { DeleteConfirmDialog, EditHistoryDialog } from '@/components/chat/Messag
 import { ForwardMessageDialog } from '@/components/chat/MessageForward';
 import { TypingIndicator } from '@/components/chat/TypingIndicator';
 
-// Mock team members for mentions
-const mockTeamMembers = [
-  { id: '1', name: 'Sarah Chen', role: 'Project Manager', status: 'online' as const },
-  { id: '2', name: 'Mike Johnson', role: 'Developer', status: 'online' as const },
-  { id: '3', name: 'Emily Davis', role: 'Designer', status: 'away' as const },
-  { id: '4', name: 'Alex Thompson', role: 'QA Lead', status: 'offline' as const },
-  { id: '5', name: 'Jordan Lee', role: 'DevOps', status: 'online' as const },
-];
+// Mock data removed - now using live team members from database
 
 interface ProjectChatProps {
   projectId: string;
@@ -60,9 +53,20 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
+  // Fetch live team members for mentions
+  const { data: teamMembers = [], isLoading: loadingTeam } = useTeamMembers(projectId);
+
+  // Map team members to mentionable format
+  const mentionableUsers = teamMembers.map(member => ({
+    id: member.id,
+    name: member.full_name || member.email || 'Unknown',
+    role: member.role || 'Team Member',
+    status: 'online' as const, // Could be extended with real presence data
+  }));
+
   // Chat presence (typing indicators)
   const { typingUsers, startTyping, stopTyping } = useChatPresence(projectId);
-  
+
   // Mention notifications
   const { processMessage, requestPermission, hasPermission } = useMentionNotifications({
     enabled: notificationsEnabled,
@@ -308,7 +312,7 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
             pendingAttachment={pendingAttachment}
             onAttach={setPendingAttachment}
             onRemoveAttachment={() => setPendingAttachment(null)}
-            mentionableUsers={mockTeamMembers}
+            mentionableUsers={mentionableUsers}
             typingUsers={typingUsers}
             currentUserId={currentUserId}
             isLoading={isSending}

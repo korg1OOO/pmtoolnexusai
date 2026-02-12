@@ -14,6 +14,8 @@ import {
   Calendar,
   Plus,
 } from 'lucide-react';
+import { useProjectContext } from '@/contexts/ProjectContext';
+import { useLinkableItems } from '@/hooks/useLinkableItems';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -39,38 +41,7 @@ export interface LinkableItem {
   assignee?: string;
 }
 
-const mockLinkableItems: Record<LinkableItemType, LinkableItem[]> = {
-  task: [
-    { id: 'T-010', title: 'Infrastructure Provisioning', type: 'task', status: 'completed', assignee: 'David Wilson' },
-    { id: 'T-011', title: 'Application Migration - Wave 1', type: 'task', status: 'in-progress', assignee: 'John Doe' },
-    { id: 'T-012', title: 'Application Migration - Wave 2', type: 'task', status: 'not-started', assignee: 'Jane Smith' },
-    { id: 'T-013', title: 'Data Migration', type: 'task', status: 'in-progress', assignee: 'Emily Brown' },
-  ],
-  issue: [
-    { id: 'ISS-001', title: 'API Gateway timeout during peak load', type: 'issue', status: 'investigating', assignee: 'John Doe' },
-    { id: 'ISS-002', title: 'Database migration scripts failing', type: 'issue', status: 'in-progress', assignee: 'Emily Brown' },
-    { id: 'ISS-003', title: 'Authentication token expiration', type: 'issue', status: 'open', assignee: 'Sarah Mitchell' },
-  ],
-  meeting: [
-    { id: 'MTG-001', title: 'Weekly Steering Committee', type: 'meeting', status: 'scheduled', date: '2024-08-12' },
-    { id: 'MTG-002', title: 'Sprint 12 Daily Standup', type: 'meeting', status: 'completed', date: '2024-08-12' },
-    { id: 'MTG-003', title: 'Architecture Review', type: 'meeting', status: 'scheduled', date: '2024-08-14' },
-  ],
-  action: [
-    { id: 'ACT-001', title: 'Configure load balancer auto-scaling rules', type: 'action', status: 'in-progress', assignee: 'John Doe' },
-    { id: 'ACT-002', title: 'Review and approve migration rollback plan', type: 'action', status: 'not-started', assignee: 'Sarah Mitchell' },
-    { id: 'ACT-003', title: 'Implement token refresh mechanism', type: 'action', status: 'in-progress', assignee: 'Jane Smith' },
-  ],
-  decision: [
-    { id: 'DEC-001', title: 'Use multi-cloud architecture', type: 'decision', status: 'active', date: '2024-03-15' },
-    { id: 'DEC-002', title: 'Adopt Kubernetes for container orchestration', type: 'decision', status: 'active', date: '2024-04-01' },
-  ],
-  risk: [
-    { id: 'RSK-001', title: 'Vendor Lock-in with Cloud Provider', type: 'risk', status: 'mitigating' },
-    { id: 'RSK-002', title: 'Data Migration Complexity', type: 'risk', status: 'mitigating' },
-    { id: 'RSK-003', title: 'Resource Availability', type: 'risk', status: 'identified' },
-  ],
-};
+// Mock data removed - now using live database queries via useLinkableItems hook
 
 const typeConfig: Record<LinkableItemType, { icon: React.ElementType; color: string }> = {
   task: { icon: CheckCircle2, color: 'text-success' },
@@ -98,18 +69,24 @@ export function LinkDialog({
   onLink,
   allowedTypes = ['task', 'issue', 'meeting', 'action', 'decision', 'risk'],
 }: LinkDialogProps) {
+  const { settings } = useProjectContext();
+  const projectId = settings?.id || '';
+
   const [activeTab, setActiveTab] = useState<LinkableItemType>(allowedTypes[0]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(
     new Set(existingLinks.map(l => `${l.type}-${l.id}`))
   );
 
+  // Fetch linkable items for active tab
+  const { data: linkableItems = [], isLoading } = useLinkableItems(projectId, activeTab);
+
   const filteredItems = useMemo(() => {
-    return mockLinkableItems[activeTab].filter(item =>
+    return linkableItems.filter(item =>
       item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.id.toLowerCase().includes(searchQuery.toLowerCase())
     );
-  }, [activeTab, searchQuery]);
+  }, [linkableItems, searchQuery]);
 
   const handleToggleItem = (item: LinkableItem) => {
     const key = `${item.type}-${item.id}`;
@@ -128,7 +105,7 @@ export function LinkDialog({
     const linked: LinkableItem[] = [];
     selectedItems.forEach(key => {
       const [type, id] = key.split('-') as [LinkableItemType, string];
-      const item = mockLinkableItems[type]?.find(i => i.id === id);
+      const item = linkableItems.find(i => i.id === id && i.type === type);
       if (item) linked.push(item);
     });
     onLink(linked);
@@ -163,8 +140,9 @@ export function LinkDialog({
               {allowedTypes.map(type => {
                 const config = typeConfig[type];
                 const Icon = config.icon;
-                const count = mockLinkableItems[type].filter(
-                  i => selectedItems.has(`${type}-${i.id}`)
+                // Count selected items of this type
+                const count = Array.from(selectedItems).filter(
+                  key => key.startsWith(`${type}-`)
                 ).length;
                 return (
                   <TabsTrigger key={type} value={type} className="gap-1 capitalize">
@@ -184,7 +162,11 @@ export function LinkDialog({
               <TabsContent key={type} value={type} className="mt-4">
                 <ScrollArea className="h-64">
                   <div className="space-y-2">
-                    {filteredItems.length > 0 ? (
+                    {isLoading ? (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p>Loading {type}s...</p>
+                      </div>
+                    ) : filteredItems.length > 0 ? (
                       filteredItems.map(item => {
                         const config = typeConfig[item.type];
                         const Icon = config.icon;

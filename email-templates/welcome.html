@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Welcome to ProjectOye</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            padding: 50px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #ffffff;
+            margin: 10px 0 0 0;
+            font-size: 32px;
+            font-weight: 700;
+        }
+
+        .hero-emoji {
+            font-size: 64px;
+        }
+
+        .content {
+            padding: 40px 30px;
+        }
+
+        .welcome-text {
+            text-align: center;
+            margin: 30px 0;
+        }
+
+        .welcome-text h2 {
+            color: #111827;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .welcome-text p {
+            color: #6b7280;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        .tier-badge {
+            background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+            color: #ffffff;
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: inline-block;
+            font-weight: 600;
+            margin: 10px 0;
+        }
+
+        .features-grid {
+            margin: 30px 0;
+        }
+
+        .feature {
+            background: #f9fafb;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 4px solid #6366f1;
+        }
+
+        .feature h3 {
+            margin: 0 0 8px 0;
+            color: #111827;
+            font-size: 16px;
+        }
+
+        .feature p {
+            margin: 0;
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .cta-section {
+            background: #f0f9ff;
+            padding: 30px;
+            text-align: center;
+            margin: 30px 0;
+            border-radius: 8px;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: #6366f1;
+            color: #ffffff;
+            padding: 16px 32px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin: 10px;
+        }
+
+        .checklist {
+            background: #f9fafb;
+            padding: 25px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .checklist-item {
+            padding: 12px 0;
+            border-bottom: 1px solid #e5e7eb;
+            display: flex;
+            align-items: center;
+        }
+
+        .checklist-item:last-child {
+            border-bottom: none;
+        }
+
+        .check-icon {
+            color: #10b981;
+            margin-right: 12px;
+            font-size: 20px;
+        }
+
+        .footer {
+            background: #f9fafb;
+            padding: 30px;
+            text-align: center;
+            color: #6b7280;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="hero-emoji">🎉</div>
+            <h1>Welcome to ProjectOye!</h1>
+        </div>
+
+        <div class="content">
+            <div class="welcome-text">
+                <h2>Hi {{user_name}}, you're all set!</h2>
+                <p>Thank you for choosing ProjectOye. You're now on the <span class="tier-badge">{{tier}} Plan</span>
+                </p>
+            </div>
+
+            <p>We're excited to have you join thousands of project managers who trust ProjectOye to deliver their
+                projects on time and within budget.</p>
+
+            <div class="features-grid">
+                <h3 style="color: #111827; margin-bottom: 20px;">What you can do with your {{tier}} plan:</h3>
+
+                <div class="feature">
+                    <h3>📊 Real-time Dashboard</h3>
+                    <p>Get instant insights into project health, risks, and progress</p>
+                </div>
+
+                <div class="feature">
+                    <h3>🤖 AI-Powered Insights</h3>
+                    <p>Let AI analyze your projects and suggest optimizations</p>
+                </div>
+
+                <div class="feature">
+                    <h3>👥 Team Collaboration</h3>
+                    <p>Work seamlessly with your team in real-time</p>
+                </div>
+
+                <div class="feature">
+                    <h3>📈 Advanced Analytics</h3>
+                    <p>Track KPIs, generate reports, and forecast outcomes</p>
+                </div>
+            </div>
+
+            <div class="cta-section">
+                <h3 style="margin-top: 0; color: #111827;">Ready to get started?</h3>
+                <a href="{{app_url}}/dashboard" class="cta-button">Go to Dashboard</a>
+                <a href="{{help_url}}" class="cta-button" style="background: #6b7280;">View Getting Started Guide</a>
+            </div>
+
+            <div class="checklist">
+                <h3 style="margin-top: 0; color: #111827;">Quick Start Checklist:</h3>
+                <div class="checklist-item">
+                    <span class="check-icon">✓</span>
+                    <span>Create your first project</span>
+                </div>
+                <div class "checklist-item">
+                    <span class="check-icon">✓</span>
+                    <span>Invite your team members</span>
+                </div>
+                <div class="checklist-item">
+                    <span class="check-icon">✓</span>
+                    <span>Set up your project timeline</span>
+                </div>
+                <div class="checklist-item">
+                    <span class="check-icon">✓</span>
+                    <span>Configure notifications</span>
+                </div>
+                <div class="checklist-item">
+                    <span class="check-icon">✓</span>
+                    <span>Explore AI features</span>
+                </div>
+            </div>
+
+            <p style="margin-top: 30px; color: #6b7280; font-size: 14px;">
+                <strong>Need help?</strong> Our support team is here for you.<br>
+                Reply to this email or visit our <a href="{{help_url}}">Help Center</a>.
+            </p>
+        </div>
+
+        <div class="footer">
+            <p><strong>ProjectOye</strong> | Enterprise Project Management</p>
+            <p><a href="{{app_url}}">Dashboard</a> • <a href="{{help_url}}">Help Center</a> • <a
+                    href="{{portal_url}}">Manage Subscription</a></p>
+        </div>
+    </div>
+</body>
+
+</html>

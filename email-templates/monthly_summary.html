@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Monthly Summary</title>
+</head>
+
+<body
+    style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f5f5f5;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+        style="background-color: #f5f5f5; padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <!-- Main Container -->
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0"
+                    style="background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 100%); border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(109, 40, 217, 0.2);">
+
+                    <!-- Header -->
+                    <tr>
+                        <td style="padding: 40px 40px 20px; text-align: center;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">
+                                📊 Your {{month}} Summary
+                            </h1>
+                        </td>
+                    </tr>
+
+                    <!-- Content -->
+                    <tr>
+                        <td
+                            style="padding: 0 40px 40px; background-color: #ffffff; border-top-left-radius: 24px; border-top-right-radius: 24px;">
+
+                            <!-- Icon -->
+                            <div style="text-align: center; margin: -30px 0 20px;">
+                                <div
+                                    style="display: inline-block; width: 60px; height: 60px; background: linear-gradient(135deg, #8b5cf6, #6d28d9); border-radius: 50%; padding: 15px; box-shadow: 0 4px 12px rgba(109, 40, 217, 0.3);">
+                                    <span style="font-size: 30px;">📈</span>
+                                </div>
+                            </div>
+
+                            <!-- Greeting -->
+                            <div style="padding: 20px 0;">
+                                <p
+                                    style="margin: 0 0 20px; color: #1a1a1a; font-size: 18px; line-height: 1.6; text-align: center;">
+                                    Here's what you accomplished this month, {{user_name}}!
+                                </p>
+                            </div>
+
+                            <!-- Key Metrics -->
+                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+                                style="margin: 20px 0;">
+                                <tr>
+                                    <td width="33%"
+                                        style="padding: 20px; text-align: center; background-color: #faf5ff; border-radius: 12px;">
+                                        <div style="color: #8b5cf6; font-size: 32px; font-weight: 700;">
+                                            {{total_projects}}</div>
+                                        <div style="color: #4a5568; font-size: 13px; margin-top: 4px;">Active Projects
+                                        </div>
+                                    </td>
+                                    <td width="10"></td>
+                                    <td width="33%"
+                                        style="padding: 20px; text-align: center; background-color: #faf5ff; border-radius: 12px;">
+                                        <div style="color: #8b5cf6; font-size: 32px; font-weight: 700;">
+                                            {{tasks_completed}}</div>
+                                        <div style="color: #4a5568; font-size: 13px; margin-top: 4px;">Tasks Completed
+                                        </div>
+                                    </td>
+                                    <td width="10"></td>
+                                    <td width="33%"
+                                        style="padding: 20px; text-align: center; background-color: #faf5ff; border-radius: 12px;">
+                                        <div style="color: #10b981; font-size: 32px; font-weight: 700;">
+                                            {{completion_rate}}%</div>
+                                        <div style="color: #4a5568; font-size: 13px; margin-top: 4px;">On-Time Rate
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            <!-- Activity Highlights -->
+                            <div style="background-color: #f3f4f6; padding: 24px; margin: 20px 0; border-radius: 12px;">
+                                <p style="margin: 0 0 16px; color: #1a1a1a; font-size: 16px; font-weight: 600;">
+                                    🌟 Activity Highlights
+                                </p>
+                                <table role="presentation" width="100%" cellpadding="8" cellspacing="0">
+                                    <tr>
+                                        <td
+                                            style="color: #4a5568; font-size: 14px; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                                            Most Active Day:</td>
+                                        <td align="right"
+                                            style="color: #1a1a1a; font-size: 14px; font-weight: 600; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                                            {{most_active_day}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td
+                                            style="color: #4a5568; font-size: 14px; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                                            Total Login Sessions:</td>
+                                        <td align="right"
+                                            style="color: #1a1a1a; font-size: 14px; font-weight: 600; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                                            {{login_count}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td
+                                            style="color: #4a5568; font-size: 14px; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                                            Team Collaborations:</td>
+                                        <td align="right"
+                                            style="color: #1a1a1a; font-size: 14px; font-weight: 600; padding: 8px 0; border-bottom: 1px solid #e5e7eb;">
+                                            {{collaboration_count}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="color: #4a5568; font-size: 14px; padding: 8px 0;">Files Uploaded:
+                                        </td>
+                                        <td align="right"
+                                            style="color: #1a1a1a; font-size: 14px; font-weight: 600; padding: 8px 0;">
+                                            {{files_uploaded}}</td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- Top Projects -->
+                            <div style="margin: 20px 0;">
+                                <p style="margin: 0 0 12px; color: #1a1a1a; font-size: 16px; font-weight: 600;">
+                                    🏆 Your Top Projects
+                                </p>
+                                <div
+                                    style="background-color: #faf5ff; border-left: 4px solid #8b5cf6; padding: 16px; margin-bottom: 8px; border-radius: 8px;">
+                                    <p style="margin: 0 0 4px; color: #1a1a1a; font-size: 14px; font-weight: 600;">
+                                        {{project_1_name}}</p>
+                                    <p style="margin: 0; color: #6d28d9; font-size: 13px;">{{project_1_tasks}} tasks •
+                                        {{project_1_progress}}% complete</p>
+                                </div>
+                                <div
+                                    style="background-color: #faf5ff; border-left: 4px solid #8b5cf6; padding: 16px; margin-bottom: 8px; border-radius: 8px;">
+                                    <p style="margin: 0 0 4px; color: #1a1a1a; font-size: 14px; font-weight: 600;">
+                                        {{project_2_name}}</p>
+                                    <p style="margin: 0; color: #6d28d9; font-size: 13px;">{{project_2_tasks}} tasks •
+                                        {{project_2_progress}}% complete</p>
+                                </div>
+                            </div>
+
+                            <!-- Achievements -->
+                            <div
+                                style="background: linear-gradient(135deg, #faf5ff 0%, #f3e8ff 100%); padding: 20px; margin: 20px 0; border-radius: 12px; text-align: center;">
+                                <p style="margin: 0 0 12px; color: #5b21b6; font-size: 14px; font-weight: 600;">
+                                    🎯 Achievement Unlocked!
+                                </p>
+                                <p style="margin: 0; color: #1a1a1a; font-size: 16px;">
+                                    {{achievement_name}}
+                                </p>
+                            </div>
+
+                            <!-- CTA Button -->
+                            <div style="text-align: center; margin: 30px 0;">
+                                <a href="{{dashboard_url}}"
+                                    style="display: inline-block; background: linear-gradient(135deg, #8b5cf6, #6d28d9); color: #ffffff; text-decoration: none; padding: 14px 36px; border-radius: 8px; font-size: 15px; font-weight: 600; box-shadow: 0 4px 12px rgba(109, 40, 217, 0.3);">
+                                    View Full Report →
+                                </a>
+                            </div>
+
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 30px 40px; background-color: #1a1a1a; text-align: center;">
+                            <p style="margin: 0 0 10px; color: #ffffff; font-size: 16px; font-weight: 600;">
+                                {{app_name}}
+                            </p>
+                            <p style="margin: 0 0 15px; color: #a0aec0; font-size: 14px;">
+                                Keep up the great work!
+                            </p>
+                            <p style="margin: 0; color: #718096; font-size: 12px; line-height: 1.6;">
+                                <a href="{{settings_url}}" style="color: #8b5cf6; text-decoration: none;">Email
+                                    preferences</a>
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+
+</html>

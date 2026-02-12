@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Subscription Renewal Reminder</title>
+</head>
+
+<body
+    style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f5f5f5;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+        style="background-color: #f5f5f5; padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <!-- Main Container -->
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0"
+                    style="background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(29, 78, 216, 0.2);">
+
+                    <!-- Header -->
+                    <tr>
+                        <td style="padding: 40px 40px 20px; text-align: center;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">
+                                🔄 Renewal Reminder
+                            </h1>
+                        </td>
+                    </tr>
+
+                    <!-- Content -->
+                    <tr>
+                        <td
+                            style="padding: 0 40px 40px; background-color: #ffffff; border-top-left-radius: 24px; border-top-right-radius: 24px;">
+
+                            <!-- Icon -->
+                            <div style="text-align: center; margin: -30px 0 20px;">
+                                <div
+                                    style="display: inline-block; width: 60px; height: 60px; background: linear-gradient(135deg, #3b82f6, #1d4ed8); border-radius: 50%; padding: 15px; box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);">
+                                    <span style="font-size: 30px;">🔄</span>
+                                </div>
+                            </div>
+
+                            <!-- Message -->
+                            <div style="padding: 20px 0;">
+                                <p
+                                    style="margin: 0 0 20px; color: #1a1a1a; font-size: 18px; line-height: 1.6; text-align: center;">
+                                    Your subscription renews in <strong style="color: #1d4ed8;">3 days</strong>
+                                </p>
+
+                                <p style="margin: 0 0 20px; color: #4a5568; font-size: 16px; line-height: 1.6;">
+                                    Hi {{user_name}},
+                                </p>
+
+                                <p style="margin: 0 0 20px; color: #4a5568; font-size: 16px; line-height: 1.6;">
+                                    This is a friendly reminder that your {{plan_name}} subscription will automatically
+                                    renew on <strong>{{renewal_date}}</strong>.
+                                </p>
+                            </div>
+
+                            <!-- Renewal Details -->
+                            <div
+                                style="background-color: #eff6ff; border: 2px solid #3b82f6; padding: 24px; margin: 20px 0; border-radius: 12px;">
+                                <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                                    <tr>
+                                        <td style="padding: 8px 0; color: #4a5568; font-size: 15px;">Plan:</td>
+                                        <td align="right"
+                                            style="padding: 8px 0; color: #1a1a1a; font-size: 15px; font-weight: 600;">
+                                            {{plan_name}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px 0; color: #4a5568; font-size: 15px;">Renewal Date:</td>
+                                        <td align="right"
+                                            style="padding: 8px 0; color: #1a1a1a; font-size: 15px; font-weight: 600;">
+                                            {{renewal_date}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px 0; color: #4a5568; font-size: 15px;">Amount:</td>
+                                        <td align="right"
+                                            style="padding: 8px 0; color: #1a1a1a; font-size: 18px; font-weight: 700;">
+                                            {{amount}}</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding: 8px 0; color: #4a5568; font-size: 15px;">Payment Method:
+                                        </td>
+                                        <td align="right"
+                                            style="padding: 8px 0; color: #1a1a1a; font-size: 15px; font-weight: 600;">
+                                            •••• {{last4}}</td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- Info Box -->
+                            <div
+                                style="background-color: #f0f9ff; border-left: 4px solid #3b82f6; padding: 16px; margin: 20px 0; border-radius: 8px;">
+                                <p style="margin: 0; color: #1e40af; font-size: 14px; line-height: 1.6;">
+                                    <strong>No action needed!</strong> Your subscription will renew automatically. We'll
+                                    send you a receipt after the payment is processed.
+                                </p>
+                            </div>
+
+                            <!-- CTA Buttons -->
+                            <div style="text-align: center; margin: 30px 0;">
+                                <a href="{{billing_url}}"
+                                    style="display: inline-block; background: linear-gradient(135deg, #3b82f6, #1d4ed8); color: #ffffff; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-size: 15px; font-weight: 600; margin: 0 8px; box-shadow: 0 4px 12px rgba(29, 78, 216, 0.3);">
+                                    View Billing Details
+                                </a>
+                            </div>
+
+                            <!-- Secondary Actions -->
+                            <div style="text-align: center; margin: 20px 0;">
+                                <p style="margin: 0 0 10px; color: #4a5568; font-size: 14px;">
+                                    Need to make changes?
+                                </p>
+                                <p style="margin: 0; font-size: 14px;">
+                                    <a href="{{update_payment_url}}"
+                                        style="color: #3b82f6; text-decoration: none; margin: 0 10px;">Update Payment
+                                        Method</a> •
+                                    <a href="{{manage_subscription_url}}"
+                                        style="color: #3b82f6; text-decoration: none; margin: 0 10px;">Manage
+                                        Subscription</a>
+                                </p>
+                            </div>
+
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 30px 40px; background-color: #1a1a1a; text-align: center;">
+                            <p style="margin: 0 0 10px; color: #ffffff; font-size: 16px; font-weight: 600;">
+                                {{app_name}}
+                            </p>
+                            <p style="margin: 0 0 15px; color: #a0aec0; font-size: 14px;">
+                                Thank you for being a valued subscriber
+                            </p>
+                            <p style="margin: 0; color: #718096; font-size: 12px; line-height: 1.6;">
+                                Questions about your renewal? <a href="{{support_url}}"
+                                    style="color: #3b82f6; text-decoration: none;">Contact Support</a><br>
+                                <a href="{{unsubscribe_url}}" style="color: #718096; text-decoration: none;">Manage
+                                    email preferences</a>
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+
+</html>

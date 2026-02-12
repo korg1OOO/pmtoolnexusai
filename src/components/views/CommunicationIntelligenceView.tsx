@@ -621,52 +621,62 @@ export function CommunicationIntelligenceView() {
                   </CardHeader>
                   <CardContent>
                     {/* RAG Status */}
-                    <div className="grid grid-cols-6 gap-2 mb-6">
-                      {Object.entries(displayStatus.ragStatus).map(([key, value]) => (
-                        <div key={key} className="text-center">
-                          <div className={cn('w-8 h-8 rounded-full mx-auto mb-1', getRAGColor(value))} />
-                          <span className="text-xs capitalize">{key}</span>
-                        </div>
-                      ))}
-                    </div>
+                    {displayStatus && displayStatus.ragStatus && (
+                      <div className="grid grid-cols-6 gap-2 mb-6">
+                        {Object.entries(displayStatus.ragStatus).map(([key, value]) => (
+                          <div key={key} className="text-center">
+                            <div className={cn('w-8 h-8 rounded-full mx-auto mb-1', getRAGColor(value))} />
+                            <span className="text-xs capitalize">{key}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
                     {/* Status Sections */}
-                    <div className="space-y-4">
-                      {displayStatus.sections.map((section, i) => (
-                        <div key={i} className="p-4 rounded-lg border">
-                          <h4 className="font-medium mb-2">{section.title}</h4>
-                          <p className="text-sm text-muted-foreground mb-3">{section.content}</p>
+                    {displayStatus && displayStatus.sections && (
+                      <div className="space-y-4">
+                        {displayStatus.sections.map((section, i) => (
+                          <div key={i} className="p-4 rounded-lg border">
+                            <h4 className="font-medium mb-2">{section.title}</h4>
+                            <p className="text-sm text-muted-foreground mb-3">{section.content}</p>
 
-                          {section.highlights.length > 0 && (
-                            <div className="mb-2">
-                              <span className="text-xs font-medium text-success">Highlights:</span>
-                              <ul className="mt-1 space-y-1">
-                                {section.highlights.map((h: any, j: number) => (
-                                  <li key={j} className="text-xs flex items-center gap-1">
-                                    <CheckCircle2 className="h-3 w-3 text-success" />
-                                    {String(h)}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
+                            {section.highlights.length > 0 && (
+                              <div className="mb-2">
+                                <span className="text-xs font-medium text-success">Highlights:</span>
+                                <ul className="mt-1 space-y-1">
+                                  {section.highlights.map((h: any, j: number) => (
+                                    <li key={j} className="text-xs flex items-center gap-1">
+                                      <CheckCircle2 className="h-3 w-3 text-success" />
+                                      {String(h)}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
 
-                          {section.concerns.length > 0 && (
-                            <div>
-                              <span className="text-xs font-medium text-warning">Concerns:</span>
-                              <ul className="mt-1 space-y-1">
-                                {section.concerns.map((c: any, j: number) => (
-                                  <li key={j} className="text-xs flex items-center gap-1">
-                                    <AlertTriangle className="h-3 w-3 text-warning" />
-                                    {String(c)}
-                                  </li>
-                                ))}
-                              </ul>
-                            </div>
-                          )}
-                        </div>
-                      ))}
-                    </div>
+                            {section.concerns.length > 0 && (
+                              <div>
+                                <span className="text-xs font-medium text-warning">Concerns:</span>
+                                <ul className="mt-1 space-y-1">
+                                  {section.concerns.map((c: any, j: number) => (
+                                    <li key={j} className="text-xs flex items-center gap-1">
+                                      <AlertTriangle className="h-3 w-3 text-warning" />
+                                      {String(c)}
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {!displayStatus && (
+                      <div className="text-center py-8 text-muted-foreground">
+                        <p className="text-sm">Click "Generate" to create an executive status report</p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
 
@@ -676,24 +686,29 @@ export function CommunicationIntelligenceView() {
                     <CardTitle className="text-base">Key Changes This Period</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-2">
-                      {displayStatus.keyChanges.map((change, i) => (
-                        <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
-                          <Badge variant={
-                            change.category === 'decision' ? 'info' :
-                              change.category === 'risk' ? 'warning' :
-                                change.category === 'milestone' ? 'success' : 'secondary'
-                          }>
-                            {change.category}
-                          </Badge>
-                          <div className="flex-1">
-                            <p className="text-sm font-medium">{change.description}</p>
-                            <p className="text-xs text-muted-foreground">{change.impact}</p>
+                    {displayStatus && displayStatus.keyChanges && displayStatus.keyChanges.length > 0 ? (
+                      <div className="space-y-2">
+                        {displayStatus.keyChanges.map((change, i) => (
+                          <div key={i} className="flex items-start gap-3 p-3 rounded-lg bg-muted/30">
+                            <Badge variant={
+                              change.category === 'decision' ? 'info' :
+                                change.category === 'risk' ? 'warning' :
+                                  change.category === 'milestone' ? 'success' : 'secondary'
+                            }>
+                              {change.category}
+                            </Badge>
+                            <div className="flex-1">
+                              <p className="text-sm font-medium">{change.description}</p>
+                              <p className="text-xs text-muted-foreground">{change.impact}</p>
+                            </div>
+                            <span className="text-xs text-muted-foreground">{change.date}</span>
                           </div>
-                          <span className="text-xs text-muted-foreground">{change.date}</span>
-                        </div>
-                      ))}
-                    </div>
+                        ))}\n                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No key changes to display. Generate a status report to see changes.
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
               </div>
@@ -705,14 +720,20 @@ export function CommunicationIntelligenceView() {
                     <CardTitle className="text-base">AI Recommendations</CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-2">
-                      {displayStatus.recommendations.map((rec, i) => (
-                        <div key={i} className="flex items-start gap-2 p-2 rounded bg-primary/5 border border-primary/20">
-                          <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                          <p className="text-sm">{rec}</p>
-                        </div>
-                      ))}
-                    </div>
+                    {displayStatus && displayStatus.recommendations && displayStatus.recommendations.length > 0 ? (
+                      <div className="space-y-2">
+                        {displayStatus.recommendations.map((rec, i) => (
+                          <div key={i} className="flex items-start gap-2 p-2 rounded bg-primary/5 border border-primary/20">
+                            <Sparkles className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                            <p className="text-sm">{rec}</p>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        Generate a status report to see AI recommendations
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
 

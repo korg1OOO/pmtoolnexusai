@@ -7,6 +7,7 @@ import { GlobalAISidebar } from '@/components/ai/GlobalAISidebar';
 import { MiniChatWindow } from '@/components/chat/MiniChatWindow';
 import { PresenceProvider } from '@/contexts/PresenceContext';
 import { useProjectContext } from '@/contexts/ProjectContext';
+import { NotificationBanner } from '@/components/notifications/NotificationBanner';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -46,6 +47,8 @@ export function AppShell({ children, activeView, onViewChange }: AppShellProps) 
               onCreateProject={() => onViewChange('create-project')}
               onOpenChat={handleOpenChat}
             />
+            {/* Critical notification banner */}
+            <NotificationBanner />
             <main className="flex-1 overflow-auto">
               {children}
             </main>

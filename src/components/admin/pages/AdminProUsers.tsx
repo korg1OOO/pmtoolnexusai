@@ -127,8 +127,31 @@ export function AdminProUsers() {
     const agencyCount = activeSubscribers.filter(s => s.tier === 'agency').length;
 
     const handleExport = () => {
-        // TODO: Implement CSV export
-        console.log('Exporting to CSV...');
+        // Create CSV content
+        const headers = ['Email', 'Tier', 'Status', 'MRR', 'Created At'];
+        const rows = filteredSubscribers.map(sub => [
+            sub.email || 'N/A',
+            sub.tier || 'N/A',
+            sub.status || 'N/A',
+            `$${sub.mrr || 0}`,
+            sub.created_at ? new Date(sub.created_at).toLocaleDateString() : 'N/A',
+        ]);
+
+        const csvContent = [
+            headers.join(','),
+            ...rows.map(row => row.join(','))
+        ].join('\n');
+
+        // Create and download blob
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `pro-users-${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+
+        console.log(`Exported ${filteredSubscribers.length} subscribers to CSV`);
     };
 
     const handleStripeSync = () => {

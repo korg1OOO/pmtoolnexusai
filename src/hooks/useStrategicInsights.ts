@@ -22,7 +22,7 @@ export const useStrategicInsights = (projectId?: string) => {
         queryKey: ["strategic_insights", projectId],
         queryFn: async (): Promise<StrategicData> => {
             if (!projectId) return { context: null, riskDiscovery: null, valueEngineering: null };
-            // @ts-ignore
+
             const { data, error } = await supabase
                 .from("strategic_insights")
                 .select("*")

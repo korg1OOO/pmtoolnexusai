@@ -4,6 +4,7 @@ export { AdminUsers } from './AdminUsers';
 export { AdminProUsers } from './AdminProUsers';
 export { AdminDiscountCodes } from './AdminDiscountCodes';
 export { AdminLicenseKeys } from './AdminLicenseKeys';
+export { default as AdminAIAgents } from './AdminAIAgents';
 
 // Placeholder components for remaining pages
 import React from 'react';

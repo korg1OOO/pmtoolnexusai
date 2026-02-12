@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { loadAgentConfig, loadAgentCapabilities, getDefaultSystemPrompt, type AIAgentConfig } from "../_shared/agentLoader.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -605,11 +606,30 @@ async function callLovableAI(
   systemPrompt: string,
   userQuery: string,
   conversationHistory: Message[],
-  agentType: string
+  agentType: string,
+  agentConfig?: AIAgentConfig | null
 ): Promise<AgentOutput> {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
   if (!LOVABLE_API_KEY) {
     throw new Error("LOVABLE_API_KEY is not configured");
+  }
+
+  // Use agent config if available, otherwise use defaults
+  const modelProvider = agentConfig?.model_provider || "google";
+  const modelName = agentConfig?.model_name || "gemini-3-flash-preview";
+  const maxTokens = agentConfig?.max_tokens || 2000;
+  const temperature = agentConfig?.temperature || 0.7;
+
+  // Build model identifier for API
+  let modelIdentifier: string;
+  if (modelProvider === "openai") {
+    modelIdentifier = modelName; // "gpt-4", "gpt-4-turbo", etc.
+  } else if (modelProvider === "anthropic") {
+    modelIdentifier = `anthropic/${modelName}`; // "anthropic/claude-3-opus"
+  } else if (modelProvider === "google") {
+    modelIdentifier = `google/${modelName}`; // "google/gemini-pro"
+  } else {
+    modelIdentifier = `${modelProvider}/${modelName}`;
   }
 
   const messages = [
@@ -625,10 +645,10 @@ async function callLovableAI(
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-3-flash-preview",
+      model: modelIdentifier,
       messages,
-      temperature: 0.7,
-      max_tokens: 2000,
+      temperature,
+      max_tokens: maxTokens,
     }),
   });
 

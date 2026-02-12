@@ -20,6 +20,8 @@ import {
 } from 'lucide-react';
 import { useAdminUsers } from '@/hooks/useAdmin';
 import { useRecentActivity, useSystemStatus } from '@/hooks/useAdminDashboard';
+import { useSubscriptionMetrics } from '@/hooks/useSubscriptions';
+import { useProjects } from '@/hooks/useProjects';
 import { SubscriptionAnalyticsDashboard } from '@/components/subscription/SubscriptionAnalyticsDashboard';
 
 export function AdminDashboard() {
@@ -27,12 +29,18 @@ export function AdminDashboard() {
     const { data: recentActivity = [], isLoading: activityLoading } = useRecentActivity(4);
     const { data: systemStatus = [], isLoading: statusLoading } = useSystemStatus();
 
-    // Metrics - some derived from live data
+    // Fetch subscription metrics to wire MRR
+    const { data: subscriptionMetrics } = useSubscriptionMetrics();
+
+    // Fetch total projects count
+    const { data: allProjects } = useProjects();
+
+    // Metrics - derived from live data
     const metrics = {
         totalUsers: users?.length || 0,
         activeUsers: Math.floor((users?.length || 0) * 0.42),
-        mrr: 13380, // TODO: Wire to billing system
-        totalProjects: 156, // TODO: Wire to projects count
+        mrr: subscriptionMetrics?.total_mrr || 0, // Wired to billing system
+        totalProjects: allProjects?.length || 0, // Wired to projects count
     };
 
     // Format relative time for activity

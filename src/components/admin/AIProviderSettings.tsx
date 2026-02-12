@@ -27,6 +27,7 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import { useAIProviderSettings, useAIProviderApiKeys, useUpdateAISettings, useUpsertAPIKey, useDeleteAPIKey } from '@/hooks/useAIProviderSettings';
 import { useEffect } from 'react';
 
@@ -185,14 +186,32 @@ export function AIProviderSettings({ onSave }: AIProviderSettingsProps) {
       return;
     }
 
-    // Save to database
-    await upsertApiKey.mutateAsync({
-      provider_id: providerId as 'openai' | 'anthropic' | 'google',
-      encrypted_api_key: key, // TODO: Encrypt before sending
-    });
+    try {
+      // Encrypt API key server-side before storing
+      const { data: encryptionResult, error: encryptError } = await supabase.functions.invoke('encrypt-api-key', {
+        body: { plaintext: key }
+      });
 
-    // Clear local input
-    setLocalApiKeys(prev => ({ ...prev, [providerId]: '' }));
+      if (encryptError || !encryptionResult?.encrypted) {
+        console.error('Encryption failed:', encryptError);
+        toast.error('Failed to encrypt API key');
+        return;
+      }
+
+      // Save encrypted key to database
+      await upsertApiKey.mutateAsync({
+        provider_id: providerId as 'openai' | 'anthropic' | 'google',
+        encrypted_api_key: encryptionResult.encrypted,
+      });
+
+      // Clear local input
+      setLocalApiKeys(prev => ({ ...prev, [providerId]: '' }));
+
+      toast.success('API key saved securely');
+    } catch (error) {
+      console.error('Error saving API key:', error);
+      toast.error('Failed to save API key');
+    }
   };
 
   const handleRemoveApiKey = async (providerId: string) => {

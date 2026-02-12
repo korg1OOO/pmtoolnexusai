@@ -47,6 +47,9 @@ import {
 } from "@/components/admin/pages";
 import { HelmetProvider } from 'react-helmet-async';
 import { TicketDetail } from '@/components/admin/pages/TicketDetail';
+import { EmailTemplateEditor } from '@/components/admin/pages/EmailTemplateEditor';
+import { EmailCampaignBuilder } from '@/components/admin/pages/EmailCampaignBuilder';
+import { EmailCampaignDetail } from '@/components/admin/pages/EmailCampaignDetail';
 
 const queryClient = new QueryClient();
 
@@ -121,6 +124,10 @@ const App = () => (
                 <Route path="analytics" element={<AdminAnalytics />} />
                 <Route path="marketing" element={<AdminMarketing />} />
                 <Route path="email" element={<AdminEmailAutomation />} />
+                <Route path="email/templates/new" element={<EmailTemplateEditor />} />
+                <Route path="email/templates/:id" element={<EmailTemplateEditor />} />
+                <Route path="email/campaigns/new" element={<EmailCampaignBuilder />} />
+                <Route path="email/campaigns/:id" element={<EmailCampaignDetail />} />
                 <Route path="affiliates" element={<AdminAffiliates />} />
                 <Route path="backups" element={<AdminBackups />} />
               </Route>

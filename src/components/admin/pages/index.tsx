@@ -24,7 +24,7 @@ export const AdminAIUsage = () => <PlaceholderPage title="AI Usage & Costs" />;
 export const AdminContentManagement = () => <PlaceholderPage title="Content Management" />;
 export const AdminSecurityAudit = () => <PlaceholderPage title="Security & Audit" />;
 export const AdminBilling = () => <PlaceholderPage title="Billing" />;
-export const AdminManagement = () => <PlaceholderPage title="Admin Management" />;
+export { AdminManagement } from './AdminManagement';
 export const AdminRequests = () => <PlaceholderPage title="Requests & Issues" />;
 export { AdminAnalytics } from './AdminAnalytics';
 export const AdminMarketing = () => <PlaceholderPage title="Marketing" />;

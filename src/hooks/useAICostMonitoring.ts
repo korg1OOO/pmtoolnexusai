@@ -2,7 +2,7 @@
  * React hooks for AI cost monitoring and optimization
  */
 
-import { useQuery } from '@tantml:function_query';
+import { useQuery } from '@tanstack/react-query';
 import {
     WeeklyReviewScheduler,
     RecommendationTracker,

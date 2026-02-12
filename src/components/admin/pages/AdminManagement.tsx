@@ -76,7 +76,7 @@ export function AdminManagement() {
 
     const handleGrantAccess = async () => {
         if (!grantForm.userId || !grantForm.roleId) return;
-        await grantAccess.mutateAsync(grantForm);
+        await grantAccess.mutateAsync({ user_id: grantForm.userId, role_id: grantForm.roleId, notes: grantForm.notes });
         setGrantDialogOpen(false);
         setGrantForm({ userId: '', roleId: '', notes: '' });
     };

@@ -94,11 +94,11 @@ export function AdminOrganizations() {
                             <div className="flex items-center gap-6 text-sm">
                                 <div className="flex items-center gap-2">
                                     <Users className="h-4 w-4 text-muted-foreground" />
-                                    <span>-- users</span>
+                                    <span>{org.user_count || 0} users</span>
                                 </div>
                                 <div className="flex items-center gap-2">
                                     <Building2 className="h-4 w-4 text-muted-foreground" />
-                                    <span>-- projects</span>
+                                    <span>{org.project_count || 0} projects</span>
                                 </div>
                             </div>
                         </CardContent>

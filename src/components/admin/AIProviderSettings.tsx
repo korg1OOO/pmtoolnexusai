@@ -27,6 +27,8 @@ import {
 } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { useAIProviderSettings, useAIProviderApiKeys, useUpdateAISettings, useUpsertAPIKey, useDeleteAPIKey } from '@/hooks/useAIProviderSettings';
+import { useEffect } from 'react';
 
 export interface AIProvider {
   id: string;
@@ -111,23 +113,47 @@ export interface AISettings {
 }
 
 export function AIProviderSettings({ onSave }: AIProviderSettingsProps) {
+  // Fetch settings and API keys from database
+  const { data: savedSettings, isLoading: settingsLoading } = useAIProviderSettings();
+  const { data: apiKeys = [], isLoading: keysLoading } = useAIProviderApiKeys();
+
+  // Mutations
+  const updateSettings = useUpdateAISettings();
+  const upsertApiKey = useUpsertAPIKey();
+  const deleteApiKey = useDeleteAPIKey();
+
+  // Local state for UI
   const [providers, setProviders] = useState<AIProvider[]>(defaultProviders);
   const [activeProvider, setActiveProvider] = useState('lovable');
   const [selectedModel, setSelectedModel] = useState('google/gemini-3-flash-preview');
-  const [apiKeys, setApiKeys] = useState<Record<string, string>>({
-    openai: '',
-    anthropic: '',
-    google: '',
-  });
+  const [localApiKeys, setLocalApiKeys] = useState<Record<string, string>>({});
   const [showApiKeys, setShowApiKeys] = useState<Record<string, boolean>>({});
   const [fallbackEnabled, setFallbackEnabled] = useState(true);
   const [fallbackProvider, setFallbackProvider] = useState('lovable');
-  const [isSaving, setIsSaving] = useState(false);
+
+  // Sync with saved settings from database
+  useEffect(() => {
+    if (savedSettings) {
+      setActiveProvider(savedSettings.active_provider);
+      setSelectedModel(savedSettings.selected_model);
+      setFallbackEnabled(savedSettings.fallback_enabled);
+      setFallbackProvider(savedSettings.fallback_provider);
+    }
+  }, [savedSettings]);
+
+  // Sync API keys from database
+  useEffect(() => {
+    const configured = new Set(apiKeys.map(k => k.provider_id));
+    setProviders(prev => prev.map(p => ({
+      ...p,
+      isConfigured: !p.requiresApiKey || configured.has(p.id as any)
+    })));
+  }, [apiKeys]);
 
   const currentProvider = providers.find((p) => p.id === activeProvider);
 
   const handleApiKeyChange = (providerId: string, value: string) => {
-    setApiKeys((prev) => ({ ...prev, [providerId]: value }));
+    setLocalApiKeys((prev) => ({ ...prev, [providerId]: value }));
   };
 
   const toggleShowApiKey = (providerId: string) => {
@@ -139,7 +165,8 @@ export function AIProviderSettings({ onSave }: AIProviderSettingsProps) {
     if (!provider) return;
 
     // If provider requires API key and isn't configured, show warning
-    if (provider.requiresApiKey && !apiKeys[providerId]) {
+    const configured = new Set(apiKeys.map(k => k.provider_id));
+    if (provider.requiresApiKey && !configured.has(providerId as any)) {
       toast.warning(`Please configure API key for ${provider.name} first`);
       return;
     }
@@ -151,65 +178,54 @@ export function AIProviderSettings({ onSave }: AIProviderSettingsProps) {
     }
   };
 
-  const handleSaveApiKey = (providerId: string) => {
-    const key = apiKeys[providerId];
+  const handleSaveApiKey = async (providerId: string) => {
+    const key = localApiKeys[providerId];
     if (!key || key.trim() === '') {
       toast.error('Please enter a valid API key');
       return;
     }
 
-    // Update provider status
-    setProviders((prev) =>
-      prev.map((p) =>
-        p.id === providerId ? { ...p, isConfigured: true } : p
-      )
-    );
+    // Save to database
+    await upsertApiKey.mutateAsync({
+      provider_id: providerId as 'openai' | 'anthropic' | 'google',
+      encrypted_api_key: key, // TODO: Encrypt before sending
+    });
 
-    toast.success(`${providers.find((p) => p.id === providerId)?.name} API key saved`);
+    // Clear local input
+    setLocalApiKeys(prev => ({ ...prev, [providerId]: '' }));
   };
 
-  const handleRemoveApiKey = (providerId: string) => {
-    setApiKeys((prev) => ({ ...prev, [providerId]: '' }));
-    setProviders((prev) =>
-      prev.map((p) =>
-        p.id === providerId ? { ...p, isConfigured: false, isActive: false } : p
-      )
-    );
+  const handleRemoveApiKey = async (providerId: string) => {
+    await deleteApiKey.mutateAsync(providerId as 'openai' | 'anthropic' | 'google');
 
     // If this was the active provider, switch to Lovable AI
     if (activeProvider === providerId) {
       setActiveProvider('lovable');
       setSelectedModel('google/gemini-3-flash-preview');
     }
-
-    toast.success('API key removed');
   };
 
   const handleSaveSettings = async () => {
-    setIsSaving(true);
     try {
+      // Save to database
+      await updateSettings.mutateAsync({
+        active_provider: activeProvider as any,
+        selected_model: selectedModel,
+        fallback_enabled: fallbackEnabled,
+        fallback_provider: fallbackProvider as any,
+      });
+
       const settings: AISettings = {
         activeProvider,
         selectedModel,
-        apiKeys,
+        apiKeys: localApiKeys,
         fallbackEnabled,
         fallbackProvider,
       };
 
-      // Store settings in localStorage for now (will be replaced with backend storage)
-      localStorage.setItem('ai_provider_settings', JSON.stringify({
-        activeProvider,
-        selectedModel,
-        fallbackEnabled,
-        fallbackProvider,
-      }));
-
       onSave?.(settings);
-      toast.success('AI settings saved successfully');
     } catch (error) {
-      toast.error('Failed to save settings');
-    } finally {
-      setIsSaving(false);
+      // Error already handled by mutation
     }
   };
 
@@ -337,7 +353,7 @@ export function AIProviderSettings({ onSave }: AIProviderSettingsProps) {
                     <Input
                       type={showApiKeys[provider.id] ? 'text' : 'password'}
                       placeholder={`Enter ${provider.name} API key...`}
-                      value={apiKeys[provider.id] || ''}
+                      value={localApiKeys[provider.id] || ''}
                       onChange={(e) => handleApiKeyChange(provider.id, e.target.value)}
                     />
                     <Button
@@ -353,7 +369,7 @@ export function AIProviderSettings({ onSave }: AIProviderSettingsProps) {
                       )}
                     </Button>
                   </div>
-                  {apiKeys[provider.id] && !provider.isConfigured && (
+                  {localApiKeys[provider.id] && !provider.isConfigured && (
                     <Button
                       variant="outline"
                       onClick={() => handleSaveApiKey(provider.id)}
@@ -435,8 +451,8 @@ export function AIProviderSettings({ onSave }: AIProviderSettingsProps) {
 
       {/* Save Button */}
       <div className="flex justify-end">
-        <Button onClick={handleSaveSettings} disabled={isSaving}>
-          {isSaving ? 'Saving...' : 'Save AI Settings'}
+        <Button onClick={handleSaveSettings} disabled={updateSettings.isPending}>
+          {updateSettings.isPending ? 'Saving...' : 'Save AI Settings'}
         </Button>
       </div>
     </div>

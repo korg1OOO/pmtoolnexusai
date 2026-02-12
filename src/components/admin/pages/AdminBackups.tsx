@@ -24,33 +24,13 @@ import {
     TableRow,
 } from '@/components/ui/table';
 import { format } from 'date-fns';
+import { useBackupJobs, useBackupSchedules } from '@/hooks/useBackups';
 
-// Mock data - will be connected to real hooks
-const mockBackups = [
-    {
-        id: '1',
-        backup_type: 'full',
-        status: 'completed',
-        file_size: 2500000000,
-        started_at: new Date().toISOString(),
-        completed_at: new Date().toISOString(),
-        created_by_email: 'admin@projectoye.com'
-    }
-];
 
-const mockSchedules = [
-    {
-        id: '1',
-        name: 'Daily Full Backup',
-        cron_expression: '0 2 * * *',
-        backup_type: 'full',
-        is_active: true,
-        last_run_at: new Date().toISOString(),
-        next_run_at: new Date(Date.now() + 86400000).toISOString()
-    }
-];
 
 export function AdminBackups() {
+    const { data: backups = [], isLoading: jobsLoading } = useBackupJobs();
+    const { data: schedules = [], isLoading: schedulesLoading } = useBackupSchedules();
     const formatBytes = (bytes: number) => {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
@@ -96,7 +76,7 @@ export function AdminBackups() {
                         <Database className="h-4 w-4 text-blue-600" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{mockBackups.length}</div>
+                        <div className="text-2xl font-bold">{backups.length}</div>
                         <p className="text-xs text-muted-foreground">All time</p>
                     </CardContent>
                 </Card>
@@ -118,7 +98,7 @@ export function AdminBackups() {
                         <Calendar className="h-4 w-4 text-purple-600" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">{mockSchedules.filter(s => s.is_active).length}</div>
+                        <div className="text-2xl font-bold">{schedules.filter(s => s.is_active).length}</div>
                         <p className="text-xs text-muted-foreground">Running</p>
                     </CardContent>
                 </Card>
@@ -154,7 +134,7 @@ export function AdminBackups() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {mockBackups.map((backup) => (
+                            {backups.map((backup) => (
                                 <TableRow key={backup.id}>
                                     <TableCell>
                                         <Badge variant="outline">{backup.backup_type}</Badge>
@@ -205,7 +185,7 @@ export function AdminBackups() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {mockSchedules.map((schedule) => (
+                            {schedules.map((schedule) => (
                                 <TableRow key={schedule.id}>
                                     <TableCell className="font-medium">{schedule.name}</TableCell>
                                     <TableCell>

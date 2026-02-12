@@ -17,6 +17,8 @@ export interface Organization {
     plan?: string;
     status?: string;
     created_at?: string;
+    user_count?: number;
+    project_count?: number;
 }
 
 export interface AuditLog {
@@ -65,14 +67,40 @@ export const useAdminOrganizations = () => {
         queryKey: ["admin-organizations"],
         queryFn: async (): Promise<Organization[]> => {
             try {
-                const { data, error } = await (supabase as any)
+                const { data: orgs, error } = await (supabase as any)
                     .from("organizations")
                     .select("*")
                     .order("name");
                 if (error) throw error;
-                return data || [];
+
+                if (!orgs || orgs.length === 0) return [];
+
+                // Fetch counts for each organization
+                const orgsWithCounts = await Promise.all(
+                    orgs.map(async (org: Organization) => {
+                        // Count users
+                        const { count: userCount } = await (supabase as any)
+                            .from("profiles")
+                            .select("id", { count: 'exact', head: true })
+                            .eq("organization_id", org.id);
+
+                        // Count projects
+                        const { count: projectCount } = await (supabase as any)
+                            .from("projects")
+                            .select("id", { count: 'exact', head: true })
+                            .eq("organization_id", org.id);
+
+                        return {
+                            ...org,
+                            user_count: userCount || 0,
+                            project_count: projectCount || 0,
+                        };
+                    })
+                );
+
+                return orgsWithCounts;
             } catch (e) {
-                console.warn("organizations table not available");
+                console.warn("organizations table not available", e);
                 return [];
             }
         },

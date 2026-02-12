@@ -17,7 +17,7 @@ export function AdminPanel() {
     const location = useLocation();
 
     const handleBackToApp = () => {
-        navigate('/');
+        navigate('/dashboard');
     };
 
     return (

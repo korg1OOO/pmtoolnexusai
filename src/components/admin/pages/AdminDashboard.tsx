@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { useAdminUsers } from '@/hooks/useAdmin';
 import { useRecentActivity, useSystemStatus } from '@/hooks/useAdminDashboard';
+import { SubscriptionAnalyticsDashboard } from '@/components/subscription/SubscriptionAnalyticsDashboard';
 
 export function AdminDashboard() {
     const { data: users } = useAdminUsers();
@@ -177,8 +178,13 @@ export function AdminDashboard() {
                 </Card>
             </div>
 
+            {/* Subscription Analytics */}
+            <div className="col-span-2">
+                <SubscriptionAnalyticsDashboard />
+            </div>
+
             {/* Quick Actions */}
-            <Card>
+            <Card className="col-span-2">
                 <CardHeader>
                     <CardTitle>Quick Actions</CardTitle>
                     <CardDescription>Common admin tasks</CardDescription>

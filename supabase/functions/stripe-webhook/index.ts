@@ -1,154 +1,151 @@
-/**
- * Stripe Webhook Handler
- * Processes Stripe events and updates database
- */
+// Supabase Edge Function: stripe-webhook
+// Handles Stripe webhook events for subscription lifecycle
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
-import Stripe from 'https://esm.sh/stripe@14.14.0';
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
+import Stripe from 'https://esm.sh/stripe@12.0.0?target=deno';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.0';
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
     apiVersion: '2023-10-16',
+    httpClient: Stripe.createFetchHttpClient(),
 });
 
-const supabase = createClient(
-    Deno.env.get('SUPABASE_URL') || '',
-    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''
-);
+const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 serve(async (req) => {
-    // Handle CORS
-    if (req.method === 'OPTIONS') {
-        return new Response(null, {
-            headers: {
-                'Access-Control-Allow-Origin': '*',
-                'Access-Control-Allow-Methods': 'POST',
-                'Access-Control-Allow-Headers': 'stripe-signature, content-type',
-            },
-        });
+    const signature = req.headers.get('stripe-signature');
+    const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
+
+    if (!signature || !webhookSecret) {
+        return new Response('Missing signature or secret', { status: 400 });
     }
 
     try {
-        const signature = req.headers.get('stripe-signature');
-        if (!signature) {
-            return new Response(JSON.stringify({ error: 'No signature' }), {
-                status: 400,
-                headers: { 'Content-Type': 'application/json' },
-            });
-        }
-
         const body = await req.text();
-        const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET') || '';
+        const event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
 
-        // Verify webhook signature
-        let event: Stripe.Event;
-        try {
-            event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
-        } catch (err) {
-            console.error('Webhook signature verification failed:', err);
-            return new Response(JSON.stringify({ error: 'Invalid signature' }), {
-                status: 400,
-                headers: { 'Content-Type': 'application/json' },
-            });
+        // Check for duplicate events
+        const { data: existing } = await supabase
+            .from('stripe_events')
+            .select('id')
+            .eq('stripe_event_id', event.id)
+            .single();
+
+        if (existing) {
+            console.log('Duplicate event, skipping:', event.id);
+            return new Response(JSON.stringify({ received: true }), { status: 200 });
         }
 
-        console.log('Processing Stripe event:', event.type);
+        // Log event
+        await supabase.from('stripe_events').insert({
+            stripe_event_id: event.id,
+            event_type: event.type,
+            payload: event,
+            processed: false,
+        });
 
-        // Handle different event types
+        // Handle events
         switch (event.type) {
-            case 'checkout.session.completed': {
-                const session = event.data.object as Stripe.Checkout.Session;
-                await handleCheckoutSessionCompleted(session);
+            case 'checkout.session.completed':
+                await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
                 break;
-            }
 
-            case 'customer.subscription.created':
-            case 'customer.subscription.updated': {
-                const subscription = event.data.object as Stripe.Subscription;
-                await handleSubscriptionChange(subscription);
+            case 'customer.subscription.updated':
+                await handleSubscriptionUpdated(event.data.object as Stripe.Subscription);
                 break;
-            }
 
-            case 'customer.subscription.deleted': {
-                const subscription = event.data.object as Stripe.Subscription;
-                await handleSubscriptionDeleted(subscription);
+            case 'customer.subscription.deleted':
+                await handleSubscriptionDeleted(event.data.object as Stripe.Subscription);
                 break;
-            }
 
-            case 'invoice.payment_succeeded': {
-                const invoice = event.data.object as Stripe.Invoice;
-                await handlePaymentSucceeded(invoice);
+            case 'invoice.payment_succeeded':
+                await handlePaymentSucceeded(event.data.object as Stripe.Invoice);
                 break;
-            }
 
-            case 'invoice.payment_failed': {
-                const invoice = event.data.object as Stripe.Invoice;
-                await handlePaymentFailed(invoice);
+            case 'invoice.payment_failed':
+                await handlePaymentFailed(event.data.object as Stripe.Invoice);
                 break;
-            }
+
+            case 'invoice.finalized':
+                await handleInvoiceFinalized(event.data.object as Stripe.Invoice);
+                break;
+
+            case 'invoice.created':
+                await handleInvoiceCreated(event.data.object as Stripe.Invoice);
+                break;
 
             default:
                 console.log('Unhandled event type:', event.type);
         }
 
-        return new Response(JSON.stringify({ received: true }), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-        });
-    } catch (error) {
+        // Mark as processed
+        await supabase
+            .from('stripe_events')
+            .update({ processed: true, processed_at: new Date().toISOString() })
+            .eq('stripe_event_id', event.id);
+
+        return new Response(JSON.stringify({ received: true }), { status: 200 });
+    } catch (error: any) {
         console.error('Webhook error:', error);
-        return new Response(JSON.stringify({ error: 'Webhook handler failed' }), {
-            status: 500,
-            headers: { 'Content-Type': 'application/json' },
-        });
+        return new Response(JSON.stringify({ error: error.message }), { status: 400 });
     }
 });
 
-async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
-    const userId = session.metadata?.userId;
-    const tier = session.metadata?.tier as 'pro' | 'business' | 'agency';
-    const billingCycle = session.metadata?.billingCycle as 'monthly' | 'annual';
+async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
+    const userId = session.metadata?.user_id;
+    const tier = session.metadata?.tier;
+    const billingCycle = session.metadata?.billing_cycle;
 
-    if (!userId || !tier || !billingCycle) {
+    if (!userId || !tier) {
         console.error('Missing metadata in checkout session');
         return;
     }
 
-    // Create subscription record
-    const { error } = await supabase.from('subscriptions').insert({
-        user_id: userId,
-        tier,
-        billing_cycle: billingCycle,
-        status: 'active',
-        stripe_customer_id: session.customer as string,
-        stripe_subscription_id: session.subscription as string,
-        mrr: tier === 'pro' ? 10 : tier === 'business' ? 39 : 99,
-    });
+    // Update subscription
+    const { error } = await supabase
+        .from('subscriptions')
+        .update({
+            stripe_customer_id: session.customer as string,
+            stripe_subscription_id: session.subscription as string,
+            tier,
+            billing_cycle: billingCycle,
+            status: 'active',
+            trial_ends_at: null,
+        })
+        .eq('user_id', userId);
 
-    if (error) {
-        console.error('Failed to create subscription:', error);
-    }
+    if (error) console.error('Error updating subscription:', error);
+
+    // Update profile tier
+    await supabase
+        .from('profiles')
+        .update({ subscription_tier: tier })
+        .eq('id', userId);
 }
 
-async function handleSubscriptionChange(subscription: Stripe.Subscription) {
+async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
+    const userId = subscription.metadata?.user_id;
+
+    if (!userId) return;
+
     const { error } = await supabase
         .from('subscriptions')
         .update({
             status: subscription.status,
-            current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
-            current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
-            cancelled_at: subscription.canceled_at
-                ? new Date(subscription.canceled_at * 1000).toISOString()
-                : null,
+            stripe_subscription_id: subscription.id,
         })
-        .eq('stripe_subscription_id', subscription.id);
+        .eq('user_id', userId);
 
-    if (error) {
-        console.error('Failed to update subscription:', error);
-    }
+    if (error) console.error('Error updating subscription:', error);
 }
 
 async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
+    const userId = subscription.metadata?.user_id;
+
+    if (!userId) return;
+
     const { error } = await supabase
         .from('subscriptions')
         .update({
@@ -157,25 +154,176 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
         })
         .eq('stripe_subscription_id', subscription.id);
 
-    if (error) {
-        console.error('Failed to cancel subscription:', error);
-    }
+    if (error) console.error('Error cancelling subscription:', error);
 }
 
 async function handlePaymentSucceeded(invoice: Stripe.Invoice) {
-    console.log('Payment succeeded for invoice:', invoice.id);
-    // Could log this to an invoices table or send confirmation email
+    const subscriptionId = invoice.subscription as string;
+
+    // Find subscription
+    const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('id')
+        .eq('stripe_subscription_id', subscriptionId)
+        .single();
+
+    if (!sub) return;
+
+    // Sync invoice to database
+    await supabase.from('invoices').upsert({
+        subscription_id: sub.id,
+        stripe_invoice_id: invoice.id,
+        stripe_customer_id: invoice.customer as string,
+        amount_due: invoice.amount_due,
+        amount_paid: invoice.amount_paid,
+        currency: invoice.currency,
+        status: invoice.status || 'paid',
+        invoice_pdf: invoice.invoice_pdf || null,
+        hosted_invoice_url: invoice.hosted_invoice_url || null,
+        invoice_number: invoice.number || null,
+        billing_reason: invoice.billing_reason || null,
+        due_date: invoice.due_date ? new Date(invoice.due_date * 1000).toISOString() : null,
+        paid_at: invoice.status_transitions.paid_at
+            ? new Date(invoice.status_transitions.paid_at * 1000).toISOString()
+            : null,
+    }, { onConflict: 'stripe_invoice_id' });
+
+    // Sync line items
+    if (invoice.lines?.data) {
+        for (const line of invoice.lines.data) {
+            await supabase.from('invoice_line_items').insert({
+                invoice_id: sub.id,
+                description: line.description || null,
+                amount: line.amount,
+                quantity: line.quantity || 1,
+                unit_amount: line.unit_amount || null,
+                period_start: line.period?.start
+                    ? new Date(line.period.start * 1000).toISOString()
+                    : null,
+                period_end: line.period?.end
+                    ? new Date(line.period.end * 1000).toISOString()
+                    : null,
+            });
+        }
+    }
+
+    // Record payment
+    await supabase.from('payments').insert({
+        subscription_id: sub.id,
+        stripe_invoice_id: invoice.id,
+        stripe_payment_intent_id: invoice.payment_intent as string,
+        amount: invoice.amount_paid,
+        currency: invoice.currency,
+        status: 'succeeded',
+        paid_at: new Date(invoice.status_transitions.paid_at! * 1000).toISOString(),
+    });
+
+    // If this was a recovery from dunning, mark it
+    await supabase
+        .from('dunning_attempts')
+        .update({
+            status: 'recovered',
+            notes: 'Payment recovered successfully',
+        })
+        .eq('stripe_invoice_id', invoice.id)
+        .eq('status', 'pending');
 }
 
 async function handlePaymentFailed(invoice: Stripe.Invoice) {
-    const { error } = await supabase
-        .from('subscriptions')
-        .update({
-            status: 'past_due',
-        })
-        .eq('stripe_subscription_id', invoice.subscription as string);
+    const subscriptionId = invoice.subscription as string;
 
-    if (error) {
-        console.error('Failed to mark subscription as past_due:', error);
-    }
+    // Find subscription
+    const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('id')
+        .eq('stripe_subscription_id', subscriptionId)
+        .single();
+
+    if (!sub) return;
+
+    // Record failed payment
+    await supabase.from('payments').insert({
+        subscription_id: sub.id,
+        stripe_invoice_id: invoice.id,
+        amount: invoice.amount_due,
+        currency: invoice.currency,
+        status: 'failed',
+    });
+
+    // Update subscription status
+    await supabase
+        .from('subscriptions')
+        .update({ status: 'past_due' })
+        .eq('id', sub.id);
+
+    // Create dunning attempt
+    const gracePeriodDays = 7;
+    const gracePeriodEnds = new Date();
+    gracePeriodEnds.setDate(gracePeriodEnds.getDate() + gracePeriodDays);
+
+    await supabase.from('dunning_attempts').insert({
+        subscription_id: sub.id,
+        stripe_invoice_id: invoice.id,
+        attempt_number: invoice.attempt_count || 1,
+        status: 'pending',
+        grace_period_ends: gracePeriodEnds.toISOString(),
+        notes: `Payment failed. Grace period: ${gracePeriodDays} days`,
+    });
 }
+
+async function handleInvoiceFinalized(invoice: Stripe.Invoice) {
+    const subscriptionId = invoice.subscription as string;
+
+    const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('id')
+        .eq('stripe_subscription_id', subscriptionId)
+        .single();
+
+    if (!sub) return;
+
+    // Sync invoice
+    await supabase.from('invoices').upsert({
+        subscription_id: sub.id,
+        stripe_invoice_id: invoice.id,
+        stripe_customer_id: invoice.customer as string,
+        amount_due: invoice.amount_due,
+        amount_paid: invoice.amount_paid,
+        currency: invoice.currency,
+        status: invoice.status || 'open',
+        invoice_pdf: invoice.invoice_pdf || null,
+        hosted_invoice_url: invoice.hosted_invoice_url || null,
+        invoice_number: invoice.number || null,
+        billing_reason: invoice.billing_reason || null,
+        due_date: invoice.due_date ? new Date(invoice.due_date * 1000).toISOString() : null,
+    }, { onConflict: 'stripe_invoice_id' });
+}
+
+async function handleInvoiceCreated(invoice: Stripe.Invoice) {
+    const subscriptionId = invoice.subscription as string;
+
+    const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('id')
+        .eq('stripe_subscription_id', subscriptionId)
+        .single();
+
+    if (!sub) return;
+
+    // Sync invoice
+    await supabase.from('invoices').upsert({
+        subscription_id: sub.id,
+        stripe_invoice_id: invoice.id,
+        stripe_customer_id: invoice.customer as string,
+        amount_due: invoice.amount_due,
+        amount_paid: invoice.amount_paid,
+        currency: invoice.currency,
+        status: invoice.status || 'draft',
+        invoice_pdf: invoice.invoice_pdf || null,
+        hosted_invoice_url: invoice.hosted_invoice_url || null,
+        invoice_number: invoice.number || null,
+        billing_reason: invoice.billing_reason || null,
+        due_date: invoice.due_date ? new Date(invoice.due_date * 1000).toISOString() : null,
+    }, { onConflict: 'stripe_invoice_id' });
+}
+

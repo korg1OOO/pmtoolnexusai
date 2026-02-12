@@ -44,14 +44,9 @@ import { useFinancials } from '@/hooks/useFinancials';
 import { useTasks } from '@/hooks/useTasks';
 import { useMeetings } from '@/hooks/useMeetings';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
+import { useAIInsights } from '@/hooks/useAIInsights';
 
-// Mocks for sections not yet wired (Static only)
-const mockAIInsights = [
-  { id: '1', category: 'prediction' as const, title: 'Sprint Completion Forecast', description: 'Based on current velocity, Sprint 12 is likely to complete 2 days ahead of schedule.', trend: 'up' as const, confidence: 0.85 },
-  { id: '2', category: 'recommendation' as const, title: 'Resource Reallocation', description: 'Consider reallocating resources from Phase 3 to Phase 4 to mitigate testing risks.', confidence: 0.78 },
-  { id: '3', category: 'warning' as const, title: 'Integration Bottleneck', description: 'Integration testing bottleneck predicted in Week 3 - recommend starting early.', trend: 'down' as const, confidence: 0.82 },
-  { id: '4', category: 'pattern' as const, title: 'Historical Trend', description: 'Similar projects have experienced 15-20% scope creep at this stage. Monitor change requests closely.', confidence: 0.75 },
-];
+// Mock data removed - AI insights now from database
 
 interface MorningBriefingViewProps {
   demo?: boolean;
@@ -75,6 +70,7 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
   const { data: tasks = [], isLoading: loadingTasks } = useTasks(settings.id);
   const { meetings, isLoading: loadingMeetings } = useMeetings(settings.id);
   const { data: teamMembers = [], isLoading: loadingTeam } = useTeamMembers(settings.id);
+  const { data: aiInsights = [], isLoading: loadingAIInsights } = useAIInsights(settings.id);
   // Helper functions to map DB statuses to UI types safely
   const mapActionStatus = (status: string): 'open' | 'in-progress' | 'overdue' | 'completed' => {
     const valid = ['open', 'in-progress', 'overdue', 'completed'];
@@ -388,11 +384,14 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
               description: rec,
               confidence: 0.9
             }))
-          ] : mockAIInsights;
+          ] : aiInsights.map(insight => ({
+            ...insight,
+            trend: insight.trend === 'neutral' ? 'stable' as const : insight.trend as 'up' | 'down' | 'stable' | undefined
+          }));
 
         return (
           <AIInsightsSection
-            insights={insights}
+            insights={insights as any}
             summary={aiSection?.summary || "Here's what AI predicts for your project based on current trends and historical data."}
           />
         );

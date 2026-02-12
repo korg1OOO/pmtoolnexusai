@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Dialog,
@@ -12,19 +12,32 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { Loader2, Mail, Lock, User } from 'lucide-react';
+import { Loader2, Mail, Lock, User, Check } from 'lucide-react';
+import { type SubscriptionTier } from '@/hooks/useFeatureAccess';
+import { supabase } from '@/integrations/supabase/client';
+import { cn } from '@/lib/utils';
 
 interface AuthDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  defaultTier?: SubscriptionTier;
 }
 
-export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
+export function AuthDialog({ open, onOpenChange, defaultTier }: AuthDialogProps) {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [selectedTier, setSelectedTier] = useState<SubscriptionTier>(defaultTier || 'free');
   const [loading, setLoading] = useState(false);
   const { signIn, signUp } = useAuth();
+
+  // Update tier if defaultTier changes
+  useEffect(() => {
+    if (defaultTier) {
+      setSelectedTier(defaultTier);
+      setMode('signup'); // Auto-switch to signup if tier specified
+    }
+  }, [defaultTier]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -35,8 +48,36 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
         await signIn(email, password);
         toast.success('Signed in successfully');
       } else {
-        await signUp(email, password);
-        toast.success('Account created! You can now sign in.');
+        // Sign up user
+        const { data } = await signUp(email, password);
+
+        // Create subscription record
+        if (data?.user) {
+          const tierPricing: Record<SubscriptionTier, number> = {
+            free: 0,
+            pro: 10,
+            business: 39,
+            agency: 99,
+          };
+
+          await supabase.from('subscriptions').insert({
+            user_id: data.user.id,
+            email: data.user.email,
+            tier: selectedTier,
+            status: selectedTier === 'free' ? 'active' : 'trial',
+            mrr: tierPricing[selectedTier],
+            trial_ends_at: selectedTier !== 'free'
+              ? new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString() // 14 day trial
+              : null,
+          });
+
+          // Update profile tier
+          await supabase.from('profiles').update({
+            subscription_tier: selectedTier,
+          }).eq('id', data.user.id);
+        }
+
+        toast.success('Account created! Check your email to verify.');
       }
       onOpenChange(false);
       setEmail('');
@@ -79,6 +120,40 @@ export function AuthDialog({ open, onOpenChange }: AuthDialogProps) {
               />
             </div>
           </div>
+
+          {mode === 'signup' && (
+            <div className="space-y-2">
+              <Label>Select Plan</Label>
+              <div className="grid grid-cols-4 gap-2">
+                {(['free', 'pro', 'business', 'agency'] as SubscriptionTier[]).map((tier) => (
+                  <button
+                    key={tier}
+                    type="button"
+                    onClick={() => setSelectedTier(tier)}
+                    className={cn(
+                      'relative px-3 py-2 rounded-md border text-sm font-medium transition-all',
+                      selectedTier === tier
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border hover:border-primary/50'
+                    )}
+                  >
+                    {selectedTier === tier && (
+                      <Check className="absolute -top-1 -right-1 h-4 w-4 text-primary" />
+                    )}
+                    <div className="capitalize">{tier}</div>
+                    <div className="text-xs text-muted-foreground">
+                      {tier === 'free' ? 'Free' : `$${tier === 'pro' ? '10' : tier === 'business' ? '39' : '99'}/mo`}
+                    </div>
+                  </button>
+                ))}
+              </div>
+              {selectedTier !== 'free' && (
+                <p className="text-xs text-muted-foreground">
+                  Start with 14-day free trial, cancel anytime
+                </p>
+              )}
+            </div>
+          )}
 
           <div className="space-y-2">
             <Label htmlFor="password">Password</Label>

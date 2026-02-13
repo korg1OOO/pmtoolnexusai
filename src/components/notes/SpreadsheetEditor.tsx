@@ -48,6 +48,12 @@ import {
 } from './spreadsheet';
 import type { CellFormat, Selection, CellData } from './spreadsheet/types';
 import { isInSelection, getSelectionRange, createEmptySelection } from './spreadsheet/types';
+import { PresenceCursors, PresenceSelections, CommentThread, ShareDialog, VersionHistoryPanel } from './spreadsheet/collaboration';
+import { PresenceManager, generateUserColor, type UserPresence } from '@/services/presenceService';
+import { CommentsService, type SpreadsheetComment } from '@/services/commentsService';
+import { VersionHistoryService, type SpreadsheetVersion } from '@/services/versionHistoryService';
+import { supabase } from '@/integrations/supabase/client';
+import { PivotDialog, PivotOverlay, PivotTableEngine, type PivotTableConfig, type PivotTableData } from './spreadsheet/pivot';
 
 interface SpreadsheetEditorProps {
   spreadsheet: NotebookSpreadsheet | null;
@@ -82,6 +88,20 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
   const [showConvertDialog, setShowConvertDialog] = useState(false);
+
+  // Collaboration state
+  const [activeUsers, setActiveUsers] = useState<UserPresence[]>([]);
+  const [comments, setComments] = useState<SpreadsheetComment[]>([]);
+  const [commentThreadOpen, setCommentThreadOpen] = useState(false);
+  const [activeCommentCell, setActiveCommentCell] = useState<string | null>(null);
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const presenceManagerRef = useRef<PresenceManager | null>(null);
+
+  // Pivot table state
+  const [pivotTables, setPivotTables] = useState<PivotTableConfig[]>([]);
+  const [pivotData, setPivotData] = useState<Map<string, PivotTableData>>(new Map());
+  const [showPivotDialog, setShowPivotDialog] = useState(false);
 
   // Selection state
   const [selection, setSelection] = useState<Selection | null>(null);
@@ -192,17 +212,6 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
   const updateCell = useCallback((row: number, col: number, value: any) => {
     if (!localData) return;
 
-    // Validate the value before updating
-    const validationError = validateCell(value, row, col, validationRules);
-    if (validationError && !validationError.allowEmpty) {
-      toast({
-        title: 'Validation Error',
-        description: validationError.message,
-        variant: 'destructive',
-      });
-      // Still allow the update (soft validation) but warn the user
-    }
-
     const newData = [...localData];
     if (!newData[row]) {
       newData[row] = [];
@@ -211,7 +220,7 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
     setLocalData(newData);
     pushHistory(newData, cellFormats);
     saveData(newData);
-  }, [localData, cellFormats, validationRules, pushHistory, saveData, toast]);
+  }, [localData, cellFormats, pushHistory, saveData]);
 
   // Handle cell editing
   const startEditing = useCallback((row: number, col: number, initialValue?: string) => {

@@ -10,28 +10,34 @@ import {
   DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
+  Type,
   Bold,
   Italic,
   Underline,
-  Strikethrough,
   AlignLeft,
   AlignCenter,
   AlignRight,
-  Paintbrush,
-  Type,
-  ChevronDown,
-  Undo,
-  Redo,
+  Link,
+  Unlink,
+  Save,
   Copy,
-  Clipboard,
   Scissors,
+  Clipboard,
+  Eraser,
+  Undo2,
+  Redo2,
   Trash2,
-  Link2,
+  Plus,
+  Minus,
+  Menu,
+  ChevronDown,
+  CheckSquare,
+  Paintbrush,
+  BarChart3,
   Lock,
   Download,
   Merge,
   Split,
-  CheckSquare,
 } from 'lucide-react';
 import type { CellFormat } from './types';
 import { cn } from '@/lib/utils';
@@ -83,6 +89,8 @@ interface SpreadsheetToolbarProps {
   onMergeCells?: () => void;
   onUnmergeCells?: () => void;
   onDataValidation?: () => void;
+  onConditionalFormat?: () => void;
+  onInsertChart?: () => void;
 }
 
 export function SpreadsheetToolbar({
@@ -106,6 +114,8 @@ export function SpreadsheetToolbar({
   onMergeCells,
   onUnmergeCells,
   onDataValidation,
+  onConditionalFormat,
+  onInsertChart,
 }: SpreadsheetToolbarProps) {
   return (
     <div className="flex items-center gap-1 px-2 py-1 border-b border-border bg-muted/30 flex-wrap">
@@ -117,7 +127,7 @@ export function SpreadsheetToolbar({
           <Tooltip>
             <TooltipTrigger asChild>
               <Button variant="outline" size="sm" className="gap-1.5" onClick={onConvertToProjectPlan}>
-                <Link2 className="h-4 w-4" />
+                <Link className="h-4 w-4" />
                 Convert to Project Plan
               </Button>
             </TooltipTrigger>
@@ -135,7 +145,7 @@ export function SpreadsheetToolbar({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="ghost" size="iconSm" onClick={onUndo} disabled={!canUndo}>
-              <Undo className="h-4 w-4" />
+              <Undo2 className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>Undo (Ctrl+Z)</TooltipContent>
@@ -143,7 +153,7 @@ export function SpreadsheetToolbar({
         <Tooltip>
           <TooltipTrigger asChild>
             <Button variant="ghost" size="iconSm" onClick={onRedo} disabled={!canRedo}>
-              <Redo className="h-4 w-4" />
+              <Redo2 className="h-4 w-4" />
             </Button>
           </TooltipTrigger>
           <TooltipContent>Redo (Ctrl+Y)</TooltipContent>
@@ -223,6 +233,7 @@ export function SpreadsheetToolbar({
           </TooltipTrigger>
           <TooltipContent>Underline (Ctrl+U)</TooltipContent>
         </Tooltip>
+        {/* Strikethrough button commented out - icon not available in lucide-react
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -236,6 +247,7 @@ export function SpreadsheetToolbar({
           </TooltipTrigger>
           <TooltipContent>Strikethrough</TooltipContent>
         </Tooltip>
+        */}
       </div>
 
       <Separator orientation="vertical" className="h-6 mx-1" />
@@ -462,6 +474,38 @@ export function SpreadsheetToolbar({
             </Button>
           </TooltipTrigger>
           <TooltipContent>Data Validation</TooltipContent>
+        </Tooltip>
+      )}
+
+      {onConditionalFormat && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="iconSm"
+              onClick={onConditionalFormat}
+              disabled={!hasSelection}
+            >
+              <Paintbrush className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Conditional Formatting</TooltipContent>
+        </Tooltip>
+      )}
+
+      {onInsertChart && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="iconSm"
+              onClick={onInsertChart}
+              disabled={!hasSelection}
+            >
+              <BarChart3 className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Insert Chart</TooltipContent>
         </Tooltip>
       )}
 

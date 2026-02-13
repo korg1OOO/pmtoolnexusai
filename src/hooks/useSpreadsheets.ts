@@ -38,6 +38,8 @@ export interface SpreadsheetSheet {
     endCol: number;
   }>;
   validation_rules?: any[]; // JSONB array of ValidationRule objects
+  conditional_formats?: any[]; // JSONB array of ConditionalFormat objects
+  charts?: any[]; // JSONB array of ChartConfig objects
 }
 
 export function useSpreadsheets(notebookId: string | null) {

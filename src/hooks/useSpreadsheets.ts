@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 export interface NotebookSpreadsheet {
   id: string;
   notebook_id: string;
+  section_id: string | null; // Optional section - null means notebook level
   name: string;
   color: string | null;
   sort_order: number;
@@ -30,6 +31,13 @@ export interface SpreadsheetSheet {
   sort_order: number;
   created_at: string;
   updated_at: string;
+  merged_cells?: Array<{
+    startRow: number;
+    startCol: number;
+    endRow: number;
+    endCol: number;
+  }>;
+  validation_rules?: any[]; // JSONB array of ValidationRule objects
 }
 
 export function useSpreadsheets(notebookId: string | null) {
@@ -132,6 +140,25 @@ export function useSpreadsheets(notebookId: string | null) {
     }
   };
 
+  const moveSpreadsheet = async (spreadsheetId: string, targetSectionId: string | null) => {
+    try {
+      const { error } = await supabase
+        .from('notebook_spreadsheets')
+        .update({ section_id: targetSectionId })
+        .eq('id', spreadsheetId);
+
+      if (error) throw error;
+
+      const message = targetSectionId
+        ? 'Spreadsheet moved to section'
+        : 'Spreadsheet moved to notebook level';
+      toast({ title: message });
+    } catch (error) {
+      console.error('Error moving spreadsheet:', error);
+      toast({ title: 'Error', description: 'Failed to move spreadsheet', variant: 'destructive' });
+    }
+  };
+
   useEffect(() => {
     fetchSpreadsheets();
   }, [notebookId]);
@@ -167,6 +194,7 @@ export function useSpreadsheets(notebookId: string | null) {
     createSpreadsheet,
     updateSpreadsheet,
     deleteSpreadsheet,
+    moveSpreadsheet,
     refetch: fetchSpreadsheets,
   };
 }

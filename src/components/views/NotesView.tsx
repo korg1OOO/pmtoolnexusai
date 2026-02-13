@@ -67,8 +67,7 @@ export function NotesView({ demo = false }: NotesViewProps) {
   const { notebooks: realNotebooks, loading: notebooksLoading } = useNotebooks();
   const { sections: realSections, loading: sectionsLoading } = useSections(selectedNotebookId);
   const { pages: realPages, loading: pagesLoading } = usePages(selectedSectionId);
-
-  // Use mocks if demo is true
+  //  Use mocks if demo is true
   // Use mocks if demo is true
   // Demo mode disabled - always use real data
   const notebooks = realNotebooks;
@@ -76,18 +75,33 @@ export function NotesView({ demo = false }: NotesViewProps) {
   const pages = realPages;
   const allPages: any[] = [];
 
-  // No-op for mutations in demo mode (or we could mock them, but read-only is fine for a tour)
-  const createNotebook = useCallback(async (name: string, icon?: string, color?: string) => null, []);
-  const updateNotebook = useCallback(async (id: string, updates: Partial<Notebook>) => { }, []);
-  const deleteNotebook = useCallback(async (id: string) => { }, []);
-  const createSection = useCallback(async (name: string, color?: string) => null, []);
-  const updateSection = useCallback(async (id: string, updates: Partial<NotebookSection>) => { }, []);
-  const deleteSection = useCallback(async (id: string) => { }, []);
-  const createPage = useCallback(async (title?: string) => null, []);
-  const updatePage = useCallback(async (id: string, updates: Partial<NotebookPage>) => { }, []);
-  const deletePage = useCallback(async (id: string) => { }, []);
+  // Wire up real mutation functions from proper hooks
+  const {
+    createNotebook,
+    updateNotebook,
+    deleteNotebook
+  } = useNotebooks();
 
-  const { spreadsheets, loading: spreadsheetsLoading, createSpreadsheet, updateSpreadsheet, deleteSpreadsheet } = useSpreadsheets(selectedNotebookId);
+  const {
+    createSection,
+    updateSection,
+    deleteSection
+  } = useSections(selectedNotebookId);
+
+  const {
+    createPage,
+    updatePage,
+    deletePage
+  } = usePages(selectedSectionId);
+
+  const {
+    spreadsheets,
+    createSpreadsheet,
+    updateSpreadsheet,
+    deleteSpreadsheet,
+    moveSpreadsheet,
+    loading: spreadsheetsLoading,
+  } = useSpreadsheets(selectedNotebookId);
 
 
   const { outgoingLinks, incomingLinks } = usePageLinks(selectedPage?.id || null);
@@ -267,6 +281,7 @@ export function NotesView({ demo = false }: NotesViewProps) {
               onCreateSpreadsheet={createSpreadsheet}
               onUpdateSpreadsheet={updateSpreadsheet}
               onDeleteSpreadsheet={deleteSpreadsheet}
+              onMoveSpreadsheet={moveSpreadsheet}
               totalPages={totalPages}
             />
           )}

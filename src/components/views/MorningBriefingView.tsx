@@ -350,7 +350,19 @@ export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) 
   // NOTE: Maps removed as sections now accept arrays directly
 
   // Render section content based on ID
-  const renderSectionContent = (sectionId: BriefingSectionId) => {
+  const renderSectionContent = (sectionId: BriefingSectionId, isLoading: boolean = false) => {
+    // Show skeleton while section is loading (sequential loading)
+    if (isLoading) {
+      return (
+        <div className="space-y-3 p-4">
+          <Skeleton className="h-6 w-3/4" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-full" />
+          <Skeleton className="h-4 w-2/3" />
+        </div>
+      );
+    }
+
     switch (sectionId) {
       case 'critical-alerts':
         return <CriticalAlertsSection alerts={criticalAlerts} />;

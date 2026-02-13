@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
@@ -203,6 +204,7 @@ function ChildTaskRow({ task, expanded, onToggle, selected, onSelect, onSprintCl
 
 export function ChildPlansView() {
   const { settings } = useProjectContext();
+  const navigate = useNavigate();
   const { data: tasks = [], isLoading } = useTasks(settings?.id || null);
 
   // Transform flat tasks to hierarchy
@@ -412,7 +414,9 @@ export function ChildPlansView() {
             onToggle={() => toggleTask(task.id)}
             selected={selectedTasks.has(task.id)}
             onSelect={(selected) => toggleSelection(task.id, selected)}
-            onSprintClick={(sprint) => console.log('Navigate to sprint:', sprint)}
+            onSprintClick={(sprint) => {
+              navigate(`/sprints/${sprint.id}`, { state: { sprint } });
+            }}
           />
         ))}
       </ScrollArea>

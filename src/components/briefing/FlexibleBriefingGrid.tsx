@@ -7,11 +7,12 @@ import { BriefingSectionCard } from './BriefingSectionCard';
 
 interface FlexibleBriefingGridProps {
   sections: BriefingSectionId[];
-  renderContent: (sectionId: BriefingSectionId) => React.ReactNode;
+  renderContent: (sectionId: BriefingSectionId, isLoading: boolean) => React.ReactNode;
   isGenerating: boolean;
   lastUpdated: Date;
   onRefresh: () => void;
   isCustomizing: boolean;
+  enableSequentialLoading?: boolean;
 }
 
 const COLS = 12;
@@ -24,9 +25,12 @@ export function FlexibleBriefingGrid({
   lastUpdated,
   onRefresh,
   isCustomizing,
+  enableSequentialLoading = true,
 }: FlexibleBriefingGridProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState(1200);
+  const [loadedSections, setLoadedSections] = useState<Set<BriefingSectionId>>(new Set());
+  const [currentlyLoadingIndex, setCurrentlyLoadingIndex] = useState(0);
 
   const getSectionConfig = (id: BriefingSectionId): BriefingSection | undefined => {
     return BRIEFING_SECTIONS.find(s => s.id === id);
@@ -53,7 +57,25 @@ export function FlexibleBriefingGrid({
     });
   };
 
-  const [layout, setLayout] = useState<Layout[]>(generateInitialLayout);
+  // Load layout from localStorage or generate initial
+  const loadLayoutFromStorage = (): Layout[] => {
+    try {
+      const saved = localStorage.getItem('morning-briefing-layout');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        // Validate that all sections are present
+        const savedIds = new Set(parsed.map((l: Layout) => l.i));
+        if (sections.every(s => savedIds.has(s))) {
+          return parsed;
+        }
+      }
+    } catch (error) {
+      console.error('Failed to load layout:', error);
+    }
+    return generateInitialLayout();
+  };
+
+  const [layout, setLayout] = useState<Layout[]>(loadLayoutFromStorage);
 
   useEffect(() => {
     const measureWidth = () => {
@@ -68,16 +90,65 @@ export function FlexibleBriefingGrid({
     return () => resizeObserver.disconnect();
   }, []);
 
+  // Save layout to localStorage when it changes
+  useEffect(() => {
+    if (isCustomizing && layout.length > 0) {
+      try {
+        localStorage.setItem('morning-briefing-layout', JSON.stringify(layout));
+      } catch (error) {
+        console.error('Failed to save layout:', error);
+      }
+    }
+  }, [layout, isCustomizing]);
+
   useEffect(() => {
     const currentIds = new Set(layout.map(l => l.i));
     if (sections.length !== layout.length || sections.some(s => !currentIds.has(s))) {
-      setLayout(generateInitialLayout());
+      const newLayout = loadLayoutFromStorage();
+      setLayout(newLayout);
     }
   }, [sections]);
+
+  // Sequential loading effect
+  useEffect(() => {
+    if (!enableSequentialLoading) {
+      // Load all immediately
+      setLoadedSections(new Set(sections));
+      return;
+    }
+
+    let mounted = true;
+    let currentIndex = 0;
+
+    const loadNext = () => {
+      if (!mounted || currentIndex >= sections.length) return;
+
+      const sectionId = sections[currentIndex];
+      setCurrentlyLoadingIndex(currentIndex);
+
+      // Simulate async load with small delay for smooth UX
+      setTimeout(() => {
+        if (mounted) {
+          setLoadedSections(prev => new Set([...prev, sectionId]));
+          currentIndex++;
+          loadNext();
+        }
+      }, 150); // 150ms delay between widgets
+    };
+
+    loadNext();
+
+    return () => {
+      mounted = false;
+    };
+  }, [sections, enableSequentialLoading]);
 
   const renderSection = (sectionId: BriefingSectionId) => {
     const sectionConfig = getSectionConfig(sectionId);
     if (!sectionConfig) return null;
+
+    const isLoading = enableSequentialLoading && !loadedSections.has(sectionId);
+
     return (
       <BriefingSectionCard
         section={sectionConfig}
@@ -85,7 +156,7 @@ export function FlexibleBriefingGrid({
         generatedAt={sectionConfig.isAIPowered ? lastUpdated.toISOString() : undefined}
         onRefresh={sectionConfig.isAIPowered ? onRefresh : undefined}
       >
-        {renderContent(sectionId)}
+        {renderContent(sectionId, isLoading)}
       </BriefingSectionCard>
     );
   };
@@ -136,12 +207,16 @@ export function FlexibleBriefingGrid({
         cols={COLS}
         rowHeight={ROW_HEIGHT}
         width={width}
-        onLayoutChange={isCustomizing ? setLayout : undefined}
+        onLayoutChange={(newLayout) => {
+          if (isCustomizing) {
+            setLayout(newLayout);
+          }
+        }}
         draggableHandle=".drag-handle"
         isResizable={isCustomizing}
         isDraggable={isCustomizing}
-        compactType={null}
-        preventCollision={true}
+        compactType="vertical"
+        preventCollision={false}
         margin={[20, 20]}
         containerPadding={[0, 0]}
       >

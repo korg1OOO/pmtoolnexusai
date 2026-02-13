@@ -7,6 +7,7 @@ import {
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import {
   Bold,
@@ -26,6 +27,11 @@ import {
   Scissors,
   Trash2,
   Link2,
+  Lock,
+  Download,
+  Merge,
+  Split,
+  CheckSquare,
 } from 'lucide-react';
 import type { CellFormat } from './types';
 import { cn } from '@/lib/utils';
@@ -70,6 +76,13 @@ interface SpreadsheetToolbarProps {
   isLinked?: boolean;
   onConvertToProjectPlan?: () => void;
   syncStatusComponent?: React.ReactNode;
+  // Excel features
+  onFreezePanes?: (rows: number, cols: number) => void;
+  onExportExcel?: () => void;
+  onExportCSV?: () => void;
+  onMergeCells?: () => void;
+  onUnmergeCells?: () => void;
+  onDataValidation?: () => void;
 }
 
 export function SpreadsheetToolbar({
@@ -87,6 +100,12 @@ export function SpreadsheetToolbar({
   isLinked,
   onConvertToProjectPlan,
   syncStatusComponent,
+  onFreezePanes,
+  onExportExcel,
+  onExportCSV,
+  onMergeCells,
+  onUnmergeCells,
+  onDataValidation,
 }: SpreadsheetToolbarProps) {
   return (
     <div className="flex items-center gap-1 px-2 py-1 border-b border-border bg-muted/30 flex-wrap">
@@ -229,8 +248,8 @@ export function SpreadsheetToolbar({
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-1 px-2">
                   <Type className="h-4 w-4" />
-                  <div 
-                    className="w-3 h-0.5 rounded-full" 
+                  <div
+                    className="w-3 h-0.5 rounded-full"
                     style={{ backgroundColor: currentFormat.textColor || '#000' }}
                   />
                   <ChevronDown className="h-3 w-3" />
@@ -246,7 +265,7 @@ export function SpreadsheetToolbar({
                 onClick={() => onFormatChange({ textColor: color.value })}
                 className="gap-2"
               >
-                <div 
+                <div
                   className="w-4 h-4 rounded border border-border"
                   style={{ backgroundColor: color.value || 'transparent' }}
                 />
@@ -262,8 +281,8 @@ export function SpreadsheetToolbar({
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" size="sm" className="gap-1 px-2">
                   <Paintbrush className="h-4 w-4" />
-                  <div 
-                    className="w-3 h-3 rounded border border-border" 
+                  <div
+                    className="w-3 h-3 rounded border border-border"
                     style={{ backgroundColor: currentFormat.bgColor || 'transparent' }}
                   />
                   <ChevronDown className="h-3 w-3" />
@@ -279,7 +298,7 @@ export function SpreadsheetToolbar({
                 onClick={() => onFormatChange({ bgColor: color.value })}
                 className="gap-2"
               >
-                <div 
+                <div
                   className="w-4 h-4 rounded border border-border"
                   style={{ backgroundColor: color.value || 'transparent' }}
                 />
@@ -334,6 +353,117 @@ export function SpreadsheetToolbar({
           <TooltipContent>Align Right</TooltipContent>
         </Tooltip>
       </div>
+
+      <Separator orientation="vertical" className="h-6 mx-1" />
+
+      {/* Excel Features */}
+      {onFreezePanes && (
+        <DropdownMenu>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="gap-1 px-2">
+                  <Lock className="h-4 w-4" />
+                  <span className="text-xs">Freeze</span>
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent>Freeze Panes</TooltipContent>
+          </Tooltip>
+          <DropdownMenuContent>
+            <DropdownMenuItem onClick={() => onFreezePanes(1, 0)}>
+              Freeze Top Row
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => onFreezePanes(0, 1)}>
+              Freeze First Column
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => onFreezePanes(0, 0)}>
+              Unfreeze All
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+
+      {(onExportExcel || onExportCSV) && (
+        <DropdownMenu>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <DropdownMenuTrigger asChild>
+                <Button variant="ghost" size="sm" className="gap-1 px-2">
+                  <Download className="h-4 w-4" />
+                  <span className="text-xs">Export</span>
+                  <ChevronDown className="h-3 w-3" />
+                </Button>
+              </DropdownMenuTrigger>
+            </TooltipTrigger>
+            <TooltipContent>Export Spreadsheet</TooltipContent>
+          </Tooltip>
+          <DropdownMenuContent>
+            {onExportExcel && (
+              <DropdownMenuItem onClick={onExportExcel}>
+                <Download className="h-4 w-4 mr-2" />
+                Export to Excel (.xlsx)
+              </DropdownMenuItem>
+            )}
+            {onExportCSV && (
+              <DropdownMenuItem onClick={onExportCSV}>
+                <Download className="h-4 w-4 mr-2" />
+                Export to CSV
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
+
+      {onMergeCells && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="iconSm"
+              onClick={onMergeCells}
+              disabled={!hasSelection}
+            >
+              <Merge className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Merge Cells</TooltipContent>
+        </Tooltip>
+      )}
+
+      {onUnmergeCells && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="iconSm"
+              onClick={onUnmergeCells}
+              disabled={!hasSelection}
+            >
+              <Split className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Unmerge Cells</TooltipContent>
+        </Tooltip>
+      )}
+
+      {onDataValidation && (
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button
+              variant="ghost"
+              size="iconSm"
+              onClick={onDataValidation}
+              disabled={!hasSelection}
+            >
+              <CheckSquare className="h-4 w-4" />
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Data Validation</TooltipContent>
+        </Tooltip>
+      )}
 
       <Separator orientation="vertical" className="h-6 mx-1" />
 

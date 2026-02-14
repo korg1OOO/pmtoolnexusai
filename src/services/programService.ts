@@ -386,3 +386,140 @@ export async function getProgramHierarchy(programId: string): Promise<{
         program_id: program.id,
     };
 }
+
+// ============================================
+// PROGRAM STAKEHOLDERS (NEW)
+// ============================================
+
+export interface ProgramStakeholder {
+    id: string;
+    program_id: string;
+    name: string;
+    role: string;
+    email: string;
+    phone: string;
+    influence: 'high' | 'medium' | 'low';
+    interest: 'high' | 'medium' | 'low';
+    engagement_level: 'champion' | 'supporter' | 'neutral' | 'resistant';
+    satisfaction: number;
+    contact_info?: Record<string, any>;
+    created_at: string;
+    updated_at: string;
+}
+
+/**
+ * Get program stakeholders
+ */
+export async function getProgramStakeholders(programId: string): Promise<ProgramStakeholder[]> {
+    const { data, error } = await supabase
+        .from('program_stakeholders')
+        .select('*')
+        .eq('program_id', programId)
+        .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data as ProgramStakeholder[];
+}
+
+/**
+ * Create program stakeholder
+ */
+export async function createProgramStakeholder(
+    programId: string,
+    stakeholder: Omit<ProgramStakeholder, 'id' | 'program_id' | 'created_at' | 'updated_at'>
+): Promise<ProgramStakeholder> {
+    const { data, error } = await supabase
+        .from('program_stakeholders')
+        .insert({
+            program_id: programId,
+            ...stakeholder,
+        })
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data as ProgramStakeholder;
+}
+
+/**
+ * Update program stakeholder
+ */
+export async function updateProgramStakeholder(
+    id: string,
+    updates: Partial<Omit<ProgramStakeholder, 'id' | 'program_id' | 'created_at' | 'updated_at'>>
+): Promise<ProgramStakeholder> {
+    const { data, error } = await supabase
+        .from('program_stakeholders')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data as ProgramStakeholder;
+}
+
+/**
+ * Delete program stakeholder
+ */
+export async function deleteProgramStakeholder(id: string): Promise<void> {
+    const { error } = await supabase
+        .from('program_stakeholders')
+        .delete()
+        .eq('id', id);
+
+    if (error) throw error;
+}
+
+// ============================================
+// PROGRAM RESOURCES (NEW)
+// ============================================
+
+export interface ProgramResource {
+    id: string;
+    program_id: string;
+    project_id?: string;
+    required: number;
+    allocated: number;
+    skills_needed: string[];
+    created_at: string;
+    updated_at: string;
+}
+
+/**
+ * Get program resources
+ */
+export async function getProgramResources(programId: string): Promise<ProgramResource[]> {
+    const { data, error } = await supabase
+        .from('program_resources')
+        .select('*')
+        .eq('program_id', programId)
+        .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data as ProgramResource[];
+}
+
+/**
+ * Update program resources
+ */
+export async function updateProgramResources(
+    programId: string,
+    resources: Omit<ProgramResource, 'id' | 'created_at' | 'updated_at'>[]
+): Promise<ProgramResource[]> {
+    // Delete existing resources
+    await supabase
+        .from('program_resources')
+        .delete()
+        .eq('program_id', programId);
+
+    // Insert new resources
+    const { data, error } = await supabase
+        .from('program_resources')
+        .insert(resources)
+        .select();
+
+    if (error) throw error;
+    return data as ProgramResource[];
+}
+

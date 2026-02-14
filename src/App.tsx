@@ -65,6 +65,8 @@ import { EmailCampaignDetail } from '@/components/admin/pages/EmailCampaignDetai
 import { DatabaseMigrationPanel } from '@/components/admin/DatabaseMigrationPanel';
 import { TenantDashboard, WorkspaceManagement, TenantSettings, TenantUserManagement, TenantAnalytics, DepartmentManagement, LicenseAllocation } from '@/components/tenant';
 import { WorkspaceDashboard, PortfolioView, TeamAssignment, WorkspaceResourceAllocation, WorkspaceBudgetManagement, WorkspaceAnalytics } from '@/components/workspace';
+import { PortfolioDashboard, ResourcePlanningView, PortfolioBudgetOverview, StrategicRoadmap } from '@/components/portfolio';
+import { StakeholderManagement, AdvancedResourceAllocation, ProgramBudgetManagement } from '@/components/program';
 import {
   MLModelsPage,
   MLAlertsPage,
@@ -239,6 +241,71 @@ const App = () => (
                   <ProjectProvider>
                     <PresenceProvider>
                       <WorkspaceAnalytics />
+                    </PresenceProvider>
+                  </ProjectProvider>
+                </ProtectedRoute>
+              } />
+              {/* Portfolio Admin Routes */}
+              <Route path="/portfolio/:portfolioId" element={
+                <ProtectedRoute>
+                  <ProjectProvider>
+                    <PresenceProvider>
+                      <PortfolioDashboard />
+                    </PresenceProvider>
+                  </ProjectProvider>
+                </ProtectedRoute>
+              } />
+              <Route path="/portfolio/:portfolioId/resources" element={
+                <ProtectedRoute>
+                  <ProjectProvider>
+                    <PresenceProvider>
+                      <ResourcePlanningView />
+                    </PresenceProvider>
+                  </ProjectProvider>
+                </ProtectedRoute>
+              } />
+              <Route path="/portfolio/:portfolioId/budget" element={
+                <ProtectedRoute>
+                  <ProjectProvider>
+                    <PresenceProvider>
+                      <PortfolioBudgetOverview />
+                    </PresenceProvider>
+                  </ProjectProvider>
+                </ProtectedRoute>
+              } />
+              <Route path="/portfolio/:portfolioId/roadmap" element={
+                <ProtectedRoute>
+                  <ProjectProvider>
+                    <PresenceProvider>
+                      <StrategicRoadmap />
+                    </PresenceProvider>
+                  </ProjectProvider>
+                </ProtectedRoute>
+              } />
+              {/* Program Manager Routes */}
+              <Route path="/program/:programId/stakeholders" element={
+                <ProtectedRoute>
+                  <ProjectProvider>
+                    <PresenceProvider>
+                      <StakeholderManagement />
+                    </PresenceProvider>
+                  </ProjectProvider>
+                </ProtectedRoute>
+              } />
+              <Route path="/program/:programId/resources" element={
+                <ProtectedRoute>
+                  <ProjectProvider>
+                    <PresenceProvider>
+                      <AdvancedResourceAllocation />
+                    </PresenceProvider>
+                  </ProjectProvider>
+                </ProtectedRoute>
+              } />
+              <Route path="/program/:programId/budget" element={
+                <ProtectedRoute>
+                  <ProjectProvider>
+                    <PresenceProvider>
+                      <ProgramBudgetManagement />
                     </PresenceProvider>
                   </ProjectProvider>
                 </ProtectedRoute>

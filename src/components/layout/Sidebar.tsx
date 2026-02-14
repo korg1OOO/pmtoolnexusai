@@ -167,6 +167,54 @@ const adminItems: NavItem[] = [
       { id: 'admin-templates', label: 'Templates Admin', icon: FolderKanban, alwaysShow: true },
     ]
   },
+  {
+    id: 'tenant-admin',
+    label: 'Tenant Admin',
+    icon: Building2,
+    children: [
+      { id: 'tenant', label: 'Tenant Dashboard', icon: LayoutDashboard, alwaysShow: true },
+      { id: 'tenant/workspaces', label: 'Workspaces', icon: FolderKanban, alwaysShow: true },
+      { id: 'tenant/users', label: 'User Management', icon: Users, alwaysShow: true },
+      { id: 'tenant/departments', label: 'Departments', icon: GitBranch, alwaysShow: true },
+      { id: 'tenant/licenses', label: 'Licenses', icon: Shield, alwaysShow: true },
+      { id: 'tenant/analytics', label: 'Analytics', icon: BarChart3, alwaysShow: true },
+      { id: 'tenant/settings', label: 'Settings', icon: Settings, alwaysShow: true },
+    ]
+  },
+  {
+    id: 'workspace-admin',
+    label: 'Workspace Admin',
+    icon: FolderKanban,
+    children: [
+      { id: 'workspace/:id', label: 'Workspace Dashboard', icon: LayoutDashboard, alwaysShow: true },
+      { id: 'workspace/:id/portfolios', label: 'Portfolios', icon: Briefcase, alwaysShow: true },
+      { id: 'workspace/:id/teams', label: 'Team Assignment', icon: Users, alwaysShow: true },
+      { id: 'workspace/:id/resources', label: 'Resources', icon: Users, alwaysShow: true },
+      { id: 'workspace/:id/budget', label: 'Budget', icon: DollarSign, alwaysShow: true },
+      { id: 'workspace/:id/analytics', label: 'Analytics', icon: BarChart3, alwaysShow: true },
+    ]
+  },
+  {
+    id: 'portfolio-admin',
+    label: 'Portfolio Admin',
+    icon: Briefcase,
+    children: [
+      { id: 'portfolio/:id', label: 'Portfolio Dashboard', icon: LayoutDashboard, alwaysShow: true },
+      { id: 'portfolio/:id/resources', label: 'Resource Planning', icon: Users, alwaysShow: true },
+      { id: 'portfolio/:id/budget', label: 'Budget Overview', icon: DollarSign, alwaysShow: true },
+      { id: 'portfolio/:id/roadmap', label: 'Strategic Roadmap', icon: Target, alwaysShow: true },
+    ]
+  },
+  {
+    id: 'program-admin',
+    label: 'Program Admin',
+    icon: GitBranch,
+    children: [
+      { id: 'program/:id/stakeholders', label: 'Stakeholders', icon: Users, alwaysShow: true },
+      { id: 'program/:id/resources', label: 'Resources', icon: Users, alwaysShow: true },
+      { id: 'program/:id/budget', label: 'Budget', icon: DollarSign, alwaysShow: true },
+    ]
+  },
   { id: 'settings', label: 'Settings', icon: User, alwaysShow: true },
 ];
 

@@ -257,3 +257,85 @@ export async function getDefaultWorkspace(tenantId: string): Promise<Workspace> 
     if (error) throw error;
     return data as Workspace;
 }
+
+// ============================================
+// WORKSPACE TEAMS (NEW)
+// ============================================
+
+export interface WorkspaceTeam {
+    id: string;
+    workspace_id: string;
+    user_id: string;
+    role: string;
+    allocation_percentage: number;
+    skills: string[];
+    availability_status: string;
+    assigned_at: string;
+}
+
+/**
+ * Get workspace teams
+ */
+export async function getWorkspaceTeams(workspaceId: string): Promise<WorkspaceTeam[]> {
+    const { data, error } = await supabase
+        .from('workspace_teams')
+        .select('*')
+        .eq('workspace_id', workspaceId)
+        .order('assigned_at');
+
+    if (error) throw error;
+    return data as WorkspaceTeam[];
+}
+
+/**
+ * Assign team member
+ */
+export async function assignTeamMember(
+    workspaceId: string,
+    userId: string,
+    data: Omit<WorkspaceTeam, 'id' | 'workspace_id' | 'user_id' | 'assigned_at'>
+): Promise<WorkspaceTeam> {
+    const { data: team, error } = await supabase
+        .from('workspace_teams')
+        .insert({
+            workspace_id: workspaceId,
+            user_id: userId,
+            ...data,
+        })
+        .select()
+        .single();
+
+    if (error) throw error;
+    return team as WorkspaceTeam;
+}
+
+/**
+ * Update team member
+ */
+export async function updateTeamMember(
+    id: string,
+    updates: Partial<Omit<WorkspaceTeam, 'id' | 'workspace_id' | 'user_id' | 'assigned_at'>>
+): Promise<WorkspaceTeam> {
+    const { data, error } = await supabase
+        .from('workspace_teams')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data as WorkspaceTeam;
+}
+
+/**
+ * Remove team member
+ */
+export async function removeTeamMember(id: string): Promise<void> {
+    const { error } = await supabase
+        .from('workspace_teams')
+        .delete()
+        .eq('id', id);
+
+    if (error) throw error;
+}
+

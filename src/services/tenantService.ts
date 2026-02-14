@@ -310,3 +310,201 @@ export async function updateTenantSettings(tenantId: string, settings: any) {
     if (error) throw error;
     return data;
 }
+
+// ============================================
+// DEPARTMENTS (NEW)
+// ============================================
+
+export interface Department {
+    id: string;
+    tenant_id: string;
+    parent_id?: string;
+    name: string;
+    description?: string;
+    budget?: number;
+    spent?: number;
+    manager_id?: string;
+    member_count: number;
+    created_at: string;
+    updated_at: string;
+}
+
+/**
+ * Get departments for a tenant
+ */
+export async function getDepartments(tenantId: string): Promise<Department[]> {
+    const { data, error } = await supabase
+        .from('departments')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .order('name');
+
+    if (error) throw error;
+    return data as Department[];
+}
+
+/**
+ * Create department
+ */
+export async function createDepartment(
+    tenantId: string,
+    department: Omit<Department, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>
+): Promise<Department> {
+    const { data, error } = await supabase
+        .from('departments')
+        .insert({
+            tenant_id: tenantId,
+            ...department,
+        })
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data as Department;
+}
+
+/**
+ * Update department
+ */
+export async function updateDepartment(
+    id: string,
+    updates: Partial<Omit<Department, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>>
+): Promise<Department> {
+    const { data, error } = await supabase
+        .from('departments')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data as Department;
+}
+
+/**
+ * Delete department
+ */
+export async function deleteDepartment(id: string): Promise<void> {
+    const { error } = await supabase
+        .from('departments')
+        .delete()
+        .eq('id', id);
+
+    if (error) throw error;
+}
+
+// ============================================
+// LICENSES (NEW)
+// ============================================
+
+export interface License {
+    id: string;
+    tenant_id: string;
+    license_type: string;
+    total_licenses: number;
+    allocated_licenses: number;
+    price_per_license?: number;
+    renewal_date?: string;
+    status: string;
+    created_at: string;
+    updated_at: string;
+}
+
+/**
+ * Get licenses for a tenant
+ */
+export async function getLicenses(tenantId: string): Promise<License[]> {
+    const { data, error } = await supabase
+        .from('licenses')
+        .select('*')
+        .eq('tenant_id', tenantId)
+        .order('license_type');
+
+    if (error) throw error;
+    return data as License[];
+}
+
+/**
+ * Create license
+ */
+export async function createLicense(
+    tenantId: string,
+    license: Omit<License, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>
+): Promise<License> {
+    const { data, error } = await supabase
+        .from('licenses')
+        .insert({
+            tenant_id: tenantId,
+            ...license,
+        })
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data as License;
+}
+
+/**
+ * Update license
+ */
+export async function updateLicense(
+    id: string,
+    updates: Partial<Omit<License, 'id' | 'tenant_id' | 'created_at' | 'updated_at'>>
+): Promise<License> {
+    const { data, error } = await supabase
+        .from('licenses')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data as License;
+}
+
+/**
+ * Allocate license
+ */
+export async function allocateLicense(licenseId: string): Promise<License> {
+    const { data: license } = await supabase
+        .from('licenses')
+        .select('*')
+        .eq('id', licenseId)
+        .single();
+
+    if (!license) throw new Error('License not found');
+
+    const { data, error } = await supabase
+        .from('licenses')
+        .update({ allocated_licenses: license.allocated_licenses + 1 })
+        .eq('id', licenseId)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data as License;
+}
+
+/**
+ * Deallocate license
+ */
+export async function deallocateLicense(licenseId: string): Promise<License> {
+    const { data: license } = await supabase
+        .from('licenses')
+        .select('*')
+        .eq('id', licenseId)
+        .single();
+
+    if (!license) throw new Error('License not found');
+
+    const { data, error } = await supabase
+        .from('licenses')
+        .update({ allocated_licenses: Math.max(0, license.allocated_licenses - 1) })
+        .eq('id', licenseId)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data as License;
+}
+

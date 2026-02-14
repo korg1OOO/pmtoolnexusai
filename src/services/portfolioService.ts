@@ -204,3 +204,137 @@ export async function getPortfolioMLMetrics(portfolioId: string): Promise<MLMetr
         total_predictions: predictions?.length || 0,
     };
 }
+
+// ============================================
+// PORTFOLIO INITIATIVES (NEW)
+// ============================================
+
+export interface PortfolioInitiative {
+    id: string;
+    portfolio_id: string;
+    name: string;
+    start_date?: string;
+    end_date?: string;
+    status: string;
+    milestones: number;
+    dependencies?: any[];
+    created_at: string;
+    updated_at: string;
+}
+
+/**
+ * Get portfolio initiatives
+ */
+export async function getPortfolioInitiatives(portfolioId: string): Promise<PortfolioInitiative[]> {
+    const { data, error } = await supabase
+        .from('portfolio_initiatives')
+        .select('*')
+        .eq('portfolio_id', portfolioId)
+        .order('start_date', { ascending: true });
+
+    if (error) throw error;
+    return data as PortfolioInitiative[];
+}
+
+/**
+ * Create portfolio initiative
+ */
+export async function createPortfolioInitiative(
+    portfolioId: string,
+    initiative: Omit<PortfolioInitiative, 'id' | 'portfolio_id' | 'created_at' | 'updated_at'>
+): Promise<PortfolioInitiative> {
+    const { data, error } = await supabase
+        .from('portfolio_initiatives')
+        .insert({
+            portfolio_id: portfolioId,
+            ...initiative,
+        })
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data as PortfolioInitiative;
+}
+
+/**
+ * Update portfolio initiative
+ */
+export async function updatePortfolioInitiative(
+    id: string,
+    updates: Partial<Omit<PortfolioInitiative, 'id' | 'portfolio_id' | 'created_at' | 'updated_at'>>
+): Promise<PortfolioInitiative> {
+    const { data, error } = await supabase
+        .from('portfolio_initiatives')
+        .update(updates)
+        .eq('id', id)
+        .select()
+        .single();
+
+    if (error) throw error;
+    return data as PortfolioInitiative;
+}
+
+/**
+ * Delete portfolio initiative
+ */
+export async function deletePortfolioInitiative(id: string): Promise<void> {
+    const { error } = await supabase
+        .from('portfolio_initiatives')
+        .delete()
+        .eq('id', id);
+
+    if (error) throw error;
+}
+
+// ============================================
+// PORTFOLIO RESOURCES (NEW)
+// ============================================
+
+export interface PortfolioResource {
+    id: string;
+    portfolio_id: string;
+    program_id?: string;
+    required: number;
+    allocated: number;
+    skills_needed: string[];
+    created_at: string;
+    updated_at: string;
+}
+
+/**
+ * Get portfolio resources
+ */
+export async function getPortfolioResources(portfolioId: string): Promise<PortfolioResource[]> {
+    const { data, error } = await supabase
+        .from('portfolio_resources')
+        .select('*')
+        .eq('portfolio_id', portfolioId)
+        .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    return data as PortfolioResource[];
+}
+
+/**
+ * Update portfolio resources
+ */
+export async function updatePortfolioResources(
+    portfolioId: string,
+    resources: Omit<PortfolioResource, 'id' | 'created_at' | 'updated_at'>[]
+): Promise<PortfolioResource[]> {
+    // Delete existing resources
+    await supabase
+        .from('portfolio_resources')
+        .delete()
+        .eq('portfolio_id', portfolioId);
+
+    // Insert new resources
+    const { data, error } = await supabase
+        .from('portfolio_resources')
+        .insert(resources)
+        .select();
+
+    if (error) throw error;
+    return data as PortfolioResource[];
+}
+

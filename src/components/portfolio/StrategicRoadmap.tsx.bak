@@ -29,6 +29,76 @@ export function StrategicRoadmap() {
     // Service returns roadmap data directly - no mapping needed
     // If roadmapData is null, components will handle empty state
 
+    // Old mock data query - now replaced:
+    /*
+    const { data: roadmapData } = useQuery({
+        queryKey: ['portfolio-roadmap', portfolioId],
+        queryFn: async () => {
+            return {
+                initiatives: [
+                    {
+                        id: '1',
+                        name: 'Cloud Migration Phase 1',
+                        start_date: '2026-01-01',
+                        end_date: '2026-06-30',
+                        status: 'in-progress' as const,
+                        milestones: 5,
+                        dependencies: []
+                    },
+                    {
+                        id: '2',
+                        name: 'Mobile App Redesign',
+                        start_date: '2026-03-01',
+                        end_date: '2026-09-30',
+                        status: 'in-progress' as const,
+                        milestones: 4,
+                        dependencies: []
+                    },
+                    {
+                        id: '3',
+                        name: 'API Platform Launch',
+                        start_date: '2026-06-01',
+                        end_date: '2026-12-31',
+                        status: 'planned' as const,
+                        milestones: 6,
+                        dependencies: ['1']
+                    },
+                    {
+                        id: '4',
+                        name: 'Cloud Migration Phase 2',
+                        start_date: '2026-07-01',
+                        end_date: '2027-03-31',
+                        status: 'planned' as const,
+                        milestones: 7,
+                        dependencies: ['1', '3']
+                    }
+                ] as Initiative[],
+                milestones: [
+                    {
+                        id: '1',
+                        initiative_id: '1',
+                        name: 'Infrastructure Setup',
+                        date: '2026-02-15',
+                        status: 'completed'
+                    },
+                    {
+                        id: '2',
+                        initiative_id: '1',
+                        name: 'Data Migration',
+                        date: '2026-04-30',
+                        status: 'in-progress'
+                    },
+                    {
+                        id: '3',
+                        initiative_id: '2',
+                        name: 'Design System',
+                        date: '2026-05-15',
+                        status: 'in-progress'
+                    }
+                ]
+            };
+        }
+    });
 
     return (
         <div className="p-6 space-y-6">

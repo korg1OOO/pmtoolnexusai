@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { BarChart3, TrendingUp, Users, Briefcase } from 'lucide-react';
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { getWorkspaceAnalytics, getWorkspaceOverview } from '@/services/workspaceService';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
 
@@ -12,36 +13,26 @@ export function WorkspaceAnalytics() {
     const { workspaceId } = useParams();
     const [timeRange, setTimeRange] = useState('6m');
 
+    const { data: overview } = useQuery({
+        queryKey: ['workspace-overview', workspaceId],
+        queryFn: () => getWorkspaceOverview(workspaceId!),
+        enabled: !!workspaceId
+    });
+
     const { data: analytics } = useQuery({
         queryKey: ['workspace-analytics', workspaceId, timeRange],
-        queryFn: async () => {
-            return {
-                portfolios: 3,
-                programs: 8,
-                projects: 24,
-                members: 45,
-                performanceTrend: [
-                    { month: 'Jan', onTrack: 18, atRisk: 4, delayed: 2 },
-                    { month: 'Feb', onTrack: 19, atRisk: 3, delayed: 2 },
-                    { month: 'Mar', onTrack: 20, atRisk: 3, delayed: 1 },
-                    { month: 'Apr', onTrack: 21, atRisk: 2, delayed: 1 },
-                    { month: 'May', onTrack: 22, atRisk: 2, delayed: 0 },
-                    { month: 'Jun', onTrack: 23, atRisk: 1, delayed: 0 }
-                ],
-                portfolioDistribution: [
-                    { name: 'Digital Transformation', value: 12 },
-                    { name: 'Product Innovation', value: 8 },
-                    { name: 'Infrastructure', value: 4 }
-                ],
-                resourceUtilization: [
-                    { role: 'Portfolio Mgr', utilization: 95 },
-                    { role: 'Program Mgr', utilization: 88 },
-                    { role: 'Project Mgr', utilization: 92 },
-                    { role: 'Team Member', utilization: 78 }
-                ]
-            };
-        }
+        queryFn: () => getWorkspaceAnalytics(workspaceId!),
+        enabled: !!workspaceId
     });
+
+    // Use overview data for key metrics
+    const metrics = {
+        portfolios: overview?.total_portfolios || 0,
+        programs: overview?.total_programs || 0,
+        projects: overview?.total_projects || 0,
+        members: overview?.total_members || 0
+    };
+
 
     return (
         <div className="p-6 space-y-6">
@@ -56,6 +47,7 @@ export function WorkspaceAnalytics() {
                         value={timeRange}
                         onChange={(e) => setTimeRange(e.target.value)}
                         className="border rounded-md px-3 py-2"
+                        aria-label="Select time range for analytics"
                     >
                         <option value="1m">Last Month</option>
                         <option value="3m">Last 3 Months</option>
@@ -73,7 +65,7 @@ export function WorkspaceAnalytics() {
                         <Briefcase className="w-8 h-8 text-blue-600" />
                         <div>
                             <p className="text-sm text-muted-foreground">Portfolios</p>
-                            <p className="text-2xl font-bold">{analytics?.portfolios}</p>
+                            <p className="text-2xl font-bold">{metrics.portfolios}</p>
                         </div>
                     </div>
                 </Card>
@@ -82,7 +74,7 @@ export function WorkspaceAnalytics() {
                         <BarChart3 className="w-8 h-8 text-green-600" />
                         <div>
                             <p className="text-sm text-muted-foreground">Programs</p>
-                            <p className="text-2xl font-bold">{analytics?.programs}</p>
+                            <p className="text-2xl font-bold">{metrics.programs}</p>
                         </div>
                     </div>
                 </Card>
@@ -91,7 +83,7 @@ export function WorkspaceAnalytics() {
                         <TrendingUp className="w-8 h-8 text-purple-600" />
                         <div>
                             <p className="text-sm text-muted-foreground">Projects</p>
-                            <p className="text-2xl font-bold">{analytics?.projects}</p>
+                            <p className="text-2xl font-bold">{metrics.projects}</p>
                         </div>
                     </div>
                 </Card>
@@ -100,7 +92,7 @@ export function WorkspaceAnalytics() {
                         <Users className="w-8 h-8 text-orange-600" />
                         <div>
                             <p className="text-sm text-muted-foreground">Team Members</p>
-                            <p className="text-2xl font-bold">{analytics?.members}</p>
+                            <p className="text-2xl font-bold">{metrics.members}</p>
                         </div>
                     </div>
                 </Card>

@@ -227,6 +227,7 @@ function DefaultsSettings({ settings, onSave, isLoading }: any) {
                         value={defaultRole}
                         onChange={(e) => setDefaultRole(e.target.value)}
                         className="w-full border rounded-md p-2"
+                        aria-label="Select default role for new users"
                     >
                         <option value="member">Member</option>
                         <option value="manager">Manager</option>

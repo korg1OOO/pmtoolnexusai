@@ -170,14 +170,19 @@ export async function getRetrainingStats(modelType: 'risk' | 'cost' | 'schedule'
 }
 
 /**
- * Schedule automated retraining (mock - would integrate with cron)
+ * Get retraining schedule
+ * NOTE: Requires integration with cron service (e.g., pg_cron, external scheduler)
+ * To implement:
+ * 1. Create ml_retraining_schedules table with: model_type, frequency, next_run, enabled
+ * 2. Set up cron jobs to trigger retraining
+ * 3. Query schedule from database instead of returning mock data
  */
 export function getRetrainingSchedule(modelType: 'risk' | 'cost' | 'schedule'): {
     frequency: string;
     next_run: string;
     enabled: boolean;
 } {
-    // Mock schedule - in production, this would query actual cron jobs
+    // Placeholder until cron integration is implemented
     const now = new Date();
     const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1, 3, 0, 0);
 

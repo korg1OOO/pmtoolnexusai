@@ -523,8 +523,49 @@ export interface ProgramResourceAllocation {
 }
 
 export async function getProgramResources(programId: string): Promise<ProgramResourceAllocation[]> {
-    // Mock implementation - replace with actual resource queries
-    return [];
+    // Get projects in this program
+    const { data: projects, error: projectsError } = await supabase
+        .from('projects')
+        .select('id')
+        .eq('program_id', programId);
+
+    if (projectsError || !projects || projects.length === 0) {
+        return [];
+    }
+
+    const projectIds = projects.map(p => p.id);
+
+    // Get team members assigned to these projects
+    const { data: members, error } = await supabase
+        .from('team_members')
+        .select('id, user_id, role, allocation_percentage')
+        .in('project_id', projectIds);
+
+    if (error) {
+        console.error('Error fetching program resources:', error);
+        return [];
+    }
+
+    // Aggregate by role
+    const roleMap = new Map<string, { total: number; allocated: number }>();
+
+    members?.forEach(member => {
+        const role = member.role || 'member';
+        const current = roleMap.get(role) || { total: 0, allocated: 0 };
+        current.total += 100;
+        current.allocated += member.allocation_percentage || 0;
+        roleMap.set(role, current);
+    });
+
+    return Array.from(roleMap.entries()).map(([role, data]) => ({
+        id: `${programId}-${role}`,
+        program_id: programId,
+        resource_name: role,
+        resource_type: role,
+        total_capacity: data.total,
+        allocated_capacity: data.allocated,
+        available_capacity: data.total - data.allocated
+    }));
 }
 
 /**

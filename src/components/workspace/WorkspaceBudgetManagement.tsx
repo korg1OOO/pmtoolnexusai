@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { DollarSign, TrendingUp, TrendingDown, AlertCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { getWorkspaceBudget } from '@/services/workspaceService'; // Assuming this path
 
 interface BudgetAllocation {
     portfolio_id: string;
@@ -22,38 +23,10 @@ export function WorkspaceBudgetManagement() {
     const { data: budgetData } = useQuery({
         queryKey: ['workspace-budget', workspaceId],
         queryFn: async () => {
-            const mockData = {
-                total_budget: 10000000,
-                total_spent: 6200000,
-                total_remaining: 3800000,
-                allocations: [
-                    {
-                        portfolio_id: '1',
-                        portfolio_name: 'Digital Transformation',
-                        allocated: 5000000,
-                        spent: 3200000,
-                        remaining: 1800000,
-                        variance: -200000
-                    },
-                    {
-                        portfolio_id: '2',
-                        portfolio_name: 'Product Innovation',
-                        allocated: 3000000,
-                        spent: 1800000,
-                        remaining: 1200000,
-                        variance: 100000
-                    },
-                    {
-                        portfolio_id: '3',
-                        portfolio_name: 'Infrastructure',
-                        allocated: 2000000,
-                        spent: 1200000,
-                        remaining: 800000,
-                        variance: 50000
-                    }
-                ] as BudgetAllocation[]
-            };
-            return mockData;
+            if (!workspaceId) {
+                throw new Error('Workspace ID is required');
+            }
+            return getWorkspaceBudget(workspaceId);
         }
     });
 

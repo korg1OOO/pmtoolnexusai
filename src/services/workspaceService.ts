@@ -406,14 +406,65 @@ export async function getWorkspaceOverview(workspaceId: string): Promise<Workspa
 /**
  * Get workspace analytics (NEW)
  */
+export interface WorkspaceAnalytics {
+    workspace_id: string;
+    portfolio_performance: any[];
+    team_productivity: any[];
+    resource_efficiency: any[];
+    trend_analysis: any[];
+    performanceTrend?: Array<{
+        month: string;
+        onTrack: number;
+        atRisk: number;
+        delayed: number;
+    }>;
+    portfolioDistribution?: Array<{
+        name: string;
+        value: number;
+    }>;
+    resourceUtilization?: Array<{
+        role: string;
+        utilization: number;
+    }>;
+}
+
 export async function getWorkspaceAnalytics(workspaceId: string): Promise<WorkspaceAnalytics> {
-    // Mock implementation - replace with actual analytics queries
+    // Get projects for this workspace
+    const { data: projects, error: projectsError } = await supabase
+        .from('projects')
+        .select('id, name, status, budget, actual_cost, progress, portfolio_id')
+        .eq('workspace_id', workspaceId);
+
+    if (projectsError) throw projectsError;
+
+    // Calculate portfolio performance
+    const portfolioMap = new Map<string, { total: number; onTrack: number; budget: number; spent: number }>();
+
+    projects?.forEach(p => {
+        const portfolioId = p.portfolio_id || 'unassigned';
+        const current = portfolioMap.get(portfolioId) || { total: 0, onTrack: 0, budget: 0, spent: 0 };
+        current.total++;
+        if (p.status === 'active' && p.progress >= 50) current.onTrack++;
+        current.budget += p.budget || 0;
+        current.spent += p.actual_cost || 0;
+        portfolioMap.set(portfolioId, current);
+    });
+
+    const portfolio_performance = Array.from(portfolioMap.entries()).map(([id, data]) => ({
+        portfolio_id: id,
+        on_track_percentage: data.total > 0 ? (data.onTrack / data.total) * 100 : 0,
+        budget_utilization: data.budget > 0 ? (data.spent / data.budget) * 100 : 0
+    }));
+
     return {
         workspace_id: workspaceId,
-        portfolio_performance: [],
+        portfolio_performance,
         team_productivity: [],
         resource_efficiency: [],
-        trend_analysis: []
+        trend_analysis: [],
+        performanceTrend: [],
+        portfolioDistribution: [],
+        resourceUtilization: []
     };
 }
 
@@ -421,22 +472,54 @@ export async function getWorkspaceAnalytics(workspaceId: string): Promise<Worksp
  * Get workspace resources (NEW)
  */
 export async function getWorkspaceResources(workspaceId: string): Promise<WorkspaceResource[]> {
-    // Mock implementation - replace with actual resource queries
-    return [];
+    // Get team members for this workspace
+    const { data: members, error } = await supabase
+        .from('team_members')
+        .select('id, user_id, role, allocation_percentage, projects(id, name)')
+        .eq('workspace_id', workspaceId);
+
+    if (error) {
+        console.error('Error fetching workspace resources:', error);
+        return [];
+    }
+
+    return members?.map(member => ({
+        id: member.id,
+        workspace_id: workspaceId,
+        resource_name: member.user_id,
+        resource_type: member.role || 'member',
+        total_capacity: 100,
+        allocated_capacity: member.allocation_percentage || 0,
+        available_capacity: 100 - (member.allocation_percentage || 0)
+    })) || [];
 }
 
 /**
  * Get workspace budget (NEW)
  */
 export async function getWorkspaceBudget(workspaceId: string): Promise<WorkspaceBudget | null> {
-    // Mock implementation - replace with actual budget queries
+    // Get all projects for this workspace
+    const { data: projects, error } = await supabase
+        .from('projects')
+        .select('budget, actual_cost, forecast_cost')
+        .eq('workspace_id', workspaceId);
+
+    if (error) {
+        console.error('Error fetching workspace budget:', error);
+        return null;
+    }
+
+    const total_budget = projects?.reduce((sum, p) => sum + (p.budget || 0), 0) || 0;
+    const spent_budget = projects?.reduce((sum, p) => sum + (p.actual_cost || 0), 0) || 0;
+    const forecast = projects?.reduce((sum, p) => sum + (p.forecast_cost || 0), 0) || 0;
+
     return {
         id: workspaceId,
         workspace_id: workspaceId,
-        total_budget: 0,
-        allocated_budget: 0,
-        spent_budget: 0,
-        variance: 0,
-        forecast: 0
+        total_budget,
+        allocated_budget: total_budget,
+        spent_budget,
+        variance: total_budget - spent_budget,
+        forecast
     };
 }

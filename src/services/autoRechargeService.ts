@@ -108,8 +108,9 @@ class AutoRechargeService {
         tenantId: string,
         userId: string
     ): Promise<{ id: string; type: string } | null> {
-        // TODO: Implement payment method storage
-        // For now, return null (user must have saved payment method)
+        // Payment method storage implemented via stripeIntegrationService
+        // See: src/services/stripeIntegrationService.ts
+        // Use savePaymentMethod() and listCustomerPaymentMethods()
 
         const { data, error } = await supabase
             .from('user_payment_methods')

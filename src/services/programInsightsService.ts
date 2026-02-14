@@ -77,35 +77,63 @@ export async function getProgramInsights(
     // Fetch RSVP stats
     const rsvpStats = await getRSVPAnalytics(programId, startDate, endDate);
 
-    // Fetch collaboration spaces (fallback to 0 if table doesn't exist)
+    // Fetch collaboration spaces
     let activeSpaces = 0;
     let totalSpaces = 0;
     try {
-        const { data: spaces } = await supabase
-            .from('programs')
-            .select('id')
-            .eq('id', programId)
-            .single();
+        const { data: spaces, error } = await supabase
+            .from('collaboration_spaces')
+            .select('id, is_active')
+            .eq('program_id', programId);
 
-        // Use mock data until collaboration_spaces table exists
-        activeSpaces = 5; // Mock value
-        totalSpaces = 8; // Mock value
+        if (!error && spaces) {
+            activeSpaces = spaces.filter(s => s.is_active).length;
+            totalSpaces = spaces.length;
+        }
     } catch (error) {
-        console.log('Collaboration spaces not available yet');
+        console.log('Collaboration spaces table not available, using defaults');
     }
 
-    // Fetch active users (fallback to mock data if table doesn't exist)
+    // Fetch active users from collaboration spaces
     let uniqueUsers = 0;
     try {
-        const { data: projectUsers } = await supabase
-            .from('project_members')
-            .select('user_id')
-            .eq('project_id', programId);
+        // Get all collaboration spaces for this program
+        const { data: programSpaces } = await supabase
+            .from('collaboration_spaces')
+            .select('id')
+            .eq('program_id', programId);
 
-        uniqueUsers = new Set(projectUsers?.map(u => u.user_id) || []).size;
+        if (programSpaces && programSpaces.length > 0) {
+            const spaceIds = programSpaces.map(s => s.id);
+
+            // Get unique users from collaboration space members
+            const { data: members } = await supabase
+                .from('collaboration_space_members')
+                .select('user_id')
+                .in('space_id', spaceIds);
+
+            uniqueUsers = new Set(members?.map(m => m.user_id) || []).size;
+        }
     } catch (error) {
-        console.log('Using mock user data');
-        uniqueUsers = 15; // Mock value
+        console.log('Using project members as fallback for user count');
+        // Fallback to project members
+        try {
+            const { data: projects } = await supabase
+                .from('projects')
+                .select('id')
+                .eq('program_id', programId);
+
+            if (projects && projects.length > 0) {
+                const { data: projectMembers } = await supabase
+                    .from('project_members')
+                    .select('user_id')
+                    .in('project_id', projects.map(p => p.id));
+
+                uniqueUsers = new Set(projectMembers?.map(m => m.user_id) || []).size;
+            }
+        } catch (fallbackError) {
+            console.log('Could not fetch user data');
+        }
     }
 
     // Calculate meeting trend (compare with previous period)

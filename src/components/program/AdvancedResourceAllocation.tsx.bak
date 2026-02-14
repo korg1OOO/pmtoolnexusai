@@ -41,6 +41,60 @@ export function AdvancedResourceAllocation() {
         skillGaps: []
     } : null;
 
+    // Old mock data query - now replaced:
+    /*
+    const { data: allocationData } = useQuery({
+        queryKey: ['program-resource-allocation', programId],
+        queryFn: async () => {
+            return {
+                total_capacity: 45,
+                total_allocated: 38,
+                total_required: 42,
+                projects: [
+                    {
+                        project_id: '1',
+                        project_name: 'Backend API',
+                        required: 12,
+                        allocated: 10,
+                        skills_needed: ['Node.js', 'PostgreSQL', 'AWS']
+                    },
+                    {
+                        project_id: '2',
+                        project_name: 'Mobile App',
+                        required: 15,
+                        allocated: 15,
+                        skills_needed: ['React Native', 'iOS', 'Android']
+                    },
+                    {
+                        project_id: '3',
+                        project_name: 'Web Dashboard',
+                        required: 15,
+                        allocated: 13,
+                        skills_needed: ['React', 'TypeScript', 'CSS']
+                    }
+                ] as ProjectAllocation[],
+                conflicts: [
+                    {
+                        resource_id: '1',
+                        resource_name: 'Alice Smith',
+                        projects: ['Backend API', 'Web Dashboard'],
+                        total_allocation: 120
+                    },
+                    {
+                        resource_id: '2',
+                        resource_name: 'Bob Johnson',
+                        projects: ['Mobile App', 'Backend API'],
+                        total_allocation: 110
+                    }
+                ] as ResourceConflict[],
+                skillGaps: [
+                    { skill: 'AWS', required: 5, available: 3, gap: 2 },
+                    { skill: 'React Native', required: 8, available: 6, gap: 2 },
+                    { skill: 'PostgreSQL', required: 4, available: 4, gap: 0 }
+                ]
+            };
+        }
+    });
 
     const available = (allocationData?.total_capacity || 0) - (allocationData?.total_allocated || 0);
     const utilizationRate = allocationData ? (allocationData.total_allocated / allocationData.total_capacity) * 100 : 0;

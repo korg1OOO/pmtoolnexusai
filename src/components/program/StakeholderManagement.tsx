@@ -287,10 +287,10 @@ export function StakeholderManagement() {
                                         </td>
                                         <td className="py-3 px-4">
                                             <div className="flex gap-2">
-                                                <a href={`mailto:${stakeholder.email}`} className="text-blue-600 hover:underline">
+                                                <a href={`mailto:${stakeholder.email}`} className="text-blue-600 hover:underline" title="Send email" aria-label="Send email to stakeholder">
                                                     <Mail className="w-4 h-4" />
                                                 </a>
-                                                <a href={`tel:${stakeholder.phone}`} className="text-blue-600 hover:underline">
+                                                <a href={`tel:${stakeholder.phone}`} className="text-blue-600 hover:underline" title="Call phone" aria-label="Call stakeholder">
                                                     <Phone className="w-4 h-4" />
                                                 </a>
                                             </div>
@@ -359,6 +359,7 @@ export function StakeholderManagement() {
                                     className="w-full border rounded-md p-2"
                                     value={formData.influence}
                                     onChange={(e) => setFormData({ ...formData, influence: e.target.value as any })}
+                                    aria-label="Select stakeholder influence level"
                                 >
                                     <option value="high">High</option>
                                     <option value="medium">Medium</option>
@@ -371,6 +372,7 @@ export function StakeholderManagement() {
                                     className="w-full border rounded-md p-2"
                                     value={formData.interest}
                                     onChange={(e) => setFormData({ ...formData, interest: e.target.value as any })}
+                                    aria-label="Select stakeholder interest level"
                                 >
                                     <option value="high">High</option>
                                     <option value="medium">Medium</option>
@@ -379,11 +381,12 @@ export function StakeholderManagement() {
                             </div>
                         </div>
                         <div>
-                            <label className="text-sm font-medium">Engagement Level</label>
+                            <label className="text-sm font-medium">Engagement</label>
                             <select
                                 className="w-full border rounded-md p-2"
                                 value={formData.engagement_level}
                                 onChange={(e) => setFormData({ ...formData, engagement_level: e.target.value as any })}
+                                aria-label="Select stakeholder engagement level"
                             >
                                 <option value="champion">Champion</option>
                                 <option value="supporter">Supporter</option>

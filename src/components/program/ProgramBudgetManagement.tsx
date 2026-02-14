@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { DollarSign, TrendingUp, TrendingDown, AlertCircle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { LineChart, Line, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { getProgramBudget } from '@/services/programService';
 
 interface ProjectBudget {
     project_id: string;
@@ -19,57 +20,23 @@ interface ProjectBudget {
 export function ProgramBudgetManagement() {
     const { programId } = useParams();
 
-    const { data: budgetData } = useQuery({
+    const { data: budget } = useQuery({
         queryKey: ['program-budget', programId],
-        queryFn: async () => {
-            return {
-                total_budget: 3000000,
-                total_spent: 1800000,
-                total_forecast: 2900000,
-                total_variance: -100000,
-                projects: [
-                    {
-                        project_id: '1',
-                        project_name: 'Backend API',
-                        allocated: 1000000,
-                        spent: 650000,
-                        forecast: 980000,
-                        variance: 20000
-                    },
-                    {
-                        project_id: '2',
-                        project_name: 'Mobile App',
-                        allocated: 1200000,
-                        spent: 750000,
-                        forecast: 1220000,
-                        variance: -20000
-                    },
-                    {
-                        project_id: '3',
-                        project_name: 'Web Dashboard',
-                        allocated: 800000,
-                        spent: 400000,
-                        forecast: 700000,
-                        variance: 100000
-                    }
-                ] as ProjectBudget[],
-                spendTrend: [
-                    { month: 'Jan', budget: 500000, actual: 480000, forecast: 490000 },
-                    { month: 'Feb', budget: 1000000, actual: 950000, forecast: 980000 },
-                    { month: 'Mar', budget: 1500000, actual: 1450000, forecast: 1470000 },
-                    { month: 'Apr', budget: 2000000, actual: 1800000, forecast: 1960000 },
-                    { month: 'May', budget: 2500000, actual: 2100000, forecast: 2450000 },
-                    { month: 'Jun', budget: 3000000, actual: 2400000, forecast: 2900000 }
-                ],
-                costBreakdown: [
-                    { category: 'Labor', amount: 1200000 },
-                    { category: 'Infrastructure', amount: 300000 },
-                    { category: 'Software', amount: 200000 },
-                    { category: 'Other', amount: 100000 }
-                ]
-            };
-        }
+        queryFn: () => getProgramBudget(programId!),
+        enabled: !!programId
     });
+
+    // Use budget data from service
+    const budgetData = budget ? {
+        total_budget: budget.total_budget,
+        total_spent: budget.spent_budget,
+        total_forecast: budget.forecast,
+        total_variance: budget.variance,
+        projects: [] as ProjectBudget[], // TODO: Get from projects query
+        spendTrend: [],
+        costBreakdown: []
+    } : null;
+
 
     const spendRate = budgetData ? (budgetData.total_spent / budgetData.total_budget) * 100 : 0;
     const forecastVariance = budgetData ? budgetData.total_budget - budgetData.total_forecast : 0;

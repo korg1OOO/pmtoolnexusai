@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Users, TrendingUp, DollarSign, Calendar } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { getWorkspaceResources } from '@/services/workspaceService';
 
 interface ResourceAllocation {
     portfolio_id: string;
@@ -18,35 +19,21 @@ export function WorkspaceResourceAllocation() {
     const { workspaceId } = useParams();
     const [timeRange, setTimeRange] = useState('month');
 
-    const { data: allocations } = useQuery({
-        queryKey: ['resource-allocations', workspaceId],
-        queryFn: async () => {
-            const mockAllocations: ResourceAllocation[] = [
-                {
-                    portfolio_id: '1',
-                    portfolio_name: 'Digital Transformation',
-                    allocated_members: 18,
-                    total_capacity: 20,
-                    utilization: 90
-                },
-                {
-                    portfolio_id: '2',
-                    portfolio_name: 'Product Innovation',
-                    allocated_members: 12,
-                    total_capacity: 15,
-                    utilization: 80
-                },
-                {
-                    portfolio_id: '3',
-                    portfolio_name: 'Infrastructure',
-                    allocated_members: 8,
-                    total_capacity: 10,
-                    utilization: 80
-                }
-            ];
-            return mockAllocations;
-        }
+    const { data: resources } = useQuery({
+        queryKey: ['workspace-resources', workspaceId],
+        queryFn: () => getWorkspaceResources(workspaceId!),
+        enabled: !!workspaceId
     });
+
+    // Map service data to component format (currently returns empty array)
+    const allocations: ResourceAllocation[] = resources?.map(r => ({
+        portfolio_id: r.id,
+        portfolio_name: r.resource_name,
+        allocated_members: r.allocated_capacity,
+        total_capacity: r.total_capacity,
+        utilization: r.total_capacity > 0 ? (r.allocated_capacity / r.total_capacity) * 100 : 0
+    })) || [];
+
 
     const totalMembers = allocations?.reduce((sum, a) => sum + a.allocated_members, 0) || 0;
     const totalCapacity = allocations?.reduce((sum, a) => sum + a.total_capacity, 0) || 0;
@@ -122,8 +109,8 @@ export function WorkspaceResourceAllocation() {
                             <div className="flex items-center justify-between mb-2">
                                 <h3 className="font-semibold">{allocation.portfolio_name}</h3>
                                 <span className={`text-sm px-2 py-1 rounded ${allocation.utilization >= 90 ? 'bg-red-100 text-red-700' :
-                                        allocation.utilization >= 70 ? 'bg-orange-100 text-orange-700' :
-                                            'bg-green-100 text-green-700'
+                                    allocation.utilization >= 70 ? 'bg-orange-100 text-orange-700' :
+                                        'bg-green-100 text-green-700'
                                     }`}>
                                     {allocation.utilization}% Utilized
                                 </span>
@@ -135,8 +122,8 @@ export function WorkspaceResourceAllocation() {
                             <div className="w-full bg-gray-200 rounded-full h-2">
                                 <div
                                     className={`h-2 rounded-full ${allocation.utilization >= 90 ? 'bg-red-600' :
-                                            allocation.utilization >= 70 ? 'bg-orange-600' :
-                                                'bg-green-600'
+                                        allocation.utilization >= 70 ? 'bg-orange-600' :
+                                            'bg-green-600'
                                         }`}
                                     style={{ width: `${allocation.utilization}%` }}
                                 />

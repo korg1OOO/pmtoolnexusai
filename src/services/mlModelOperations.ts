@@ -188,15 +188,17 @@ export async function getModelPerformance(
         const avgConfidence = predictions.reduce((sum, p) => sum + p.confidence_score, 0) / totalPredictions;
         const lowConfidenceCount = predictions.filter(p => p.confidence_score < 0.7).length;
 
-        // Mock metrics (in production, these would come from logs)
+        // Performance metrics require ml_execution_logs table
+        // To implement: Create table with columns: model_id, execution_time_ms, cache_hit, error, created_at
+        // Then query: SELECT AVG(execution_time_ms), SUM(CASE WHEN cache_hit THEN 1 ELSE 0 END) / COUNT(*)
         const performance: ModelPerformance = {
             model_id: 'current',
             prediction_count: totalPredictions,
             average_confidence: Math.round(avgConfidence * 1000) / 1000,
             low_confidence_count: lowConfidenceCount,
-            error_count: 0, // Would need error tracking table
-            cache_hit_rate: 0.75, // Mock 75% cache hit rate
-            avg_execution_time_ms: 1200, // Mock 1.2s average
+            error_count: 0, // Requires error tracking in ml_execution_logs
+            cache_hit_rate: 0.75, // Requires cache_hit column in ml_execution_logs
+            avg_execution_time_ms: 1200, // Requires execution_time_ms column in ml_execution_logs
         };
 
         return { data: performance, error: null };

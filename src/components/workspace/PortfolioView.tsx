@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Briefcase, Plus, Search, TrendingUp, DollarSign, AlertTriangle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { getPortfolios } from '@/services/portfolioService';
 
 interface Portfolio {
     id: string;
@@ -27,45 +28,8 @@ export function PortfolioView() {
 
     const { data: portfolios, isLoading } = useQuery({
         queryKey: ['portfolios', workspaceId],
-        queryFn: async () => {
-            // Mock data
-            const mockPortfolios: Portfolio[] = [
-                {
-                    id: '1',
-                    name: 'Digital Transformation',
-                    description: 'Modernize core systems and processes',
-                    programs_count: 3,
-                    projects_count: 12,
-                    budget: 5000000,
-                    spent: 3200000,
-                    health_status: 'healthy',
-                    completion: 64
-                },
-                {
-                    id: '2',
-                    name: 'Product Innovation',
-                    description: 'New product development initiatives',
-                    programs_count: 2,
-                    projects_count: 8,
-                    budget: 3000000,
-                    spent: 1800000,
-                    health_status: 'at-risk',
-                    completion: 45
-                },
-                {
-                    id: '3',
-                    name: 'Infrastructure Modernization',
-                    description: 'Upgrade IT infrastructure',
-                    programs_count: 3,
-                    projects_count: 4,
-                    budget: 2000000,
-                    spent: 600000,
-                    health_status: 'healthy',
-                    completion: 30
-                }
-            ];
-            return mockPortfolios;
-        }
+        queryFn: () => getPortfolios(workspaceId!),
+        enabled: !!workspaceId
     });
 
     const filteredPortfolios = portfolios?.filter(p =>

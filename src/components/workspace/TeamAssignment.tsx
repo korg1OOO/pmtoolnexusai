@@ -292,6 +292,7 @@ function AssignMemberDialog({ open, onClose }: {
                             value={role}
                             onChange={(e) => setRole(e.target.value)}
                             className="w-full border rounded-md p-2"
+                            aria-label="Select team member role"
                             required
                         >
                             <option value="Portfolio Manager">Portfolio Manager</option>

@@ -159,12 +159,15 @@ export async function getPortfolioStats(portfolioId: string): Promise<PortfolioS
         .eq('portfolio_id', portfolioId)
         .eq('is_active', true);
 
+    // Calculate actual spending from projects
+    const spent_budget = projects?.reduce((sum, p) => sum + (p.actual_cost || 0), 0) || 0;
+
     return {
         total_projects,
         active_projects,
         completed_projects,
         total_budget,
-        spent_budget: 0, // TODO: Calculate from actual spending
+        spent_budget,
         ml_patterns_count: patterns?.length || 0,
     };
 }

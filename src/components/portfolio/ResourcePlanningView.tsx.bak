@@ -33,6 +33,49 @@ export function ResourcePlanningView() {
         conflicts: []
     } : null;
 
+    // Old mock data query - now replaced:
+    /*
+    const { data: resourceData } = useQuery({
+        queryKey: ['portfolio-resources', portfolioId],
+        queryFn: async () => {
+            return {
+                total_capacity: 50,
+                total_allocated: 38,
+                total_demand: 45,
+                demands: [
+                    {
+                        program_id: '1',
+                        program_name: 'Cloud Migration',
+                        required: 18,
+                        allocated: 15,
+                        gap: 3
+                    },
+                    {
+                        program_id: '2',
+                        program_name: 'Mobile App Redesign',
+                        required: 12,
+                        allocated: 12,
+                        gap: 0
+                    },
+                    {
+                        program_id: '3',
+                        program_name: 'API Platform',
+                        required: 15,
+                        allocated: 11,
+                        gap: 4
+                    }
+                ] as ResourceDemand[],
+                conflicts: [
+                    {
+                        id: '1',
+                        resource_name: 'John Doe',
+                        programs: ['Cloud Migration', 'API Platform'],
+                        total_allocation: 120
+                    }
+                ]
+            };
+        }
+    });
 
     const available = (resourceData?.total_capacity || 0) - (resourceData?.total_allocated || 0);
 

@@ -23,12 +23,16 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { ProjectProvider } from "@/contexts/ProjectContext";
 import { PresenceProvider } from "@/contexts/PresenceContext";
 import { AdminPanel } from "@/components/admin/AdminPanel";
+import { PurchaseCreditsPage } from "@/components/credits/PurchaseCreditsPage";
+import { UsageDashboard } from "@/components/credits/UsageDashboard";
+import { AutoRechargeSettings } from "@/components/credits/AutoRechargeSettings";
 import {
   AdminDashboard,
   AdminUsers,
   AdminProUsers,
   AdminHealthCheck,
   AdminAIUsage,
+  AdminAICredits,
   AdminContentManagement,
   AdminDocs,
   AdminMedia,
@@ -118,6 +122,34 @@ const App = () => (
                   </ProjectProvider>
                 </ProtectedRoute>
               } />
+              {/* AI Credits Routes */}
+              <Route path="/purchase-credits" element={
+                <ProtectedRoute>
+                  <ProjectProvider>
+                    <PresenceProvider>
+                      <PurchaseCreditsPage />
+                    </PresenceProvider>
+                  </ProjectProvider>
+                </ProtectedRoute>
+              } />
+              <Route path="/usage-dashboard" element={
+                <ProtectedRoute>
+                  <ProjectProvider>
+                    <PresenceProvider>
+                      <UsageDashboard />
+                    </PresenceProvider>
+                  </ProjectProvider>
+                </ProtectedRoute>
+              } />
+              <Route path="/auto-recharge" element={
+                <ProtectedRoute>
+                  <ProjectProvider>
+                    <PresenceProvider>
+                      <AutoRechargeSettings />
+                    </PresenceProvider>
+                  </ProjectProvider>
+                </ProtectedRoute>
+              } />
               {/* Admin Panel Routes */}
               <Route path="/admin" element={
                 <ProtectedRoute>
@@ -127,6 +159,7 @@ const App = () => (
                 <Route index element={<AdminDashboard />} />
                 <Route path="health" element={<AdminHealthCheck />} />
                 <Route path="ai-usage" element={<AdminAIUsage />} />
+                <Route path="ai-credits" element={<AdminAICredits />} />
                 <Route path="ml" element={<MLDashboard />} />
                 <Route path="ml/models" element={<MLModelsPage />} />
                 <Route path="ml/alerts" element={<MLAlertsPage />} />

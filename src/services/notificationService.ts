@@ -303,4 +303,178 @@ export const NotificationTriggers = {
             );
         }
     },
+
+    /**
+     * AI Credits low balance warning
+     */
+    async aiCreditsLowBalance(
+        userId: string,
+        currentBalance: number,
+        threshold: number,
+        severity: 'warning' | 'critical'
+    ) {
+        await createNotification(
+            userId,
+            'usage',
+            severity === 'critical' ? 'critical' : 'medium',
+            severity === 'critical' ? 'Critical: AI Credits Almost Depleted' : 'Low AI Credits',
+            `You have ${currentBalance} credits remaining. ${severity === 'critical' ? 'AI features will be disabled when balance reaches 0.' : 'Consider purchasing more credits.'}`,
+            {
+                actionUrl: '/credits/purchase',
+                actionLabel: 'Buy Credits',
+                expiresHours: 168,
+            }
+        );
+
+        const { data: user } = await supabase
+            .from('profiles')
+            .select('email, full_name')
+            .eq('id', userId)
+            .single();
+
+        if (user) {
+            await queueEmail(
+                userId,
+                'ai_credits_low_balance',
+                [{ email: user.email, name: user.full_name || 'User' }],
+                severity === 'critical' ? '🚨 Critical: AI Credits Almost Depleted' : '⚠️ Low AI Credits Warning',
+                {
+                    user_name: user.full_name || 'User',
+                    current_balance: currentBalance,
+                    threshold,
+                    severity,
+                    purchase_url: `${window.location.origin}/credits/purchase`,
+                }
+            );
+        }
+    },
+
+    /**
+     * AI Credits auto-recharge success
+     */
+    async aiCreditsAutoRechargeSuccess(
+        userId: string,
+        creditsAdded: number,
+        amountCharged: number,
+        newBalance: number
+    ) {
+        await createNotification(
+            userId,
+            'billing',
+            'low',
+            'AI Credits Auto-Recharged',
+            `${creditsAdded} credits added automatically. New balance: ${newBalance} credits.`,
+            {
+                actionUrl: '/credits',
+                actionLabel: 'View Balance',
+                expiresHours: 168,
+            }
+        );
+
+        const { data: user } = await supabase
+            .from('profiles')
+            .select('email, full_name')
+            .eq('id', userId)
+            .single();
+
+        if (user) {
+            await queueEmail(
+                userId,
+                'ai_credits_auto_recharge_success',
+                [{ email: user.email, name: user.full_name || 'User' }],
+                '✅ AI Credits Auto-Recharged',
+                {
+                    user_name: user.full_name || 'User',
+                    credits_added: creditsAdded,
+                    amount_charged: amountCharged.toFixed(2),
+                    new_balance: newBalance,
+                    dashboard_url: `${window.location.origin}/credits`,
+                }
+            );
+        }
+    },
+
+    /**
+     * AI Credits auto-recharge failed
+     */
+    async aiCreditsAutoRechargeFailed(userId: string, reason: string) {
+        await createNotification(
+            userId,
+            'billing',
+            'high',
+            'Auto-Recharge Failed',
+            `Failed to auto-recharge credits: ${reason}. Please add credits manually.`,
+            {
+                actionUrl: '/credits/purchase',
+                actionLabel: 'Buy Credits',
+                expiresHours: 48,
+            }
+        );
+
+        const { data: user } = await supabase
+            .from('profiles')
+            .select('email, full_name')
+            .eq('id', userId)
+            .single();
+
+        if (user) {
+            await queueEmail(
+                userId,
+                'ai_credits_auto_recharge_failed',
+                [{ email: user.email, name: user.full_name || 'User' }],
+                '❌ Auto-Recharge Failed',
+                {
+                    user_name: user.full_name || 'User',
+                    reason,
+                    purchase_url: `${window.location.origin}/credits/purchase`,
+                    settings_url: `${window.location.origin}/settings/credits`,
+                }
+            );
+        }
+    },
+
+    /**
+     * AI Credits purchase confirmation
+     */
+    async aiCreditsPurchaseConfirmation(
+        userId: string,
+        credits: number,
+        amount: number,
+        receiptUrl?: string
+    ) {
+        await createNotification(
+            userId,
+            'billing',
+            'low',
+            'AI Credits Purchase Confirmed',
+            `${credits} credits added to your account. Thank you for your purchase!`,
+            {
+                actionUrl: receiptUrl || '/credits',
+                actionLabel: receiptUrl ? 'View Receipt' : 'View Balance',
+                expiresHours: 720, // 30 days
+            }
+        );
+
+        const { data: user } = await supabase
+            .from('profiles')
+            .select('email, full_name')
+            .eq('id', userId)
+            .single();
+
+        if (user) {
+            await queueEmail(
+                userId,
+                'ai_credits_purchase_confirmation',
+                [{ email: user.email, name: user.full_name || 'User' }],
+                '🎉 AI Credits Purchase Confirmed',
+                {
+                    user_name: user.full_name || 'User',
+                    credits,
+                    amount: amount.toFixed(2),
+                    receipt_url: receiptUrl,
+                    dashboard_url: `${window.location.origin}/credits`,
+                }
+            );
+        }
+    },
 };

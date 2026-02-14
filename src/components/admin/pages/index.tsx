@@ -22,6 +22,7 @@ const PlaceholderPage = ({ title }: { title: string }) => {
 
 export { AdminHealthCheck } from './AdminHealthCheck';
 export { AdminAIUsage } from './AdminAIUsage';
+export { AdminAICredits } from './AdminAICredits';
 export { AdminFAQs } from './AdminFAQs';
 export { AdminBlog } from './AdminBlog';
 export { AdminDocs } from './AdminDocs';

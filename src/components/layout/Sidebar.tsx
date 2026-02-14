@@ -29,6 +29,7 @@ import {
   Lightbulb,
   MessageSquare,
   Calendar,
+  Folder,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -132,6 +133,16 @@ const navItems: NavItem[] = [
       { id: 'team-management', label: 'Team Management', icon: Users, alwaysShow: true },
       { id: 'presentations', label: 'Presentations', icon: Presentation, moduleKey: 'presentations' },
       { id: 'communication-intelligence', label: 'AI Intelligence', icon: BarChart3, alwaysShow: true },
+    ]
+  },
+  {
+    id: 'ai-credits',
+    label: 'AI Credits',
+    icon: Sparkles,
+    children: [
+      { id: 'purchase-credits', label: 'Purchase Credits', icon: DollarSign, alwaysShow: true },
+      { id: 'usage-dashboard', label: 'Usage Dashboard', icon: BarChart3, alwaysShow: true },
+      { id: 'auto-recharge', label: 'Auto-Recharge', icon: Target, alwaysShow: true },
     ]
   },
   {

@@ -680,6 +680,38 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
             />
           ) : null
         }
+        onFreezePanes={(rows, cols) => {
+          // TODO: Implement freeze panes functionality
+          toast.info(`Freeze panes: ${rows} rows, ${cols} cols`);
+        }}
+        onExportExcel={() => {
+          // TODO: Implement Excel export
+          toast.info('Excel export coming soon');
+        }}
+        onExportCSV={() => {
+          // TODO: Implement CSV export
+          toast.info('CSV export coming soon');
+        }}
+        onMergeCells={() => {
+          // TODO: Implement merge cells
+          toast.info('Merge cells coming soon');
+        }}
+        onUnmergeCells={() => {
+          // TODO: Implement unmerge cells
+          toast.info('Unmerge cells coming soon');
+        }}
+        onDataValidation={() => {
+          // TODO: Implement data validation
+          toast.info('Data validation coming soon');
+        }}
+        onConditionalFormat={() => {
+          // TODO: Implement conditional formatting
+          toast.info('Conditional formatting coming soon');
+        }}
+        onInsertChart={() => {
+          // TODO: Implement insert chart
+          toast.info('Insert chart coming soon');
+        }}
       />
 
       {/* Formula Bar */}

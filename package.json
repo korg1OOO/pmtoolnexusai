@@ -11,7 +11,12 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "setup-db": "npx tsx scripts/setup-complete-database.ts"
+    "setup-db": "npx tsx scripts/setup-complete-database.ts",
+    "db:migrate": "node scripts/migrate-db.js",
+    "db:migrate:sh": "bash scripts/migrate-db.sh",
+    "db:link": "npx supabase link",
+    "db:push": "npx supabase db push",
+    "db:pull": "npx supabase db pull"
   },
   "dependencies": {
     "@dnd-kit/core": "^6.3.1",
@@ -117,6 +122,7 @@
     "lovable-tagger": "^1.1.13",
     "pg": "^8.18.0",
     "postcss": "^8.5.6",
+    "supabase": "^2.76.8",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0",

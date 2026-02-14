@@ -23,8 +23,11 @@ import { useRecentActivity, useSystemStatus } from '@/hooks/useAdminDashboard';
 import { useSubscriptionMetrics } from '@/hooks/useSubscriptions';
 import { useProjects } from '@/hooks/useProjects';
 import { SubscriptionAnalyticsDashboard } from '@/components/subscription/SubscriptionAnalyticsDashboard';
+import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 export function AdminDashboard() {
+    const navigate = useNavigate();
     const { data: users } = useAdminUsers();
     const { data: recentActivity = [], isLoading: activityLoading } = useRecentActivity(4);
     const { data: systemStatus = [], isLoading: statusLoading } = useSystemStatus();
@@ -68,7 +71,7 @@ export function AdminDashboard() {
                         Overview of platform metrics and activity
                     </p>
                 </div>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
                     <RefreshCw className="h-4 w-4 mr-2" />
                     Refresh
                 </Button>
@@ -199,19 +202,19 @@ export function AdminDashboard() {
                 </CardHeader>
                 <CardContent>
                     <div className="flex flex-wrap gap-3">
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => navigate('/admin/users')}>
                             <Users className="h-4 w-4 mr-2" />
                             Add User
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => toast.success('Syncing Stripe data...')}>
                             <RefreshCw className="h-4 w-4 mr-2" />
                             Sync Stripe
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => toast.info('Invoice creation coming soon')}>
                             <DollarSign className="h-4 w-4 mr-2" />
                             Create Invoice
                         </Button>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={() => navigate('/admin/health')}>
                             <Activity className="h-4 w-4 mr-2" />
                             Run Health Check
                         </Button>

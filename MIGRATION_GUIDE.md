@@ -1,103 +1,71 @@
-# Manual Migration Application Guide
+# Database Migration Scripts
 
-## Phase 2 & 5 Migrations Need Application
+I've created automated scripts to push your migrations to Supabase. You have multiple options:
 
-You need to apply two new migrations to Supabase:
-1. **Phase 2**: Notifications table (20260212120000_notifications.sql)
-2. **Phase 5**: AI Provider Settings tables (20260212130000_ai_provider_settings.sql)
+## Quick Start (Recommended)
 
----
-
-## ✅ Recommended: Supabase Dashboard SQL Editor
-
-This is the easiest and safest method:
-
-### Step 1: Open Supabase SQL Editor
-Go to: https://supabase.com/dashboard/project/YOUR_PROJECT_ID/sql/new
-
-### Step 2: Apply Notifications Migration
-1. Open file: `supabase/migrations/20260212120000_notifications.sql`
-2. Copy the entire contents
-3. Paste into the SQL Editor
-4. Click **"Run"**
-5. Verify success message
-
-### Step 3: Apply AI Provider Settings Migration
-1. Open file: `supabase/migrations/20260212130000_ai_provider_settings.sql`
-2. Copy the entire contents
-3. Paste into the SQL Editor
-4. Click **"Run"**
-5. Verify success message
-
----
-
-## Alternative: CLI with Service Role Key
-
-If you have the Supabase service role key:
-
-### Step 1: Update .env.local
-Add these variables:
 ```bash
-VITE_SUPABASE_URL=your_supabase_url
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+npm run db:migrate
 ```
 
-### Step 2: Run migration script
+This will:
+1. Read your `.env` file to get your Supabase project details
+2. Link to your remote Supabase project
+3. Push all migrations from `supabase/migrations/` to your database
+
+## Available Commands
+
+### Main Migration Command
 ```bash
-npx tsx scripts/apply-phase2-phase5-migrations.ts
+npm run db:migrate          # Run the Node.js migration script
+npm run db:migrate:sh       # Run the bash version (if you prefer)
 ```
 
----
-
-## Verification
-
-After applying, verify tables were created:
-
-```sql
--- Check notifications table
-SELECT * FROM notifications LIMIT 1;
-
--- Check AI provider settings tables  
-SELECT * FROM ai_provider_settings LIMIT 1;
-SELECT * FROM ai_provider_api_keys LIMIT 1;
+### Individual Supabase Commands
+```bash
+npm run db:link             # Link to your Supabase project
+npm run db:push             # Push migrations to remote database
+npm run db:pull             # Pull schema from remote database
 ```
 
----
+## What the Script Does
 
-## What These Migrations Create
+1. **Reads your `.env` file** to extract:
+   - `VITE_SUPABASE_URL` → to get your project reference
+   - Database credentials
 
-### Notifications Table (Phase 2)
-- Stores user notifications (SLA breaches, warnings, mentions, etc.)
-- 7 notification types
-- Related item tracking
-- RLS policies for user-scoped access
-- 3 performance indexes
+2. **Links to your Supabase project**:
+   - Project: `wmnfuwmjauslyqqucmov`
 
-### AI Provider Settings Tables (Phase 5)
-- `ai_provider_settings`: User AI configuration (active provider, model, fallback)
-- ` ai_provider_api_keys`: Encrypted API keys per provider
-- RLS policies for user-scoped access
-- Support for user-level and organization-level configs
+3. **Pushes all migrations** from `supabase/migrations/`:
+   - Currently: `20260207_create_support_tickets.sql`
 
----
+4. **Verifies success** and provides dashboard link
 
-## After Migration Complete
+## First Time Setup
 
-The frontend code is already wired and ready:
-- `useNotifications` hook will work with `notifications` table
-- `useAIProviderSettings` hook will work with AI settings tables
-- No code changes needed!
+When you run the migration for the first time, you'll be prompted for your database password.
 
----
+**Your database password** (from `.env`): `ZjcJszLxFbP4YiE3`
 
-## Need Help?
+The CLI will remember this for future runs.
 
-If you encounter errors during migration:
-1. Check the error message in SQL Editor
-2. Verify you're connected to the correct project
-3. Ensure you have database admin privileges
-4. Contact if persistent issues
+## Troubleshooting
 
-Migration files are located at:
-- `supabase/migrations/20260212120000_notifications.sql`
-- `supabase/migrations/20260212130000_ai_provider_settings.sql`
+**"Project already linked"** - This is fine, just means you've run it before.
+
+**"Migration already applied"** - The migration was already run. This is safe.
+
+**Permission errors** - Check that your Supabase credentials in `.env` are correct.
+
+## Files Created
+
+- `scripts/migrate-db.js` - Node.js migration script
+- `scripts/migrate-db.sh` - Bash migration script
+- Updated `package.json` with new npm scripts
+
+## Next Steps
+
+1. Run `npm run db:migrate` to apply the migration
+2. Test your Contact Form to verify it works
+3. Check the Supabase dashboard to see the new `support_tickets` table

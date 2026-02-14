@@ -58,6 +58,8 @@ import { TicketDetail } from '@/components/admin/pages/TicketDetail';
 import { EmailTemplateEditor } from '@/components/admin/pages/EmailTemplateEditor';
 import { EmailCampaignBuilder } from '@/components/admin/pages/EmailCampaignBuilder';
 import { EmailCampaignDetail } from '@/components/admin/pages/EmailCampaignDetail';
+import { DatabaseMigrationPanel } from '@/components/admin/DatabaseMigrationPanel';
+import { MLModelsPage, MLAlertsPage, MLPredictionsPage, MLRetrainingPage, MLAccuracyPage, MLTrainingDataPage } from '@/components/ml/MLPages';
 
 const queryClient = new QueryClient();
 
@@ -118,6 +120,12 @@ const App = () => (
                 <Route path="health" element={<AdminHealthCheck />} />
                 <Route path="ai-usage" element={<AdminAIUsage />} />
                 <Route path="ml" element={<MLDashboard />} />
+                <Route path="ml/models" element={<MLModelsPage />} />
+                <Route path="ml/alerts" element={<MLAlertsPage />} />
+                <Route path="ml/predictions" element={<MLPredictionsPage />} />
+                <Route path="ml/retraining" element={<MLRetrainingPage />} />
+                <Route path="ml/accuracy" element={<MLAccuracyPage />} />
+                <Route path="ml/training-data" element={<MLTrainingDataPage />} />
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="pro-users" element={<AdminProUsers />} />
                 <Route path="content" element={<AdminContentManagement />} />
@@ -128,6 +136,7 @@ const App = () => (
                 <Route path="billing" element={<AdminBilling />} />
                 <Route path="discounts" element={<AdminDiscountCodes />} />
                 <Route path="management" element={<AdminManagement />} />
+                <Route path="migration" element={<DatabaseMigrationPanel />} />
                 <Route path="requests" element={<AdminRequests />} />
                 <Route path="tickets/:id" element={<TicketDetail />} />
                 <Route path="analytics" element={<AdminAnalytics />} />

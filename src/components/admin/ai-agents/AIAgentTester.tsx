@@ -51,7 +51,7 @@ export function AIAgentTester({ agentId, onClose }: AIAgentTesterProps) {
             // Call the ai-orchestrator Edge Function
             const { data: authData } = await supabase.auth.getSession();
 
-            const response = await fetch(`${supabase.supabaseUrl}/functions/v1/ai-orchestrator`, {
+            const response = await fetch(`${(supabase as any)['supabaseUrl'] || import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-orchestrator`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

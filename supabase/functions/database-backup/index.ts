@@ -135,7 +135,7 @@ serve(async (req) => {
         }
 
         return new Response(
-            JSON.stringify({ error: error.message }),
+            JSON.stringify({ error: error instanceof Error ? error.message : 'Backup failed' }),
             {
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' },
                 status: 400,

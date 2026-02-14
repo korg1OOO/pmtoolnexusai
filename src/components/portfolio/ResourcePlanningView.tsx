@@ -27,7 +27,7 @@ export function ResourcePlanningView() {
     // Map service data to component format (service returns basic resource data)
     const resourceData = resources ? {
         total_capacity: 50,
-        total_allocated: resources.reduce((sum, r) => sum + r.allocated_capacity, 0),
+        total_allocated: resources.reduce((sum, r) => sum + ((r as any).allocated_capacity || 0), 0),
         total_demand: 45,
         demands: [] as ResourceDemand[], // TODO: Enhance with program-level demand data
         conflicts: []

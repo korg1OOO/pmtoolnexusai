@@ -39,11 +39,11 @@ export function AutoRechargeSettings() {
             if (!balance) return;
 
             return await aiCreditsService.updateAutoRecharge(
-                balance.tenant_id,
-                balance.user_id,
                 enabled,
                 amount,
-                threshold
+                threshold,
+                balance.tenant_id,
+                balance.user_id
             );
         },
         onSuccess: () => {

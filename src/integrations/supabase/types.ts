@@ -426,6 +426,162 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_credit_adjustments: {
+        Row: {
+          adjusted_by: string | null
+          amount: number
+          created_at: string
+          id: string
+          reason: string | null
+          user_id: string
+        }
+        Insert: {
+          adjusted_by?: string | null
+          amount: number
+          created_at?: string
+          id?: string
+          reason?: string | null
+          user_id: string
+        }
+        Update: {
+          adjusted_by?: string | null
+          amount?: number
+          created_at?: string
+          id?: string
+          reason?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_credit_pricing: {
+        Row: {
+          credits: number
+          currency: string
+          description: string | null
+          discount_percentage: number
+          display_order: number
+          id: string
+          is_active: boolean
+          is_featured: boolean
+          price: number
+          tier_name: string
+        }
+        Insert: {
+          credits: number
+          currency?: string
+          description?: string | null
+          discount_percentage?: number
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          price: number
+          tier_name: string
+        }
+        Update: {
+          credits?: number
+          currency?: string
+          description?: string | null
+          discount_percentage?: number
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          is_featured?: boolean
+          price?: number
+          tier_name?: string
+        }
+        Relationships: []
+      }
+      ai_credit_purchases: {
+        Row: {
+          amount_paid: number
+          applied_at: string | null
+          credits_purchased: number
+          currency: string
+          id: string
+          payment_id: string | null
+          payment_method: string | null
+          payment_status: string
+          purchased_at: string
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          amount_paid: number
+          applied_at?: string | null
+          credits_purchased: number
+          currency?: string
+          id?: string
+          payment_id?: string | null
+          payment_method?: string | null
+          payment_status?: string
+          purchased_at?: string
+          tenant_id?: string
+          user_id: string
+        }
+        Update: {
+          amount_paid?: number
+          applied_at?: string | null
+          credits_purchased?: number
+          currency?: string
+          id?: string
+          payment_id?: string | null
+          payment_method?: string | null
+          payment_status?: string
+          purchased_at?: string
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_credits: {
+        Row: {
+          auto_recharge_amount: number
+          auto_recharge_enabled: boolean
+          auto_recharge_threshold: number
+          available_credits: number
+          created_at: string
+          id: string
+          last_recharged_at: string | null
+          low_balance_threshold: number
+          tenant_id: string
+          total_credits: number
+          updated_at: string
+          used_credits: number
+          user_id: string
+        }
+        Insert: {
+          auto_recharge_amount?: number
+          auto_recharge_enabled?: boolean
+          auto_recharge_threshold?: number
+          available_credits?: number
+          created_at?: string
+          id?: string
+          last_recharged_at?: string | null
+          low_balance_threshold?: number
+          tenant_id?: string
+          total_credits?: number
+          updated_at?: string
+          used_credits?: number
+          user_id: string
+        }
+        Update: {
+          auto_recharge_amount?: number
+          auto_recharge_enabled?: boolean
+          auto_recharge_threshold?: number
+          available_credits?: number
+          created_at?: string
+          id?: string
+          last_recharged_at?: string | null
+          low_balance_threshold?: number
+          tenant_id?: string
+          total_credits?: number
+          updated_at?: string
+          used_credits?: number
+          user_id?: string
+        }
+        Relationships: []
+      }
       ai_messages: {
         Row: {
           agent_type: string | null
@@ -632,6 +788,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      backup_jobs: {
+        Row: {
+          backup_type: string
+          completed_at: string | null
+          created_at: string
+          file_size: number | null
+          id: string
+          location: string | null
+          started_at: string | null
+          status: string
+        }
+        Insert: {
+          backup_type?: string
+          completed_at?: string | null
+          created_at?: string
+          file_size?: number | null
+          id?: string
+          location?: string | null
+          started_at?: string | null
+          status?: string
+        }
+        Update: {
+          backup_type?: string
+          completed_at?: string | null
+          created_at?: string
+          file_size?: number | null
+          id?: string
+          location?: string | null
+          started_at?: string | null
+          status?: string
+        }
+        Relationships: []
       }
       backups: {
         Row: {
@@ -868,6 +1057,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      collaboration_spaces: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          name: string
+          program_id: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name: string
+          program_id?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          name?: string
+          program_id?: string | null
+          updated_at?: string
+        }
+        Relationships: []
       }
       content_items: {
         Row: {
@@ -2798,6 +3014,102 @@ export type Database = {
           },
         ]
       }
+      ml_auto_learning_config: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          id: string
+          min_feedbacks_for_pattern: number
+          min_success_rate_threshold: number
+          optimization_enabled: boolean
+          pruning_enabled: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          min_feedbacks_for_pattern?: number
+          min_success_rate_threshold?: number
+          optimization_enabled?: boolean
+          pruning_enabled?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          id?: string
+          min_feedbacks_for_pattern?: number
+          min_success_rate_threshold?: number
+          optimization_enabled?: boolean
+          pruning_enabled?: boolean
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ml_learning_patterns: {
+        Row: {
+          application_count: number
+          created_at: string
+          id: string
+          is_active: boolean
+          pattern_data: Json | null
+          pattern_type: string
+          success_rate: number
+          updated_at: string
+        }
+        Insert: {
+          application_count?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          pattern_data?: Json | null
+          pattern_type: string
+          success_rate?: number
+          updated_at?: string
+        }
+        Update: {
+          application_count?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          pattern_data?: Json | null
+          pattern_type?: string
+          success_rate?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ml_learning_velocity: {
+        Row: {
+          avg_success_rate: number | null
+          created_at: string
+          date: string
+          id: string
+          patterns_created: number
+          patterns_optimized: number
+          patterns_pruned: number
+        }
+        Insert: {
+          avg_success_rate?: number | null
+          created_at?: string
+          date?: string
+          id?: string
+          patterns_created?: number
+          patterns_optimized?: number
+          patterns_pruned?: number
+        }
+        Update: {
+          avg_success_rate?: number | null
+          created_at?: string
+          date?: string
+          id?: string
+          patterns_created?: number
+          patterns_optimized?: number
+          patterns_pruned?: number
+        }
+        Relationships: []
+      }
       ml_models: {
         Row: {
           accuracy: number | null
@@ -2842,34 +3154,61 @@ export type Database = {
       }
       ml_predictions: {
         Row: {
+          actual_outcome: Json | null
+          confidence: number | null
           confidence_score: number | null
           created_at: string
+          feedback_notes: string | null
           id: string
+          input_data: Json | null
           model_id: string | null
+          prediction: Json | null
           prediction_data: Json | null
           prediction_type: string | null
           project_id: string | null
           status: string | null
+          user_accepted: boolean | null
+          user_feedback_data: Json | null
+          user_modified: boolean | null
+          user_rating: number | null
         }
         Insert: {
+          actual_outcome?: Json | null
+          confidence?: number | null
           confidence_score?: number | null
           created_at?: string
+          feedback_notes?: string | null
           id?: string
+          input_data?: Json | null
           model_id?: string | null
+          prediction?: Json | null
           prediction_data?: Json | null
           prediction_type?: string | null
           project_id?: string | null
           status?: string | null
+          user_accepted?: boolean | null
+          user_feedback_data?: Json | null
+          user_modified?: boolean | null
+          user_rating?: number | null
         }
         Update: {
+          actual_outcome?: Json | null
+          confidence?: number | null
           confidence_score?: number | null
           created_at?: string
+          feedback_notes?: string | null
           id?: string
+          input_data?: Json | null
           model_id?: string | null
+          prediction?: Json | null
           prediction_data?: Json | null
           prediction_type?: string | null
           project_id?: string | null
           status?: string | null
+          user_accepted?: boolean | null
+          user_feedback_data?: Json | null
+          user_modified?: boolean | null
+          user_rating?: number | null
         }
         Relationships: [
           {
@@ -3365,6 +3704,51 @@ export type Database = {
           title?: string
           type?: string | null
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      password_policies: {
+        Row: {
+          created_at: string
+          id: string
+          lockout_duration_minutes: number
+          max_login_attempts: number
+          min_length: number
+          password_expiry_days: number
+          prevent_reuse_count: number
+          require_lowercase: boolean
+          require_numbers: boolean
+          require_special_chars: boolean
+          require_uppercase: boolean
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lockout_duration_minutes?: number
+          max_login_attempts?: number
+          min_length?: number
+          password_expiry_days?: number
+          prevent_reuse_count?: number
+          require_lowercase?: boolean
+          require_numbers?: boolean
+          require_special_chars?: boolean
+          require_uppercase?: boolean
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lockout_duration_minutes?: number
+          max_login_attempts?: number
+          min_length?: number
+          password_expiry_days?: number
+          prevent_reuse_count?: number
+          require_lowercase?: boolean
+          require_numbers?: boolean
+          require_special_chars?: boolean
+          require_uppercase?: boolean
+          updated_at?: string
         }
         Relationships: []
       }
@@ -4520,6 +4904,39 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      security_audit_logs: {
+        Row: {
+          created_at: string
+          details: Json | null
+          event_type: string
+          id: string
+          ip_address: string | null
+          severity: string
+          user_email: string | null
+          user_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          details?: Json | null
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          severity?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          details?: Json | null
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          severity?: string
+          user_email?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       sites: {
         Row: {
@@ -5707,6 +6124,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      user_tenants: {
+        Row: {
+          created_at: string
+          id: string
+          role: string
+          tenant_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role?: string
+          tenant_id?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: string
+          tenant_id?: string
+          user_id?: string
+        }
+        Relationships: []
       }
     }
     Views: {

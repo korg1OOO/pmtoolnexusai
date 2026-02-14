@@ -64,6 +64,7 @@ import { EmailCampaignBuilder } from '@/components/admin/pages/EmailCampaignBuil
 import { EmailCampaignDetail } from '@/components/admin/pages/EmailCampaignDetail';
 import { DatabaseMigrationPanel } from '@/components/admin/DatabaseMigrationPanel';
 import { TenantDashboard, WorkspaceManagement, TenantSettings, TenantUserManagement, TenantAnalytics, DepartmentManagement, LicenseAllocation } from '@/components/tenant';
+import { WorkspaceDashboard, PortfolioView, TeamAssignment, WorkspaceResourceAllocation, WorkspaceBudgetManagement, WorkspaceAnalytics } from '@/components/workspace';
 import {
   MLModelsPage,
   MLAlertsPage,
@@ -183,6 +184,61 @@ const App = () => (
                   <ProjectProvider>
                     <PresenceProvider>
                       <LicenseAllocation />
+                    </PresenceProvider>
+                  </ProjectProvider>
+                </ProtectedRoute>
+              } />
+              {/* Workspace Admin Routes */}
+              <Route path="/workspace/:workspaceId" element={
+                <ProtectedRoute>
+                  <ProjectProvider>
+                    <PresenceProvider>
+                      <WorkspaceDashboard />
+                    </PresenceProvider>
+                  </ProjectProvider>
+                </ProtectedRoute>
+              } />
+              <Route path="/workspace/:workspaceId/portfolios" element={
+                <ProtectedRoute>
+                  <ProjectProvider>
+                    <PresenceProvider>
+                      <PortfolioView />
+                    </PresenceProvider>
+                  </ProjectProvider>
+                </ProtectedRoute>
+              } />
+              <Route path="/workspace/:workspaceId/teams" element={
+                <ProtectedRoute>
+                  <ProjectProvider>
+                    <PresenceProvider>
+                      <TeamAssignment />
+                    </PresenceProvider>
+                  </ProjectProvider>
+                </ProtectedRoute>
+              } />
+              <Route path="/workspace/:workspaceId/resources" element={
+                <ProtectedRoute>
+                  <ProjectProvider>
+                    <PresenceProvider>
+                      <WorkspaceResourceAllocation />
+                    </PresenceProvider>
+                  </ProjectProvider>
+                </ProtectedRoute>
+              } />
+              <Route path="/workspace/:workspaceId/budget" element={
+                <ProtectedRoute>
+                  <ProjectProvider>
+                    <PresenceProvider>
+                      <WorkspaceBudgetManagement />
+                    </PresenceProvider>
+                  </ProjectProvider>
+                </ProtectedRoute>
+              } />
+              <Route path="/workspace/:workspaceId/analytics" element={
+                <ProtectedRoute>
+                  <ProjectProvider>
+                    <PresenceProvider>
+                      <WorkspaceAnalytics />
                     </PresenceProvider>
                   </ProjectProvider>
                 </ProtectedRoute>

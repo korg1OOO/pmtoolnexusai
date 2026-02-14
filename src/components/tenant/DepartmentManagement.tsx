@@ -5,13 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Building2, Plus, Edit, Trash2, Users, DollarSign, ChevronRight, ChevronDown } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { getDepartments, createDepartment, updateDepartment, deleteDepartment } from '@/services/tenantService';
 import { toast } from 'sonner';
 
 interface Department {
     id: string;
     name: string;
-    parent_department_id: string | null;
+    parent_id: string | null;
     manager_id: string | null;
     manager_name?: string;
     budget: number;
@@ -20,93 +20,60 @@ interface Department {
 }
 
 export function DepartmentManagement() {
-    const [tenantId] = useState('default-tenant-id');
+    // TODO: Get tenant ID from auth context
+    const tenantId = 'default-tenant-id';
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
     const queryClient = useQueryClient();
 
-    // Mock data - replace with actual API call
+    // Fetch departments from database
     const { data: departments, isLoading } = useQuery({
         queryKey: ['departments', tenantId],
-        queryFn: async () => {
-            // TODO: Implement actual API call
-            const mockDepartments: Department[] = [
-                {
-                    id: '1',
-                    name: 'Engineering',
-                    parent_department_id: null,
-                    manager_id: 'user1',
-                    manager_name: 'John Doe',
-                    budget: 500000,
-                    member_count: 25,
-                    children: [
-                        {
-                            id: '2',
-                            name: 'Frontend',
-                            parent_department_id: '1',
-                            manager_id: 'user2',
-                            manager_name: 'Jane Smith',
-                            budget: 200000,
-                            member_count: 10
-                        },
-                        {
-                            id: '3',
-                            name: 'Backend',
-                            parent_department_id: '1',
-                            manager_id: 'user3',
-                            manager_name: 'Bob Johnson',
-                            budget: 300000,
-                            member_count: 15
-                        }
-                    ]
-                },
-                {
-                    id: '4',
-                    name: 'Marketing',
-                    parent_department_id: null,
-                    manager_id: 'user4',
-                    manager_name: 'Alice Brown',
-                    budget: 300000,
-                    member_count: 12
-                }
-            ];
-            return mockDepartments;
-        }
+        queryFn: () => getDepartments(tenantId),
+        enabled: !!tenantId
     });
 
     const createMutation = useMutation({
-        mutationFn: async (data: Partial<Department>) => {
-            // TODO: Implement actual API call
-            return data;
-        },
+        mutationFn: (data: Partial<Department>) => createDepartment(tenantId, {
+            name: data.name!,
+            budget: data.budget || 0,
+            member_count: 0
+        }),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['departments'] });
+            queryClient.invalidateQueries({ queryKey: ['departments', tenantId] });
             toast.success('Department created successfully');
             setCreateDialogOpen(false);
+        },
+        onError: (error: Error) => {
+            toast.error(`Failed to create department: ${error.message}`);
         }
     });
 
     const updateMutation = useMutation({
-        mutationFn: async ({ id, data }: { id: string; data: Partial<Department> }) => {
-            // TODO: Implement actual API call
-            return { id, ...data };
-        },
+        mutationFn: ({ id, data }: { id: string; data: Partial<Department> }) =>
+            updateDepartment(id, {
+                name: data.name,
+                budget: data.budget
+            }),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['departments'] });
+            queryClient.invalidateQueries({ queryKey: ['departments', tenantId] });
             toast.success('Department updated successfully');
             setEditDialogOpen(false);
+        },
+        onError: (error: Error) => {
+            toast.error(`Failed to update department: ${error.message}`);
         }
     });
 
     const deleteMutation = useMutation({
-        mutationFn: async (id: string) => {
-            // TODO: Implement actual API call
-            return id;
-        },
+        mutationFn: (id: string) => deleteDepartment(id),
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['departments'] });
+            queryClient.invalidateQueries({ queryKey: ['departments', tenantId] });
             toast.success('Department deleted successfully');
+        },
+        onError: (error: Error) => {
+            toast.error(`Failed to delete department: ${error.message}`);
         }
     });
 

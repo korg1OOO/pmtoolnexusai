@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { TrendingUp, AlertTriangle, CheckCircle, DollarSign, Target } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
+import { getPortfolioOverview } from '@/services/portfolioService';
 
 interface ProgramHealth {
     id: string;
@@ -19,41 +20,8 @@ export function PortfolioDashboard() {
 
     const { data: overview } = useQuery({
         queryKey: ['portfolio-overview', portfolioId],
-        queryFn: async () => {
-            return {
-                portfolio_name: 'Digital Transformation',
-                total_programs: 3,
-                total_projects: 12,
-                total_budget: 5000000,
-                spent: 3200000,
-                on_track: 8,
-                at_risk: 3,
-                delayed: 1,
-                programs: [
-                    {
-                        id: '1',
-                        name: 'Cloud Migration',
-                        status: 'on-track' as const,
-                        completion: 75,
-                        budget_variance: -50000
-                    },
-                    {
-                        id: '2',
-                        name: 'Mobile App Redesign',
-                        status: 'at-risk' as const,
-                        completion: 45,
-                        budget_variance: 100000
-                    },
-                    {
-                        id: '3',
-                        name: 'API Platform',
-                        status: 'on-track' as const,
-                        completion: 60,
-                        budget_variance: 25000
-                    }
-                ] as ProgramHealth[]
-            };
-        }
+        queryFn: () => getPortfolioOverview(portfolioId!),
+        enabled: !!portfolioId
     });
 
     const budgetUtilization = overview ? (overview.spent / overview.total_budget) * 100 : 0;

@@ -4,7 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Briefcase, Users, FolderKanban, TrendingUp, Plus, BarChart3 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { getWorkspaceOverview } from '@/services/workspaceService';
 
 interface WorkspaceOverview {
     workspace_name: string;
@@ -20,18 +20,8 @@ export function WorkspaceDashboard() {
 
     const { data: overview, isLoading } = useQuery({
         queryKey: ['workspace-overview', workspaceId],
-        queryFn: async () => {
-            // Mock data - replace with actual API
-            const mockOverview: WorkspaceOverview = {
-                workspace_name: 'Engineering Division',
-                total_portfolios: 3,
-                total_programs: 8,
-                total_projects: 24,
-                total_members: 45,
-                active_projects: 18
-            };
-            return mockOverview;
-        }
+        queryFn: () => getWorkspaceOverview(workspaceId!),
+        enabled: !!workspaceId
     });
 
     if (isLoading) {

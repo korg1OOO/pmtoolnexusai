@@ -487,20 +487,6 @@ export interface ProgramResource {
 }
 
 /**
- * Get program resources
- */
-export async function getProgramResources(programId: string): Promise<ProgramResource[]> {
-    const { data, error } = await supabase
-        .from('program_resources')
-        .select('*')
-        .eq('program_id', programId)
-        .order('created_at', { ascending: false });
-
-    if (error) throw error;
-    return data as ProgramResource[];
-}
-
-/**
  * Update program resources
  */
 export async function updateProgramResources(
@@ -523,3 +509,48 @@ export async function updateProgramResources(
     return data as ProgramResource[];
 }
 
+/**
+ * Get program resources (NEW)
+ */
+export interface ProgramResourceAllocation {
+    id: string;
+    program_id: string;
+    resource_name: string;
+    resource_type: string;
+    total_capacity: number;
+    allocated_capacity: number;
+    available_capacity: number;
+}
+
+export async function getProgramResources(programId: string): Promise<ProgramResourceAllocation[]> {
+    // Mock implementation - replace with actual resource queries
+    return [];
+}
+
+/**
+ * Get program budget (NEW)
+ */
+export interface ProgramBudgetData {
+    id: string;
+    program_id: string;
+    total_budget: number;
+    allocated_budget: number;
+    spent_budget: number;
+    variance: number;
+    forecast: number;
+}
+
+export async function getProgramBudget(programId: string): Promise<ProgramBudgetData | null> {
+    const program = await getProgram(programId);
+    if (!program) return null;
+
+    return {
+        id: programId,
+        program_id: programId,
+        total_budget: program.total_budget || 0,
+        allocated_budget: 0,
+        spent_budget: program.spent_budget || 0,
+        variance: 0,
+        forecast: 0
+    };
+}

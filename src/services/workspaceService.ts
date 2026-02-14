@@ -51,6 +51,54 @@ export interface CreateWorkspaceParams {
     slug: string;
 }
 
+export interface WorkspaceTeam {
+    id: string;
+    workspace_id: string;
+    user_id: string | null;
+    role: string;
+    skills: string[];
+    allocation_percentage: number;
+    availability_status: string;
+    assigned_at: string;
+}
+
+export interface WorkspaceOverview {
+    workspace_name: string;
+    total_portfolios: number;
+    total_programs: number;
+    total_projects: number;
+    total_members: number;
+    active_projects: number;
+}
+
+export interface WorkspaceAnalytics {
+    workspace_id: string;
+    portfolio_performance: any[];
+    team_productivity: any[];
+    resource_efficiency: any[];
+    trend_analysis: any[];
+}
+
+export interface WorkspaceResource {
+    id: string;
+    workspace_id: string;
+    resource_name: string;
+    resource_type: string;
+    total_capacity: number;
+    allocated_capacity: number;
+    available_capacity: number;
+}
+
+export interface WorkspaceBudget {
+    id: string;
+    workspace_id: string;
+    total_budget: number;
+    allocated_budget: number;
+    spent_budget: number;
+    variance: number;
+    forecast: number;
+}
+
 /**
  * Get workspaces for a tenant
  */
@@ -60,14 +108,14 @@ export async function getWorkspaces(tenantId: string): Promise<Workspace[]> {
         .select('*')
         .eq('tenant_id', tenantId)
         .eq('is_active', true)
-        .order('name');
+        .order('created_at', { ascending: false });
 
     if (error) throw error;
     return data as Workspace[];
 }
 
 /**
- * Get workspace by ID
+ * Get a single workspace
  */
 export async function getWorkspace(workspaceId: string): Promise<Workspace | null> {
     const { data, error } = await supabase
@@ -84,16 +132,17 @@ export async function getWorkspace(workspaceId: string): Promise<Workspace | nul
 }
 
 /**
- * Create new workspace
+ * Create workspace
  */
 export async function createWorkspace(params: CreateWorkspaceParams): Promise<Workspace> {
     const { data, error } = await supabase
         .from('workspaces')
         .insert({
-            tenant_id: params.tenant_id,
-            name: params.name,
-            description: params.description,
-            slug: params.slug,
+            ...params,
+            settings: {
+                require_portfolio: false,
+                auto_assign_members: true
+            }
         })
         .select()
         .single();
@@ -132,10 +181,6 @@ export async function deleteWorkspace(workspaceId: string): Promise<void> {
     if (error) throw error;
 }
 
-// ============================================
-// WORKSPACE MEMBERS
-// ============================================
-
 /**
  * Get workspace members
  */
@@ -144,22 +189,21 @@ export async function getWorkspaceMembers(workspaceId: string): Promise<Workspac
         .from('workspace_members')
         .select('*')
         .eq('workspace_id', workspaceId)
-        .eq('is_active', true)
-        .order('joined_at');
+        .eq('is_active', true);
 
     if (error) throw error;
     return data as WorkspaceMember[];
 }
 
 /**
- * Add member to workspace
+ * Add workspace member
  */
 export async function addWorkspaceMember(
     workspaceId: string,
     userId: string,
-    role: string = 'member'
+    role: string,
+    permissions: MemberPermissions
 ): Promise<WorkspaceMember> {
-    // Get workspace to get tenant_id
     const workspace = await getWorkspace(workspaceId);
     if (!workspace) throw new Error('Workspace not found');
 
@@ -170,6 +214,7 @@ export async function addWorkspaceMember(
             user_id: userId,
             tenant_id: workspace.tenant_id,
             role,
+            permissions
         })
         .select()
         .single();
@@ -179,7 +224,7 @@ export async function addWorkspaceMember(
 }
 
 /**
- * Remove member from workspace
+ * Remove workspace member
  */
 export async function removeWorkspaceMember(
     workspaceId: string,
@@ -201,14 +246,17 @@ export async function updateMemberRole(
     workspaceId: string,
     userId: string,
     role: string
-): Promise<void> {
-    const { error } = await supabase
+): Promise<WorkspaceMember> {
+    const { data, error } = await supabase
         .from('workspace_members')
         .update({ role })
         .eq('workspace_id', workspaceId)
-        .eq('user_id', userId);
+        .eq('user_id', userId)
+        .select()
+        .single();
 
     if (error) throw error;
+    return data as WorkspaceMember;
 }
 
 /**
@@ -217,60 +265,46 @@ export async function updateMemberRole(
 export async function updateMemberPermissions(
     workspaceId: string,
     userId: string,
-    permissions: Partial<MemberPermissions>
-): Promise<void> {
-    // Get current member
-    const { data: member } = await supabase
+    permissions: MemberPermissions
+): Promise<WorkspaceMember> {
+    const { data, error } = await supabase
         .from('workspace_members')
-        .select('permissions')
+        .update({ permissions })
         .eq('workspace_id', workspaceId)
         .eq('user_id', userId)
+        .select()
         .single();
 
-    if (!member) throw new Error('Member not found');
-
-    const updatedPermissions = {
-        ...member.permissions,
-        ...permissions,
-    };
-
-    const { error } = await supabase
-        .from('workspace_members')
-        .update({ permissions: updatedPermissions })
-        .eq('workspace_id', workspaceId)
-        .eq('user_id', userId);
-
     if (error) throw error;
+    return data as WorkspaceMember;
 }
 
 /**
- * Get default workspace (for existing data)
+ * Get default workspace for tenant
  */
 export async function getDefaultWorkspace(tenantId: string): Promise<Workspace> {
     const { data, error } = await supabase
         .from('workspaces')
         .select('*')
         .eq('tenant_id', tenantId)
-        .eq('slug', 'default')
+        .eq('is_active', true)
+        .order('created_at', { ascending: true })
+        .limit(1)
         .single();
 
-    if (error) throw error;
+    if (error) {
+        if (error.code === 'PGRST116') {
+            return createWorkspace({
+                tenant_id: tenantId,
+                name: 'Default Workspace',
+                slug: 'default',
+                description: 'Default workspace for organization'
+            });
+        }
+        throw error;
+    }
+
     return data as Workspace;
-}
-
-// ============================================
-// WORKSPACE TEAMS (NEW)
-// ============================================
-
-export interface WorkspaceTeam {
-    id: string;
-    workspace_id: string;
-    user_id: string;
-    role: string;
-    allocation_percentage: number;
-    skills: string[];
-    availability_status: string;
-    assigned_at: string;
 }
 
 /**
@@ -280,8 +314,7 @@ export async function getWorkspaceTeams(workspaceId: string): Promise<WorkspaceT
     const { data, error } = await supabase
         .from('workspace_teams')
         .select('*')
-        .eq('workspace_id', workspaceId)
-        .order('assigned_at');
+        .eq('workspace_id', workspaceId);
 
     if (error) throw error;
     return data as WorkspaceTeam[];
@@ -314,7 +347,7 @@ export async function assignTeamMember(
  */
 export async function updateTeamMember(
     id: string,
-    updates: Partial<Omit<WorkspaceTeam, 'id' | 'workspace_id' | 'user_id' | 'assigned_at'>>
+    updates: Partial<WorkspaceTeam>
 ): Promise<WorkspaceTeam> {
     const { data, error } = await supabase
         .from('workspace_teams')
@@ -339,3 +372,71 @@ export async function removeTeamMember(id: string): Promise<void> {
     if (error) throw error;
 }
 
+/**
+ * Get workspace overview (NEW)
+ */
+export async function getWorkspaceOverview(workspaceId: string): Promise<WorkspaceOverview> {
+    const workspace = await getWorkspace(workspaceId);
+    if (!workspace) throw new Error('Workspace not found');
+
+    // Get counts from database
+    const [portfolios, programs, projects, members] = await Promise.all([
+        supabase.from('portfolios').select('id', { count: 'exact' }).eq('workspace_id', workspaceId),
+        supabase.from('programs').select('id', { count: 'exact' }).eq('workspace_id', workspaceId),
+        supabase.from('projects').select('id', { count: 'exact' }).eq('workspace_id', workspaceId),
+        supabase.from('workspace_teams').select('id', { count: 'exact' }).eq('workspace_id', workspaceId)
+    ]);
+
+    const activeProjects = await supabase
+        .from('projects')
+        .select('id', { count: 'exact' })
+        .eq('workspace_id', workspaceId)
+        .eq('status', 'active');
+
+    return {
+        workspace_name: workspace.name,
+        total_portfolios: portfolios.count || 0,
+        total_programs: programs.count || 0,
+        total_projects: projects.count || 0,
+        total_members: members.count || 0,
+        active_projects: activeProjects.count || 0
+    };
+}
+
+/**
+ * Get workspace analytics (NEW)
+ */
+export async function getWorkspaceAnalytics(workspaceId: string): Promise<WorkspaceAnalytics> {
+    // Mock implementation - replace with actual analytics queries
+    return {
+        workspace_id: workspaceId,
+        portfolio_performance: [],
+        team_productivity: [],
+        resource_efficiency: [],
+        trend_analysis: []
+    };
+}
+
+/**
+ * Get workspace resources (NEW)
+ */
+export async function getWorkspaceResources(workspaceId: string): Promise<WorkspaceResource[]> {
+    // Mock implementation - replace with actual resource queries
+    return [];
+}
+
+/**
+ * Get workspace budget (NEW)
+ */
+export async function getWorkspaceBudget(workspaceId: string): Promise<WorkspaceBudget | null> {
+    // Mock implementation - replace with actual budget queries
+    return {
+        id: workspaceId,
+        workspace_id: workspaceId,
+        total_budget: 0,
+        allocated_budget: 0,
+        spent_budget: 0,
+        variance: 0,
+        forecast: 0
+    };
+}

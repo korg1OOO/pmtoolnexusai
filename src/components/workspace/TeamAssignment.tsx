@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Users, Plus, Search, UserPlus, Mail, Shield } from 'lucide-react';
+import { getWorkspaceTeams, assignTeamMember, removeTeamMember } from '@/services/workspaceService';
+import { toast } from 'sonner';
 
 interface TeamMember {
     id: string;
@@ -24,43 +26,53 @@ export function TeamAssignment() {
     const [assignDialogOpen, setAssignDialogOpen] = useState(false);
     const queryClient = useQueryClient();
 
-    const { data: members, isLoading } = useQuery({
-        queryKey: ['workspace-members', workspaceId],
-        queryFn: async () => {
-            // Mock data
-            const mockMembers: TeamMember[] = [
-                {
-                    id: '1',
-                    user_id: 'user1',
-                    name: 'John Doe',
-                    email: 'john@example.com',
-                    role: 'Portfolio Manager',
-                    skills: ['Strategy', 'Leadership', 'Finance'],
-                    allocation: 100,
-                    availability: 'available'
-                },
-                {
-                    id: '2',
-                    user_id: 'user2',
-                    name: 'Jane Smith',
-                    email: 'jane@example.com',
-                    role: 'Program Manager',
-                    skills: ['Agile', 'Scrum', 'Risk Management'],
-                    allocation: 80,
-                    availability: 'partial'
-                },
-                {
-                    id: '3',
-                    user_id: 'user3',
-                    name: 'Bob Johnson',
-                    email: 'bob@example.com',
-                    role: 'Project Manager',
-                    skills: ['PMP', 'Waterfall', 'MS Project'],
-                    allocation: 100,
-                    availability: 'available'
-                }
-            ];
-            return mockMembers;
+    // Fetch workspace teams from database
+    const { data: teams, isLoading } = useQuery({
+        queryKey: ['workspace-teams', workspaceId],
+        queryFn: () => getWorkspaceTeams(workspaceId!),
+        enabled: !!workspaceId
+    });
+
+    // Map teams to members format for UI
+    const members = teams?.map(team => ({
+        id: team.id,
+        user_id: team.user_id || 'unknown',
+        name: team.user_id || 'Unknown User', // TODO: Join with users table
+        email: `${team.user_id}@example.com`, // TODO: Get from users table
+        role: team.role,
+        skills: [], // TODO: Get from user profile
+        allocation: 100,
+        availability: 'available' as const
+    })) || [];
+
+    // Assign team member mutation
+    const assignMutation = useMutation({
+        mutationFn: (data: { userId: string; role: string }) =>
+            assignTeamMember(workspaceId!, data.userId, {
+                role: data.role,
+                skills: [],
+                allocation_percentage: 100,
+                availability_status: 'available'
+            }),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['workspace-teams', workspaceId] });
+            toast.success('Team member assigned successfully');
+            setAssignDialogOpen(false);
+        },
+        onError: (error: Error) => {
+            toast.error(`Failed to assign member: ${error.message}`);
+        }
+    });
+
+    // Remove team member mutation
+    const removeMutation = useMutation({
+        mutationFn: (teamId: string) => removeTeamMember(teamId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['workspace-teams', workspaceId] });
+            toast.success('Team member removed successfully');
+        },
+        onError: (error: Error) => {
+            toast.error(`Failed to remove member: ${error.message}`);
         }
     });
 
@@ -200,8 +212,8 @@ export function TeamAssignment() {
                                         </td>
                                         <td className="py-3 px-4">
                                             <span className={`text-xs px-2 py-1 rounded ${member.availability === 'available' ? 'bg-green-100 text-green-700' :
-                                                    member.availability === 'partial' ? 'bg-orange-100 text-orange-700' :
-                                                        'bg-red-100 text-red-700'
+                                                member.availability === 'partial' ? 'bg-orange-100 text-orange-700' :
+                                                    'bg-red-100 text-red-700'
                                                 }`}>
                                                 {member.availability === 'available' ? 'Available' :
                                                     member.availability === 'partial' ? 'Partial' : 'Unavailable'}

@@ -1,10 +1,12 @@
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Key, Users, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
+import { getLicenses, allocateLicense, deallocateLicense } from '@/services/tenantService';
+import { toast } from 'sonner';
 
 interface LicensePool {
     id: string;
@@ -27,67 +29,54 @@ interface LicenseAllocation {
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
 
 export function LicenseAllocation() {
-    const [tenantId] = useState('default-tenant-id');
+    // TODO: Get tenant ID from auth context
+    const tenantId = 'default-tenant-id';
+    const queryClient = useQueryClient();
 
-    // Mock data - replace with actual API calls
-    const { data: pools } = useQuery({
-        queryKey: ['license-pools', tenantId],
-        queryFn: async () => {
-            const mockPools: LicensePool[] = [
-                {
-                    id: '1',
-                    name: 'Professional',
-                    total_licenses: 100,
-                    used_licenses: 75,
-                    available_licenses: 25,
-                    license_type: 'professional',
-                    renewal_date: '2026-12-31'
-                },
-                {
-                    id: '2',
-                    name: 'Enterprise',
-                    total_licenses: 50,
-                    used_licenses: 45,
-                    available_licenses: 5,
-                    license_type: 'enterprise',
-                    renewal_date: '2026-12-31'
-                },
-                {
-                    id: '3',
-                    name: 'Basic',
-                    total_licenses: 200,
-                    used_licenses: 120,
-                    available_licenses: 80,
-                    license_type: 'basic',
-                    renewal_date: '2026-06-30'
-                }
-            ];
-            return mockPools;
+    // Fetch licenses from database
+    const { data: licenses, isLoading } = useQuery({
+        queryKey: ['licenses', tenantId],
+        queryFn: () => getLicenses(tenantId),
+        enabled: !!tenantId
+    });
+
+    // Map licenses to pools format for UI
+    const pools = licenses?.map(license => ({
+        id: license.id,
+        name: license.license_type,
+        total_licenses: license.total_licenses,
+        used_licenses: license.allocated_licenses,
+        available_licenses: license.total_licenses - license.allocated_licenses,
+        license_type: license.license_type,
+        renewal_date: license.renewal_date || '2026-12-31'
+    })) || [];
+
+    // Allocate license mutation
+    const allocateMutation = useMutation({
+        mutationFn: (licenseId: string) => allocateLicense(licenseId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['licenses', tenantId] });
+            toast.success('License allocated successfully');
+        },
+        onError: (error: Error) => {
+            toast.error(`Failed to allocate license: ${error.message}`);
         }
     });
 
-    const { data: allocations } = useQuery({
-        queryKey: ['license-allocations', tenantId],
-        queryFn: async () => {
-            const mockAllocations: LicenseAllocation[] = [
-                {
-                    user_id: '1',
-                    user_name: 'John Doe',
-                    user_email: 'john@example.com',
-                    license_type: 'professional',
-                    allocated_date: '2026-01-15'
-                },
-                {
-                    user_id: '2',
-                    user_name: 'Jane Smith',
-                    user_email: 'jane@example.com',
-                    license_type: 'enterprise',
-                    allocated_date: '2026-01-20'
-                }
-            ];
-            return mockAllocations;
+    // Deallocate license mutation
+    const deallocateMutation = useMutation({
+        mutationFn: (licenseId: string) => deallocateLicense(licenseId),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['licenses', tenantId] });
+            toast.success('License deallocated successfully');
+        },
+        onError: (error: Error) => {
+            toast.error(`Failed to deallocate license: ${error.message}`);
         }
     });
+
+    // Mock allocations - TODO: Implement user-license mapping table
+    const allocations: LicenseAllocation[] = [];
 
     const totalLicenses = pools?.reduce((sum, pool) => sum + pool.total_licenses, 0) || 0;
     const usedLicenses = pools?.reduce((sum, pool) => sum + pool.used_licenses, 0) || 0;

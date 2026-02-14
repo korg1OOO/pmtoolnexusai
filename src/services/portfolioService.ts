@@ -320,21 +320,117 @@ export async function getPortfolioResources(portfolioId: string): Promise<Portfo
  */
 export async function updatePortfolioResources(
     portfolioId: string,
-    resources: Omit<PortfolioResource, 'id' | 'created_at' | 'updated_at'>[]
-): Promise<PortfolioResource[]> {
-    // Delete existing resources
-    await supabase
-        .from('portfolio_resources')
-        .delete()
-        .eq('portfolio_id', portfolioId);
+    resources: Partial<PortfolioResource>[]
+): Promise<void> {
+    const updates = resources.map(resource => ({
+        ...resource,
+        portfolio_id: portfolioId
+    }));
 
-    // Insert new resources
-    const { data, error } = await supabase
+    const { error } = await supabase
         .from('portfolio_resources')
-        .insert(resources)
-        .select();
+        .upsert(updates);
 
     if (error) throw error;
-    return data as PortfolioResource[];
 }
 
+/**
+ * Get portfolio overview (NEW)
+ */
+export interface PortfolioOverview {
+    portfolio_name: string;
+    total_programs: number;
+    total_projects: number;
+    total_budget: number;
+    spent: number;
+    on_track: number;
+    at_risk: number;
+    delayed: number;
+    programs: Array<{
+        id: string;
+        name: string;
+        status: 'on-track' | 'at-risk' | 'critical';
+        completion: number;
+        budget_variance: number;
+    }>;
+}
+
+export async function getPortfolioOverview(portfolioId: string): Promise<PortfolioOverview> {
+    const portfolio = await getPortfolio(portfolioId);
+    if (!portfolio) throw new Error('Portfolio not found');
+
+    // Get programs and projects counts
+    const [programs, projects] = await Promise.all([
+        supabase.from('programs').select('*').eq('portfolio_id', portfolioId),
+        supabase.from('projects').select('id, status', { count: 'exact' }).eq('portfolio_id', portfolioId)
+    ]);
+
+    const programData = programs.data || [];
+    const projectData = projects.data || [];
+
+    // Calculate status counts
+    const onTrack = projectData.filter(p => p.status === 'active' || p.status === 'on-track').length;
+    const atRisk = projectData.filter(p => p.status === 'at-risk').length;
+    const delayed = projectData.filter(p => p.status === 'delayed').length;
+
+    // Map programs to overview format
+    const programsOverview = programData.map(prog => ({
+        id: prog.id,
+        name: prog.name,
+        status: (prog.status === 'active' ? 'on-track' : prog.status) as 'on-track' | 'at-risk' | 'critical',
+        completion: 0,
+        budget_variance: 0
+    }));
+
+    return {
+        portfolio_name: portfolio.name,
+        total_programs: programData.length,
+        total_projects: projectData.length,
+        total_budget: portfolio.total_budget || 0,
+        spent: 0,
+        on_track: onTrack,
+        at_risk: atRisk,
+        delayed: delayed,
+        programs: programsOverview
+    };
+}
+
+/**
+ * Get portfolio analytics (NEW)
+ */
+export interface PortfolioAnalytics {
+    portfolio_id: string;
+    performance_metrics: any[];
+    trend_data: any[];
+    risk_analysis: any[];
+}
+
+export async function getPortfolioAnalytics(portfolioId: string): Promise<PortfolioAnalytics> {
+    return {
+        portfolio_id: portfolioId,
+        performance_metrics: [],
+        trend_data: [],
+        risk_analysis: []
+    };
+}
+
+/**
+ * Get portfolio roadmap (NEW)
+ */
+export interface PortfolioRoadmap {
+    portfolio_id: string;
+    initiatives: any[];
+    milestones: any[];
+    dependencies: any[];
+}
+
+export async function getPortfolioRoadmap(portfolioId: string): Promise<PortfolioRoadmap> {
+    const initiatives = await getPortfolioInitiatives(portfolioId);
+
+    return {
+        portfolio_id: portfolioId,
+        initiatives: initiatives,
+        milestones: [],
+        dependencies: []
+    };
+}

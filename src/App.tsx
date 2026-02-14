@@ -4,6 +4,8 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { TenantProvider } from "@/contexts/TenantContext";
+import { SubscriptionSuccessPage } from "@/pages/SubscriptionSuccessPage";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import OAuthCallback from "./pages/OAuthCallback";
@@ -87,6 +89,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <TenantProvider>
             <Routes>
               <Route path="/" element={
                 <ProjectProvider>
@@ -158,7 +161,7 @@ const App = () => (
                 <ProtectedRoute>
                   <ProjectProvider>
                     <PresenceProvider>
-                      <TenantUserManagement tenantId="default-tenant-id" />
+                      <TenantUserManagement />
                     </PresenceProvider>
                   </ProjectProvider>
                 </ProtectedRoute>
@@ -387,9 +390,15 @@ const App = () => (
                 <Route path="api-keys" element={<AdminAPIKeys />} />
                 <Route path="audit-logs" element={<AdminAuditLogs />} />
               </Route>
+              <Route path="/subscription/success" element={
+                <ProtectedRoute>
+                  <SubscriptionSuccessPage />
+                </ProtectedRoute>
+              } />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
+            </TenantProvider>
           </BrowserRouter>
         </TooltipProvider>
       </ThemeProvider>

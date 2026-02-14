@@ -15,6 +15,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Users, Plus, Search, Shield, Mail, Trash2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useTenant } from '@/contexts/TenantContext';
 
 interface TenantUser {
     user_id: string;
@@ -23,11 +24,8 @@ interface TenantUser {
     workspace_name: string;
 }
 
-interface TenantUserManagementProps {
-    tenantId: string;
-}
-
-export function TenantUserManagement({ tenantId }: TenantUserManagementProps) {
+export function TenantUserManagement() {
+    const { tenantId } = useTenant();
     const [searchQuery, setSearchQuery] = useState('');
     const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
     const queryClient = useQueryClient();

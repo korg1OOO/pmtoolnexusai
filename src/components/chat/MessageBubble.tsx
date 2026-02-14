@@ -185,7 +185,7 @@ export function MessageBubble({
           <ThreadIndicator
             replyCount={replyCount}
             lastReplyTime={lastReplyTime}
-            onClick={() => {}}
+            onClick={() => console.log('Open thread for message', message.id)}
           />
         )}
 
@@ -313,7 +313,7 @@ export function MessageBubble({
           <ThreadIndicator
             replyCount={replyCount}
             lastReplyTime={lastReplyTime}
-            onClick={() => {}}
+            onClick={() => console.log('Open thread for message', message.id)}
           />
         )}
 

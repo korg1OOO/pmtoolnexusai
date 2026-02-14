@@ -8,6 +8,7 @@ import { Users, Plus, Search, Mail, Phone, Briefcase, Shield, MoreVertical, Edit
 import { Badge } from '@/components/ui/badge';
 import { getUsers, createUser, updateUser, deleteUser, updateUserStatus, User } from '@/services/userService';
 import { toast } from 'sonner';
+import { useTenant } from '@/contexts/TenantContext';
 
 export function UserManagement() {
     const [searchQuery, setSearchQuery] = useState('');
@@ -15,8 +16,7 @@ export function UserManagement() {
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const queryClient = useQueryClient();
 
-    // TODO: Get tenantId from auth context
-    const tenantId = 'default-tenant';
+    const { tenantId } = useTenant();
 
     const { data: users, isLoading } = useQuery({
         queryKey: ['users', tenantId],

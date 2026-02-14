@@ -3,7 +3,8 @@
  * Tracks AI predictions and enables learning from user feedback
  */
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+const supabase = _supabase as any;
 
 export interface MLPrediction {
     id: string;

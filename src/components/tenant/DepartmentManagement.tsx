@@ -11,11 +11,11 @@ import { toast } from 'sonner';
 interface Department {
     id: string;
     name: string;
-    parent_id: string | null;
-    manager_id: string | null;
+    parent_id?: string | null;
+    manager_id?: string | null;
     manager_name?: string;
-    budget: number;
-    member_count: number;
+    budget?: number;
+    member_count?: number;
     children?: Department[];
 }
 

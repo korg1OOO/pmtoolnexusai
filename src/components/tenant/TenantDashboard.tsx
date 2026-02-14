@@ -30,11 +30,11 @@ export function TenantDashboard() {
                     <p className="text-muted-foreground">Manage your organization</p>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => navigate('/tenant/settings')}>
+                <Button variant="outline" onClick={() => nav('/tenant/settings')}>
                         <Settings className="w-4 h-4 mr-2" />
                         Settings
                     </Button>
-                    <Button onClick={() => navigate('/tenant/workspaces')}>
+                    <Button onClick={() => nav('/tenant/workspaces')}>
                         <Plus className="w-4 h-4 mr-2" />
                         New Workspace
                     </Button>
@@ -73,7 +73,7 @@ export function TenantDashboard() {
             <Card className="p-6">
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-xl font-semibold">Workspaces</h2>
-                    <Button variant="ghost" size="sm" onClick={() => navigate('/tenant/workspaces')}>
+                    <Button variant="ghost" size="sm" onClick={() => nav('/tenant/workspaces')}>
                         View All
                     </Button>
                 </div>
@@ -100,17 +100,17 @@ export function TenantDashboard() {
                     <QuickActionCard
                         title="Invite Users"
                         description="Add team members to your organization"
-                        onClick={() => navigate('/tenant/users')}
+                        onClick={() => nav('/tenant/users')}
                     />
                     <QuickActionCard
                         title="Manage Licenses"
                         description="Allocate licenses to users"
-                        onClick={() => navigate('/tenant/licenses')}
+                        onClick={() => nav('/tenant/licenses')}
                     />
                     <QuickActionCard
                         title="View Analytics"
                         description="Company-wide insights and metrics"
-                        onClick={() => navigate('/tenant/analytics')}
+                        onClick={() => nav('/tenant/analytics')}
                     />
                 </div>
             </Card>

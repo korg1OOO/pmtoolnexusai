@@ -3,7 +3,8 @@
  * Manages program-level timeline, critical path, and cross-project coordination
  */
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+const supabase = _supabase as any;
 
 export interface TimelineTask {
     id: string;
@@ -409,4 +410,18 @@ export async function getCrossProjectDependencies(programId: string): Promise<Cr
 
     if (error) throw error;
     return data as CrossProjectDependency[];
+}
+
+/**
+ * Get projects belonging to a program
+ */
+export async function getProgramProjects(programId: string) {
+    const { data, error } = await supabase
+        .from('projects')
+        .select('id, name, code, status, health')
+        .eq('program_id', programId)
+        .order('name');
+
+    if (error) throw error;
+    return data || [];
 }

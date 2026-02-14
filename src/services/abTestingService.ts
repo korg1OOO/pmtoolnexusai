@@ -3,7 +3,9 @@
  * Manages A/B tests for ML patterns
  */
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+
+const supabase = _supabase as any;
 
 export interface ABTest {
     id: string;
@@ -74,7 +76,6 @@ export async function createABTest(params: CreateABTestParams): Promise<ABTest> 
  * Get active A/B test for a pattern type
  */
 export async function getActiveABTest(patternType: string): Promise<ABTest | null> {
-    // Get patterns of this type
     const { data: patterns } = await supabase
         .from('ml_learning_patterns')
         .select('id')
@@ -83,9 +84,8 @@ export async function getActiveABTest(patternType: string): Promise<ABTest | nul
 
     if (!patterns || patterns.length === 0) return null;
 
-    const patternIds = patterns.map(p => p.id);
+    const patternIds = patterns.map((p: any) => p.id);
 
-    // Find active test involving these patterns
     const { data } = await supabase
         .from('ml_ab_tests')
         .select('*')
@@ -143,7 +143,6 @@ export async function getABTestStats(testId: string): Promise<ABTestStats[]> {
 
     if (error) throw error;
 
-    // Group by variant
     const statsByVariant = new Map<string, ABTestStats>();
 
     for (const result of data || []) {
@@ -164,7 +163,6 @@ export async function getABTestStats(testId: string): Promise<ABTestStats[]> {
         }
     }
 
-    // Calculate success rates
     const statsArray: ABTestStats[] = [];
     for (const stats of statsByVariant.values()) {
         stats.success_rate = stats.total_predictions > 0
@@ -191,7 +189,6 @@ export async function calculateSignificance(testId: string): Promise<Significanc
         };
     }
 
-    // Simple Z-test for two proportions
     const [variantA, variantB] = stats;
 
     const p1 = variantA.success_rate;
@@ -199,7 +196,6 @@ export async function calculateSignificance(testId: string): Promise<Significanc
     const p2 = variantB.success_rate;
     const n2 = variantB.total_predictions;
 
-    // Need minimum sample size
     if (n1 < 30 || n2 < 30) {
         return {
             is_significant: false,
@@ -209,18 +205,10 @@ export async function calculateSignificance(testId: string): Promise<Significanc
         };
     }
 
-    // Pooled proportion
     const p = (p1 * n1 + p2 * n2) / (n1 + n2);
-
-    // Standard error
     const se = Math.sqrt(p * (1 - p) * (1 / n1 + 1 / n2));
-
-    // Z-score
     const z = Math.abs(p1 - p2) / se;
 
-    // Confidence level (simplified)
-    // z > 1.96 = 95% confidence
-    // z > 2.58 = 99% confidence
     const confidence = z > 2.58 ? 0.99 : z > 1.96 ? 0.95 : z > 1.64 ? 0.90 : 0;
 
     const is_significant = confidence >= 0.95;
@@ -246,11 +234,9 @@ export async function selectWinner(testId: string): Promise<void> {
         throw new Error('No statistically significant winner found');
     }
 
-    // Get winner pattern ID
     const winnerStats = significance.stats.find(s => s.variant === significance.winner_variant);
     if (!winnerStats) throw new Error('Winner stats not found');
 
-    // Update test
     const { error } = await supabase
         .from('ml_ab_tests')
         .update({
@@ -263,7 +249,6 @@ export async function selectWinner(testId: string): Promise<void> {
 
     if (error) throw error;
 
-    // Deactivate losing patterns
     const losingPatterns = significance.stats
         .filter(s => s.variant !== significance.winner_variant)
         .map(s => s.pattern_id);

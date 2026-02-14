@@ -281,7 +281,6 @@ export function NotesView({ demo = false }: NotesViewProps) {
               onCreateSpreadsheet={createSpreadsheet}
               onUpdateSpreadsheet={updateSpreadsheet}
               onDeleteSpreadsheet={deleteSpreadsheet}
-              onMoveSpreadsheet={moveSpreadsheet}
               totalPages={totalPages}
             />
           )}

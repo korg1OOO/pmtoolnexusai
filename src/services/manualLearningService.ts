@@ -3,7 +3,8 @@
  * Manages manually entered learnings from experts and historical data
  */
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+const supabase = _supabase as any;
 
 export interface ManualLearning {
     id: string;
@@ -53,6 +54,7 @@ export interface CreateManualLearningParams {
     learning_data: LearningData;
     source_project_id?: string;
     source_description?: string;
+    imported_from?: string;
     tags?: string[];
     category?: string;
     created_by_user_id: string;

@@ -3,7 +3,8 @@
  * Cleans up low-performing and unused patterns
  */
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+const supabase = _supabase as any;
 
 interface PruningStats {
     deactivated: number;

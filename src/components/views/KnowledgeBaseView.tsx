@@ -17,5 +17,5 @@ export function KnowledgeBaseView() {
         );
     }
 
-    return <KnowledgeBaseBrowser programId={settings.id} />;
+    return <KnowledgeBaseBrowser scope="program" scopeId={settings.id} />;
 }

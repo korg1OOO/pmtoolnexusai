@@ -7,18 +7,32 @@ import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Briefcase, Plus, Search, TrendingUp, DollarSign, AlertTriangle } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-import { getPortfolios } from '@/services/portfolioService';
+import { getPortfolios, type Portfolio as ServicePortfolio } from '@/services/portfolioService';
 
 interface Portfolio {
     id: string;
     name: string;
-    description: string;
-    programs_count: number;
-    projects_count: number;
-    budget: number;
-    spent: number;
-    health_status: 'healthy' | 'at-risk' | 'critical';
-    completion: number;
+    description?: string;
+    tenant_id?: string;
+    workspace_id?: string;
+    slug?: string;
+    portfolio_type?: string;
+    start_date?: string;
+    end_date?: string;
+    status?: string;
+    ml_sharing_scope?: string;
+    inherit_workspace_ml?: boolean;
+    total_budget?: number;
+    currency?: string;
+    created_at?: string;
+    updated_at?: string;
+    is_active?: boolean;
+    programs_count?: number;
+    projects_count?: number;
+    budget?: number;
+    spent?: number;
+    health_status?: 'healthy' | 'at-risk' | 'critical';
+    completion?: number;
 }
 
 export function PortfolioView() {
@@ -26,9 +40,20 @@ export function PortfolioView() {
     const [searchQuery, setSearchQuery] = useState('');
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
 
-    const { data: portfolios, isLoading } = useQuery({
+    const { data: portfolios, isLoading } = useQuery<Portfolio[]>({
         queryKey: ['portfolios', workspaceId],
-        queryFn: () => getPortfolios(workspaceId!),
+        queryFn: async () => {
+            const data = await getPortfolios(workspaceId!);
+            return (data || []).map((p: any) => ({
+                ...p,
+                programs_count: p.programs_count || 0,
+                projects_count: p.projects_count || 0,
+                budget: p.total_budget || p.budget || 0,
+                spent: p.spent || 0,
+                health_status: p.health_status || 'healthy',
+                completion: p.completion || 0,
+            }));
+        },
         enabled: !!workspaceId
     });
 
@@ -79,7 +104,7 @@ export function PortfolioView() {
                         <div>
                             <p className="text-sm text-muted-foreground">Total Programs</p>
                             <p className="text-2xl font-bold">
-                                {portfolios?.reduce((sum, p) => sum + p.programs_count, 0) || 0}
+                                {portfolios?.reduce((sum, p) => sum + (p.programs_count || 0), 0) || 0}
                             </p>
                         </div>
                     </div>
@@ -90,7 +115,7 @@ export function PortfolioView() {
                         <div>
                             <p className="text-sm text-muted-foreground">Total Budget</p>
                             <p className="text-2xl font-bold">
-                                ${((portfolios?.reduce((sum, p) => sum + p.budget, 0) || 0) / 1000000).toFixed(1)}M
+                                ${((portfolios?.reduce((sum, p) => sum + (p.total_budget || p.budget || 0), 0) || 0) / 1000000).toFixed(1)}M
                             </p>
                         </div>
                     </div>

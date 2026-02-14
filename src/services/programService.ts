@@ -3,7 +3,8 @@
  * Manages programs that group related projects for coordinated delivery
  */
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+const supabase = _supabase as any;
 
 export interface Program {
     id: string;

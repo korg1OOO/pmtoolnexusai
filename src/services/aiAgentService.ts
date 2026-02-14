@@ -5,7 +5,9 @@
  * Replaces hardcoded AGENT_DISPLAY_INFO from types/ai-agents.ts
  */
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+
+const supabase = _supabase as any;
 
 export interface AIAgent {
     id: string;

@@ -1,5 +1,6 @@
 import Stripe from 'stripe';
-import { supabase } from '@/integrations/supabase/client';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+const supabase = _supabase as any;
 
 // Initialize Stripe with secret key (server-side only)
 // For client-side, use @stripe/stripe-js
@@ -10,7 +11,7 @@ const getStripeInstance = () => {
         return null;
     }
     return new Stripe(secretKey, {
-        apiVersion: '2024-11-20.acacia',
+        apiVersion: '2026-01-28.clover' as any,
     });
 };
 

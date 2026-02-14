@@ -1,4 +1,5 @@
-import { supabase } from '@/lib/supabase';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+const supabase = _supabase as any;
 
 export interface SpreadsheetVersion {
     id: string;

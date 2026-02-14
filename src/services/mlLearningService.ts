@@ -3,7 +3,8 @@
  * Manages learned patterns and applies them to improve predictions
  */
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+const supabase = _supabase as any;
 
 export interface LearningPattern {
     id: string;

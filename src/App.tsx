@@ -158,7 +158,7 @@ const App = () => (
                 <ProtectedRoute>
                   <ProjectProvider>
                     <PresenceProvider>
-                      <TenantUserManagement />
+                      <TenantUserManagement tenantId="default-tenant-id" />
                     </PresenceProvider>
                   </ProjectProvider>
                 </ProtectedRoute>

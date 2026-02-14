@@ -30,7 +30,7 @@ export function WorkspaceBudgetManagement() {
         }
     });
 
-    const spendRate = budgetData ? (budgetData.total_spent / budgetData.total_budget) * 100 : 0;
+    const spendRate = budgetData ? (budgetData.spent_budget / budgetData.total_budget) * 100 : 0;
 
     const trendData = [
         { month: 'Jan', budget: 1000000, actual: 950000 },
@@ -74,7 +74,7 @@ export function WorkspaceBudgetManagement() {
                         <div>
                             <p className="text-sm text-muted-foreground">Total Spent</p>
                             <p className="text-2xl font-bold">
-                                ${((budgetData?.total_spent || 0) / 1000000).toFixed(1)}M
+                                ${((budgetData?.spent_budget || 0) / 1000000).toFixed(1)}M
                             </p>
                             <p className="text-xs text-muted-foreground">{spendRate.toFixed(0)}% of budget</p>
                         </div>
@@ -86,7 +86,7 @@ export function WorkspaceBudgetManagement() {
                         <div>
                             <p className="text-sm text-muted-foreground">Remaining</p>
                             <p className="text-2xl font-bold">
-                                ${((budgetData?.total_remaining || 0) / 1000000).toFixed(1)}M
+                                ${(((budgetData?.total_budget || 0) - (budgetData?.spent_budget || 0)) / 1000000).toFixed(1)}M
                             </p>
                         </div>
                     </div>
@@ -113,7 +113,7 @@ export function WorkspaceBudgetManagement() {
             <Card className="p-6">
                 <h2 className="text-xl font-semibold mb-4">Portfolio Budget Allocations</h2>
                 <div className="space-y-4">
-                    {budgetData?.allocations.map((allocation) => (
+                    {(budgetData as any)?.allocations?.map((allocation: BudgetAllocation) => (
                         <div key={allocation.portfolio_id} className="border rounded-lg p-4">
                             <div className="flex items-center justify-between mb-2">
                                 <h3 className="font-semibold">{allocation.portfolio_name}</h3>

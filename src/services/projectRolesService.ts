@@ -3,7 +3,8 @@
  * Manages project-specific role customization
  */
 
-import { supabase } from '@/integrations/supabase/client';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+const supabase = _supabase as any;
 import { ProjectRole } from '@/types/ai-agents';
 
 export interface CustomRole {

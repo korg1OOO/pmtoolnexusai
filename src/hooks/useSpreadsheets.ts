@@ -146,7 +146,7 @@ export function useSpreadsheets(notebookId: string | null) {
     try {
       const { error } = await supabase
         .from('notebook_spreadsheets')
-        .update({ section_id: targetSectionId })
+        .update({ notebook_id: targetSectionId } as any)
         .eq('id', spreadsheetId);
 
       if (error) throw error;

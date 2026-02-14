@@ -2,27 +2,27 @@ import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import {
-  Users,
-  UserPlus,
-  Search,
-  MoreVertical,
-  Mail,
-  Shield,
-  Trash2,
-  UserCheck,
-  Crown,
-  Briefcase,
-  Star,
-  Loader2,
-} from 'lucide-react';
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Crown, Briefcase, Star, UserCheck, Users, UserPlus, Search, Loader2, Trash2, Settings, Mail, Shield, MoreVertical } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,6 +32,7 @@ import {
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { useTeamMembers, useAddTeamMember, useRemoveTeamMember } from '@/hooks/useTeamMembers';
 import { ProjectRole } from '@/types/ai-agents';
+import { RoleManagementDialog } from '@/components/team/RoleManagementDialog';
 
 interface Team {
   id: string;
@@ -114,6 +115,7 @@ export function TeamManagementView() {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [isAddMemberOpen, setIsAddMemberOpen] = useState(false);
+  const [isRoleManagementOpen, setIsRoleManagementOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('members');
 
   // Add Member State
@@ -166,58 +168,64 @@ export function TeamManagementView() {
           <h1 className="text-2xl font-bold text-foreground">Team Management</h1>
           <p className="text-muted-foreground">Manage project team members, roles, and permissions</p>
         </div>
-        <Dialog open={isAddMemberOpen} onOpenChange={setIsAddMemberOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2">
-              <UserPlus className="h-4 w-4" />
-              Add Member
-            </Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>Add Team Member</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 py-4">
-              <div className="space-y-2">
-                <Label>Email Address</Label>
-                <Input
-                  placeholder="colleague@company.com"
-                  type="email"
-                  value={newMemberEmail}
-                  onChange={(e) => setNewMemberEmail(e.target.value)}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Role</Label>
-                <Select value={newMemberRole} onValueChange={(v) => setNewMemberRole(v as ProjectRole)}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {roles.map((role) => (
-                      <SelectItem key={role.id} value={role.id}>
-                        <div className="flex items-center gap-2">
-                          <role.icon className="h-4 w-4" />
-                          {role.name}
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setIsAddMemberOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleAddMember} disabled={addMember.isPending}>
-                {addMember.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                <Mail className="h-4 w-4 mr-2" />
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setIsRoleManagementOpen(true)}>
+            <Settings className="h-4 w-4 mr-2" />
+            Manage Roles
+          </Button>
+          <Dialog open={isAddMemberOpen} onOpenChange={setIsAddMemberOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2">
+                <UserPlus className="h-4 w-4" />
                 Add Member
               </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent className="max-w-md">
+              <DialogHeader>
+                <DialogTitle>Add Team Member</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="space-y-2">
+                  <Label>Email Address</Label>
+                  <Input
+                    placeholder="colleague@company.com"
+                    type="email"
+                    value={newMemberEmail}
+                    onChange={(e) => setNewMemberEmail(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Role</Label>
+                  <Select value={newMemberRole} onValueChange={(v) => setNewMemberRole(v as ProjectRole)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {roles.map((role) => (
+                        <SelectItem key={role.id} value={role.id}>
+                          <div className="flex items-center gap-2">
+                            <role.icon className="h-4 w-4" />
+                            {role.name}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsAddMemberOpen(false)}>
+                  Cancel
+                </Button>
+                <Button onClick={handleAddMember} disabled={addMember.isPending}>
+                  {addMember.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  <Mail className="h-4 w-4 mr-2" />
+                  Add Member
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
       {/* Stats */}
@@ -376,6 +384,13 @@ export function TeamManagementView() {
           </div>
         </TabsContent>
       </Tabs>
-    </div>
+
+      {/* Role Management Dialog */}
+      <RoleManagementDialog
+        open={isRoleManagementOpen}
+        onOpenChange={setIsRoleManagementOpen}
+        projectId={settings.id}
+      />
+    </div >
   );
 }

@@ -17,6 +17,8 @@ import { type SubscriptionTier } from '@/hooks/useFeatureAccess';
 import { supabase as _supabase } from '@/integrations/supabase/client';
 const supabase = _supabase as any;
 import { cn } from '@/lib/utils';
+import { PasswordStrengthIndicator } from './PasswordStrengthIndicator';
+import { getPasswordPolicy, validatePassword, PasswordPolicy } from '@/services/passwordPolicyService';
 
 interface AuthDialogProps {
   open: boolean;
@@ -30,7 +32,29 @@ export function AuthDialog({ open, onOpenChange, defaultTier }: AuthDialogProps)
   const [password, setPassword] = useState('');
   const [selectedTier, setSelectedTier] = useState<SubscriptionTier>(defaultTier || 'free');
   const [loading, setLoading] = useState(false);
+  const [passwordPolicy, setPasswordPolicy] = useState<PasswordPolicy | null>(null);
   const { signIn, signUp } = useAuth();
+
+  // Fetch password policy on mount
+  useEffect(() => {
+    getPasswordPolicy().then(setPasswordPolicy).catch(() => {
+      // Use default policy if fetch fails
+      setPasswordPolicy({
+        id: '',
+        min_length: 8,
+        require_uppercase: true,
+        require_lowercase: true,
+        require_numbers: true,
+        require_special_chars: true,
+        password_expiry_days: 90,
+        prevent_reuse_count: 5,
+        max_login_attempts: 5,
+        lockout_duration_minutes: 30,
+        created_at: '',
+        updated_at: '',
+      });
+    });
+  }, []);
 
   // Update tier if defaultTier changes
   useEffect(() => {
@@ -42,6 +66,16 @@ export function AuthDialog({ open, onOpenChange, defaultTier }: AuthDialogProps)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Validate password for signup
+    if (mode === 'signup' && passwordPolicy) {
+      const validation = validatePassword(password, passwordPolicy);
+      if (!validation.is_valid) {
+        toast.error(validation.errors[0] || 'Password does not meet requirements');
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
@@ -168,9 +202,16 @@ export function AuthDialog({ open, onOpenChange, defaultTier }: AuthDialogProps)
                 onChange={(e) => setPassword(e.target.value)}
                 className="pl-10"
                 required
-                minLength={6}
+                minLength={passwordPolicy?.min_length || 6}
               />
             </div>
+            {mode === 'signup' && passwordPolicy && password && (
+              <PasswordStrengthIndicator
+                password={password}
+                policy={passwordPolicy}
+                className="mt-2"
+              />
+            )}
           </div>
 
           <Button type="submit" className="w-full" disabled={loading}>

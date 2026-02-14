@@ -1,13 +1,20 @@
 /**
- * ML Sub-Pages
- * Placeholder pages for ML Dashboard navigation
+ * ML Pages Index
+ * Export all ML admin pages
  */
 
+export { MLModelsPage } from './pages/MLModelsPage';
+export { MLAlertsPage } from './pages/MLAlertsPage';
+export { MLPredictionsPage } from './pages/MLPredictionsPage';
+export { MLRetrainingPage } from './pages/MLRetrainingPage';
+
+// Placeholder pages for remaining features
 import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Construction } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
+import { ArrowLeft } from 'lucide-react';
 
 const MLPlaceholderPage = ({ title, description }: { title: string; description: string }) => {
     const navigate = useNavigate();
@@ -16,7 +23,8 @@ const MLPlaceholderPage = ({ title, description }: { title: string; description:
         <div className="p-6">
             <div className="mb-6">
                 <Button variant="ghost" onClick={() => navigate('/admin/ml')}>
-                    ← Back to ML Dashboard
+                    <ArrowLeft className="h-4 w-4 mr-2" />
+                    Back to ML Dashboard
                 </Button>
             </div>
             <Card className="p-8 text-center">
@@ -28,34 +36,6 @@ const MLPlaceholderPage = ({ title, description }: { title: string; description:
         </div>
     );
 };
-
-export const MLModelsPage = () => (
-    <MLPlaceholderPage
-        title="ML Models"
-        description="View and manage all machine learning models"
-    />
-);
-
-export const MLAlertsPage = () => (
-    <MLPlaceholderPage
-        title="ML Alerts"
-        description="Monitor and acknowledge ML model alerts"
-    />
-);
-
-export const MLPredictionsPage = () => (
-    <MLPlaceholderPage
-        title="Predictions"
-        description="View prediction history and analytics"
-    />
-);
-
-export const MLRetrainingPage = () => (
-    <MLPlaceholderPage
-        title="Retraining Jobs"
-        description="Manage model retraining jobs and schedules"
-    />
-);
 
 export const MLAccuracyPage = () => (
     <MLPlaceholderPage

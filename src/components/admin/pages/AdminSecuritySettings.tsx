@@ -23,6 +23,8 @@ import {
     CheckCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useSecurityLogs } from '@/hooks/useSecurityLogs';
+import { getPasswordPolicy, updatePasswordPolicy, PasswordPolicy } from '@/services/passwordPolicyService';
 
 export function AdminSecuritySettings() {
     const [passwordPolicy, setPasswordPolicy] = useState({
@@ -38,25 +40,23 @@ export function AdminSecuritySettings() {
     const [sessionTimeout, setSessionTimeout] = useState(30);
     const [ipWhitelist, setIpWhitelist] = useState('');
 
-    const handleSavePasswordPolicy = () => {
-        toast.success('Password policy updated successfully');
-    };
+    const { data: securityLogs = [] } = useSecurityLogs({ limit: 10 });
 
-    const handleSaveSessionSettings = () => {
-        toast.success('Session settings updated successfully');
+    const handleSavePasswordPolicy = async () => {
+        try {
+            await updatePasswordPolicy({
+                min_length: passwordPolicy.minLength,
+                require_uppercase: passwordPolicy.requireUppercase,
+                require_lowercase: passwordPolicy.requireLowercase,
+                require_numbers: passwordPolicy.requireNumbers,
+                require_special_chars: passwordPolicy.requireSpecialChars,
+                password_expiry_days: passwordPolicy.expiryDays,
+            });
+            toast.success('Password policy updated successfully');
+        } catch (error) {
+            toast.error('Failed to update password policy');
+        }
     };
-
-    const handleSaveIPWhitelist = () => {
-        toast.success('IP whitelist updated successfully');
-    };
-
-    // Mock audit logs
-    const auditLogs = [
-        { id: 1, action: 'Login attempt failed', user: 'admin@example.com', ip: '192.168.1.1', timestamp: '2026-02-14 05:30:00', severity: 'warning' },
-        { id: 2, action: 'Password changed', user: 'user@example.com', ip: '192.168.1.5', timestamp: '2026-02-14 04:15:00', severity: 'info' },
-        { id: 3, action: 'Multiple login failures', user: 'unknown@example.com', ip: '10.0.0.1', timestamp: '2026-02-14 03:45:00', severity: 'critical' },
-        { id: 4, action: '2FA enabled', user: 'admin@example.com', ip: '192.168.1.1', timestamp: '2026-02-14 02:30:00', severity: 'info' },
-    ];
 
     return (
         <div className="p-6 space-y-6">
@@ -291,40 +291,46 @@ export function AdminSecuritySettings() {
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="space-y-4">
-                                {auditLogs.map((log) => (
-                                    <div key={log.id} className="flex items-start justify-between p-3 border rounded-lg">
-                                        <div className="flex items-start gap-3">
-                                            {log.severity === 'critical' ? (
-                                                <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5" />
-                                            ) : log.severity === 'warning' ? (
-                                                <AlertTriangle className="h-5 w-5 text-yellow-500 mt-0.5" />
-                                            ) : (
-                                                <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
-                                            )}
-                                            <div>
-                                                <p className="font-medium">{log.action}</p>
-                                                <p className="text-sm text-muted-foreground">
-                                                    {log.user} from {log.ip}
+                            {securityLogs.length === 0 ? (
+                                <div className="text-center py-8 text-muted-foreground">
+                                    No security logs found
+                                </div>
+                            ) : (
+                                <div className="space-y-4">
+                                    {securityLogs.map((log) => (
+                                        <div key={log.id} className="flex items-start justify-between p-3 border rounded-lg">
+                                            <div className="flex items-start gap-3">
+                                                {log.severity === 'critical' ? (
+                                                    <AlertTriangle className="h-5 w-5 text-red-500 mt-0.5" />
+                                                ) : log.severity === 'warning' ? (
+                                                    <AlertTriangle className="h-5 w-5 text-yellow-500 mt-0.5" />
+                                                ) : (
+                                                    <CheckCircle className="h-5 w-5 text-green-500 mt-0.5" />
+                                                )}
+                                                <div>
+                                                    <p className="font-medium">{log.event_type}</p>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        {log.user_email || 'Unknown'} from {log.ip_address || 'Unknown IP'}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <Badge
+                                                    variant={
+                                                        log.severity === 'critical' ? 'destructive' :
+                                                            log.severity === 'warning' ? 'secondary' : 'default'
+                                                    }
+                                                >
+                                                    {log.severity}
+                                                </Badge>
+                                                <p className="text-xs text-muted-foreground mt-1">
+                                                    {new Date(log.created_at).toLocaleString()}
                                                 </p>
                                             </div>
                                         </div>
-                                        <div className="text-right">
-                                            <Badge
-                                                variant={
-                                                    log.severity === 'critical' ? 'destructive' :
-                                                        log.severity === 'warning' ? 'secondary' : 'default'
-                                                }
-                                            >
-                                                {log.severity}
-                                            </Badge>
-                                            <p className="text-xs text-muted-foreground mt-1">
-                                                {log.timestamp}
-                                            </p>
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
+                                    ))}
+                                </div>
+                            )}
                         </CardContent>
                     </Card>
                 </TabsContent>

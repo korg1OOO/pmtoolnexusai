@@ -52,14 +52,21 @@ import {
   IMAPConfigurationManager,
   NotificationAnalyticsDashboard,
 } from "@/components/admin/pages";
-import { MLDashboard } from "@/components/ml";
+import MLDashboard from './components/ml/MLDashboard';
 import { HelmetProvider } from 'react-helmet-async';
 import { TicketDetail } from '@/components/admin/pages/TicketDetail';
 import { EmailTemplateEditor } from '@/components/admin/pages/EmailTemplateEditor';
 import { EmailCampaignBuilder } from '@/components/admin/pages/EmailCampaignBuilder';
 import { EmailCampaignDetail } from '@/components/admin/pages/EmailCampaignDetail';
 import { DatabaseMigrationPanel } from '@/components/admin/DatabaseMigrationPanel';
-import { MLModelsPage, MLAlertsPage, MLPredictionsPage, MLRetrainingPage, MLAccuracyPage, MLTrainingDataPage } from '@/components/ml/MLPages';
+import {
+  MLModelsPage,
+  MLAlertsPage,
+  MLPredictionsPage,
+  MLRetrainingPage,
+  MLAccuracyPage,
+  MLTrainingDataPage,
+} from './components/ml/MLPages';
 
 const queryClient = new QueryClient();
 

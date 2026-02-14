@@ -3,12 +3,14 @@
  * React Query hooks for fetching and managing invoices
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase as _supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 const supabase = _supabase as any;
 
 export interface Invoice {
     id: string;
+    user_id: string;
     subscription_id: string;
     stripe_invoice_id: string;
     stripe_customer_id: string;
@@ -127,4 +129,31 @@ export function getInvoiceStatusColor(status: Invoice['status']): string {
         uncollectible: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200',
     };
     return colors[status] || colors.draft;
+}
+
+/**
+ * Create invoice mutation
+ */
+export function useCreateInvoice() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: async (invoice: Partial<Invoice>) => {
+            const { data, error } = await supabase
+                .from('invoices')
+                .insert(invoice)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['invoices'] });
+            toast.success('Invoice created successfully');
+        },
+        onError: (error: Error) => {
+            toast.error(`Failed to create invoice: ${error.message}`);
+        },
+    });
 }

@@ -19,16 +19,21 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSubscriptionMetrics } from '@/hooks/useSubscriptions';
+import { useInvoices, formatInvoiceAmount, getInvoiceStatusColor } from '@/hooks/useInvoices';
+import { syncStripeInvoices } from '@/services/invoiceService';
+import { CreateInvoiceDialog } from '@/components/admin/billing/CreateInvoiceDialog';
+import { RefundDialog } from '@/components/admin/billing/RefundDialog';
 
 export function AdminBillingDashboard() {
     const [syncing, setSyncing] = useState(false);
+    const [createInvoiceOpen, setCreateInvoiceOpen] = useState(false);
+    const [refundDialogOpen, setRefundDialogOpen] = useState(false);
 
     const handleSyncStripe = async () => {
         setSyncing(true);
         try {
-            // TODO: Call Stripe sync API
-            await new Promise(resolve => setTimeout(resolve, 1500));
-            toast.success('Stripe data synced successfully');
+            const result = await syncStripeInvoices();
+            toast.success(`Synced ${result.synced} invoices from Stripe`);
         } catch (error) {
             toast.error('Failed to sync Stripe data');
         } finally {
@@ -42,13 +47,11 @@ export function AdminBillingDashboard() {
     };
 
     const handleCreateInvoice = () => {
-        // TODO: Open invoice creation modal
-        toast.info('Invoice creation coming soon');
+        setCreateInvoiceOpen(true);
     };
 
     const handleProcessRefund = () => {
-        // TODO: Open refund modal
-        toast.info('Refund processing coming soon');
+        setRefundDialogOpen(true);
     };
 
     const handleExportRevenue = () => {
@@ -61,6 +64,7 @@ export function AdminBillingDashboard() {
         toast.success('Syncing payment methods...');
     };
     const { data: metrics } = useSubscriptionMetrics();
+    const { data: invoices = [] } = useInvoices();
 
     // Calculate metrics
     const mrr = metrics?.total_mrr || 0;
@@ -73,13 +77,8 @@ export function AdminBillingDashboard() {
         ? ((churnedThisMonth / activeSubscriptions) * 100).toFixed(1)
         : '0.0';
 
-    // Mock invoice data (replace with real data later)
-    const recentInvoices = [
-        { id: 'INV-001', customer: 'Acme Corp', amount: 299, status: 'paid', date: '2026-02-10' },
-        { id: 'INV-002', customer: 'TechStart Inc', amount: 99, status: 'paid', date: '2026-02-09' },
-        { id: 'INV-003', customer: 'Design Co', amount: 199, status: 'pending', date: '2026-02-08' },
-        { id: 'INV-004', customer: 'Dev Agency', amount: 299, status: 'paid', date: '2026-02-07' },
-    ];
+    // Get recent invoices (last 5)
+    const recentInvoices = invoices.slice(0, 5);
 
     return (
         <div className="p-6 space-y-6">
@@ -178,32 +177,35 @@ export function AdminBillingDashboard() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className="space-y-4">
-                            {recentInvoices.map((invoice) => (
-                                <div key={invoice.id} className="flex items-center justify-between">
-                                    <div className="flex items-center gap-3">
-                                        <FileText className="h-5 w-5 text-muted-foreground" />
-                                        <div>
-                                            <p className="font-medium">{invoice.id}</p>
-                                            <p className="text-sm text-muted-foreground">{invoice.customer}</p>
+                        {recentInvoices.length === 0 ? (
+                            <div className="text-center py-8 text-muted-foreground">
+                                No invoices found
+                            </div>
+                        ) : (
+                            <div className="space-y-4">
+                                {recentInvoices.map((invoice) => (
+                                    <div key={invoice.id} className="flex items-center justify-between">
+                                        <div className="flex items-center gap-3">
+                                            <FileText className="h-5 w-5 text-muted-foreground" />
+                                            <div>
+                                                <p className="font-medium">{invoice.stripe_invoice_id || invoice.id.slice(0, 8)}</p>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {new Date(invoice.created_at).toLocaleDateString()}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div className="flex items-center gap-3">
+                                            <span className="font-semibold">
+                                                {formatInvoiceAmount(invoice.amount_due, invoice.currency)}
+                                            </span>
+                                            <Badge className={getInvoiceStatusColor(invoice.status)}>
+                                                {invoice.status}
+                                            </Badge>
                                         </div>
                                     </div>
-                                    <div className="flex items-center gap-3">
-                                        <span className="font-semibold">${invoice.amount}</span>
-                                        <Badge
-                                            variant={invoice.status === 'paid' ? 'default' : 'secondary'}
-                                            className={
-                                                invoice.status === 'paid'
-                                                    ? 'bg-green-500/20 text-green-700 border-green-500/30'
-                                                    : ''
-                                            }
-                                        >
-                                            {invoice.status}
-                                        </Badge>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
+                                ))}
+                            </div>
+                        )}
                     </CardContent>
                 </Card>
 
@@ -277,6 +279,10 @@ export function AdminBillingDashboard() {
                     </div>
                 </CardContent>
             </Card>
+
+            {/* Dialogs */}
+            <CreateInvoiceDialog open={createInvoiceOpen} onOpenChange={setCreateInvoiceOpen} />
+            <RefundDialog open={refundDialogOpen} onOpenChange={setRefundDialogOpen} />
         </div>
     );
 }

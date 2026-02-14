@@ -89,8 +89,7 @@ async function main() {
     console.log(`Project: ${supabaseUrl}\n`);
 
     const migrations = [
-        '20260214_collaboration.sql',
-        '202602115_pivot_tables.sql'
+        'consolidated_migrations.sql'
     ];
 
     for (const migration of migrations) {

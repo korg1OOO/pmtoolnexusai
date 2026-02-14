@@ -8,7 +8,7 @@ import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
 export function TenantDashboard() {
-    const navigate = navigate();
+    const nav = useNavigate();
     const [tenantId] = useState('default-tenant-id'); // TODO: Get from auth context
 
     const { data: overview, isLoading: overviewLoading } = useQuery({

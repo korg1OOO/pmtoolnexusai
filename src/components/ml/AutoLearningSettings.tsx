@@ -33,7 +33,7 @@ export function AutoLearningSettings() {
     const { data: config, isLoading } = useQuery({
         queryKey: ['auto-learning-config'],
         queryFn: async () => {
-            const { data, error } = await supabase
+            const { data, error } = await (supabase as any)
                 .from('ml_auto_learning_config')
                 .select('*')
                 .single();
@@ -46,7 +46,7 @@ export function AutoLearningSettings() {
     // Update config mutation
     const updateConfig = useMutation({
         mutationFn: async (updates: Partial<AutoLearningConfig>) => {
-            const { error } = await supabase
+            const { error } = await (supabase as any)
                 .from('ml_auto_learning_config')
                 .update(updates)
                 .eq('id', config?.id);

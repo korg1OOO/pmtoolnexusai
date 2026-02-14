@@ -6,6 +6,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase as _supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { logPrediction } from '@/services/mlPredictionService';
 
 const supabase = _supabase as any;
 
@@ -27,6 +28,7 @@ export interface AIInsight {
     created_at: string;
     expires_at: string | null;
     updated_at: string;
+    ml_prediction_id?: string; // Link to ML prediction for feedback
 }
 
 /**
@@ -90,6 +92,30 @@ export function useCreateInsight() {
             metadata?: Record<string, any>;
             expires_at?: string;
         }) => {
+            // Log prediction to ML system for learning
+            let mlPredictionId: string | undefined;
+            try {
+                const mlPrediction = await logPrediction({
+                    project_id: input.project_id,
+                    prediction_type: 'ai_insight',
+                    input_data: {
+                        category: input.category,
+                        metadata: input.metadata || {},
+                    },
+                    prediction: {
+                        title: input.title,
+                        description: input.description,
+                        category: input.category,
+                        trend: input.trend,
+                    },
+                    confidence: input.confidence,
+                });
+                mlPredictionId = mlPrediction.id;
+            } catch (mlError) {
+                console.error('Failed to log ML prediction:', mlError);
+                // Continue even if ML logging fails
+            }
+
             const { data, error } = await supabase
                 .from('ai_insights')
                 .insert({
@@ -99,14 +125,19 @@ export function useCreateInsight() {
                     description: input.description,
                     confidence: input.confidence,
                     trend: input.trend || null,
-                    metadata: input.metadata || {},
+                    metadata: {
+                        ...(input.metadata || {}),
+                        ml_prediction_id: mlPredictionId, // Store in metadata for now
+                    },
                     expires_at: input.expires_at || null,
                 })
                 .select()
                 .single();
 
             if (error) throw error;
-            return data;
+
+            // Add ml_prediction_id to returned data
+            return { ...data, ml_prediction_id: mlPredictionId };
         },
         onSuccess: (_, variables) => {
             queryClient.invalidateQueries({ queryKey: ['ai-insights', variables.project_id] });

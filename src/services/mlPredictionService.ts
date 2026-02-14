@@ -71,6 +71,7 @@ export async function recordFeedback(
     predictionId: string,
     feedback: PredictionFeedback
 ): Promise<void> {
+    // 1. Update prediction with feedback
     const { error } = await supabase
         .from('ml_predictions')
         .update({
@@ -84,6 +85,20 @@ export async function recordFeedback(
         .eq('id', predictionId);
 
     if (error) throw error;
+
+    // 2. AUTO-LEARNING: Analyze and create pattern
+    try {
+        const { analyzeAndCreatePattern } = await import('./autoLearningService');
+        await analyzeAndCreatePattern(predictionId, {
+            accepted: feedback.user_accepted,
+            modified: feedback.user_modified,
+            rating: feedback.user_rating || 0,
+            feedbackData: feedback.actual_outcome,
+        });
+    } catch (err) {
+        console.error('Auto-learning failed:', err);
+        // Don't throw - feedback is more important than pattern creation
+    }
 }
 
 /**

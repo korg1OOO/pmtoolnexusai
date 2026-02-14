@@ -19,6 +19,14 @@ import {
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
+import { AIInsightsAnalyticsCard } from '@/components/ml/analytics/AIInsightsAnalyticsCard';
+import { RiskAnalyticsCard } from '@/components/ml/analytics/RiskAnalyticsCard';
+import { ScheduleAnalyticsCard } from '@/components/ml/analytics/ScheduleAnalyticsCard';
+import { BudgetAnalyticsCard } from '@/components/ml/analytics/BudgetAnalyticsCard';
+import { AutoLearningSettings } from '@/components/ml/AutoLearningSettings';
+import { LearningVelocityCard } from '@/components/ml/analytics/LearningVelocityCard';
+import { AdvancedMLFeatures } from '@/components/ml/AdvancedMLFeatures';
 
 interface DashboardStats {
     totalPredictions: number;
@@ -32,6 +40,8 @@ interface DashboardStats {
 }
 
 export function MLDashboardPage() {
+    const navigate = useNavigate();
+
     // Fetch dashboard statistics
     const { data: stats, isLoading } = useQuery({
         queryKey: ['ml-dashboard-stats'],
@@ -120,9 +130,9 @@ export function MLDashboardPage() {
                         Monitor AI prediction accuracy and learning patterns
                     </p>
                 </div>
-                <Button variant="outline">
-                    <Settings className="h-4 w-4 mr-2" />
-                    Settings
+                <Button variant="outline" onClick={() => navigate('/admin/ml/analytics')}>
+                    <BarChart3 className="h-4 w-4 mr-2" />
+                    View Analytics
                 </Button>
             </div>
 
@@ -202,6 +212,29 @@ export function MLDashboardPage() {
                     </div>
                 </CardContent>
             </Card>
+
+            {/* AI Features Performance */}
+            <div>
+                <h2 className="text-xl font-semibold mb-4">AI Features Performance</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                    <AIInsightsAnalyticsCard />
+                    <RiskAnalyticsCard />
+                    <ScheduleAnalyticsCard />
+                    <BudgetAnalyticsCard />
+                </div>
+            </div>
+
+            {/* Auto-Learning System */}
+            <div>
+                <h2 className="text-xl font-semibold mb-4">Auto-Learning System</h2>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    <LearningVelocityCard />
+                    <AutoLearningSettings />
+                </div>
+            </div>
+
+            {/* Advanced ML Features */}
+            <AdvancedMLFeatures />
 
             {/* Recent Predictions */}
             <Card>

@@ -67,6 +67,7 @@ import {
   MLAccuracyPage,
   MLTrainingDataPage,
 } from './components/ml/MLPages';
+import { MLAnalyticsPage } from './components/ml/pages/MLAnalyticsPage';
 
 const queryClient = new QueryClient();
 
@@ -133,6 +134,7 @@ const App = () => (
                 <Route path="ml/retraining" element={<MLRetrainingPage />} />
                 <Route path="ml/accuracy" element={<MLAccuracyPage />} />
                 <Route path="ml/training-data" element={<MLTrainingDataPage />} />
+                <Route path="ml/analytics" element={<MLAnalyticsPage />} />
                 <Route path="users" element={<AdminUsers />} />
                 <Route path="pro-users" element={<AdminProUsers />} />
                 <Route path="content" element={<AdminContentManagement />} />

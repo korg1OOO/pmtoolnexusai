@@ -121,10 +121,13 @@ const navItems: NavItem[] = [
     children: [
       { id: 'meetings', label: 'AI Meetings', icon: Users, badge: 2, moduleKey: 'meetings' },
       { id: 'calendar', label: 'Calendar', icon: Calendar, alwaysShow: true },
+      { id: 'collaboration-spaces', label: 'Collaboration Spaces', icon: Users, alwaysShow: true },
       { id: 'team-chat', label: 'Team Chat', icon: MessageSquare, alwaysShow: true },
       { id: 'communications', label: 'Communications', icon: BarChart3, moduleKey: 'communications' },
       { id: 'notes', label: 'Notes', icon: BookOpen, moduleKey: 'notes' },
       { id: 'documents', label: 'Document Center', icon: BookOpen, alwaysShow: true },
+      { id: 'program-documents', label: 'Program Documents', icon: Folder, alwaysShow: true },
+      { id: 'knowledge-base', label: 'Knowledge Base', icon: BookOpen, alwaysShow: true },
       { id: 'resources', label: 'Resources', icon: Users, moduleKey: 'resources' },
       { id: 'team-management', label: 'Team Management', icon: Users, alwaysShow: true },
       { id: 'presentations', label: 'Presentations', icon: Presentation, moduleKey: 'presentations' },

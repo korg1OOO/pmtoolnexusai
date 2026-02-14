@@ -47,6 +47,9 @@ import { TeamChatView } from '@/components/views/TeamChatView';
 import { TeamManagementView } from '@/components/views/TeamManagementView';
 import { TrackingView } from '@/components/views/TrackingView';
 import { TimelinePlannerTab } from '@/components/views/TimelinePlannerTab';
+import { KnowledgeBaseView } from '@/components/views/KnowledgeBaseView';
+import { ProgramDocumentsView } from '@/components/views/ProgramDocumentsView';
+import { CollaborationSpacesView } from '@/components/views/CollaborationSpacesView';
 import { ProjectProvider, useProjectContext } from '@/contexts/ProjectContext';
 import { PresenceProvider, usePresenceContext } from '@/contexts/PresenceContext';
 import { EmptyProjectState } from '@/components/dashboard/EmptyProjectState';
@@ -146,6 +149,9 @@ const AppContent = () => {
       case 'create-project': return <ProjectCreationView />;
       case 'timeline-planner': return <TimelinePlannerTab />;
       case 'communication-intelligence': return <CommunicationIntelligenceView />;
+      case 'knowledge-base': return <KnowledgeBaseView />;
+      case 'program-documents': return <ProgramDocumentsView />;
+      case 'collaboration-spaces': return <CollaborationSpacesView />;
       default: return <DashboardHub />;
     }
   };

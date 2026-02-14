@@ -8,6 +8,7 @@ import { Shield, Plus, Search, Users, Calendar, CheckCircle, XCircle, Edit, Tras
 import { Badge } from '@/components/ui/badge';
 import { getUsers, getUserRoles, assignUserRole, revokeUserRole, User, UserRole } from '@/services/userService';
 import { toast } from 'sonner';
+import { useTenant } from '@/contexts/TenantContext';
 
 export function UserRoleManagement() {
     const [searchQuery, setSearchQuery] = useState('');
@@ -15,8 +16,7 @@ export function UserRoleManagement() {
     const [assignDialogOpen, setAssignDialogOpen] = useState(false);
     const queryClient = useQueryClient();
 
-    // TODO: Get tenantId from auth context
-    const tenantId = 'default-tenant';
+    const { tenantId } = useTenant();
 
     const { data: users, isLoading: usersLoading } = useQuery({
         queryKey: ['users', tenantId],

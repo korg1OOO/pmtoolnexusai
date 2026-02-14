@@ -8,11 +8,12 @@ import { Building, Plus, Edit, Trash2, Users, FolderKanban, Search } from 'lucid
 import { getWorkspaces, createWorkspace, updateWorkspace, deleteWorkspace, type WorkspaceListItem } from '@/services/tenantService';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { useTenant } from '@/contexts/TenantContext';
 
 export function WorkspaceManagement() {
     const navigate = useNavigate();
     const queryClient = useQueryClient();
-    const [tenantId] = useState('default-tenant-id'); // TODO: Get from auth context
+    const { tenantId } = useTenant();
     const [searchQuery, setSearchQuery] = useState('');
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);

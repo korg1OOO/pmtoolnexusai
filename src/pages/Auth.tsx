@@ -159,7 +159,13 @@ const Auth = () => {
                                         <div className="space-y-2">
                                             <div className="flex items-center justify-between">
                                                 <Label htmlFor="password">Password</Label>
-                                                <a href="#" className="text-xs text-indigo-400 hover:text-indigo-300">Forgot password?</a>
+                                                <button type="button" onClick={async () => {
+                                                    const email = (document.getElementById('email') as HTMLInputElement)?.value;
+                                                    if (!email) { toast.error('Please enter your email first'); return; }
+                                                    const { error } = await supabase.auth.resetPasswordForEmail(email);
+                                                    if (error) toast.error(error.message);
+                                                    else toast.success('Password reset email sent!');
+                                                }} className="text-xs text-indigo-400 hover:text-indigo-300">Forgot password?</button>
                                             </div>
                                             <div className="relative">
                                                 <Input id="password" name="password" type={showLoginPassword ? "text" : "password"} required className="h-11 pr-10" />

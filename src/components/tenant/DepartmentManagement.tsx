@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Building2, Plus, Edit, Trash2, Users, DollarSign, ChevronRight, ChevronDown } from 'lucide-react';
 import { getDepartments, createDepartment, updateDepartment, deleteDepartment } from '@/services/tenantService';
 import { toast } from 'sonner';
+import { useTenant } from '@/contexts/TenantContext';
 
 interface Department {
     id: string;
@@ -20,8 +21,7 @@ interface Department {
 }
 
 export function DepartmentManagement() {
-    // TODO: Get tenant ID from auth context
-    const tenantId = 'default-tenant-id';
+    const { tenantId } = useTenant();
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);

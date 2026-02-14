@@ -5,11 +5,12 @@ import { Button } from '@/components/ui/button';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line, PieChart, Pie, Cell } from 'recharts';
 import { TrendingUp, Users, FolderKanban, Building } from 'lucide-react';
 import { getTenantOverview, getWorkspaces } from '@/services/tenantService';
+import { useTenant } from '@/contexts/TenantContext';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 export function TenantAnalytics() {
-    const [tenantId] = useState('default-tenant-id');
+    const { tenantId } = useTenant();
     const [timeRange, setTimeRange] = useState('30d');
 
     const { data: overview } = useQuery({

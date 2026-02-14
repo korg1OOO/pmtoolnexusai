@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,10 +5,11 @@ import { Building, Users, FolderKanban, TrendingUp, Plus, Settings } from 'lucid
 import { getTenantOverview, getWorkspaces, type TenantOverview, type WorkspaceListItem } from '@/services/tenantService';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
+import { useTenant } from '@/contexts/TenantContext';
 
 export function TenantDashboard() {
     const nav = useNavigate();
-    const [tenantId] = useState('default-tenant-id'); // TODO: Get from auth context
+    const { tenantId } = useTenant();
 
     const { data: overview, isLoading: overviewLoading } = useQuery({
         queryKey: ['tenant-overview', tenantId],

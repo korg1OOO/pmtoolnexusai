@@ -7,9 +7,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { getTenantSettings, updateTenantSettings } from '@/services/tenantService';
 import { toast } from 'sonner';
 import { Building, Palette, Settings as SettingsIcon, Mail, Bell } from 'lucide-react';
+import { useTenant } from '@/contexts/TenantContext';
 
 export function TenantSettings() {
-    const [tenantId] = useState('default-tenant-id'); // TODO: Get from auth context
+    const { tenantId } = useTenant();
     const queryClient = useQueryClient();
 
     const { data: settings, isLoading } = useQuery({

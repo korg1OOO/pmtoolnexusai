@@ -7,6 +7,7 @@ import { Key, Users, TrendingUp, AlertCircle, CheckCircle } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip } from 'recharts';
 import { getLicenses, allocateLicense, deallocateLicense } from '@/services/tenantService';
 import { toast } from 'sonner';
+import { useTenant } from '@/contexts/TenantContext';
 
 interface LicensePool {
     id: string;
@@ -29,8 +30,7 @@ interface LicenseAllocation {
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444'];
 
 export function LicenseAllocation() {
-    // TODO: Get tenant ID from auth context
-    const tenantId = 'default-tenant-id';
+    const { tenantId } = useTenant();
     const queryClient = useQueryClient();
 
     // Fetch licenses from database

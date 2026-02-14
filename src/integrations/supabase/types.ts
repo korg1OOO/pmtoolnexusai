@@ -620,6 +620,36 @@ export type Database = {
           },
         ]
       }
+      ai_provider_api_keys: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          encrypted_key: string
+          id: string
+          is_active: boolean
+          provider: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          encrypted_key: string
+          id?: string
+          is_active?: boolean
+          provider: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          encrypted_key?: string
+          id?: string
+          is_active?: boolean
+          provider?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ai_provider_settings: {
         Row: {
           active: boolean | null
@@ -1253,6 +1283,114 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      departments: {
+        Row: {
+          budget: number | null
+          created_at: string
+          description: string | null
+          id: string
+          manager_id: string | null
+          member_count: number
+          name: string
+          parent_id: string | null
+          spent: number | null
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          budget?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          manager_id?: string | null
+          member_count?: number
+          name: string
+          parent_id?: string | null
+          spent?: number | null
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          budget?: number | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          manager_id?: string | null
+          member_count?: number
+          name?: string
+          parent_id?: string | null
+          spent?: number | null
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "departments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "departments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "departments_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      discount_codes: {
+        Row: {
+          applicable_plans: string[] | null
+          code: string
+          created_at: string
+          created_by: string | null
+          current_uses: number
+          discount_type: string
+          discount_value: number
+          id: string
+          is_active: boolean
+          max_uses: number | null
+          metadata: Json | null
+          updated_at: string
+          valid_from: string | null
+          valid_until: string | null
+        }
+        Insert: {
+          applicable_plans?: string[] | null
+          code: string
+          created_at?: string
+          created_by?: string | null
+          current_uses?: number
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          metadata?: Json | null
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Update: {
+          applicable_plans?: string[] | null
+          code?: string
+          created_at?: string
+          created_by?: string | null
+          current_uses?: number
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          is_active?: boolean
+          max_uses?: number | null
+          metadata?: Json | null
+          updated_at?: string
+          valid_from?: string | null
+          valid_until?: string | null
+        }
+        Relationships: []
       }
       document_approvers: {
         Row: {
@@ -2283,6 +2421,95 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      license_keys: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          current_uses: number
+          expires_at: string | null
+          id: string
+          key: string
+          max_uses: number
+          metadata: Json | null
+          plan: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          current_uses?: number
+          expires_at?: string | null
+          id?: string
+          key: string
+          max_uses?: number
+          metadata?: Json | null
+          plan?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          current_uses?: number
+          expires_at?: string | null
+          id?: string
+          key?: string
+          max_uses?: number
+          metadata?: Json | null
+          plan?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      licenses: {
+        Row: {
+          allocated_licenses: number
+          created_at: string
+          id: string
+          license_type: string
+          price_per_license: number | null
+          renewal_date: string | null
+          status: string
+          tenant_id: string
+          total_licenses: number
+          updated_at: string
+        }
+        Insert: {
+          allocated_licenses?: number
+          created_at?: string
+          id?: string
+          license_type: string
+          price_per_license?: number | null
+          renewal_date?: string | null
+          status?: string
+          tenant_id: string
+          total_licenses?: number
+          updated_at?: string
+        }
+        Update: {
+          allocated_licenses?: number
+          created_at?: string
+          id?: string
+          license_type?: string
+          price_per_license?: number | null
+          renewal_date?: string | null
+          status?: string
+          tenant_id?: string
+          total_licenses?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "licenses_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
             referencedColumns: ["id"]
           },
         ]
@@ -3762,7 +3989,9 @@ export type Database = {
           owner_id: string | null
           owner_name: string | null
           status: string | null
+          tenant_id: string | null
           updated_at: string
+          workspace_id: string | null
         }
         Insert: {
           created_at?: string
@@ -3773,7 +4002,9 @@ export type Database = {
           owner_id?: string | null
           owner_name?: string | null
           status?: string | null
+          tenant_id?: string | null
           updated_at?: string
+          workspace_id?: string | null
         }
         Update: {
           created_at?: string
@@ -3784,9 +4015,26 @@ export type Database = {
           owner_id?: string | null
           owner_name?: string | null
           status?: string | null
+          tenant_id?: string | null
           updated_at?: string
+          workspace_id?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "portfolios_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "portfolios_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       presentation_collaborators: {
         Row: {
@@ -4093,6 +4341,7 @@ export type Database = {
           end_date: string | null
           health: string | null
           id: string
+          is_active: boolean | null
           manager_id: string | null
           manager_name: string | null
           name: string
@@ -4100,7 +4349,9 @@ export type Database = {
           spent: number | null
           start_date: string | null
           status: string | null
+          tenant_id: string | null
           updated_at: string
+          workspace_id: string | null
         }
         Insert: {
           budget?: number | null
@@ -4109,6 +4360,7 @@ export type Database = {
           end_date?: string | null
           health?: string | null
           id?: string
+          is_active?: boolean | null
           manager_id?: string | null
           manager_name?: string | null
           name: string
@@ -4116,7 +4368,9 @@ export type Database = {
           spent?: number | null
           start_date?: string | null
           status?: string | null
+          tenant_id?: string | null
           updated_at?: string
+          workspace_id?: string | null
         }
         Update: {
           budget?: number | null
@@ -4125,6 +4379,7 @@ export type Database = {
           end_date?: string | null
           health?: string | null
           id?: string
+          is_active?: boolean | null
           manager_id?: string | null
           manager_name?: string | null
           name?: string
@@ -4132,7 +4387,9 @@ export type Database = {
           spent?: number | null
           start_date?: string | null
           status?: string | null
+          tenant_id?: string | null
           updated_at?: string
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -4140,6 +4397,20 @@ export type Database = {
             columns: ["portfolio_id"]
             isOneToOne: false
             referencedRelation: "portfolios"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programs_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "programs_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -4341,6 +4612,62 @@ export type Database = {
           },
         ]
       }
+      project_custom_roles: {
+        Row: {
+          based_on_role: string | null
+          color: string | null
+          created_at: string
+          created_by: string | null
+          icon: string | null
+          id: string
+          is_custom: boolean
+          permissions: string[] | null
+          project_id: string
+          role_description: string | null
+          role_id: string
+          role_name: string
+          updated_at: string
+        }
+        Insert: {
+          based_on_role?: string | null
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          icon?: string | null
+          id?: string
+          is_custom?: boolean
+          permissions?: string[] | null
+          project_id: string
+          role_description?: string | null
+          role_id: string
+          role_name: string
+          updated_at?: string
+        }
+        Update: {
+          based_on_role?: string | null
+          color?: string | null
+          created_at?: string
+          created_by?: string | null
+          icon?: string | null
+          id?: string
+          is_custom?: boolean
+          permissions?: string[] | null
+          project_id?: string
+          role_description?: string | null
+          role_id?: string
+          role_name?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_custom_roles_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_evm_snapshots: {
         Row: {
           ac: number | null
@@ -4456,6 +4783,41 @@ export type Database = {
           },
         ]
       }
+      project_members: {
+        Row: {
+          id: string
+          is_active: boolean
+          joined_at: string
+          project_id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          is_active?: boolean
+          joined_at?: string
+          project_id: string
+          role?: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          is_active?: boolean
+          joined_at?: string
+          project_id?: string
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_members_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_messages: {
         Row: {
           attachment_name: string | null
@@ -4557,7 +4919,9 @@ export type Database = {
           spent: number | null
           start_date: string
           status: string
+          tenant_id: string | null
           updated_at: string
+          workspace_id: string | null
         }
         Insert: {
           budget?: number | null
@@ -4575,7 +4939,9 @@ export type Database = {
           spent?: number | null
           start_date?: string
           status?: string
+          tenant_id?: string | null
           updated_at?: string
+          workspace_id?: string | null
         }
         Update: {
           budget?: number | null
@@ -4593,7 +4959,9 @@ export type Database = {
           spent?: number | null
           start_date?: string
           status?: string
+          tenant_id?: string | null
           updated_at?: string
+          workspace_id?: string | null
         }
         Relationships: [
           {
@@ -4601,6 +4969,20 @@ export type Database = {
             columns: ["program_id"]
             isOneToOne: false
             referencedRelation: "programs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -4966,6 +5348,53 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      spreadsheet_comments: {
+        Row: {
+          cell_reference: string
+          content: string
+          created_at: string
+          id: string
+          parent_id: string | null
+          resolved: boolean
+          spreadsheet_id: string
+          updated_at: string
+          user_id: string
+          user_name: string | null
+        }
+        Insert: {
+          cell_reference: string
+          content: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          resolved?: boolean
+          spreadsheet_id: string
+          updated_at?: string
+          user_id: string
+          user_name?: string | null
+        }
+        Update: {
+          cell_reference?: string
+          content?: string
+          created_at?: string
+          id?: string
+          parent_id?: string | null
+          resolved?: boolean
+          spreadsheet_id?: string
+          updated_at?: string
+          user_id?: string
+          user_name?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "spreadsheet_comments_parent_id_fkey"
+            columns: ["parent_id"]
+            isOneToOne: false
+            referencedRelation: "spreadsheet_comments"
             referencedColumns: ["id"]
           },
         ]
@@ -5762,6 +6191,47 @@ export type Database = {
           },
         ]
       }
+      team_members: {
+        Row: {
+          allocation_percentage: number | null
+          assigned_at: string
+          availability_status: string | null
+          id: string
+          role: string | null
+          skills: string[] | null
+          user_id: string | null
+          workspace_id: string
+        }
+        Insert: {
+          allocation_percentage?: number | null
+          assigned_at?: string
+          availability_status?: string | null
+          id?: string
+          role?: string | null
+          skills?: string[] | null
+          user_id?: string | null
+          workspace_id: string
+        }
+        Update: {
+          allocation_percentage?: number | null
+          assigned_at?: string
+          availability_status?: string | null
+          id?: string
+          role?: string | null
+          skills?: string[] | null
+          user_id?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teams: {
         Row: {
           created_at: string
@@ -5793,6 +6263,51 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      tenants: {
+        Row: {
+          created_at: string
+          id: string
+          is_active: boolean
+          max_projects: number
+          max_users: number
+          max_workspaces: number
+          ml_config: Json
+          name: string
+          settings: Json | null
+          slug: string
+          subscription_tier: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          max_projects?: number
+          max_users?: number
+          max_workspaces?: number
+          ml_config?: Json
+          name: string
+          settings?: Json | null
+          slug: string
+          subscription_tier?: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          max_projects?: number
+          max_users?: number
+          max_workspaces?: number
+          ml_config?: Json
+          name?: string
+          settings?: Json | null
+          slug?: string
+          subscription_tier?: string
+          updated_at?: string
+        }
+        Relationships: []
       }
       ticket_replies: {
         Row: {
@@ -6131,6 +6646,7 @@ export type Database = {
           id: string
           role: string
           tenant_id: string
+          tenant_name: string | null
           user_id: string
         }
         Insert: {
@@ -6138,6 +6654,7 @@ export type Database = {
           id?: string
           role?: string
           tenant_id?: string
+          tenant_name?: string | null
           user_id: string
         }
         Update: {
@@ -6145,9 +6662,246 @@ export type Database = {
           id?: string
           role?: string
           tenant_id?: string
+          tenant_name?: string | null
           user_id?: string
         }
         Relationships: []
+      }
+      workspace_budgets: {
+        Row: {
+          allocated_budget: number
+          created_at: string
+          forecast: number
+          id: string
+          period_end: string | null
+          period_start: string | null
+          spent_budget: number
+          total_budget: number
+          updated_at: string
+          variance: number
+          workspace_id: string
+        }
+        Insert: {
+          allocated_budget?: number
+          created_at?: string
+          forecast?: number
+          id?: string
+          period_end?: string | null
+          period_start?: string | null
+          spent_budget?: number
+          total_budget?: number
+          updated_at?: string
+          variance?: number
+          workspace_id: string
+        }
+        Update: {
+          allocated_budget?: number
+          created_at?: string
+          forecast?: number
+          id?: string
+          period_end?: string | null
+          period_start?: string | null
+          spent_budget?: number
+          total_budget?: number
+          updated_at?: string
+          variance?: number
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_budgets_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspace_members: {
+        Row: {
+          id: string
+          is_active: boolean
+          joined_at: string
+          permissions: Json
+          role: string
+          tenant_id: string
+          user_id: string
+          workspace_id: string
+        }
+        Insert: {
+          id?: string
+          is_active?: boolean
+          joined_at?: string
+          permissions?: Json
+          role?: string
+          tenant_id: string
+          user_id: string
+          workspace_id: string
+        }
+        Update: {
+          id?: string
+          is_active?: boolean
+          joined_at?: string
+          permissions?: Json
+          role?: string
+          tenant_id?: string
+          user_id?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_members_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_members_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspace_resources: {
+        Row: {
+          allocated_capacity: number
+          available_capacity: number
+          created_at: string
+          id: string
+          resource_name: string
+          resource_type: string
+          total_capacity: number
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          allocated_capacity?: number
+          available_capacity?: number
+          created_at?: string
+          id?: string
+          resource_name: string
+          resource_type?: string
+          total_capacity?: number
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          allocated_capacity?: number
+          available_capacity?: number
+          created_at?: string
+          id?: string
+          resource_name?: string
+          resource_type?: string
+          total_capacity?: number
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_resources_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspace_teams: {
+        Row: {
+          allocation_percentage: number | null
+          assigned_at: string
+          availability_status: string | null
+          id: string
+          role: string | null
+          skills: string[] | null
+          user_id: string | null
+          workspace_id: string
+        }
+        Insert: {
+          allocation_percentage?: number | null
+          assigned_at?: string
+          availability_status?: string | null
+          id?: string
+          role?: string | null
+          skills?: string[] | null
+          user_id?: string | null
+          workspace_id: string
+        }
+        Update: {
+          allocation_percentage?: number | null
+          assigned_at?: string
+          availability_status?: string | null
+          id?: string
+          role?: string | null
+          skills?: string[] | null
+          user_id?: string | null
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_teams_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspaces: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          inherit_tenant_ml: boolean
+          is_active: boolean
+          ml_sharing_enabled: boolean
+          ml_sharing_scope: string
+          name: string
+          settings: Json
+          slug: string
+          tenant_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          inherit_tenant_ml?: boolean
+          is_active?: boolean
+          ml_sharing_enabled?: boolean
+          ml_sharing_scope?: string
+          name: string
+          settings?: Json
+          slug: string
+          tenant_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          inherit_tenant_ml?: boolean
+          is_active?: boolean
+          ml_sharing_enabled?: boolean
+          ml_sharing_scope?: string
+          name?: string
+          settings?: Json
+          slug?: string
+          tenant_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspaces_tenant_id_fkey"
+            columns: ["tenant_id"]
+            isOneToOne: false
+            referencedRelation: "tenants"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {

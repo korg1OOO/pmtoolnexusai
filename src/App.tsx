@@ -63,6 +63,7 @@ import { EmailTemplateEditor } from '@/components/admin/pages/EmailTemplateEdito
 import { EmailCampaignBuilder } from '@/components/admin/pages/EmailCampaignBuilder';
 import { EmailCampaignDetail } from '@/components/admin/pages/EmailCampaignDetail';
 import { DatabaseMigrationPanel } from '@/components/admin/DatabaseMigrationPanel';
+import { TenantDashboard, WorkspaceManagement, TenantSettings, TenantUserManagement, TenantAnalytics, DepartmentManagement, LicenseAllocation } from '@/components/tenant';
 import {
   MLModelsPage,
   MLAlertsPage,
@@ -118,6 +119,70 @@ const App = () => (
                   <ProjectProvider>
                     <PresenceProvider>
                       <MLAnalyticsHub />
+                    </PresenceProvider>
+                  </ProjectProvider>
+                </ProtectedRoute>
+              } />
+              {/* Tenant Admin Routes */}
+              <Route path="/tenant" element={
+                <ProtectedRoute>
+                  <ProjectProvider>
+                    <PresenceProvider>
+                      <TenantDashboard />
+                    </PresenceProvider>
+                  </ProjectProvider>
+                </ProtectedRoute>
+              } />
+              <Route path="/tenant/workspaces" element={
+                <ProtectedRoute>
+                  <ProjectProvider>
+                    <PresenceProvider>
+                      <WorkspaceManagement />
+                    </PresenceProvider>
+                  </ProjectProvider>
+                </ProtectedRoute>
+              } />
+              <Route path="/tenant/settings" element={
+                <ProtectedRoute>
+                  <ProjectProvider>
+                    <PresenceProvider>
+                      <TenantSettings />
+                    </PresenceProvider>
+                  </ProjectProvider>
+                </ProtectedRoute>
+              } />
+              <Route path="/tenant/users" element={
+                <ProtectedRoute>
+                  <ProjectProvider>
+                    <PresenceProvider>
+                      <TenantUserManagement />
+                    </PresenceProvider>
+                  </ProjectProvider>
+                </ProtectedRoute>
+              } />
+              <Route path="/tenant/analytics" element={
+                <ProtectedRoute>
+                  <ProjectProvider>
+                    <PresenceProvider>
+                      <TenantAnalytics />
+                    </PresenceProvider>
+                  </ProjectProvider>
+                </ProtectedRoute>
+              } />
+              <Route path="/tenant/departments" element={
+                <ProtectedRoute>
+                  <ProjectProvider>
+                    <PresenceProvider>
+                      <DepartmentManagement />
+                    </PresenceProvider>
+                  </ProjectProvider>
+                </ProtectedRoute>
+              } />
+              <Route path="/tenant/licenses" element={
+                <ProtectedRoute>
+                  <ProjectProvider>
+                    <PresenceProvider>
+                      <LicenseAllocation />
                     </PresenceProvider>
                   </ProjectProvider>
                 </ProtectedRoute>

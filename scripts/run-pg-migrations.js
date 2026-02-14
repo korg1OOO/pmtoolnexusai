@@ -36,10 +36,10 @@ async function runMigrations() {
         console.log('✅ Connected to database\n');
 
         // Read migration file
-        const migrationPath = join(__dirname, '../supabase/migrations/consolidated_migrations.sql');
+        const migrationPath = join(__dirname, '../supabase/migrations/20260214_ml_learning_loop.sql');
         const sql = readFileSync(migrationPath, 'utf-8');
 
-        console.log('📄 Executing consolidated_migrations.sql...\n');
+        console.log('📄 Executing 20260214_ml_learning_loop.sql...\n');
 
         // Execute the entire SQL file
         await client.query(sql);
@@ -51,7 +51,13 @@ async function runMigrations() {
             SELECT table_name 
             FROM information_schema.tables 
             WHERE table_schema = 'public' 
-            AND table_name IN ('security_audit_logs', 'password_policies', 'refunds')
+            AND table_name IN (
+                'ml_predictions',
+                'ml_learning_patterns',
+                'ml_user_preferences',
+                'ml_experiments',
+                'ml_model_metrics'
+            )
             ORDER BY table_name;
         `);
 
@@ -64,7 +70,7 @@ async function runMigrations() {
             console.log('   ⚠️  No tables found (they may already exist)');
         }
 
-        console.log('\n🎉 Migration deployment complete!');
+        console.log('\n🎉 ML Learning Loop migration complete!');
 
     } catch (error) {
         console.error('\n❌ Migration failed:');

@@ -537,3 +537,54 @@ export interface DelegationHistoryFilters {
     startDate?: string;
     endDate?: string;
 }
+
+// ============================================================================
+// ADVANCED FILTERING TYPES
+// ============================================================================
+
+export interface FilterState {
+    dateRange?: {
+        start: Date | null;
+        end: Date | null;
+    };
+    projects?: string[];
+    users?: string[];
+    statuses?: string[];
+    categories?: string[];
+    priorities?: string[];
+    customFilters?: Record<string, any>;
+}
+
+export interface FilterOption {
+    value: string;
+    label: string;
+    count?: number;
+    disabled?: boolean;
+    icon?: string;
+}
+
+export interface FilterPreset {
+    id: string;
+    name: string;
+    description?: string;
+    filters: FilterState;
+    isDefault: boolean;
+    createdAt: Date;
+    updatedAt: Date;
+    userId: string;
+}
+
+export interface FilterConfig {
+    key: string;
+    label: string;
+    type: 'date-range' | 'multi-select' | 'single-select' | 'text' | 'number';
+    options?: FilterOption[];
+    placeholder?: string;
+    required?: boolean;
+    defaultValue?: any;
+}
+
+export interface DateRangePreset {
+    label: string;
+    getValue: () => { start: Date; end: Date };
+}

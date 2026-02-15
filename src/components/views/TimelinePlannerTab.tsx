@@ -612,7 +612,7 @@ interface TimelinePlannerTabProps {
     demo?: boolean;
 }
 
-export function TimelinePlannerTab({ demo = false }: TimelinePlannerTabProps) {
+export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabProps) {
     const { settings, activeGlobalPanel, setActiveGlobalPanel } = useProjectContext();
     const [state, dispatch] = React.useReducer(timelineReducer, {
         swimlanes: [], // Initial empty state, will load from DB

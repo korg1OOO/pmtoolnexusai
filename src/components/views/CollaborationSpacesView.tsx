@@ -2,7 +2,7 @@ import React from 'react';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { CollaborationSpaces } from '@/components/program/CollaborationSpaces';
 
-export function CollaborationSpacesView() {
+export default function CollaborationSpacesView() {
     const { settings } = useProjectContext();
 
     if (!settings?.id) {

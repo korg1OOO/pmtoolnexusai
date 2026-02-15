@@ -106,7 +106,7 @@ const roles: Role[] = [
 // Teams are currently derived dynamically from user roles
 
 
-export function TeamManagementView() {
+export default function TeamManagementView() {
   const { settings } = useProjectContext();
   const { data: members, isLoading } = useTeamMembers(settings.id);
   const addMember = useAddTeamMember();

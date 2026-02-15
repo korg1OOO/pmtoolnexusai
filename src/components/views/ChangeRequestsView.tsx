@@ -30,7 +30,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
 import { toast } from 'sonner';
 
-export function ChangeRequestsView() {
+export default function ChangeRequestsView() {
   const { settings } = useProjectContext();
   const { data: changeRequests = [], isLoading } = useChangeRequests(settings.id);
   const updateCR = useUpdateChangeRequest();

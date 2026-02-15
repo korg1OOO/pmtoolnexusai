@@ -65,7 +65,7 @@ interface ExtendedProject extends TimelineProject {
   burndownData: { week: string; planned: number; actual: number }[];
 }
 
-export function ProgramTimelineView() {
+export default function ProgramTimelineView() {
   const [timeScale, setTimeScale] = useState<TimeScale>('quarter');
   const [viewDate, setViewDate] = useState(new Date(2024, 0, 1));
   const { data: portfolios, isLoading: isLoadingPortfolios } = usePortfolios();

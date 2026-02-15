@@ -18,7 +18,7 @@ import { TrackedAIService } from '@/services/trackedAIService';
 import { AIRiskDiscovery, ProjectContext, ValueEngineering } from '@/types/ai-pm';
 import { AlertCircle, Plus } from 'lucide-react';
 
-export function StrategicDashboardView() {
+export default function StrategicDashboardView() {
   const { settings } = useProjectContext();
   const { data: insights, isLoading, refetch } = useStrategicInsights(settings.id);
   const [selectedOption, setSelectedOption] = useState<string | null>('OPT-001');

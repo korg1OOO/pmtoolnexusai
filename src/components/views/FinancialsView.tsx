@@ -44,7 +44,7 @@ function formatCurrency(value: number): string {
   return `$${value.toFixed(0)}`;
 }
 
-export function FinancialsView() {
+export default function FinancialsView() {
   const { settings } = useProjectContext();
   const { budget, invoices, isLoading: isFinancialsLoading } = useFinancials(settings.id);
   const { data: resources, isLoading: isResourcesLoading } = useResources(settings.id);

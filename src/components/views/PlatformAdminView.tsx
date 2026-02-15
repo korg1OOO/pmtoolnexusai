@@ -4,7 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DatabaseMigrationPanel } from '@/components/admin/DatabaseMigrationPanel';
 
-export function PlatformAdminView() {
+export default function PlatformAdminView() {
     const [activeTab, setActiveTab] = useState('database');
 
     return (

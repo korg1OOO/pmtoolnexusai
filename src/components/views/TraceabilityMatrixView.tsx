@@ -126,7 +126,7 @@ interface TraceabilityMatrixViewProps {
   demo?: boolean;
 }
 
-export function TraceabilityMatrixView({ demo = false }: TraceabilityMatrixViewProps) {
+export default function TraceabilityMatrixView({ demo = false }: TraceabilityMatrixViewProps) {
   // For testing purposes, we use the fixed project ID or fetch the first one
   const { data: projects } = useQuery({
     queryKey: ['projects-traceability'],

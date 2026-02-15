@@ -2,7 +2,7 @@ import React from 'react';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { KnowledgeBaseBrowser } from '@/components/program/KnowledgeBaseBrowser';
 
-export function KnowledgeBaseView() {
+export default function KnowledgeBaseView() {
     const { settings } = useProjectContext();
 
     if (!settings?.id) {

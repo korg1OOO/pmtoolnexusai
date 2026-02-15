@@ -36,7 +36,7 @@ export function NotFoundView() {
                         <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => navigate('/?view=dashboard')}
+                            onClick={() => navigate('/dashboard')}
                         >
                             Dashboard
                         </Button>
@@ -50,14 +50,14 @@ export function NotFoundView() {
                         <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => navigate('/?view=portfolio-management')}
+                            onClick={() => navigate('/portfolio')}
                         >
                             Portfolios
                         </Button>
                         <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => navigate('/?view=settings')}
+                            onClick={() => navigate('/settings')}
                         >
                             Settings
                         </Button>

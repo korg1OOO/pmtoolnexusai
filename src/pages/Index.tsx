@@ -1,177 +1,25 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { AppShell } from '@/components/layout/AppShell';
-import { DashboardHub } from '@/components/views/DashboardHub';
-import { ProjectPlanView } from '@/components/views/ProjectPlanView';
-import { GanttView } from '@/components/views/GanttView';
-import { SprintBoardView } from '@/components/views/SprintBoardView';
-import { FinancialsView } from '@/components/views/FinancialsView';
-import { NotesView } from '@/components/views/NotesView';
-import { ResourcesView } from '@/components/views/ResourcesView';
-import { PresentationsView } from '@/components/views/PresentationsView';
-import { PortfolioView } from '@/components/views/PortfolioView';
-import { ProgramTimelineView } from '@/components/views/ProgramTimelineView';
-import { ExecutiveDashboardView } from '@/components/views/ExecutiveDashboardView';
-import { MilestonesView } from '@/components/views/MilestonesView';
-import { BacklogView } from '@/components/views/BacklogView';
-import { ReportsView } from '@/components/views/ReportsView';
-import { EnhancedMeetingsView } from '@/components/views/EnhancedMeetingsView';
-import { CalendarView } from '@/components/views/CalendarView';
-import { StrategicDashboardView } from '@/components/views/StrategicDashboardView';
-import { CommunicationIntelligenceView } from '@/components/views/CommunicationIntelligenceView';
-import { CommunicationsView } from '@/components/communications/CommunicationsView';
-import { IssuesRegisterView } from '@/components/views/IssuesRegisterView';
-import { ActionsView } from '@/components/views/ActionsView';
-import { TraceabilityMatrixView } from '@/components/views/TraceabilityMatrixView';
-import { ChildPlansView } from '@/components/views/ChildPlansView';
-import { ChildGanttView } from '@/components/views/ChildGanttView';
-import { UserSettingsView } from '@/components/views/UserSettingsView';
-import { ProjectAdminView } from '@/components/views/ProjectAdminView';
-import { PlatformAdminView } from '@/components/views/PlatformAdminView';
-import { PlanningView } from '@/components/views/PlanningView';
-import { ProjectCreationView } from '@/components/views/ProjectCreationView';
-import { TemplatesAdminView } from '@/components/views/TemplatesAdminView';
-import { MorningBriefingView } from '@/components/views/MorningBriefingView';
-import { ProjectCharterView } from '@/components/views/ProjectCharterView';
-import { StakeholderRegisterView } from '@/components/views/StakeholderRegisterView';
-import { ScenariosView } from '@/components/views/ScenariosView';
-import { DeliverablesView } from '@/components/views/DeliverablesView';
-import { ChangeRequestsView } from '@/components/views/ChangeRequestsView';
-import { EVMView } from '@/components/views/EVMView';
-import { DocumentCenterView } from '@/components/views/DocumentCenterView';
-import { FinalReportView } from '@/components/views/FinalReportView';
-import { LessonsLearnedView } from '@/components/views/LessonsLearnedView';
-import { RisksView } from '@/components/views/RisksView';
-import { DecisionsView } from '@/components/views/DecisionsView';
-import { TeamChatView } from '@/components/views/TeamChatView';
-import { TeamManagementView } from '@/components/views/TeamManagementView';
-import { TrackingView } from '@/components/views/TrackingView';
-import { TimelinePlannerTab } from '@/components/views/TimelinePlannerTab';
-import { KnowledgeBaseView } from '@/components/views/KnowledgeBaseView';
-import { ProgramDocumentsView } from '@/components/views/ProgramDocumentsView';
-import { CollaborationSpacesView } from '@/components/views/CollaborationSpacesView';
-import { ProjectProvider, useProjectContext } from '@/contexts/ProjectContext';
-import { PresenceProvider, usePresenceContext } from '@/contexts/PresenceContext';
-import { EmptyProjectState } from '@/components/dashboard/EmptyProjectState';
+/**
+ * Index Page - Redirects to Dashboard
+ * All views are now handled by individual routes in App.tsx
+ */
 
-const AppContent = () => {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const viewFromUrl = searchParams.get('view') || 'dashboard';
-  const [activeView, setActiveView] = useState(viewFromUrl);
-  const { settings, loading } = useProjectContext();
-  const { setCurrentProjectId } = usePresenceContext();
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
-  // Sync project ID to presence context for real-time features
+export default function Index() {
+  const navigate = useNavigate();
+
   useEffect(() => {
-    if (settings?.id) {
-      setCurrentProjectId(settings.id);
-    }
-  }, [settings?.id, setCurrentProjectId]);
+    // Redirect to dashboard - all views are now individual routes
+    navigate('/dashboard', { replace: true });
+  }, [navigate]);
 
-  // Sync URL when view changes
-  const handleViewChange = useCallback((view: string) => {
-    setActiveView(view);
-    setSearchParams({ view }, { replace: true });
-  }, [setSearchParams]);
-
-  // Sync state when URL changes (e.g., browser back/forward)
-  useEffect(() => {
-    const urlView = searchParams.get('view') || 'dashboard';
-    if (urlView !== activeView) {
-      setActiveView(urlView);
-    }
-  }, [searchParams, activeView]);
-
-  // Show loading state
-  if (loading) {
-    console.log('[Index] Rendering loading state');
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
+  return (
+    <div className="flex items-center justify-center min-h-screen">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+        <p className="text-muted-foreground">Redirecting to dashboard...</p>
       </div>
-    );
-  }
-
-  // Show empty state if no project is loaded AND not trying to create one
-  if (!settings.id && activeView !== 'create-project') {
-    console.log('[Index] No project found, showing empty state. Settings:', settings);
-    return <EmptyProjectState onCreateProject={() => handleViewChange('create-project')} />;
-  }
-
-  console.log('[Index] Project loaded, rendering views. Settings:', settings);
-
-
-  const renderView = () => {
-    switch (activeView) {
-      case 'dashboard': return <DashboardHub onViewChange={handleViewChange} />;
-      case 'morning-briefing': return <MorningBriefingView />;
-      case 'portfolio': return <PortfolioView />;
-      case 'program-timeline': return <ProgramTimelineView />;
-      case 'reports': return <ReportsView />;
-      case 'project-charter': return <ProjectCharterView />;
-      case 'stakeholders': return <StakeholderRegisterView />;
-      case 'traceability': return <TraceabilityMatrixView />;
-      case 'project-plan': return <PlanningView />;
-      case 'child-plans': return <ChildPlansView />;
-      case 'gantt': return <GanttView />;
-      case 'child-gantt': return <ChildGanttView />;
-      case 'milestones': return <MilestonesView />;
-      case 'scenarios': return <ScenariosView />;
-      case 'deliverables': return <DeliverablesView />;
-      case 'sprints': return <SprintBoardView />;
-      case 'backlog': return <BacklogView />;
-      case 'actions': return <ActionsView />;
-      case 'risks': return <RisksView />;
-      case 'issues': return <IssuesRegisterView />;
-      case 'decisions': return <DecisionsView />;
-      case 'change-requests': return <ChangeRequestsView />;
-      case 'financials': return <FinancialsView />;
-      case 'evm': return <EVMView />;
-      case 'tracking': return <TrackingView />;
-      case 'meetings': return <EnhancedMeetingsView />;
-      case 'calendar': return <CalendarView />;
-      case 'team-chat': return <TeamChatView />;
-      case 'communications': return <CommunicationsView />;
-      case 'notes': return <NotesView />;
-      case 'documents': return <DocumentCenterView />;
-      case 'resources': return <ResourcesView />;
-      case 'team-management': return <TeamManagementView />;
-      case 'presentations': return <PresentationsView />;
-      case 'final-report': return <FinalReportView />;
-      case 'lessons-learned': return <LessonsLearnedView />;
-      case 'admin-project': return <ProjectAdminView />;
-      case 'admin-platform': return <PlatformAdminView />;
-      case 'admin-templates': return <TemplatesAdminView />;
-      case 'settings': return <UserSettingsView />;
-      case 'create-project': return <ProjectCreationView />;
-      case 'timeline-planner': return <TimelinePlannerTab />;
-      case 'communication-intelligence': return <CommunicationIntelligenceView />;
-      case 'knowledge-base': return <KnowledgeBaseView />;
-      case 'program-documents': return <ProgramDocumentsView />;
-      case 'collaboration-spaces': return <CollaborationSpacesView />;
-      default: return <DashboardHub />;
-    }
-  };
-
-  return (
-    <AppShell activeView={activeView} onViewChange={handleViewChange}>
-      {renderView()}
-    </AppShell>
+    </div>
   );
-};
-
-const Index = () => {
-  return (
-    <ProjectProvider>
-      <PresenceProvider>
-        <AppContent />
-      </PresenceProvider>
-    </ProjectProvider>
-  );
-};
-
-export default Index;
-
+}

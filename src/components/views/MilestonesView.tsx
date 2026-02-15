@@ -102,7 +102,7 @@ const getCriteriaIcon = (status: GateCriteria['status']) => {
   }
 };
 
-export function MilestonesView() {
+export default function MilestonesView() {
   const { settings } = useProjectContext();
   const { data: milestones, isLoading: milestonesLoading, createMilestone, updateMilestone, deleteMilestone } = useMilestones(settings.id);
   const { gates, isLoading: gatesLoading, approveGate } = useStageGates(settings.id);

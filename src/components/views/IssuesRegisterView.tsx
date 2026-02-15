@@ -398,7 +398,7 @@ function AddIssueDialog({ open, onOpenChange, onSubmit }: AddIssueDialogProps) {
   );
 }
 
-export function IssuesRegisterView() {
+export default function IssuesRegisterView() {
   const { issues, loading, createIssue, updateIssue, deleteIssue, openIssues, criticalIssues, slaBreachedIssues } = useIssues();
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);

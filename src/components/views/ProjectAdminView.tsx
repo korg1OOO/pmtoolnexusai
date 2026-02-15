@@ -144,7 +144,7 @@ const roleColors: Record<string, string> = {
   viewer: 'bg-muted text-muted-foreground border-border',
 };
 
-export function ProjectAdminView() {
+export default function ProjectAdminView() {
   const [activeTab, setActiveTab] = useState('settings');
   const { settings, updateMethodology, updateModuleVisibility, updateSettings, getDefaultModules } = useProjectContext();
   const [currentUserId, setCurrentUserId] = useState<string>('');

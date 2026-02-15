@@ -60,7 +60,7 @@ const getUtilizationStatus = (allocation: number) => {
   return { label: 'Under-utilized', color: 'muted' };
 };
 
-export function ResourcesView() {
+export default function ResourcesView() {
   const { settings } = useProjectContext();
   const projectId = settings.id;
 

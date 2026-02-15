@@ -33,7 +33,7 @@ import { usePrograms } from '@/hooks/usePrograms';
 import { useRisks } from '@/hooks/useRisks';
 import { useOrgFinancials } from '@/hooks/useOrgFinancials';
 
-export function ExecutiveDashboardView() {
+export default function ExecutiveDashboardView() {
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
 
   const { data: projects = [], isLoading: loadingProjects, refetch: refetchProjects } = useProjects();

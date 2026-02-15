@@ -47,7 +47,7 @@ import { useProjectContext } from '@/contexts/ProjectContext';
 import { useStakeholders, Stakeholder } from '@/hooks/useStakeholders';
 import { Loader2 } from 'lucide-react';
 
-export function StakeholderRegisterView() {
+export default function StakeholderRegisterView() {
   const { settings } = useProjectContext();
   const { data: stakeholders = [], isLoading } = useStakeholders(settings.id);
   const [searchQuery, setSearchQuery] = useState('');

@@ -82,7 +82,7 @@ function DashboardSkeleton() {
   );
 }
 
-export function DashboardHub({ onViewChange }: DashboardHubProps) {
+export default function DashboardHub({ onViewChange }: DashboardHubProps) {
   const [activeDashboard, setActiveDashboard] = useState<DashboardType>('project');
   const contentRef = useRef<HTMLDivElement>(null);
   const [searchParams, setSearchParams] = useSearchParams();

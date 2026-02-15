@@ -162,7 +162,7 @@ function TaskRow({ task, expanded, onToggle, selected, onSelect }: TaskRowProps)
   );
 }
 
-export function ProjectPlanView() {
+export default function ProjectPlanView() {
   const { settings } = useProjectContext();
   const projectId = settings.id;
 

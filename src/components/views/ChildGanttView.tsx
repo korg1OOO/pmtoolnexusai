@@ -40,7 +40,7 @@ interface ChildTask {
 
 type TimeScale = 'day' | 'week' | 'month';
 
-export function ChildGanttView() {
+export default function ChildGanttView() {
   const [timeScale, setTimeScale] = useState<TimeScale>('week');
   const [showCriticalPath, setShowCriticalPath] = useState(true);
   const [showSprintLinks, setShowSprintLinks] = useState(true);

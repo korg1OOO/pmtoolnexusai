@@ -1,11 +1,11 @@
 import React, { useRef } from 'react';
-import { TimelinePlannerTab } from '@/components/views/TimelinePlannerTab';
-import { PlanningView } from '@/components/views/PlanningView';
-import { MorningBriefingView } from '@/components/views/MorningBriefingView';
-import { ReportsView } from '@/components/views/ReportsView';
-import { TraceabilityMatrixView } from '@/components/views/TraceabilityMatrixView';
-import { EnhancedMeetingsView } from '@/components/views/EnhancedMeetingsView';
-import { NotesView } from '@/components/views/NotesView';
+import TimelinePlannerTab from '@/components/views/TimelinePlannerTab';
+import PlanningView from '@/components/views/PlanningView';
+import MorningBriefingView from '@/components/views/MorningBriefingView';
+import ReportsView from '@/components/views/ReportsView';
+import TraceabilityMatrixView from '@/components/views/TraceabilityMatrixView';
+import EnhancedMeetingsView from '@/components/views/EnhancedMeetingsView';
+import NotesView from '@/components/views/NotesView';
 import { motion, useScroll, useTransform, useSpring } from 'framer-motion';
 import { ChevronDown, ArrowLeft } from 'lucide-react';
 import { Button } from '@/components/ui/button';

@@ -379,7 +379,7 @@ function CreateDecisionDialog({ open, onOpenChange, onCreate }: CreateDecisionDi
   );
 }
 
-export function DecisionsView() {
+export default function DecisionsView() {
   const { decisions, loading, createDecision, updateDecision, activeDecisions, pendingDecisions, supersededDecisions } = useDecisions();
   const [selectedDecision, setSelectedDecision] = useState<Decision | null>(null);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);

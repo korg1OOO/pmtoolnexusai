@@ -7,7 +7,7 @@ import {
   TrendingDown, TrendingUp, BarChart3, Clock,
   Info, Settings2, Loader2, Sparkles, Filter, Layout
 } from 'lucide-react';
-import { PlanningView } from '@/components/views/PlanningView';
+import PlanningView from '@/components/views/PlanningView';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -63,7 +63,7 @@ interface Scenario {
 
 
 
-export function ScenariosView() {
+export default function ScenariosView() {
   const { settings } = useProjectContext();
   const {
     data: fetchedScenarios = [],

@@ -31,7 +31,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-export function DocumentCenterView() {
+export default function DocumentCenterView() {
   const { settings } = useProjectContext();
   const { toast } = useToast();
   const projectId = settings?.id || undefined;

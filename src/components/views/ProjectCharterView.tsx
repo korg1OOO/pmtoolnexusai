@@ -27,7 +27,7 @@ import { Input } from '@/components/ui/input';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { useProjectCharter, useUpdateProjectCharter, ProjectCharter } from '@/hooks/useProjectCharter';
 
-export function ProjectCharterView() {
+export default function ProjectCharterView() {
   const { settings: project } = useProjectContext();
   const { data: charter, isLoading } = useProjectCharter(project?.id);
   const updateCharter = useUpdateProjectCharter();

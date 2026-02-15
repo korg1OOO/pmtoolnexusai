@@ -38,7 +38,7 @@ import { TrackedAIService } from '@/services/trackedAIService';
 import { supabase } from '@/integrations/supabase/client';
 
 
-export function CommunicationIntelligenceView() {
+export default function CommunicationIntelligenceView() {
   const { settings: project } = useProjectContext();
   const { accounts, syncAccount, isLoading: isLoadingAccounts } = useEmailAccounts(project?.id);
 

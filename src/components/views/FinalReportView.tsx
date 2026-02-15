@@ -23,7 +23,7 @@ import { PDFExporter, PDFExportSection } from '@/components/common/PDFExporter';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { useFinalReport, FinalReport } from '@/hooks/useFinalReport';
 
-export function FinalReportView() {
+export default function FinalReportView() {
   const contentRef = useRef<HTMLDivElement>(null);
   const { settings: project } = useProjectContext();
   const { data: report, isLoading } = useFinalReport(project?.id);

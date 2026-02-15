@@ -59,7 +59,7 @@ interface ReportsViewProps {
   demo?: boolean;
 }
 
-export function ReportsView({ demo = false }: ReportsViewProps) {
+export default function ReportsView({ demo = false }: ReportsViewProps) {
   const { settings } = useProjectContext();
   const { data: reports, isLoading, createReport, deleteReport } = useReports(settings.id);
 

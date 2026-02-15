@@ -346,7 +346,7 @@ function toThreadMessage(msg: ChatMessage): ThreadMessage {
 }
 
 // Main TeamChatView component
-export function TeamChatView() {
+export default function TeamChatView() {
   const { settings } = useProjectContext();
   const projectId = settings?.id;
 

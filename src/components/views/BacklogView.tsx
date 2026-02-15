@@ -264,7 +264,7 @@ function AddItemDialog({ open, onOpenChange, onSubmit, epics }: AddItemDialogPro
   );
 }
 
-export function BacklogView() {
+export default function BacklogView() {
   const { epics, loading: epicsLoading } = useEpics();
   const { items, loading: itemsLoading, createItem, updateItem, deleteItem, totalPoints, scheduledItems } = useBacklogItems();
   const [searchQuery, setSearchQuery] = useState('');

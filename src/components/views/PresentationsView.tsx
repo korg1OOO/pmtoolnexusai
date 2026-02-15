@@ -36,7 +36,7 @@ import type { SlideShape } from '@/hooks/useSlides';
 import type { EmbeddableComponent } from '@/lib/embeddableComponents';
 import type { EmbeddedComponentData } from '@/components/presentations/EmbeddedDashboardWidget';
 
-export function PresentationsView() {
+export default function PresentationsView() {
   const { settings } = useProjectContext();
   const projectId = settings.id || undefined;
 

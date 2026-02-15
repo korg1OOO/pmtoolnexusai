@@ -290,7 +290,7 @@ function AddRiskDialog({ open, onOpenChange, onSubmit }: AddRiskDialogProps) {
   );
 }
 
-export function RisksView() {
+export default function RisksView() {
   const { risks, loading, createRisk, updateRisk, deleteRisk, criticalRisks, openRisks } = useRisks();
   const [selectedRisk, setSelectedRisk] = useState<Risk | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);

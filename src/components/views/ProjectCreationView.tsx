@@ -64,7 +64,7 @@ const priorityOptions = [
   { id: 'critical', name: 'Critical', color: 'text-destructive' },
 ];
 
-export function ProjectCreationView() {
+export default function ProjectCreationView() {
   const { data: templates, isLoading: isLoadingTemplates } = useTemplates();
   const createProjectMutation = useCreateProjectFromTemplate();
 

@@ -465,7 +465,7 @@ function AddActionDialog({ open, onOpenChange, onSubmit }: AddActionDialogProps)
   );
 }
 
-export function ActionsView() {
+export default function ActionsView() {
   const { actions, loading, createAction, updateAction, deleteAction, pendingActions, inProgressActions, completedActions, slaBreachedActions, overdueActions } = useActions();
   const [selectedAction, setSelectedAction] = useState<Action | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);

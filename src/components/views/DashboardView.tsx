@@ -83,7 +83,7 @@ const DEFAULT_LAYOUT: DashboardWidget[] = [
   { i: '11', x: 6, y: 10, w: 6, h: 8, type: 'upcoming-meetings' },
 ];
 
-export function DashboardView({ onViewChange }: DashboardViewProps) {
+export default function DashboardView({ onViewChange }: DashboardViewProps) {
   const { settings } = useProjectContext();
   const projectId = settings.id;
   const queryClient = useQueryClient();

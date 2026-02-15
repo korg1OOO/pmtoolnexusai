@@ -50,7 +50,7 @@ import { useProjectContext } from '@/contexts/ProjectContext';
 import { useDeliverables, Deliverable } from '@/hooks/useDeliverables';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
 
-export function DeliverablesView() {
+export default function DeliverablesView() {
   const { settings } = useProjectContext();
   const { data: deliverables, isLoading, createDeliverable, updateDeliverable, deleteDeliverable } = useDeliverables(settings.id);
   const { data: teamMembers } = useTeamMembers(settings.id);

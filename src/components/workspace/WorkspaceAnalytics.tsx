@@ -1,5 +1,5 @@
 import { useState, useRef, useCallback } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,7 @@ const COLORS = ['hsl(217, 91%, 60%)', 'hsl(160, 84%, 39%)', 'hsl(38, 92%, 50%)',
 
 export function WorkspaceAnalytics() {
   const { workspaceId } = useParams();
+  const navigate = useNavigate();
   const [timeRange, setTimeRange] = useState('6m');
   const [activeChart, setActiveChart] = useState<string | null>(null);
   const chartsRef = useRef<HTMLDivElement>(null);
@@ -151,17 +152,24 @@ export function WorkspaceAnalytics() {
           <h2 className="text-xl font-semibold mb-4">Project Performance Trend</h2>
           {hasTrendData ? (
             <ResponsiveContainer width="100%" height={activeChart === 'trend' ? 350 : 250}>
-              <BarChart data={analytics?.performanceTrend}>
+              <BarChart data={analytics?.performanceTrend} onClick={(data) => {
+                if (data && data.activePayload && data.activePayload[0]) {
+                  const month = data.activePayload[0].payload.month;
+                  const status = data.activeLabel === 'On Track' ? 'on-track' : data.activeLabel === 'At Risk' ? 'at-risk' : 'delayed';
+                  navigate(`/workspace/${workspaceId}/analytics/performance?month=${month}&status=${status}`);
+                }
+              }}>
                 <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
                 <XAxis dataKey="month" tick={{ fontSize: 12 }} />
                 <YAxis tick={{ fontSize: 12 }} />
                 <Tooltip
                   contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))' }}
+                  cursor={{ fill: 'rgba(0, 0, 0, 0.1)' }}
                 />
                 <Legend />
-                <Bar dataKey="onTrack" fill="hsl(160, 84%, 39%)" name="On Track" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="atRisk" fill="hsl(38, 92%, 50%)" name="At Risk" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="delayed" fill="hsl(0, 84%, 60%)" name="Delayed" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="onTrack" fill="hsl(160, 84%, 39%)" name="On Track" radius={[4, 4, 0, 0]} cursor="pointer" />
+                <Bar dataKey="atRisk" fill="hsl(38, 92%, 50%)" name="At Risk" radius={[4, 4, 0, 0]} cursor="pointer" />
+                <Bar dataKey="delayed" fill="hsl(0, 84%, 60%)" name="Delayed" radius={[4, 4, 0, 0]} cursor="pointer" />
               </BarChart>
             </ResponsiveContainer>
           ) : (
@@ -179,7 +187,11 @@ export function WorkspaceAnalytics() {
           <h2 className="text-xl font-semibold mb-4">Project Distribution by Portfolio</h2>
           {hasDistData ? (
             <ResponsiveContainer width="100%" height={activeChart === 'dist' ? 350 : 250}>
-              <PieChart>
+              <PieChart onClick={(data) => {
+                if (data && data.activePayload && data.activePayload[0]) {
+                  navigate(`/workspace/${workspaceId}/analytics/portfolio`);
+                }
+              }}>
                 <Pie
                   data={analytics?.portfolioDistribution}
                   cx="50%"
@@ -191,6 +203,7 @@ export function WorkspaceAnalytics() {
                   dataKey="value"
                   animationBegin={0}
                   animationDuration={800}
+                  cursor="pointer"
                 >
                   {analytics?.portfolioDistribution?.map((_entry, index) => (
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
@@ -216,15 +229,21 @@ export function WorkspaceAnalytics() {
         <h2 className="text-xl font-semibold mb-4">Resource Utilization by Role</h2>
         {hasResData ? (
           <ResponsiveContainer width="100%" height={activeChart === 'resource' ? 350 : 250}>
-            <BarChart data={analytics?.resourceUtilization} layout="vertical">
+            <BarChart data={analytics?.resourceUtilization} layout="vertical" onClick={(data) => {
+              if (data && data.activePayload && data.activePayload[0]) {
+                const role = data.activePayload[0].payload.role;
+                navigate(`/workspace/${workspaceId}/analytics/resources?role=${role}`);
+              }
+            }}>
               <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
               <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 12 }} />
               <YAxis dataKey="role" type="category" tick={{ fontSize: 12 }} width={120} />
               <Tooltip
                 formatter={(value: number) => `${value}%`}
                 contentStyle={{ borderRadius: '8px', border: '1px solid hsl(var(--border))' }}
+                cursor={{ fill: 'rgba(0, 0, 0, 0.1)' }}
               />
-              <Bar dataKey="utilization" fill="hsl(217, 91%, 60%)" name="Utilization %" radius={[0, 4, 4, 0]} />
+              <Bar dataKey="utilization" fill="hsl(217, 91%, 60%)" name="Utilization %" radius={[0, 4, 4, 0]} cursor="pointer" />
             </BarChart>
           </ResponsiveContainer>
         ) : (

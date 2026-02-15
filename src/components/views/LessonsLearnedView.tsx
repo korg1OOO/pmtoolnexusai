@@ -30,7 +30,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { useLessonsLearned, LessonLearned, useUpdateLessonLearned, useCreateLessonLearned } from '@/hooks/useLessonsLearned';
 
-export function LessonsLearnedView() {
+export default function LessonsLearnedView() {
   const { settings } = useProjectContext();
   const { data: lessons = [], isLoading } = useLessonsLearned(settings.id);
   const updateLesson = useUpdateLessonLearned();

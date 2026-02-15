@@ -55,7 +55,7 @@ import { Progress } from '@/components/ui/progress';
 
 type SprintStatus = 'todo' | 'in-progress' | 'review' | 'done';
 
-export function SprintBoardView() {
+export default function SprintBoardView() {
   const columns: { id: SprintStatus; label: string; color: string; dbStatus: BacklogStatus }[] = useMemo(() => [
     { id: 'todo', label: 'To Do', color: 'bg-muted', dbStatus: 'todo' },
     { id: 'in-progress', label: 'In Progress', color: 'bg-primary', dbStatus: 'in-progress' },

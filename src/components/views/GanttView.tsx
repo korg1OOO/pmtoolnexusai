@@ -33,7 +33,7 @@ const timeScales: { value: TimeScale; label: string }[] = [
   { value: 'quarter', label: 'Quarter' },
 ];
 
-export function GanttView() {
+export default function GanttView() {
   const { settings } = useProjectContext();
   const projectId = settings.id;
 

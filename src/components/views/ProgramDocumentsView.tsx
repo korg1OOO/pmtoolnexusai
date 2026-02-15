@@ -2,7 +2,7 @@ import React from 'react';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { ProgramDocumentLibrary } from '@/components/program/ProgramDocumentLibrary';
 
-export function ProgramDocumentsView() {
+export default function ProgramDocumentsView() {
     const { settings } = useProjectContext();
 
     if (!settings?.id) {

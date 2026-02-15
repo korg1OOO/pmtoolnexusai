@@ -20,7 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { ViewSwitcher, PlanViewMode } from './ViewSwitcher';
 import { DatabaseTaskGrid } from '@/components/planning/DatabaseTaskGrid';
 import { DatabaseGantt } from '@/components/planning/DatabaseGantt';
-import { SprintBoardView } from './SprintBoardView';
+import SprintBoardView from './SprintBoardView';
 
 import { CalendarDialog } from '@/components/planning/CalendarDialog';
 import { ResourceSheet } from '@/components/resources/ResourceSheet';
@@ -78,7 +78,7 @@ interface PlanningViewProps {
   scenarioId?: string | null;
 }
 
-export function PlanningView({ demo = false, scenarioId = null }: PlanningViewProps) {
+export default function PlanningView({ demo = false, scenarioId = null }: PlanningViewProps) {
   const [viewMode, setViewMode] = useState<PlanViewMode>('grid');
   const [resourceView, setResourceView] = useState<ResourceViewMode>('none');
   const [showShortcuts, setShowShortcuts] = useState(false);

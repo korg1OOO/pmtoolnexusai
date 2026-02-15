@@ -214,7 +214,7 @@ interface EnhancedMeetingsViewProps {
   demo?: boolean;
 }
 
-export function EnhancedMeetingsView({ demo = false }: EnhancedMeetingsViewProps) {
+export default function EnhancedMeetingsView({ demo = false }: EnhancedMeetingsViewProps) {
   const { settings } = useProjectContext();
   const projectId = settings?.id || 'demo';
 

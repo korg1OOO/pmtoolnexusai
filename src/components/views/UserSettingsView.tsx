@@ -57,7 +57,7 @@ interface Session {
 // Mocks removed - Session management handled by Supabase Auth
 
 
-export function UserSettingsView() {
+export default function UserSettingsView() {
   const [activeTab, setActiveTab] = useState('profile');
   const { theme, setTheme } = useTheme();
 

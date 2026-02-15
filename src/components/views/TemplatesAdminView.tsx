@@ -68,7 +68,7 @@ const methodologyOptions = [
   { id: 'lean', name: 'Lean' },
 ];
 
-export function TemplatesAdminView() {
+export default function TemplatesAdminView() {
   const { data: fetchedTemplates, isLoading } = useTemplates();
   const [localTemplates, setLocalTemplates] = useState<ProjectTemplate[]>([]);
   const [searchQuery, setSearchQuery] = useState('');

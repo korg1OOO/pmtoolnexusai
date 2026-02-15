@@ -35,7 +35,7 @@ import {
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { useEVM } from '@/hooks/useEVM';
 
-export function EVMView() {
+export default function EVMView() {
   const { settings } = useProjectContext();
   const { data: snapshots, isLoading } = useEVM(settings.id);
   const contentRef = useRef<HTMLDivElement>(null);

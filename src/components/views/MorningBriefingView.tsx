@@ -52,7 +52,7 @@ interface MorningBriefingViewProps {
   demo?: boolean;
 }
 
-export function MorningBriefingView({ demo = false }: MorningBriefingViewProps) {
+export default function MorningBriefingView({ demo = false }: MorningBriefingViewProps) {
   const { toast } = useToast();
   const { settings } = useProjectContext();
   const [lastUpdated, setLastUpdated] = useState(new Date());

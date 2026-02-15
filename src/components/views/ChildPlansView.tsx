@@ -202,7 +202,7 @@ function ChildTaskRow({ task, expanded, onToggle, selected, onSelect, onSprintCl
 
 
 
-export function ChildPlansView() {
+export default function ChildPlansView() {
   const { settings } = useProjectContext();
   const navigate = useNavigate();
   const { data: tasks = [], isLoading } = useTasks(settings?.id || null);

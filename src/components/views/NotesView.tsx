@@ -46,7 +46,7 @@ interface NotesViewProps {
   demo?: boolean;
 }
 
-export function NotesView({ demo = false }: NotesViewProps) {
+export default function NotesView({ demo = false }: NotesViewProps) {
   const { settings } = useProjectContext();
   const projectId = settings?.id;
 

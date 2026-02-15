@@ -186,12 +186,7 @@ const adminItems: NavItem[] = [
     label: 'Workspace Admin',
     icon: FolderKanban,
     children: [
-      { id: 'workspace/:id', label: 'Workspace Dashboard', icon: LayoutDashboard, alwaysShow: true },
-      { id: 'workspace/:id/portfolios', label: 'Portfolios', icon: Briefcase, alwaysShow: true },
-      { id: 'workspace/:id/teams', label: 'Team Assignment', icon: Users, alwaysShow: true },
-      { id: 'workspace/:id/resources', label: 'Resources', icon: Users, alwaysShow: true },
-      { id: 'workspace/:id/budget', label: 'Budget', icon: DollarSign, alwaysShow: true },
-      { id: 'workspace/:id/analytics', label: 'Analytics', icon: BarChart3, alwaysShow: true },
+      { id: 'workspace-select', label: 'Select Workspace', icon: FolderKanban, alwaysShow: true },
     ]
   },
   {
@@ -199,10 +194,7 @@ const adminItems: NavItem[] = [
     label: 'Portfolio Admin',
     icon: Briefcase,
     children: [
-      { id: 'portfolio/:id', label: 'Portfolio Dashboard', icon: LayoutDashboard, alwaysShow: true },
-      { id: 'portfolio/:id/resources', label: 'Resource Planning', icon: Users, alwaysShow: true },
-      { id: 'portfolio/:id/budget', label: 'Budget Overview', icon: DollarSign, alwaysShow: true },
-      { id: 'portfolio/:id/roadmap', label: 'Strategic Roadmap', icon: Target, alwaysShow: true },
+      { id: 'portfolio-select', label: 'Select Portfolio', icon: Briefcase, alwaysShow: true },
     ]
   },
   {
@@ -210,9 +202,7 @@ const adminItems: NavItem[] = [
     label: 'Program Admin',
     icon: GitBranch,
     children: [
-      { id: 'program/:id/stakeholders', label: 'Stakeholders', icon: Users, alwaysShow: true },
-      { id: 'program/:id/resources', label: 'Resources', icon: Users, alwaysShow: true },
-      { id: 'program/:id/budget', label: 'Budget', icon: DollarSign, alwaysShow: true },
+      { id: 'program-select', label: 'Select Program', icon: GitBranch, alwaysShow: true },
     ]
   },
   { id: 'settings', label: 'Settings', icon: User, alwaysShow: true },
@@ -224,8 +214,14 @@ interface SidebarProps {
   className?: string;
 }
 
+  const ROUTE_PREFIXES = ['tenant', 'settings'];
+
+  const isRouteBasedItem = (id: string): boolean => {
+    return ROUTE_PREFIXES.some(prefix => id === prefix || id.startsWith(prefix + '/'));
+  };
+
 export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
-  const [collapsed, setCollapsed] = useState(true); // Collapsed by default
+  const [collapsed, setCollapsed] = useState(true);
   const { isModuleVisible } = useProjectContext();
   const navigate = useNavigate();
 
@@ -290,8 +286,11 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
           if (hasVisibleChildren) {
             toggleGroup(item.id);
           } else if (item.id === 'admin-redirect') {
-            // Special handling: redirect to /admin route
             navigate('/admin');
+          } else if (item.id === 'workspace-select' || item.id === 'portfolio-select' || item.id === 'program-select') {
+            navigate('/tenant/workspaces');
+          } else if (isRouteBasedItem(item.id)) {
+            navigate('/' + item.id);
           } else {
             onItemClick(item.id);
           }

@@ -1,4 +1,5 @@
-import { supabase } from '@/lib/supabase';
+import { supabase as _supabaseClient } from '@/integrations/supabase/client';
+const supabase = _supabaseClient as any;
 import type {
     NotificationPreferences,
     NotificationLog,

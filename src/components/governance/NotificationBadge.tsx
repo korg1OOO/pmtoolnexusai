@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bell } from 'lucide-react';
-import { getNotificationHistory, type NotificationFilters } from '@/services/governanceNotificationService';
+import { getNotificationHistory } from '@/services/governanceNotificationService';
+import type { NotificationFilters } from '@/types/analytics';
 
 interface NotificationBadgeProps {
     userId: string;
@@ -21,10 +22,9 @@ export default function NotificationBadge({ userId, onClick }: NotificationBadge
     const loadUnreadCount = async () => {
         try {
             const filters: NotificationFilters = {
-                userId,
                 limit: 100,
             };
-            const notifications = await getNotificationHistory(filters);
+            const notifications = await getNotificationHistory(userId, filters);
             const unread = notifications.filter((n) => !n.openedAt).length;
             setUnreadCount(unread);
         } catch (error) {

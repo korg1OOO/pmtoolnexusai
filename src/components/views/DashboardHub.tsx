@@ -20,9 +20,9 @@ import { PDFExporter } from '@/components/common/PDFExporter';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Lazy load dashboard components
-const DashboardView = lazy(() => import('./DashboardView').then(m => ({ default: m.DashboardView })));
-const ExecutiveDashboardView = lazy(() => import('./ExecutiveDashboardView').then(m => ({ default: m.ExecutiveDashboardView })));
-const StrategicDashboardView = lazy(() => import('./StrategicDashboardView').then(m => ({ default: m.StrategicDashboardView })));
+const DashboardView = lazy(() => import('./DashboardView'));
+const ExecutiveDashboardView = lazy(() => import('./ExecutiveDashboardView'));
+const StrategicDashboardView = lazy(() => import('./StrategicDashboardView'));
 
 interface DashboardHubProps {
   onViewChange?: (view: string) => void;

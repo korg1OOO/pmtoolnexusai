@@ -3,8 +3,8 @@ import { Bell, Mail, MessageSquare, Smartphone, Save, TestTube } from 'lucide-re
 import {
     getUserPreferences,
     updateUserPreferences,
-    type NotificationPreferences,
 } from '@/services/governanceNotificationService';
+import type { NotificationPreferences } from '@/types/analytics';
 import { sendTestEmail } from '@/services/emailService';
 import { sendTestSlackMessage } from '@/services/slackService';
 import { sendTestPushNotification } from '@/services/pushNotificationService';
@@ -314,24 +314,20 @@ export default function NotificationPreferencesComponent({
                 </div>
                 <div className="space-y-2">
                     {[
-                        { key: 'approval_assigned', label: 'Approval Assigned' },
-                        { key: 'approval_approved', label: 'Approval Approved' },
-                        { key: 'approval_rejected', label: 'Approval Rejected' },
-                        { key: 'delegation_received', label: 'Delegation Received' },
-                        { key: 'admin_override', label: 'Admin Override' },
+                        { key: 'approvalAssigned' as const, label: 'Approval Assigned' },
+                        { key: 'approvalApproved' as const, label: 'Approval Approved' },
+                        { key: 'approvalRejected' as const, label: 'Approval Rejected' },
+                        { key: 'delegationReceived' as const, label: 'Delegation Received' },
+                        { key: 'adminOverride' as const, label: 'Admin Override' },
                     ].map((event) => (
                         <label key={event.key} className="flex items-center gap-2 cursor-pointer">
                             <input
                                 type="checkbox"
-                                checked={preferences.eventSubscriptions?.includes(event.key)}
+                                checked={!!preferences[event.key]}
                                 onChange={(e) => {
-                                    const subscriptions = preferences.eventSubscriptions || [];
-                                    const newSubscriptions = e.target.checked
-                                        ? [...subscriptions, event.key]
-                                        : subscriptions.filter((s) => s !== event.key);
                                     setPreferences({
                                         ...preferences,
-                                        eventSubscriptions: newSubscriptions,
+                                        [event.key]: e.target.checked,
                                     });
                                 }}
                                 className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"

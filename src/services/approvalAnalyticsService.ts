@@ -1,7 +1,8 @@
 // Approval Analytics Service
 // Provides analytics data for approval workflows, delegations, and compliance
 
-import { supabase } from '@/lib/supabase';
+import { supabase as _supabaseClient } from '@/integrations/supabase/client';
+const supabase = _supabaseClient as any;
 
 export interface ApprovalMetrics {
     entityId: string;

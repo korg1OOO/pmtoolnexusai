@@ -11,6 +11,8 @@ import { Crown, TrendingUp, Zap, ArrowRight, Check } from 'lucide-react';
 import { useUserTier, useUserFeatures, TIER_LIMITS, TIER_PRICING } from '@/hooks/useFeatureAccess';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 interface SubscriptionWidgetProps {
     compact?: boolean;
@@ -22,45 +24,49 @@ export function SubscriptionWidget({ compact = false }: SubscriptionWidgetProps)
     const navigate = useNavigate();
 
     const tierConfig = {
-        free: {
-            name: 'Free',
-            color: 'text-gray-600',
-            bgColor: 'bg-gray-100 dark:bg-gray-800',
-            borderColor: 'border-gray-300',
-        },
-        pro: {
-            name: 'Pro',
-            color: 'text-green-600 dark:text-green-400',
-            bgColor: 'bg-green-50 dark:bg-green-900/20',
-            borderColor: 'border-green-300',
-        },
-        business: {
-            name: 'Business',
-            color: 'text-blue-600 dark:text-blue-400',
-            bgColor: 'bg-blue-50 dark:bg-blue-900/20',
-            borderColor: 'border-blue-300',
-        },
-        agency: {
-            name: 'Agency',
-            color: 'text-purple-600 dark:text-purple-400',
-            bgColor: 'bg-purple-50 dark:bg-purple-900/20',
-            borderColor: 'border-purple-300',
-        },
+        free: { name: 'Free', color: 'text-gray-600', bgColor: 'bg-gray-100 dark:bg-gray-800', borderColor: 'border-gray-300' },
+        pro: { name: 'Pro', color: 'text-green-600 dark:text-green-400', bgColor: 'bg-green-50 dark:bg-green-900/20', borderColor: 'border-green-300' },
+        business: { name: 'Business', color: 'text-blue-600 dark:text-blue-400', bgColor: 'bg-blue-50 dark:bg-blue-900/20', borderColor: 'border-blue-300' },
+        agency: { name: 'Agency', color: 'text-purple-600 dark:text-purple-400', bgColor: 'bg-purple-50 dark:bg-purple-900/20', borderColor: 'border-purple-300' },
     };
 
     const config = tierConfig[tier];
     const limits = TIER_LIMITS[tier];
     const pricing = TIER_PRICING[tier];
 
-    // Mock usage data - replace with real data from backend
-    const usage = {
-        projects: 2,
-        teamMembers: 1,
-        storage: 45, // MB
-    };
+    // Real usage data from backend
+    const { data: usage = { projects: 0, teamMembers: 0, storage: 0 } } = useQuery({
+        queryKey: ['subscription-usage'],
+        queryFn: async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return { projects: 0, teamMembers: 0, storage: 0 };
+
+            const { count: projectCount } = await (supabase as any)
+                .from('projects')
+                .select('*', { count: 'exact', head: true });
+
+            const { count: memberCount } = await (supabase as any)
+                .from('workspace_members')
+                .select('*', { count: 'exact', head: true });
+
+            // Approximate storage from documents
+            const { data: docs } = await (supabase as any)
+                .from('documents')
+                .select('file_size');
+
+            const totalStorageMB = (docs || []).reduce((s: number, d: any) => s + (d.file_size || 0), 0) / (1024 * 1024);
+
+            return {
+                projects: projectCount || 0,
+                teamMembers: memberCount || 0,
+                storage: Math.round(totalStorageMB),
+            };
+        },
+        refetchInterval: 60000,
+    });
 
     const getUsagePercentage = (used: number, limit: number) => {
-        if (limit === -1) return 0; // Unlimited
+        if (limit === -1) return 0;
         return Math.min((used / limit) * 100, 100);
     };
 
@@ -95,9 +101,7 @@ export function SubscriptionWidget({ compact = false }: SubscriptionWidgetProps)
                             </div>
                         </div>
                         {tier !== 'agency' && (
-                            <Button size="sm" onClick={() => navigate('/pricing')}>
-                                Upgrade
-                            </Button>
+                            <Button size="sm" onClick={() => navigate('/pricing')}>Upgrade</Button>
                         )}
                     </div>
                 </CardContent>
@@ -116,9 +120,7 @@ export function SubscriptionWidget({ compact = false }: SubscriptionWidgetProps)
                         <div>
                             <CardTitle className="flex items-center gap-2">
                                 {config.name} Plan
-                                <Badge variant="outline" className={config.color}>
-                                    Active
-                                </Badge>
+                                <Badge variant="outline" className={config.color}>Active</Badge>
                             </CardTitle>
                             <CardDescription>
                                 {tier === 'free' ? 'Free Forever' : `$${pricing.monthly}/month`}
@@ -127,8 +129,7 @@ export function SubscriptionWidget({ compact = false }: SubscriptionWidgetProps)
                     </div>
                     {tier !== 'agency' && (
                         <Button onClick={() => navigate('/pricing')}>
-                            <TrendingUp className="h-4 w-4 mr-2" />
-                            Upgrade
+                            <TrendingUp className="h-4 w-4 mr-2" />Upgrade
                         </Button>
                     )}
                 </div>
@@ -138,43 +139,26 @@ export function SubscriptionWidget({ compact = false }: SubscriptionWidgetProps)
                 {/* Usage Stats */}
                 <div className="space-y-4">
                     <h3 className="font-semibold text-sm flex items-center gap-2">
-                        <Zap className="h-4 w-4" />
-                        Usage & Limits
+                        <Zap className="h-4 w-4" />Usage & Limits
                     </h3>
-
-                    {/* Projects */}
                     <div className="space-y-2">
                         <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">Projects</span>
-                            <span className="font-medium">
-                                {usage.projects} / {limits.projects === -1 ? '∞' : limits.projects}
-                            </span>
+                            <span className="font-medium">{usage.projects} / {limits.projects === -1 ? '∞' : limits.projects}</span>
                         </div>
-                        {limits.projects !== -1 && (
-                            <Progress value={getUsagePercentage(usage.projects, limits.projects)} />
-                        )}
+                        {limits.projects !== -1 && <Progress value={getUsagePercentage(usage.projects, limits.projects)} />}
                     </div>
-
-                    {/* Team Members */}
                     <div className="space-y-2">
                         <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">Team Members</span>
-                            <span className="font-medium">
-                                {usage.teamMembers} / {limits.teamMembers === -1 ? '∞' : limits.teamMembers}
-                            </span>
+                            <span className="font-medium">{usage.teamMembers} / {limits.teamMembers === -1 ? '∞' : limits.teamMembers}</span>
                         </div>
-                        {limits.teamMembers !== -1 && (
-                            <Progress value={getUsagePercentage(usage.teamMembers, limits.teamMembers)} />
-                        )}
+                        {limits.teamMembers !== -1 && <Progress value={getUsagePercentage(usage.teamMembers, limits.teamMembers)} />}
                     </div>
-
-                    {/* Storage */}
                     <div className="space-y-2">
                         <div className="flex justify-between text-sm">
                             <span className="text-muted-foreground">Storage</span>
-                            <span className="font-medium">
-                                {usage.storage} MB / {(limits.storage / 1000).toFixed(1)} GB
-                            </span>
+                            <span className="font-medium">{usage.storage} MB / {(limits.storage / 1000).toFixed(1)} GB</span>
                         </div>
                         <Progress value={getUsagePercentage(usage.storage, limits.storage)} />
                     </div>
@@ -184,7 +168,7 @@ export function SubscriptionWidget({ compact = false }: SubscriptionWidgetProps)
                 <div className="space-y-3">
                     <h3 className="font-semibold text-sm">Your Features</h3>
                     <div className="grid grid-cols-2 gap-2">
-                        {features.slice(0, 6).map((feature) => (
+                        {features.slice(0, 6).map((feature: any) => (
                             <div key={feature.feature_key} className="flex items-start gap-2">
                                 <Check className="h-4 w-4 text-green-600 dark:text-green-400 mt-0.5 shrink-0" />
                                 <span className="text-sm">{feature.feature_name}</span>
@@ -192,44 +176,31 @@ export function SubscriptionWidget({ compact = false }: SubscriptionWidgetProps)
                         ))}
                     </div>
                     {features.length > 6 && (
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => navigate('/pricing')}
-                            className="w-full justify-between"
-                        >
+                        <Button variant="ghost" size="sm" onClick={() => navigate('/pricing')} className="w-full justify-between">
                             View all {features.length} features
                             <ArrowRight className="h-4 w-4" />
                         </Button>
                     )}
                 </div>
 
-                {/* Manage Billing Button for paid tiers */}
                 {tier !== 'free' && (
-                    <Button
-                        variant="outline"
-                        className="w-full"
-                        onClick={async () => {
-                            const { openCustomerPortal } = await import('@/services/stripeService');
-                            openCustomerPortal();
-                        }}
-                    >
+                    <Button variant="outline" className="w-full" onClick={async () => {
+                        const { openCustomerPortal } = await import('@/services/stripeService');
+                        openCustomerPortal();
+                    }}>
                         Manage Billing
                     </Button>
                 )}
 
-                {/* Upgrade CTA for non-agency tiers */}
                 {tier !== 'agency' && (
-                    <div className={cn('p-4 rounded-lg  border', config.bgColor)}>
+                    <div className={cn('p-4 rounded-lg border', config.bgColor)}>
                         <h4 className="font-semibold mb-1">Need more power?</h4>
                         <p className="text-sm text-muted-foreground mb-3">
                             {tier === 'free' && 'Upgrade to Pro for unlimited projects and AI insights.'}
                             {tier === 'pro' && 'Upgrade to Business for advanced teams and workflows.'}
                             {tier === 'business' && 'Upgrade to Agency for white label and API access.'}
                         </p>
-                        <Button className="w-full" onClick={() => navigate('/pricing')}>
-                            View Plans
-                        </Button>
+                        <Button className="w-full" onClick={() => navigate('/pricing')}>View Plans</Button>
                     </div>
                 )}
             </CardContent>

@@ -430,18 +430,33 @@ export interface WorkspaceAnalytics {
 }
 
 export async function getWorkspaceAnalytics(workspaceId: string): Promise<WorkspaceAnalytics> {
-    // Get projects for this workspace
+    // Get projects for this workspace with created_at for trend analysis
     const { data: projects, error: projectsError } = await supabase
         .from('projects')
-        .select('id, name, status, budget, actual_cost, progress, portfolio_id')
+        .select('id, name, status, budget, actual_cost, progress, portfolio_id, created_at')
         .eq('workspace_id', workspaceId);
 
     if (projectsError) throw projectsError;
 
+    // Get portfolios for names
+    const { data: portfolios } = await supabase
+        .from('portfolios')
+        .select('id, name')
+        .eq('workspace_id', workspaceId);
+
+    // Get workspace team members for resource utilization
+    const { data: teamMembers } = await supabase
+        .from('workspace_teams')
+        .select('id, role, allocation_percentage')
+        .eq('workspace_id', workspaceId);
+
+    const portfolioNameMap = new Map<string, string>();
+    portfolios?.forEach((p: any) => portfolioNameMap.set(p.id, p.name));
+
     // Calculate portfolio performance
     const portfolioMap = new Map<string, { total: number; onTrack: number; budget: number; spent: number }>();
 
-    projects?.forEach(p => {
+    projects?.forEach((p: any) => {
         const portfolioId = p.portfolio_id || 'unassigned';
         const current = portfolioMap.get(portfolioId) || { total: 0, onTrack: 0, budget: 0, spent: 0 };
         current.total++;
@@ -457,15 +472,51 @@ export async function getWorkspaceAnalytics(workspaceId: string): Promise<Worksp
         budget_utilization: data.budget > 0 ? (data.spent / data.budget) * 100 : 0
     }));
 
+    // Build performance trend (last 6 months)
+    const now = new Date();
+    const performanceTrend: WorkspaceAnalytics['performanceTrend'] = [];
+    for (let i = 5; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        const monthLabel = d.toLocaleString('default', { month: 'short', year: '2-digit' });
+        const monthProjects = (projects || []).filter((p: any) => {
+            const created = new Date(p.created_at);
+            return created <= new Date(d.getFullYear(), d.getMonth() + 1, 0);
+        });
+        const onTrack = monthProjects.filter((p: any) => p.status === 'active' && p.progress >= 50).length;
+        const atRisk = monthProjects.filter((p: any) => p.status === 'active' && p.progress < 50 && p.progress >= 20).length;
+        const delayed = monthProjects.filter((p: any) => p.status === 'active' && p.progress < 20).length;
+        performanceTrend.push({ month: monthLabel, onTrack, atRisk, delayed });
+    }
+
+    // Build portfolio distribution
+    const portfolioDistribution: WorkspaceAnalytics['portfolioDistribution'] = Array.from(portfolioMap.entries()).map(([id, data]) => ({
+        name: portfolioNameMap.get(id) || 'Unassigned',
+        value: data.total
+    }));
+
+    // Build resource utilization by role
+    const roleMap = new Map<string, { totalAlloc: number; count: number }>();
+    (teamMembers || []).forEach((m: any) => {
+        const role = m.role || 'Member';
+        const cur = roleMap.get(role) || { totalAlloc: 0, count: 0 };
+        cur.totalAlloc += m.allocation_percentage || 0;
+        cur.count++;
+        roleMap.set(role, cur);
+    });
+    const resourceUtilization: WorkspaceAnalytics['resourceUtilization'] = Array.from(roleMap.entries()).map(([role, data]) => ({
+        role,
+        utilization: data.count > 0 ? Math.round(data.totalAlloc / data.count) : 0
+    }));
+
     return {
         workspace_id: workspaceId,
         portfolio_performance,
         team_productivity: [],
         resource_efficiency: [],
         trend_analysis: [],
-        performanceTrend: [],
-        portfolioDistribution: [],
-        resourceUtilization: []
+        performanceTrend,
+        portfolioDistribution,
+        resourceUtilization
     };
 }
 

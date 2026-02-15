@@ -2,6 +2,7 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Home, ArrowLeft, Search } from 'lucide-react';
+import { preloadRoute } from '@/utils/routePreloader';
 
 export function NotFoundView() {
     const navigate = useNavigate();
@@ -22,7 +23,12 @@ export function NotFoundView() {
                         <ArrowLeft className="w-4 h-4 mr-2" />
                         Go Back
                     </Button>
-                    <Button onClick={() => navigate('/')} size="lg">
+                    <Button
+                        onClick={() => navigate('/')}
+                        onMouseEnter={() => preloadRoute('/')}
+                        onFocus={() => preloadRoute('/')}
+                        size="lg"
+                    >
                         <Home className="w-4 h-4 mr-2" />
                         Go Home
                     </Button>
@@ -37,6 +43,8 @@ export function NotFoundView() {
                             variant="ghost"
                             size="sm"
                             onClick={() => navigate('/dashboard')}
+                            onMouseEnter={() => preloadRoute('/dashboard')}
+                            onFocus={() => preloadRoute('/dashboard')}
                         >
                             Dashboard
                         </Button>
@@ -51,6 +59,8 @@ export function NotFoundView() {
                             variant="ghost"
                             size="sm"
                             onClick={() => navigate('/portfolio')}
+                            onMouseEnter={() => preloadRoute('/portfolio')}
+                            onFocus={() => preloadRoute('/portfolio')}
                         >
                             Portfolios
                         </Button>
@@ -58,6 +68,8 @@ export function NotFoundView() {
                             variant="ghost"
                             size="sm"
                             onClick={() => navigate('/settings')}
+                            onMouseEnter={() => preloadRoute('/settings')}
+                            onFocus={() => preloadRoute('/settings')}
                         >
                             Settings
                         </Button>

@@ -2,8 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { lazy, Suspense } from "react";
+import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { lazy, Suspense, useEffect } from "react";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { TenantProvider } from "@/contexts/TenantContext";
 import { SubscriptionSuccessPage } from "@/pages/SubscriptionSuccessPage";
@@ -70,7 +70,7 @@ import { TenantDashboard, WorkspaceManagement, TenantSettings, TenantUserManagem
 import { WorkspaceDashboard, PortfolioView, TeamAssignment, WorkspaceResourceAllocation, WorkspaceBudgetManagement, WorkspaceAnalytics } from '@/components/workspace';
 import { ProjectPerformanceDetail, PortfolioDistributionDetail, ResourceUtilizationDetail } from '@/components/analytics';
 import { PortfolioDashboard, ResourcePlanningView, PortfolioBudgetOverview, StrategicRoadmap } from '@/components/portfolio';
-import { QueryParamRedirect, ProtectedProjectRoute, LoadingSpinner } from '@/components/routing';
+import { QueryParamRedirect, ProtectedProjectRoute, LoadingSpinner, RoutePreloader } from '@/components/routing';
 import { StakeholderManagement, AdvancedResourceAllocation, ProgramBudgetManagement } from '@/components/program';
 
 // Lazy-loaded View Components for Code Splitting (all components now use default exports)
@@ -141,6 +141,7 @@ const App = () => (
           <Toaster />
           <Sonner />
           <BrowserRouter>
+            <RoutePreloader />
             <TenantProvider>
               <Routes>
                 {/* Landing page for non-authenticated users */}

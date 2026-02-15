@@ -34,6 +34,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useProjectContext, ModuleVisibility } from '@/contexts/ProjectContext';
+import { preloadRoute } from '@/utils/routePreloader';
 
 interface NavItem {
   id: string;
@@ -214,11 +215,11 @@ interface SidebarProps {
   className?: string;
 }
 
-  const ROUTE_PREFIXES = ['tenant', 'settings'];
+const ROUTE_PREFIXES = ['tenant', 'settings'];
 
-  const isRouteBasedItem = (id: string): boolean => {
-    return ROUTE_PREFIXES.some(prefix => id === prefix || id.startsWith(prefix + '/'));
-  };
+const isRouteBasedItem = (id: string): boolean => {
+  return ROUTE_PREFIXES.some(prefix => id === prefix || id.startsWith(prefix + '/'));
+};
 
 export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(true);
@@ -282,6 +283,30 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
       <motion.button
         whileHover={{ x: 2 }}
         whileTap={{ scale: 0.98 }}
+        onMouseEnter={() => {
+          // Preload route on hover
+          if (item.id === 'admin-redirect') {
+            preloadRoute('/admin');
+          } else if (item.id === 'workspace-select' || item.id === 'portfolio-select' || item.id === 'program-select') {
+            preloadRoute('/tenant/workspaces');
+          } else if (isRouteBasedItem(item.id)) {
+            preloadRoute('/' + item.id);
+          } else {
+            preloadRoute('/' + item.id);
+          }
+        }}
+        onFocus={() => {
+          // Preload route on focus (keyboard navigation)
+          if (item.id === 'admin-redirect') {
+            preloadRoute('/admin');
+          } else if (item.id === 'workspace-select' || item.id === 'portfolio-select' || item.id === 'program-select') {
+            preloadRoute('/tenant/workspaces');
+          } else if (isRouteBasedItem(item.id)) {
+            preloadRoute('/' + item.id);
+          } else {
+            preloadRoute('/' + item.id);
+          }
+        }}
         onClick={() => {
           if (hasVisibleChildren) {
             toggleGroup(item.id);

@@ -3,7 +3,8 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { BarChart3, TrendingUp, Users, Briefcase, Download, FileText } from 'lucide-react';
+import { BarChart3, TrendingUp, Users, Briefcase, Download, FileText, Shield } from 'lucide-react';
+import { GovernancePanel } from '@/components/analytics/GovernancePanel';
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
@@ -19,6 +20,7 @@ export function WorkspaceAnalytics() {
   const navigate = useNavigate();
   const [timeRange, setTimeRange] = useState('6m');
   const [activeChart, setActiveChart] = useState<string | null>(null);
+  const [isGovernancePanelOpen, setIsGovernancePanelOpen] = useState(false);
   const chartsRef = useRef<HTMLDivElement>(null);
 
   const { data: overview } = useQuery({
@@ -112,6 +114,10 @@ export function WorkspaceAnalytics() {
             <option value="6m">Last 6 Months</option>
             <option value="1y">Last Year</option>
           </select>
+          <Button variant="outline" onClick={() => setIsGovernancePanelOpen(true)}>
+            <Shield className="w-4 h-4 mr-2" />
+            Governance
+          </Button>
           <Button variant="outline" onClick={exportCSV}>
             <Download className="w-4 h-4 mr-2" />
             CSV
@@ -277,6 +283,14 @@ export function WorkspaceAnalytics() {
           </div>
         )}
       </Card>
+
+      {/* Governance Panel */}
+      <GovernancePanel
+        entityId={workspaceId || ''}
+        entityType="workspace"
+        isOpen={isGovernancePanelOpen}
+        onClose={() => setIsGovernancePanelOpen(false)}
+      />
     </div>
   );
 }

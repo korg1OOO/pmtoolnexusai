@@ -5,8 +5,8 @@ import {
     saveDelegationTemplate,
     deleteDelegationTemplate,
     searchUsersForDelegation,
-    type DelegationTemplate,
 } from '@/services/delegationService';
+import type { DelegationTemplate } from '@/types/analytics';
 
 interface DelegationTemplatesProps {
     userId: string;

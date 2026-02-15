@@ -4,9 +4,8 @@ import {
     getDelegationHistory,
     revokeDelegation,
     extendDelegation,
-    type DelegationHistoryItem,
-    type DelegationHistoryFilters,
 } from '@/services/delegationService';
+import type { DelegationHistoryItem, DelegationHistoryFilters } from '@/types/analytics';
 
 interface DelegationHistoryProps {
     userId: string;

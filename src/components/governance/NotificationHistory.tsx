@@ -3,9 +3,8 @@ import { Clock, Mail, MessageSquare, Smartphone, CheckCircle, XCircle, Eye } fro
 import {
     getNotificationHistory,
     markNotificationOpened,
-    type NotificationLog,
-    type NotificationFilters,
 } from '@/services/governanceNotificationService';
+import type { NotificationLog, NotificationFilters } from '@/types/analytics';
 
 interface NotificationHistoryProps {
     userId: string;
@@ -15,7 +14,6 @@ export default function NotificationHistory({ userId }: NotificationHistoryProps
     const [notifications, setNotifications] = useState<NotificationLog[]>([]);
     const [loading, setLoading] = useState(true);
     const [filters, setFilters] = useState<NotificationFilters>({
-        userId,
         limit: 50,
     });
 
@@ -26,7 +24,7 @@ export default function NotificationHistory({ userId }: NotificationHistoryProps
     const loadHistory = async () => {
         try {
             setLoading(true);
-            const history = await getNotificationHistory(filters);
+            const history = await getNotificationHistory(userId, filters);
             setNotifications(history);
         } catch (error) {
             console.error('Error loading notification history:', error);
@@ -85,8 +83,8 @@ export default function NotificationHistory({ userId }: NotificationHistoryProps
         }
     };
 
-    const formatDate = (dateString: string) => {
-        const date = new Date(dateString);
+    const formatDate = (dateValue: string | Date) => {
+        const date = typeof dateValue === 'string' ? new Date(dateValue) : dateValue;
         return new Intl.DateTimeFormat('en-US', {
             month: 'short',
             day: 'numeric',
@@ -125,7 +123,7 @@ export default function NotificationHistory({ userId }: NotificationHistoryProps
                             onChange={(e) =>
                                 setFilters({
                                     ...filters,
-                                    channel: e.target.value || undefined,
+                                    channel: (e.target.value || undefined) as NotificationFilters['channel'],
                                 })
                             }
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
@@ -145,7 +143,7 @@ export default function NotificationHistory({ userId }: NotificationHistoryProps
                             onChange={(e) =>
                                 setFilters({
                                     ...filters,
-                                    status: e.target.value || undefined,
+                                    status: (e.target.value || undefined) as NotificationFilters['status'],
                                 })
                             }
                             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"

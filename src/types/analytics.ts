@@ -492,3 +492,48 @@ export interface SendNotificationRequest {
     eventId: string;
     data: NotificationData;
 }
+
+// ============================================================================
+// DELEGATION TYPES (ADVANCED)
+// ============================================================================
+
+export interface DelegationTemplate {
+    id: string;
+    userId: string;
+    name: string;
+    delegateId: string;
+    delegationType: 'temporary' | 'permanent';
+    reason?: string;
+    durationDays?: number;
+    canSubdelegate: boolean;
+    createdAt: string;
+    updatedAt: string;
+}
+
+export interface DelegationHistoryItem {
+    id: string;
+    approvalId?: string;
+    approvalTitle?: string;
+    delegatorId: string;
+    delegatorName: string;
+    delegatorEmail: string;
+    delegateId: string;
+    delegateName: string;
+    delegateEmail: string;
+    delegationType: 'temporary' | 'permanent';
+    reason?: string;
+    status: 'active' | 'completed' | 'revoked' | 'expired';
+    createdAt: string;
+    revokedAt?: string;
+    expiresAt?: string;
+    parentDelegationId?: string;
+    delegationDepth: number;
+    canSubdelegate: boolean;
+}
+
+export interface DelegationHistoryFilters {
+    status?: 'active' | 'completed' | 'revoked' | 'expired';
+    delegationType?: 'temporary' | 'permanent';
+    startDate?: string;
+    endDate?: string;
+}

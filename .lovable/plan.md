@@ -1,163 +1,106 @@
 
+# Application Readiness Report: Tenant, Workspace, Portfolio, Programs
 
-# Comprehensive Application Audit Report
+## Current Status: Partially Working -- Key Navigation Issues Remain
 
-## 1. Database Schema Exists but No Backend/Frontend
+### What IS Working
 
-These tables exist in the database but have **no service layer and/or no UI component** consuming them:
+1. **Database layer**: All 15 previously missing tables now exist (`tenants`, `workspaces`, `workspace_members`, `departments`, `licenses`, `license_keys`, `discount_codes`, `team_members`, `project_members`, `project_custom_roles`, `workspace_budgets`, `workspace_resources`, `ai_provider_api_keys`, `spreadsheet_comments`, `workspace_teams`).
 
-| Table | Backend (Service/Hook) | Frontend (UI) | Gap |
-|-------|----------------------|---------------|-----|
-| `affiliate_referrals` | Partial (useAffiliates) | AdminAffiliates page | Needs verification |
-| `briefing_preferences` | None found | None | Both missing |
-| `calendar_exceptions` | None found | None | Both missing |
-| `meeting_conflicts` | None found | None | Both missing |
-| `meeting_scope_changes` | None found | None | Both missing |
-| `mom_templates` | None found | None | Both missing |
-| `sites` | None found | None | Both missing |
-| `collaboration_spaces` | collaborationSpaceService.ts | CollaborationSpaces.tsx | OK |
-| `backup_jobs` | None found | None | Both missing |
-| `ai_credit_pricing` | Partial | Partial | Needs verification |
+2. **RLS policies**: All new tables have Row Level Security policies correctly configured with tenant-based isolation.
+
+3. **TenantContext**: The `TenantProvider` wraps the entire app in `App.tsx`, and `useTenant()` is used in `TenantDashboard`, `WorkspaceManagement`, `TenantSettings`, `TenantAnalytics`, `DepartmentManagement`, `LicenseAllocation`, and `TenantUserManagement` -- no more hardcoded tenant IDs.
+
+4. **Routes registered**: All tenant (`/tenant/*`), workspace (`/workspace/:workspaceId/*`), portfolio (`/portfolio/:portfolioId/*`), and program (`/program/:programId/*`) routes are properly defined in `App.tsx`.
+
+5. **Service layers**: `tenantService.ts` and `workspaceService.ts` are fully wired to the database with the `(supabase as any)` pattern.
 
 ---
 
-## 2. Backend Built but No Database Schema
+### Issues That Will Prevent Full Functionality
 
-These tables are **referenced in code** via `.from('table_name')` but **do NOT exist** in the database:
+#### Issue 1: Sidebar Navigation is Broken for Tenant/Workspace/Portfolio/Program Items (CRITICAL)
 
-| Missing Table | Referenced In | Impact |
-|---------------|--------------|--------|
-| `tenants` | tenantService.ts, TenantDashboard, TenantSettings, WorkspaceManagement, etc. | **CRITICAL** - Entire tenant module broken |
-| `workspaces` | tenantService.ts, workspaceService.ts, WorkspaceDashboard, etc. | **CRITICAL** - Entire workspace module broken |
-| `workspace_members` | tenantService.ts, workspaceService.ts | **CRITICAL** |
-| `departments` | tenantService.ts, DepartmentManagement.tsx | **HIGH** |
-| `licenses` | tenantService.ts, LicenseAllocation.tsx | **HIGH** |
-| `ai_provider_api_keys` | useAIProviderSettings.ts | **MEDIUM** |
-| `spreadsheet_comments` | commentsService.ts | **MEDIUM** |
-| `license_keys` | useAdminServices.ts, AdminLicenseKeys | **HIGH** |
-| `discount_codes` | useAdminServices.ts, AdminDiscountCodes | **HIGH** |
-| `team_members` | workspaceService.ts, programService.ts | **HIGH** |
-| `project_members` | useProjectMembers.ts, programInsightsService.ts | **HIGH** |
-| `project_roles` | projectRolesService.ts | **MEDIUM** |
-| `workspace_budgets` | workspaceService.ts | **HIGH** |
-| `workspace_resources` | workspaceService.ts | **HIGH** |
+The sidebar items for tenant, workspace, portfolio, and program admin sections use `onItemClick(item.id)` which sets a `?view=` query parameter on the `/dashboard` page. However, these pages are **separate routes** (`/tenant`, `/workspace/:id`, etc.), not views within the dashboard's `renderView()` switch statement.
 
----
+**What happens**: Clicking "Tenant Dashboard" in the sidebar sets `?view=tenant` on `/dashboard`, which falls through to the `default` case in `renderView()` and renders the main DashboardHub instead.
 
-## 3. Frontend UI Built but No Database/Backend
+**Items affected**:
+- `tenant`, `tenant/workspaces`, `tenant/users`, `tenant/departments`, `tenant/licenses`, `tenant/analytics`, `tenant/settings`
+- `workspace/:id`, `workspace/:id/portfolios`, `workspace/:id/teams`, `workspace/:id/resources`, `workspace/:id/budget`, `workspace/:id/analytics`
+- `portfolio/:id`, `portfolio/:id/resources`, `portfolio/:id/budget`, `portfolio/:id/roadmap`
+- `program/:id/stakeholders`, `program/:id/resources`, `program/:id/budget`
 
-| Component | Issue | Severity |
-|-----------|-------|----------|
-| `MLAccuracyPage.tsx` | 100% hardcoded mock data (4 metrics, 5 history rows) | **HIGH** |
-| `MLPredictionsPage.tsx` | Hardcoded mock predictions array, comment says "replace with real hook" | **HIGH** |
-| `TenantAnalytics.tsx` | Mock chart data (growthData array hardcoded) | **MEDIUM** |
-| `SubscriptionWidget.tsx` | Mock usage data (projects: 2, teamMembers: 1, storage: 45) | **MEDIUM** |
-| `SubscriptionSuccessPage.tsx` | Page exists but has **no route** in App.tsx | **HIGH** |
-| `LicenseAllocation.tsx` | Mock allocations array (empty), comment says "TODO: Implement user-license mapping table" | **MEDIUM** |
-| `aiRequestWrapper.ts` | `callAIAPI()` returns mock responses, comment "TODO: Replace with actual API call" | **HIGH** |
+**Fix**: The sidebar click handler needs to call `navigate('/' + item.id)` for these items instead of `onItemClick(item.id)`. The items with `:id` placeholders also need a way to resolve the actual workspace/portfolio/program ID.
 
----
+#### Issue 2: WorkspaceDashboard Has Hardcoded Mock Data (MEDIUM)
 
-## 4. TODOs, Mock Data, Unfunctional Elements
+`WorkspaceDashboard.tsx` fetches real metrics via `getWorkspaceOverview()`, but the Portfolios, Programs, Team Overview, and Activity Feed sections (lines 86-178) are entirely **hardcoded mock data**:
+- "Digital Transformation", "Product Innovation", "Infrastructure Modernization" portfolios
+- "Cloud Migration", "Mobile App Redesign", "API Platform" programs
+- "Portfolio Managers: 3", "Program Managers: 8", "Project Managers: 24"
+- 3 hardcoded activity items
 
-### TODOs (Critical)
-| File | TODO | Impact |
-|------|------|--------|
-| `TenantDashboard.tsx` | `TODO: Get from auth context` -- uses hardcoded `'default-tenant-id'` | **CRITICAL** |
-| `WorkspaceManagement.tsx` | Same hardcoded tenant ID | **CRITICAL** |
-| `TenantSettings.tsx` | Same hardcoded tenant ID | **CRITICAL** |
-| `TenantAnalytics.tsx` | Same hardcoded tenant ID | **CRITICAL** |
-| `DepartmentManagement.tsx` | Same hardcoded tenant ID | **CRITICAL** |
-| `LicenseAllocation.tsx` | Same hardcoded tenant ID | **CRITICAL** |
-| `UserRoleManagement.tsx` | Hardcoded `'default-tenant'` | **CRITICAL** |
-| `UserManagement.tsx` | Hardcoded `'default-tenant'` | **CRITICAL** |
-| `App.tsx` line 161 | `tenantId="default-tenant-id"` hardcoded prop | **CRITICAL** |
-| `ResourcePlanningView.tsx` | `TODO: Enhance with program-level demand data` | LOW |
+#### Issue 3: Workspace/Portfolio/Program Sidebar Items Use `:id` Placeholder (HIGH)
 
-### Unwired/Nonfunctional Buttons and Links
-| Component | Issue |
-|-----------|-------|
-| `MessageBubble.tsx` (x2) | `ThreadIndicator onClick={() => {}}` -- thread click does nothing |
-| `Auth.tsx` | "Forgot password?" link is `href="#"` -- goes nowhere |
+The sidebar nav items use literal strings like `workspace/:id` as IDs. There is no mechanism to substitute the actual workspace, portfolio, or program ID. Users cannot navigate to these pages from the sidebar because:
+- No workspace selector exists in the sidebar
+- No portfolio/program selector exists
+- The `:id` literal string would be passed as the route param
 
-### Missing Route
-| Page | Issue |
-|------|-------|
-| `SubscriptionSuccessPage.tsx` | File exists at `src/pages/` but **not registered** in `App.tsx` routes |
+#### Issue 4: "Analytics" and "New Portfolio" Buttons in WorkspaceDashboard Are Unwired (LOW)
 
-### Mock Data Still Present
-| File | Type |
-|------|------|
-| `MLAccuracyPage.tsx` | Fully hardcoded accuracy metrics and performance history |
-| `MLPredictionsPage.tsx` | Hardcoded predictions array |
-| `TenantAnalytics.tsx` | Hardcoded growth chart data |
-| `SubscriptionWidget.tsx` | Hardcoded usage stats |
-| `TraceabilityMatrixView.tsx` | `MOCK_TRACEABILITY_ITEMS` for demo mode (acceptable for demo) |
-| `EnhancedMeetingsView.tsx` | `MOCK_MEETINGS` for demo mode (acceptable for demo) |
-| `aiRequestWrapper.ts` | Mock AI API responses |
-| `mlRetrainingService.ts` | Mock retraining schedule data |
-| `mlModelOperations.ts` | Mock data drift scores |
-
-### `.bak` Files (Dead Code)
-- `src/components/portfolio/ResourcePlanningView.tsx.bak`
-- `src/components/portfolio/StrategicRoadmap.tsx.bak`
-- `src/components/program/AdvancedResourceAllocation.tsx.bak`
+Lines 40-47 of `WorkspaceDashboard.tsx` have `<Button>` elements without `onClick` handlers -- they render but do nothing when clicked.
 
 ---
 
-## 5. Tenant/Workspace/Portfolio/Program Readiness
+### What Needs to Be Fixed
 
-### Verdict: Will NOT work in current state
+#### Fix 1: Route-based Navigation for Admin Sidebar Items
+Update the sidebar click handler to use `navigate()` for tenant/workspace/portfolio/program items instead of the view-based `onItemClick()`. For tenant items (which don't need a dynamic ID), this is straightforward: clicking "Tenant Dashboard" should navigate to `/tenant`.
 
-The entire multi-tenancy hierarchy is **broken** because:
+#### Fix 2: Workspace/Portfolio/Program ID Resolution
+Add a workspace selector (dropdown or context) so workspace admin items navigate to `/workspace/{actual-id}/...` rather than `/workspace/:id/...`. Same pattern for portfolio and program sections.
 
-1. **No database tables exist** for `tenants`, `workspaces`, `workspace_members`, `departments`, `licenses`, `team_members`, `project_members`, `workspace_budgets`, `workspace_resources`, `license_keys`, `discount_codes`, or `project_roles`.
+#### Fix 3: Replace WorkspaceDashboard Mock Data
+Query real portfolios, programs, and team member counts from the database instead of hardcoded values.
 
-2. **Every tenant component uses a hardcoded ID** (`'default-tenant-id'` or `'default-tenant'`) instead of deriving it from the authenticated user's context. There is no `user_tenants` lookup (the table exists but no context provider uses it).
-
-3. **No tenant context provider** exists. The auth system (`useAuth.ts`) returns a `User` but has no concept of which tenant or workspace the user belongs to.
-
-4. **Navigation is disconnected** -- no component uses `navigate('/tenant/...')` or `navigate('/workspace/...')`. Users cannot reach these pages from the main app UI.
-
-### What Needs to Happen (Implementation Plan)
-
-**Phase 1: Database Migration (15 tables)**
-Create the missing tables: `tenants`, `workspaces`, `workspace_members`, `departments`, `licenses`, `license_keys`, `discount_codes`, `team_members`, `project_members`, `project_roles`, `workspace_budgets`, `workspace_resources`, `ai_provider_api_keys`, `spreadsheet_comments`, and add foreign keys linking `projects` and `programs` to `workspace_id`/`tenant_id`.
-
-**Phase 2: Tenant Context Provider**
-Create a `TenantContext` that:
-- Queries `user_tenants` for the logged-in user
-- Provides `tenantId`, `workspaceId`, and role to all child components
-- Replaces all 9+ instances of hardcoded `'default-tenant-id'`
-
-**Phase 3: Wire Navigation**
-- Add tenant/workspace navigation items to the main sidebar
-- Add the missing `/subscription/success` route
-- Wire the "Forgot password?" link to a real password reset flow
-- Wire `ThreadIndicator` onClick to open thread views
-
-**Phase 4: Replace Mock Data**
-- `MLAccuracyPage` and `MLPredictionsPage`: wire to `useMLPredictions` / `useMLModels` hooks
-- `TenantAnalytics`: derive chart data from real tenant overview queries
-- `SubscriptionWidget`: query actual project/member/storage counts
-- `aiRequestWrapper.ts`: connect to Lovable AI edge function
-
-**Phase 5: Cleanup**
-- Delete 3 `.bak` files
-- Remove or properly implement `callAIAPI()` mock
-- Audit all `(supabase as any)` casts -- these bypass type safety
+#### Fix 4: Wire Unwired Buttons
+Add `onClick` handlers to the Analytics and New Portfolio buttons in `WorkspaceDashboard`.
 
 ---
 
-### Summary Counts
+### Technical Implementation Details
 
-| Category | Count |
-|----------|-------|
-| Missing DB tables (backend references them) | **15** |
-| Components with hardcoded mock data | **9** |
-| Hardcoded tenant IDs (needs context provider) | **9 instances across 8 files** |
-| Unwired buttons/links | **3** (2 thread indicators, 1 forgot password) |
-| Missing routes | **1** (SubscriptionSuccessPage) |
-| Dead `.bak` files | **3** |
-| Critical blockers for tenant/workspace flow | **3** (no tables, no context, no navigation) |
+**File changes needed:**
 
+1. **`src/components/layout/Sidebar.tsx`** -- Modify `renderNavItem` click handler: detect items whose IDs start with `tenant/`, `workspace/`, `portfolio/`, or `program/` and use `navigate('/' + resolvedId)` instead of `onItemClick(item.id)`. For tenant items, this is direct. For workspace/portfolio/program items, read the selected ID from context or prompt the user to select one.
+
+2. **`src/pages/Index.tsx`** -- No changes needed (tenant/workspace/portfolio/program pages are separate routes, not dashboard views).
+
+3. **`src/components/workspace/WorkspaceDashboard.tsx`** -- Replace hardcoded portfolio/program/team/activity sections with queries to `portfolios`, `programs`, `workspace_members`, and `timeline_activities` tables filtered by `workspaceId`.
+
+4. **`src/contexts/TenantContext.tsx`** -- Optionally extend to track `activeWorkspaceId` so workspace admin sidebar items can resolve the correct workspace.
+
+---
+
+### Summary
+
+| Area | Status | Blocking Issue |
+|------|--------|----------------|
+| Database tables | Working | None |
+| RLS policies | Working | None |
+| TenantContext (dynamic tenant ID) | Working | None |
+| Routes in App.tsx | Working | None |
+| Service layers | Working | None |
+| Sidebar navigation to tenant pages | **Broken** | Click handler uses view mode instead of router navigation |
+| Sidebar navigation to workspace/portfolio/program pages | **Broken** | No ID resolution + wrong navigation mode |
+| WorkspaceDashboard content | **Partial** | Metrics real, rest hardcoded |
+| TenantDashboard | Working | None |
+| WorkspaceManagement | Working | None |
+| DepartmentManagement | Working | None |
+| LicenseAllocation | Working | None |
+| TenantAnalytics | Working | None |
+| TenantSettings | Working | None |
+
+**Bottom line**: The database and service layers are solid. The primary blocker is the sidebar navigation -- users cannot reach tenant/workspace/portfolio/program pages from the main app UI. Fixing the sidebar click handler for these route-based items will make the entire hierarchy functional.

@@ -19,31 +19,39 @@ import {
 import { TrendingUp, ArrowLeft, Search, Download } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { usePredictionStats } from '@/hooks/useMLPredictions';
+import { useQuery } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 
 export function MLPredictionsPage() {
     const navigate = useNavigate();
     const { data: stats } = usePredictionStats();
     const [searchQuery, setSearchQuery] = useState('');
 
-    // Mock prediction data - replace with real hook
-    const predictions = [
-        {
-            id: '1',
-            model_name: 'Risk Prediction Model',
-            input: 'Project Alpha',
-            output: 'High Risk',
-            confidence: 0.92,
-            created_at: new Date().toISOString(),
+    const { data: predictions = [], isLoading } = useQuery({
+        queryKey: ['ml-predictions-list'],
+        queryFn: async () => {
+            const { data } = await (supabase as any)
+                .from('ml_predictions')
+                .select('*')
+                .order('created_at', { ascending: false })
+                .limit(50);
+
+            return (data || []).map((p: any) => ({
+                id: p.id,
+                model_name: p.prediction_type || 'Unknown',
+                input: p.project_id ? `Project ${String(p.project_id).slice(0, 8)}` : 'N/A',
+                output: typeof p.prediction === 'object' ? JSON.stringify(p.prediction).slice(0, 50) : String(p.prediction || ''),
+                confidence: p.confidence_score || 0,
+                created_at: p.created_at,
+            }));
         },
-        {
-            id: '2',
-            model_name: 'Cost Estimation Model',
-            input: 'Project Beta',
-            output: '$125,000',
-            confidence: 0.87,
-            created_at: new Date(Date.now() - 86400000).toISOString(),
-        },
-    ];
+        refetchInterval: 30000,
+    });
+
+    const filtered = predictions.filter((p: any) =>
+        !searchQuery || p.model_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        p.output.toLowerCase().includes(searchQuery.toLowerCase())
+    );
 
     const getConfidenceBadge = (confidence: number) => {
         if (confidence >= 0.9) {
@@ -125,30 +133,36 @@ export function MLPredictionsPage() {
                     </div>
                 </CardHeader>
                 <CardContent>
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Model</TableHead>
-                                <TableHead>Input</TableHead>
-                                <TableHead>Output</TableHead>
-                                <TableHead>Confidence</TableHead>
-                                <TableHead>Timestamp</TableHead>
-                            </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {predictions.map((prediction) => (
-                                <TableRow key={prediction.id}>
-                                    <TableCell className="font-medium">{prediction.model_name}</TableCell>
-                                    <TableCell>{prediction.input}</TableCell>
-                                    <TableCell>{prediction.output}</TableCell>
-                                    <TableCell>{getConfidenceBadge(prediction.confidence)}</TableCell>
-                                    <TableCell className="text-sm text-muted-foreground">
-                                        {new Date(prediction.created_at).toLocaleString()}
-                                    </TableCell>
+                    {isLoading ? (
+                        <p className="text-sm text-muted-foreground p-4">Loading predictions...</p>
+                    ) : filtered.length === 0 ? (
+                        <p className="text-sm text-muted-foreground p-4 text-center">No predictions found</p>
+                    ) : (
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead>Type</TableHead>
+                                    <TableHead>Input</TableHead>
+                                    <TableHead>Output</TableHead>
+                                    <TableHead>Confidence</TableHead>
+                                    <TableHead>Timestamp</TableHead>
                                 </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
+                            </TableHeader>
+                            <TableBody>
+                                {filtered.map((prediction: any) => (
+                                    <TableRow key={prediction.id}>
+                                        <TableCell className="font-medium">{prediction.model_name}</TableCell>
+                                        <TableCell>{prediction.input}</TableCell>
+                                        <TableCell className="max-w-[200px] truncate">{prediction.output}</TableCell>
+                                        <TableCell>{getConfidenceBadge(prediction.confidence)}</TableCell>
+                                        <TableCell className="text-sm text-muted-foreground">
+                                            {new Date(prediction.created_at).toLocaleString()}
+                                        </TableCell>
+                                    </TableRow>
+                                ))}
+                            </TableBody>
+                        </Table>
+                    )}
                 </CardContent>
             </Card>
         </div>

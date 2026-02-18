@@ -1,106 +1,80 @@
 
-# Application Readiness Report: Tenant, Workspace, Portfolio, Programs
 
-## Current Status: Partially Working -- Key Navigation Issues Remain
+# Fix Build Errors and Seed Sample Data
 
-### What IS Working
+## Part 1: Fix Build Errors (10 errors)
 
-1. **Database layer**: All 15 previously missing tables now exist (`tenants`, `workspaces`, `workspace_members`, `departments`, `licenses`, `license_keys`, `discount_codes`, `team_members`, `project_members`, `project_custom_roles`, `workspace_budgets`, `workspace_resources`, `ai_provider_api_keys`, `spreadsheet_comments`, `workspace_teams`).
+### Error Group A: `@/lib/supabase` module not found (5 files)
+The following files import from `@/lib/supabase` which doesn't exist. The correct import is `@/integrations/supabase/client`:
+- `src/hooks/useCursor.ts` (line 7)
+- `src/hooks/useCustomEvents.ts` (line 7)
+- `src/hooks/useOfflineSync.ts` (line 8)
+- `src/hooks/useRecordLock.ts` (line 7)
+- `src/services/filterPresetService.ts` (line 6)
+- `src/services/realtimeService.ts` (line 6)
 
-2. **RLS policies**: All new tables have Row Level Security policies correctly configured with tenant-based isolation.
+**Fix**: Replace `import { supabase } from '@/lib/supabase'` with `import { supabase } from '@/integrations/supabase/client'` in all 6 files.
 
-3. **TenantContext**: The `TenantProvider` wraps the entire app in `App.tsx`, and `useTenant()` is used in `TenantDashboard`, `WorkspaceManagement`, `TenantSettings`, `TenantAnalytics`, `DepartmentManagement`, `LicenseAllocation`, and `TenantUserManagement` -- no more hardcoded tenant IDs.
+### Error Group B: `useProject` not exported from ProjectContext
+`src/components/collaboration/ActiveUsers.tsx` imports `useProject` but the context only exports `useProjectContext`.
 
-4. **Routes registered**: All tenant (`/tenant/*`), workspace (`/workspace/:workspaceId/*`), portfolio (`/portfolio/:portfolioId/*`), and program (`/program/:programId/*`) routes are properly defined in `App.tsx`.
+**Fix**: Change import to `useProjectContext` and update usage: `const { settings: currentProject } = useProjectContext()` then use `currentProject.id`.
 
-5. **Service layers**: `tenantService.ts` and `workspaceService.ts` are fully wired to the database with the `(supabase as any)` pattern.
+### Error Group C: Duplicate `FilterPreset` type with conflicting `filters` property
+`src/types/analytics.ts` has TWO `FilterPreset` interfaces -- one at line 216 with `filters: FilterConfig` and another at line 566 with `filters: FilterState`. TypeScript merges them and finds a conflict.
 
----
+**Fix**: Remove the duplicate `FilterPreset` at lines 566-575 (keep the one at line 216). Update `filterPresetService.ts` to use `FilterConfig` instead of `FilterState` for the `filters` parameter, or adjust the first `FilterPreset` to use `FilterState`. The simpler fix: remove the second duplicate and update `filterPresetService.ts` to accept `FilterConfig`.
 
-### Issues That Will Prevent Full Functionality
+### Error Group D: `useCustomEvents.ts` type error
+Line 50 uses `event` (the DOM event variable name) which shadows the `CustomEvent` type. The `subscribe` callback references `event` from the outer scope incorrectly.
 
-#### Issue 1: Sidebar Navigation is Broken for Tenant/Workspace/Portfolio/Program Items (CRITICAL)
-
-The sidebar items for tenant, workspace, portfolio, and program admin sections use `onItemClick(item.id)` which sets a `?view=` query parameter on the `/dashboard` page. However, these pages are **separate routes** (`/tenant`, `/workspace/:id`, etc.), not views within the dashboard's `renderView()` switch statement.
-
-**What happens**: Clicking "Tenant Dashboard" in the sidebar sets `?view=tenant` on `/dashboard`, which falls through to the `default` case in `renderView()` and renders the main DashboardHub instead.
-
-**Items affected**:
-- `tenant`, `tenant/workspaces`, `tenant/users`, `tenant/departments`, `tenant/licenses`, `tenant/analytics`, `tenant/settings`
-- `workspace/:id`, `workspace/:id/portfolios`, `workspace/:id/teams`, `workspace/:id/resources`, `workspace/:id/budget`, `workspace/:id/analytics`
-- `portfolio/:id`, `portfolio/:id/resources`, `portfolio/:id/budget`, `portfolio/:id/roadmap`
-- `program/:id/stakeholders`, `program/:id/resources`, `program/:id/budget`
-
-**Fix**: The sidebar click handler needs to call `navigate('/' + item.id)` for these items instead of `onItemClick(item.id)`. The items with `:id` placeholders also need a way to resolve the actual workspace/portfolio/program ID.
-
-#### Issue 2: WorkspaceDashboard Has Hardcoded Mock Data (MEDIUM)
-
-`WorkspaceDashboard.tsx` fetches real metrics via `getWorkspaceOverview()`, but the Portfolios, Programs, Team Overview, and Activity Feed sections (lines 86-178) are entirely **hardcoded mock data**:
-- "Digital Transformation", "Product Innovation", "Infrastructure Modernization" portfolios
-- "Cloud Migration", "Mobile App Redesign", "API Platform" programs
-- "Portfolio Managers: 3", "Program Managers: 8", "Project Managers: 24"
-- 3 hardcoded activity items
-
-#### Issue 3: Workspace/Portfolio/Program Sidebar Items Use `:id` Placeholder (HIGH)
-
-The sidebar nav items use literal strings like `workspace/:id` as IDs. There is no mechanism to substitute the actual workspace, portfolio, or program ID. Users cannot navigate to these pages from the sidebar because:
-- No workspace selector exists in the sidebar
-- No portfolio/program selector exists
-- The `:id` literal string would be passed as the route param
-
-#### Issue 4: "Analytics" and "New Portfolio" Buttons in WorkspaceDashboard Are Unwired (LOW)
-
-Lines 40-47 of `WorkspaceDashboard.tsx` have `<Button>` elements without `onClick` handlers -- they render but do nothing when clicked.
+**Fix**: The `subscribe` function body has a bug -- it pushes a DOM `event` into the array. Fix by removing the broken `setEvents` call inside `subscribe` (the actual event handling happens in the `useEffect` broadcast listener).
 
 ---
 
-### What Needs to Be Fixed
+## Part 2: Seed Sample Data
 
-#### Fix 1: Route-based Navigation for Admin Sidebar Items
-Update the sidebar click handler to use `navigate()` for tenant/workspace/portfolio/program items instead of the view-based `onItemClick()`. For tenant items (which don't need a dynamic ID), this is straightforward: clicking "Tenant Dashboard" should navigate to `/tenant`.
+Insert realistic sample data across all major tables so dashboards, reports, and views load with content. All data will be inserted via the database insert tool.
 
-#### Fix 2: Workspace/Portfolio/Program ID Resolution
-Add a workspace selector (dropdown or context) so workspace admin items navigate to `/workspace/{actual-id}/...` rather than `/workspace/:id/...`. Same pattern for portfolio and program sections.
+### Seed Order (respecting foreign keys):
 
-#### Fix 3: Replace WorkspaceDashboard Mock Data
-Query real portfolios, programs, and team member counts from the database instead of hardcoded values.
-
-#### Fix 4: Wire Unwired Buttons
-Add `onClick` handlers to the Analytics and New Portfolio buttons in `WorkspaceDashboard`.
-
----
-
-### Technical Implementation Details
-
-**File changes needed:**
-
-1. **`src/components/layout/Sidebar.tsx`** -- Modify `renderNavItem` click handler: detect items whose IDs start with `tenant/`, `workspace/`, `portfolio/`, or `program/` and use `navigate('/' + resolvedId)` instead of `onItemClick(item.id)`. For tenant items, this is direct. For workspace/portfolio/program items, read the selected ID from context or prompt the user to select one.
-
-2. **`src/pages/Index.tsx`** -- No changes needed (tenant/workspace/portfolio/program pages are separate routes, not dashboard views).
-
-3. **`src/components/workspace/WorkspaceDashboard.tsx`** -- Replace hardcoded portfolio/program/team/activity sections with queries to `portfolios`, `programs`, `workspace_members`, and `timeline_activities` tables filtered by `workspaceId`.
-
-4. **`src/contexts/TenantContext.tsx`** -- Optionally extend to track `activeWorkspaceId` so workspace admin sidebar items can resolve the correct workspace.
+1. **Tenant** (1 record): "Acme Corporation" with slug "acme-corp"
+2. **Workspaces** (2 records): "Engineering", "Operations" linked to tenant
+3. **Departments** (3 records): "Software Development", "QA", "DevOps" linked to tenant
+4. **Licenses** (2 records): "Enterprise Suite", "Developer Tools" linked to tenant
+5. **Portfolios** (2 records): "Digital Transformation", "Product Innovation" linked to workspace
+6. **Programs** (3 records): "Cloud Migration", "Mobile Platform", "API Modernization" linked to portfolios and workspace
+7. **Projects** (3 records): Update existing project + add 2 more linked to workspace/tenant/programs
+8. **Resources** (4 records): Team members linked to projects
+9. **Tasks** (add more to existing project + new projects)
+10. **Risks** (4 records): Linked to projects
+11. **Issues** (3 records): Linked to projects
+12. **Decisions** (3 records): Linked to projects
+13. **Actions** (3 records): Linked to projects
+14. **Meetings** (2 records): Linked to projects
+15. **Stakeholders** (4 records): Linked to projects
+16. **Notifications** (3 records): System notifications
+17. **Timeline activities** (5 records): Recent activity feed entries
 
 ---
 
-### Summary
+## Technical Details
 
-| Area | Status | Blocking Issue |
-|------|--------|----------------|
-| Database tables | Working | None |
-| RLS policies | Working | None |
-| TenantContext (dynamic tenant ID) | Working | None |
-| Routes in App.tsx | Working | None |
-| Service layers | Working | None |
-| Sidebar navigation to tenant pages | **Broken** | Click handler uses view mode instead of router navigation |
-| Sidebar navigation to workspace/portfolio/program pages | **Broken** | No ID resolution + wrong navigation mode |
-| WorkspaceDashboard content | **Partial** | Metrics real, rest hardcoded |
-| TenantDashboard | Working | None |
-| WorkspaceManagement | Working | None |
-| DepartmentManagement | Working | None |
-| LicenseAllocation | Working | None |
-| TenantAnalytics | Working | None |
-| TenantSettings | Working | None |
+### Files to modify:
+1. `src/hooks/useCursor.ts` -- fix import
+2. `src/hooks/useCustomEvents.ts` -- fix import + type error
+3. `src/hooks/useOfflineSync.ts` -- fix import
+4. `src/hooks/useRecordLock.ts` -- fix import
+5. `src/services/filterPresetService.ts` -- fix import + type alignment
+6. `src/services/realtimeService.ts` -- fix import
+7. `src/components/collaboration/ActiveUsers.tsx` -- fix useProject import
+8. `src/types/analytics.ts` -- remove duplicate FilterPreset
 
-**Bottom line**: The database and service layers are solid. The primary blocker is the sidebar navigation -- users cannot reach tenant/workspace/portfolio/program pages from the main app UI. Fixing the sidebar click handler for these route-based items will make the entire hierarchy functional.
+### Database inserts (no schema changes):
+- ~50 sample records across 17+ tables
+- All UUIDs generated via `gen_random_uuid()`
+- Dates relative to current date for realistic timeline data
+- Projects with varied statuses (active, planning, on-hold)
+- Risks with mixed probability/impact levels
+- Financial data with budgets and actual costs
+

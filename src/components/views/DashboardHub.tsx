@@ -8,6 +8,7 @@ import {
   ChevronDown,
   Check,
   Download,
+  Shield,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -23,12 +24,13 @@ import { Skeleton } from '@/components/ui/skeleton';
 const DashboardView = lazy(() => import('./DashboardView'));
 const ExecutiveDashboardView = lazy(() => import('./ExecutiveDashboardView'));
 const StrategicDashboardView = lazy(() => import('./StrategicDashboardView'));
+const GlobalGovernanceDashboard = lazy(() => import('@/components/governance/GlobalGovernanceDashboard'));
 
 interface DashboardHubProps {
   onViewChange?: (view: string) => void;
 }
 
-export type DashboardType = 'project' | 'executive' | 'strategic';
+export type DashboardType = 'project' | 'executive' | 'strategic' | 'governance';
 
 interface DashboardOption {
   id: DashboardType;
@@ -55,6 +57,12 @@ const dashboardOptions: DashboardOption[] = [
     name: 'Strategic Dashboard',
     description: 'Business case and value analysis',
     icon: Target,
+  },
+  {
+    id: 'governance',
+    name: 'Governance Dashboard',
+    description: 'Project health, milestones & budget',
+    icon: Shield,
   },
 ];
 
@@ -93,7 +101,7 @@ export default function DashboardHub({ onViewChange }: DashboardHubProps) {
   /* Deep Linking Logic */
   useEffect(() => {
     const dashboardParam = searchParams.get('dashboard');
-    if (dashboardParam && ['project', 'executive', 'strategic'].includes(dashboardParam)) {
+    if (dashboardParam && ['project', 'executive', 'strategic', 'governance'].includes(dashboardParam)) {
       setActiveDashboard(dashboardParam as DashboardType);
     }
   }, [searchParams]);
@@ -114,6 +122,8 @@ export default function DashboardHub({ onViewChange }: DashboardHubProps) {
         return <ExecutiveDashboardView />;
       case 'strategic':
         return <StrategicDashboardView />;
+      case 'governance':
+        return <GlobalGovernanceDashboard />;
       default:
         return <DashboardView />;
     }

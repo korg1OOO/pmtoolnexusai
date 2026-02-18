@@ -46,7 +46,7 @@ interface NotificationItemProps {
 }
 
 function NotificationItem({ notification, onRead, onDelete }: NotificationItemProps) {
-  const config = typeConfig[notification.type];
+  const config = typeConfig[notification.type] ?? { icon: Info, color: 'text-muted-foreground bg-muted/10' };
   const Icon = config.icon;
 
   return (

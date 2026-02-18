@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { usePortfolios, useCreatePortfolio, useUpdatePortfolio, useDeletePortfolio } from '@/hooks/usePortfolios';
+import { QuickCreatePortfolio } from '@/components/portfolio/QuickCreatePortfolio';
 import { usePrograms, useCreateProgram, useUpdateProgram, useDeleteProgram } from '@/hooks/usePrograms';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -33,8 +34,13 @@ export function PortfolioManagement() {
     return (
         <Card className="w-full">
             <CardHeader>
-                <CardTitle>Management</CardTitle>
-                <CardDescription>Manage your Portfolios and Programs structure.</CardDescription>
+                <div className="flex items-center justify-between">
+                    <div>
+                        <CardTitle>Management</CardTitle>
+                        <CardDescription>Manage your Portfolios and Programs structure.</CardDescription>
+                    </div>
+                    <QuickCreatePortfolio />
+                </div>
             </CardHeader>
             <CardContent>
                 <Tabs defaultValue="portfolios" className="w-full">

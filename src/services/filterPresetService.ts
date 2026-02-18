@@ -3,20 +3,18 @@
  * Manages saving, loading, and deleting filter presets in user preferences
  */
 
-import { supabase } from '@/lib/supabase';
-import type { FilterPreset, FilterState } from '@/types/analytics';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+import type { FilterPreset, FilterConfig } from '@/types/analytics';
 
+const supabase = _supabase as any;
 const PRESET_KEY_PREFIX = 'analytics_filter_preset_';
 
 export const filterPresetService = {
-    /**
-     * Save a new filter preset
-     */
     async saveFilterPreset(
         userId: string,
         projectId: string,
         name: string,
-        filters: FilterState,
+        filters: FilterConfig,
         description?: string
     ): Promise<FilterPreset> {
         const presetId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -25,10 +23,11 @@ export const filterPresetService = {
             name,
             description,
             filters,
+            createdBy: userId,
+            createdDate: new Date(),
+            updatedDate: new Date(),
+            shared: false,
             isDefault: false,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            userId
         };
 
         const { error } = await supabase
@@ -37,16 +36,13 @@ export const filterPresetService = {
                 user_id: userId,
                 project_id: projectId,
                 preference_key: `${PRESET_KEY_PREFIX}${presetId}`,
-                preference_value: preset
+                preference_value: preset as any
             });
 
         if (error) throw error;
         return preset;
     },
 
-    /**
-     * Get all filter presets for a user and project
-     */
     async getFilterPresets(userId: string, projectId: string): Promise<FilterPreset[]> {
         const { data, error } = await supabase
             .from('user_preferences')
@@ -56,27 +52,21 @@ export const filterPresetService = {
             .like('preference_key', `${PRESET_KEY_PREFIX}%`);
 
         if (error) throw error;
-
         return (data || [])
-            .map(row => row.preference_value as FilterPreset)
-            .sort((a, b) => {
-                // Default preset first, then by creation date
+            .map((row: any) => row.preference_value as FilterPreset)
+            .sort((a: FilterPreset, b: FilterPreset) => {
                 if (a.isDefault && !b.isDefault) return -1;
                 if (!a.isDefault && b.isDefault) return 1;
-                return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+                return new Date(b.createdDate).getTime() - new Date(a.createdDate).getTime();
             });
     },
 
-    /**
-     * Update an existing filter preset
-     */
     async updateFilterPreset(
         userId: string,
         projectId: string,
         presetId: string,
-        updates: Partial<Omit<FilterPreset, 'id' | 'userId' | 'createdAt'>>
+        updates: Partial<FilterPreset>
     ): Promise<void> {
-        // First get the existing preset
         const { data, error: fetchError } = await supabase
             .from('user_preferences')
             .select('preference_value')
@@ -86,17 +76,12 @@ export const filterPresetService = {
             .single();
 
         if (fetchError) throw fetchError;
-
         const existingPreset = data.preference_value as FilterPreset;
-        const updatedPreset: FilterPreset = {
-            ...existingPreset,
-            ...updates,
-            updatedAt: new Date()
-        };
+        const updatedPreset = { ...existingPreset, ...updates, updatedDate: new Date() };
 
         const { error } = await supabase
             .from('user_preferences')
-            .update({ preference_value: updatedPreset })
+            .update({ preference_value: updatedPreset as any })
             .eq('user_id', userId)
             .eq('project_id', projectId)
             .eq('preference_key', `${PRESET_KEY_PREFIX}${presetId}`);
@@ -104,40 +89,20 @@ export const filterPresetService = {
         if (error) throw error;
     },
 
-    /**
-     * Delete a filter preset
-     */
-    async deleteFilterPreset(
-        userId: string,
-        projectId: string,
-        presetId: string
-    ): Promise<void> {
+    async deleteFilterPreset(userId: string, projectId: string, presetId: string): Promise<void> {
         const { error } = await supabase
             .from('user_preferences')
             .delete()
             .eq('user_id', userId)
             .eq('project_id', projectId)
             .eq('preference_key', `${PRESET_KEY_PREFIX}${presetId}`);
-
         if (error) throw error;
     },
 
-    /**
-     * Set a preset as the default (and unset others)
-     */
-    async setDefaultPreset(
-        userId: string,
-        projectId: string,
-        presetId: string
-    ): Promise<void> {
-        // Get all presets
+    async setDefaultPreset(userId: string, projectId: string, presetId: string): Promise<void> {
         const presets = await this.getFilterPresets(userId, projectId);
-
-        // Update all presets
         for (const preset of presets) {
-            await this.updateFilterPreset(userId, projectId, preset.id, {
-                isDefault: preset.id === presetId
-            });
+            await this.updateFilterPreset(userId, projectId, preset.id, { isDefault: preset.id === presetId });
         }
     }
 };

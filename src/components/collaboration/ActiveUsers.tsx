@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { usePresence } from '@/hooks/usePresence';
-import { useProject } from '@/contexts/ProjectContext';
+import { useProjectContext } from '@/contexts/ProjectContext';
 
 interface ActiveUsersProps {
     className?: string;
@@ -23,7 +23,7 @@ interface ActiveUsersProps {
 }
 
 export function ActiveUsers({ className, maxDisplay = 5 }: ActiveUsersProps) {
-    const { currentProject } = useProject();
+    const { settings: currentProject } = useProjectContext();
     const { users } = usePresence(currentProject?.id || null);
 
     if (users.length === 0) {

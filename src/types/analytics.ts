@@ -563,16 +563,7 @@ export interface FilterOption {
     icon?: string;
 }
 
-export interface FilterPreset {
-    id: string;
-    name: string;
-    description?: string;
-    filters: FilterState;
-    isDefault: boolean;
-    createdAt: Date;
-    updatedAt: Date;
-    userId: string;
-}
+// FilterPreset is defined above (line ~216) - removed duplicate
 
 export interface FilterConfig {
     key: string;

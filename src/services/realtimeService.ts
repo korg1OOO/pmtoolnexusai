@@ -3,7 +3,7 @@
  * Manages Supabase Realtime subscriptions and connections
  */
 
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import { ReconnectionManager } from '@/utils/reconnectionManager';
 import type { RealtimeSubscription, ConnectionState, RealtimePayload } from '@/types/realtime';
@@ -16,49 +16,27 @@ class RealtimeService {
 
     constructor() {
         this.reconnectionManager = new ReconnectionManager();
-        this.setupConnectionMonitoring();
     }
 
-    /**
-     * Setup connection state monitoring
-     */
-    private setupConnectionMonitoring(): void {
-        // Monitor Supabase connection status
-        supabase.realtime.onOpen(() => {
-            this.updateConnectionState('connected');
-            this.reconnectionManager.reset();
-        });
-
-        supabase.realtime.onClose(() => {
-            this.updateConnectionState('disconnected');
-            this.handleDisconnection();
-        });
-
-        supabase.realtime.onError((error) => {
-            console.error('Realtime error:', error);
-            this.updateConnectionState('error');
-        });
+    private updateConnectionState(state: ConnectionState): void {
+        this.connectionState = state;
+        this.stateListeners.forEach(listener => listener(state));
     }
 
-    /**
-     * Handle disconnection with automatic reconnection
-     */
+    onConnectionStateChange(listener: (state: ConnectionState) => void): () => void {
+        this.stateListeners.add(listener);
+        return () => this.stateListeners.delete(listener);
+    }
+
     private async handleDisconnection(): Promise<void> {
-        if (this.channels.size === 0) {
-            // No active subscriptions, don't reconnect
-            return;
-        }
-
+        if (this.channels.size === 0) return;
         this.updateConnectionState('connecting');
 
         const success = await this.reconnectionManager.reconnect(async () => {
-            // Reconnect all channels
             const channelIds = Array.from(this.channels.keys());
             for (const channelId of channelIds) {
                 const channel = this.channels.get(channelId);
-                if (channel) {
-                    await channel.subscribe();
-                }
+                if (channel) await channel.subscribe();
             }
         });
 
@@ -67,39 +45,16 @@ class RealtimeService {
         }
     }
 
-    /**
-     * Update connection state and notify listeners
-     */
-    private updateConnectionState(state: ConnectionState): void {
-        this.connectionState = state;
-        this.stateListeners.forEach(listener => listener(state));
-    }
-
-    /**
-     * Subscribe to connection state changes
-     */
-    onConnectionStateChange(listener: (state: ConnectionState) => void): () => void {
-        this.stateListeners.add(listener);
-        // Return unsubscribe function
-        return () => this.stateListeners.delete(listener);
-    }
-
-    /**
-     * Subscribe to table changes
-     */
     subscribe(subscription: RealtimeSubscription): () => void {
         const channelId = `${subscription.table}:${subscription.filter || '*'}`;
 
-        // Check if channel already exists
         if (this.channels.has(channelId)) {
             console.warn(`Channel ${channelId} already exists`);
             return () => this.unsubscribe(channelId);
         }
 
-        // Create channel
         const channel = supabase.channel(channelId);
 
-        // Setup table change listeners
         channel.on(
             'postgres_changes',
             {
@@ -110,82 +65,47 @@ class RealtimeService {
             },
             (payload: RealtimePayload) => {
                 switch (payload.eventType) {
-                    case 'INSERT':
-                        subscription.onInsert?.(payload.new);
-                        break;
-                    case 'UPDATE':
-                        subscription.onUpdate?.(payload.new);
-                        break;
-                    case 'DELETE':
-                        subscription.onDelete?.(payload.old);
-                        break;
+                    case 'INSERT': subscription.onInsert?.(payload.new); break;
+                    case 'UPDATE': subscription.onUpdate?.(payload.new); break;
+                    case 'DELETE': subscription.onDelete?.(payload.old); break;
                 }
             }
         );
 
-        // Subscribe to channel
         channel.subscribe((status) => {
-            if (status === 'SUBSCRIBED') {
-                this.updateConnectionState('connected');
-            } else if (status === 'CHANNEL_ERROR') {
+            if (status === 'SUBSCRIBED') this.updateConnectionState('connected');
+            else if (status === 'CHANNEL_ERROR') {
                 subscription.onError?.(new Error('Channel subscription failed'));
+                this.handleDisconnection();
             }
         });
 
         this.channels.set(channelId, channel);
-
-        // Return unsubscribe function
         return () => this.unsubscribe(channelId);
     }
 
-    /**
-     * Unsubscribe from a channel
-     */
     private async unsubscribe(channelId: string): Promise<void> {
         const channel = this.channels.get(channelId);
         if (channel) {
             await supabase.removeChannel(channel);
             this.channels.delete(channelId);
-
-            // Update connection state if no more channels
-            if (this.channels.size === 0) {
-                this.updateConnectionState('disconnected');
-            }
+            if (this.channels.size === 0) this.updateConnectionState('disconnected');
         }
     }
 
-    /**
-     * Unsubscribe from all channels
-     */
     async unsubscribeAll(): Promise<void> {
-        const channelIds = Array.from(this.channels.keys());
-        for (const channelId of channelIds) {
+        for (const channelId of Array.from(this.channels.keys())) {
             await this.unsubscribe(channelId);
         }
     }
 
-    /**
-     * Get current connection state
-     */
-    getConnectionState(): ConnectionState {
-        return this.connectionState;
-    }
+    getConnectionState(): ConnectionState { return this.connectionState; }
+    getActiveChannelCount(): number { return this.channels.size; }
 
-    /**
-     * Get number of active channels
-     */
-    getActiveChannelCount(): number {
-        return this.channels.size;
-    }
-
-    /**
-     * Manually trigger reconnection
-     */
     async reconnect(): Promise<void> {
         this.reconnectionManager.reset();
         await this.handleDisconnection();
     }
 }
 
-// Export singleton instance
 export const realtimeService = new RealtimeService();

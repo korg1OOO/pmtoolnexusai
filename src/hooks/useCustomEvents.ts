@@ -4,7 +4,7 @@
  */
 
 import { useEffect, useState, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '@/integrations/supabase/client';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import type { CustomEvent } from '@/types/collaboration';
 
@@ -46,8 +46,7 @@ export function useCustomEvents(dashboardId: string, userId: string, username: s
             handler(event);
         };
 
-        // Add to events list
-        setEvents(prev => [...prev, event]);
+        // Event handling happens in the useEffect broadcast listener
 
         return () => {
             // Cleanup if needed

@@ -4,10 +4,11 @@
  */
 
 import { useState, useEffect, useCallback } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase as _supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import type { RecordLock } from '@/types/collaboration';
 
+const supabase = _supabase as any;
 const LOCK_DURATION_MINUTES = 10;
 
 export function useRecordLock(tableName: string, recordId: string) {
@@ -40,7 +41,7 @@ export function useRecordLock(tableName: string, recordId: string) {
                 tableName: data.table_name,
                 recordId: data.record_id,
                 userId: data.user_id,
-                username: (data.profiles as any)?.full_name || 'Unknown User',
+                username: data.profiles?.full_name || 'Unknown User',
                 lockedAt: new Date(data.locked_at),
                 expiresAt: new Date(data.expires_at)
             };
@@ -57,15 +58,10 @@ export function useRecordLock(tableName: string, recordId: string) {
         }
     }, [tableName, recordId, user?.id]);
 
-    // Acquire lock
     const lock = useCallback(async (): Promise<boolean> => {
         if (!user || !recordId || !tableName) return false;
-
-        // Check if already locked
         await checkLock();
-        if (isLocked && !isOwnLock) {
-            return false;
-        }
+        if (isLocked && !isOwnLock) return false;
 
         const expiresAt = new Date();
         expiresAt.setMinutes(expiresAt.getMinutes() + LOCK_DURATION_MINUTES);
@@ -79,19 +75,13 @@ export function useRecordLock(tableName: string, recordId: string) {
                 expires_at: expiresAt.toISOString()
             });
 
-        if (error) {
-            console.error('Error acquiring lock:', error);
-            return false;
-        }
-
+        if (error) { console.error('Error acquiring lock:', error); return false; }
         await checkLock();
         return true;
     }, [user, recordId, tableName, checkLock, isLocked, isOwnLock]);
 
-    // Release lock
     const unlock = useCallback(async (): Promise<boolean> => {
         if (!user || !recordId || !tableName) return false;
-
         const { error } = await supabase
             .from('record_locks')
             .delete()
@@ -99,22 +89,13 @@ export function useRecordLock(tableName: string, recordId: string) {
             .eq('record_id', recordId)
             .eq('user_id', user.id);
 
-        if (error) {
-            console.error('Error releasing lock:', error);
-            return false;
-        }
-
-        setLockData(null);
-        setIsLocked(false);
-        setLockedBy(null);
-        setIsOwnLock(false);
+        if (error) { console.error('Error releasing lock:', error); return false; }
+        setLockData(null); setIsLocked(false); setLockedBy(null); setIsOwnLock(false);
         return true;
     }, [user, recordId, tableName]);
 
-    // Extend lock
     const extendLock = useCallback(async (): Promise<boolean> => {
         if (!user || !recordId || !tableName || !isOwnLock) return false;
-
         const expiresAt = new Date();
         expiresAt.setMinutes(expiresAt.getMinutes() + LOCK_DURATION_MINUTES);
 
@@ -125,42 +106,22 @@ export function useRecordLock(tableName: string, recordId: string) {
             .eq('record_id', recordId)
             .eq('user_id', user.id);
 
-        if (error) {
-            console.error('Error extending lock:', error);
-            return false;
-        }
-
+        if (error) { console.error('Error extending lock:', error); return false; }
         await checkLock();
         return true;
     }, [user, recordId, tableName, isOwnLock, checkLock]);
 
-    // Check lock on mount and periodically
     useEffect(() => {
         checkLock();
-        const interval = setInterval(checkLock, 10000); // Check every 10 seconds
-
+        const interval = setInterval(checkLock, 10000);
         return () => clearInterval(interval);
     }, [checkLock]);
 
-    // Auto-extend lock every 5 minutes if owned
     useEffect(() => {
         if (!isOwnLock) return;
-
-        const interval = setInterval(() => {
-            extendLock();
-        }, 5 * 60 * 1000); // Every 5 minutes
-
+        const interval = setInterval(() => { extendLock(); }, 5 * 60 * 1000);
         return () => clearInterval(interval);
     }, [isOwnLock, extendLock]);
 
-    return {
-        isLocked,
-        lockedBy,
-        lockData,
-        isOwnLock,
-        lock,
-        unlock,
-        extendLock,
-        checkLock
-    };
+    return { isLocked, lockedBy, lockData, isOwnLock, lock, unlock, extendLock, checkLock };
 }

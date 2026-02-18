@@ -107,7 +107,7 @@ export function FilterPresets({
                                     <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
                                         <span>{getFilterCount(preset.filters)} filters</span>
                                         <span>•</span>
-                                        <span>{format(preset.createdAt, 'MMM d, yyyy')}</span>
+                                        <span>{format(preset.createdDate, 'MMM d, yyyy')}</span>
                                     </div>
                                 </div>
                                 <div className="flex gap-1">

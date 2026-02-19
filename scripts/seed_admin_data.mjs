@@ -1,0 +1,221 @@
+import { createClient } from '@supabase/supabase-js';
+import { config as dotenvConfig } from 'dotenv';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+// Simple mock data generator
+const randomElement = (arr) => arr[Math.floor(Math.random() * arr.length)];
+const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+const randomDate = (start, end) => new Date(start.getTime() + Math.random() * (end.getTime() - start.getTime())).toISOString();
+const randomString = () => Math.random().toString(36).substring(7);
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const rootDir = join(__dirname, '..');
+
+// Load .env
+dotenvConfig({ path: join(rootDir, '.env') });
+
+const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
+const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
+    console.error('❌  Missing VITE_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY in .env');
+    process.exit(1);
+}
+
+const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
+    auth: { autoRefreshToken: false, persistSession: false },
+});
+
+console.log(`🔌  Connecting to ${SUPABASE_URL}...`);
+
+async function seedData() {
+    try {
+        // 1. Seed Users & Profiles
+        console.log('👤  Seeding Users & Profiles...');
+        const tiers = ['free', 'pro', 'business', 'agency'];
+        const roles = ['admin', 'manager', 'member', 'viewer'];
+        const statuses = ['active', 'inactive', 'suspended'];
+
+        const users = [];
+
+        // Create 20 mock users
+        for (let i = 0; i < 20; i++) {
+            const email = `user${i}_${Date.now()}@example.com`;
+            const fullName = `User ${i} Name`; // Replace with faker if available
+
+            // Create Auth User
+            const { data: authData, error: authError } = await supabase.auth.admin.createUser({
+                email,
+                password: 'password123',
+                email_confirm: true,
+                user_metadata: { full_name: fullName },
+            });
+
+            if (authError) {
+                console.warn(`   ⚠️  Failed to create user ${email}: ${authError.message}`);
+                continue;
+            }
+
+            const userId = authData.user.id;
+            users.push(userId);
+
+            // Upsert Profile (Trigger might handle this, but explicit update ensures data)
+            const role = i === 0 ? 'admin' : randomElement(roles); // Ensure at least one admin
+            const status = randomElement(statuses);
+
+            await supabase.from('profiles').upsert({
+                id: userId,
+                full_name: fullName,
+                email: email, // If profile has email column
+                role: role,
+                status: status,
+                last_active_at: new Date().toISOString(),
+                updated_at: new Date().toISOString()
+            });
+        }
+        console.log(`   ✅  Created ${users.length} users.`);
+
+
+        // 1.5 Seed Subscription Plans (CRITICAL for Admin Page)
+        console.log('📋  Seeding Subscription Plans...');
+        const plans = [
+            { tier: 'free', name: 'Free', price_monthly: 0, price_annual: 0, active: true, limits: { projects: 1, users: 1 } },
+            { tier: 'pro', name: 'Pro', price_monthly: 2900, price_annual: 29000, active: true, limits: { projects: 5, users: 5 } },
+            { tier: 'business', name: 'Business', price_monthly: 9900, price_annual: 99000, active: true, limits: { projects: 20, users: 20 } },
+            { tier: 'agency', name: 'Agency', price_monthly: 29900, price_annual: 299000, active: true, limits: { projects: -1, users: -1 } }
+        ];
+
+        for (const plan of plans) {
+            await supabase.from('subscription_plans').upsert({
+                tier: plan.tier,
+                name: plan.name,
+                price_monthly: plan.price_monthly,
+                price_annual: plan.price_annual,
+                limits: plan.limits,
+                active: plan.active,
+                features: {}, // Feature flags handled by 'features' table now, but keeping JSON for compat
+                created_at: new Date().toISOString()
+            }, { onConflict: 'tier' });
+        }
+        console.log(`   ✅  Seeded ${plans.length} plans.`);
+
+        // 1.6 Seed Features (CRITICAL for Feature Matrix)
+        console.log('✨  Seeding Features...');
+        const features = [
+            { key: 'sso', name: 'Single Sign-On (SSO)', category: 'security', min_plan_tier: 'business', is_enabled: true, sort_order: 1 },
+            { key: 'analytics_advanced', name: 'Advanced Analytics', category: 'analytics', min_plan_tier: 'pro', is_enabled: true, sort_order: 2 },
+            { key: 'custom_domain', name: 'Custom Domain', category: 'branding', min_plan_tier: 'pro', is_enabled: true, sort_order: 3 },
+            { key: 'api_access', name: 'API Access', category: 'developer', min_plan_tier: 'business', is_enabled: true, sort_order: 4 },
+            { key: 'audit_logs', name: 'Audit Logs', category: 'compliance', min_plan_tier: 'business', is_enabled: true, sort_order: 5 },
+            { key: 'white_label', name: 'White Labeling', category: 'branding', min_plan_tier: 'agency', is_enabled: true, sort_order: 6 },
+            { key: 'priority_support', name: 'Priority Support', category: 'support', min_plan_tier: 'pro', is_enabled: true, sort_order: 7 },
+            { key: 'sla', name: '99.9% SLA', category: 'support', min_plan_tier: 'agency', is_enabled: true, sort_order: 8 }
+        ];
+
+        for (const feat of features) {
+            await supabase.from('features').upsert({
+                key: feat.key,
+                name: feat.name,
+                category: feat.category,
+                min_plan_tier: feat.min_plan_tier,
+                is_enabled: feat.is_enabled,
+                sort_order: feat.sort_order,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'key' });
+        }
+        console.log(`   ✅  Seeded ${features.length} features.`);
+
+        // 2. Seed Subscriptions
+        console.log('💳  Seeding Subscriptions...');
+        const subs = [];
+        for (const uid of users) {
+            // 80% chance of having a subscription
+            if (Math.random() > 0.2) {
+                const tier = randomElement(tiers);
+                const status = Math.random() > 0.1 ? 'active' : 'cancelled';
+                const price = tier === 'free' ? 0 : tier === 'pro' ? 2900 : tier === 'business' ? 9900 : 29900; // in cents
+
+                const { data: sub } = await supabase.from('subscriptions').insert({
+                    user_id: uid,
+                    tier: tier,
+                    status: status,
+                    mrr: price / 100, // stored as dollars usually? check schema. Hook says mrr number.
+                    plan_id: tier,
+                    monthly_amount: price / 100, // For revenue breakdown
+                    joined_at: randomDate(new Date(2025, 0, 1), new Date()),
+                    created_at: new Date().toISOString(),
+                    updated_at: new Date().toISOString(),
+                    metadata: {}
+                }).select().single();
+
+                if (sub) subs.push(sub);
+            }
+        }
+        console.log(`   ✅  Created ${subs.length} subscriptions.`);
+
+        // 3. Seed Invoices
+        console.log('nf  Seeding Invoices...');
+        for (const sub of subs) {
+            // Generate 1-5 invoices per subscription
+            const count = randomInt(1, 5);
+            for (let k = 0; k < count; k++) {
+                const amount = sub.monthly_amount * 100; // cents
+                if (amount === 0) continue;
+
+                await supabase.from('invoices').insert({
+                    user_id: sub.user_id,
+                    subscription_id: sub.id,
+                    stripe_invoice_id: `in_${Math.random().toString(36).substring(7)}`,
+                    stripe_customer_id: `cus_${Math.random().toString(36).substring(7)}`,
+                    amount_due: amount,
+                    amount_paid: amount,
+                    currency: 'usd',
+                    status: 'paid',
+                    created_at: randomDate(new Date(sub.joined_at), new Date()).toISOString()
+                });
+            }
+        }
+        console.log('   ✅  Invoices seeded.');
+
+        // 4. Seed Activity Log
+        console.log('rg  Seeding Activity Log...');
+        const actions = ['login', 'update_profile', 'view_report', 'export_data', 'create_project', 'update_settings'];
+        const activityTypes = ['info', 'success', 'warning', 'error'];
+
+        for (let j = 0; j < 50; j++) {
+            const uid = randomElement(users);
+            await supabase.from('admin_activity_log').insert({
+                user_id: uid,
+                user_email: `user${uid.substring(0, 4)}@example.com`, // Mock email
+                action: randomElement(actions),
+                action_type: randomElement(activityTypes),
+                metadata: { ip: '127.0.0.1', agent: 'Mozilla/5.0' },
+                created_at: randomDate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), new Date()).toISOString() // last 7 days
+            });
+        }
+        console.log('   ✅  Activity logs seeded.');
+
+        // 5. Seed System Status
+        console.log('hp  Seeding System Status...');
+        const services = ['Database', 'API', 'Storage', 'Auth', 'Edge Functions', 'Stripe Integration'];
+        for (const svc of services) {
+            await supabase.from('system_status').upsert({
+                service_name: svc,
+                status: 'operational',
+                uptime_percentage: 99.9 + (Math.random() * 0.09),
+                last_checked: new Date().toISOString(),
+                metadata: { latency_ms: randomInt(20, 150) }
+            }, { onConflict: 'service_name' });
+        }
+        console.log('   ✅  System status seeded.');
+
+        console.log('\n🎉  Admin Data Seeding Complete!');
+
+    } catch (err) {
+        console.error('❌  Seeding failed:', err);
+        process.exit(1);
+    }
+}
+
+seedData();

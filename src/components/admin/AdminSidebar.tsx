@@ -64,6 +64,7 @@ const navItems: NavItem[] = [
     { id: 'security', label: 'Security & Audit', icon: ShieldCheck, path: '/admin/management' },
     { id: 'billing', label: 'Billing', icon: CreditCard, path: '/admin/billing' },
     { id: 'subscriptions', label: 'Subscriptions', icon: ReceiptText, path: '/admin/subscriptions' },
+    { id: 'plans', label: 'Plans & Packages', icon: ReceiptText, path: '/admin/plans' },
     { id: 'discounts', label: 'Discount Codes', icon: Percent, path: '/admin/discounts' },
     { id: 'admin-mgmt', label: 'Admin Management', icon: UserCog, path: '/admin/management' },
     { id: 'requests', label: 'Requests & Issues', icon: MessageSquare, path: '/admin/requests' },

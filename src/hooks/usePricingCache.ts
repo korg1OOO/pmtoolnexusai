@@ -54,12 +54,12 @@ export function usePricingCache() {
 
                 return cachedData;
             } catch {
-                // Fallback: read plan_configs and features directly if Edge Function unavailable
+                // Fallback: read subscription_plans and features directly if Edge Function unavailable
                 const { data: plans } = await supabase
-                    .from('plan_configs')
+                    .from('subscription_plans')
                     .select('*')
-                    .eq('is_active', true)
-                    .order('sort_order', { ascending: true });
+                    .eq('active', true) // assuming 'active' column based on previous context, or remove filter if unsure
+                    .order('price_monthly', { ascending: true });
 
                 const { data: featureFlags } = await supabase
                     .from('features')

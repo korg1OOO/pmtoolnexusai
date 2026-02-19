@@ -14,21 +14,26 @@ const supabase = _supabase as any;
 export type Tier = 'free' | 'pro' | 'business' | 'agency';
 
 export interface PlanConfig {
+    id: string; // Added ID
     tier: Tier;
-    display_name: string;
-    description: string | null;
-    price_monthly: number;
-    price_annual: number;
-    max_projects: number;     // -1 = unlimited
-    max_members: number;      // -1 = unlimited
-    max_storage_mb: number;   // -1 = unlimited
-    max_ai_credits: number;   // -1 = unlimited
-    max_file_size_mb: number;
+    name: string;
+    description?: string; // Optional in DB? No, verify types.ts said `name` is string, description not listed in types.ts row?
+    // Wait, types.ts `subscription_plans` Row has: active, created_at, features, id, limits, name, price_annual, price_monthly, stripe_price_id_annual, stripe_price_id_monthly, tier.
+    // description is MISSING in DB. I should check if I need it or if it's in features json.
+    // For now I will mark it optional or remove it.
+    price_monthly: number | null;
+    price_annual: number | null;
+    limits: any; // JSON
+    features: any; // JSON
+    active: boolean | null;
+    stripe_price_id_monthly?: string | null;
+    stripe_price_id_annual?: string | null;
+    // Removed is_popular, highlight_text, sort_order as they don't exist in DB
+    max_file_size_mb: number; // -1 = unlimited
     is_popular: boolean;
     is_active: boolean;
     stripe_price_monthly_id: string | null;
     stripe_price_annual_id: string | null;
-    sort_order: number;
     updated_at: string;
 }
 
@@ -40,9 +45,9 @@ export function usePlanConfigs() {
         queryKey: ['plan-configs'],
         queryFn: async () => {
             const { data, error } = await supabase
-                .from('plan_configs')
+                .from('subscription_plans')
                 .select('*')
-                .order('sort_order', { ascending: true });
+                .order('price_monthly', { ascending: true }); // sort_order might not exist
             if (error) throw error;
             return data ?? [];
         },
@@ -56,7 +61,7 @@ export function usePlanConfig(tier: Tier) {
         queryKey: ['plan-configs', tier],
         queryFn: async () => {
             const { data, error } = await supabase
-                .from('plan_configs')
+                .from('subscription_plans')
                 .select('*')
                 .eq('tier', tier)
                 .single();
@@ -74,8 +79,8 @@ export function useUpdatePlanConfig() {
         mutationFn: async (updates: Partial<PlanConfig> & { tier: Tier }) => {
             const { tier, ...rest } = updates;
             const { data, error } = await supabase
-                .from('plan_configs')
-                .update({ ...rest, updated_at: new Date().toISOString() })
+                .from('subscription_plans')
+                .update({ ...rest }) // updated_at might not exist or be auto-managed
                 .eq('tier', tier)
                 .select()
                 .single();

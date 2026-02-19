@@ -10,28 +10,18 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Play, X, Clock, Zap, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
-import { useAIAgent } from "@/hooks/useAIAgents";
-import { supabase } from "@/integrations/supabase/client";
-
-interface AIAgentTesterProps {
-    agentId: string | null;
-    onClose: () => void;
-}
-
-interface TestResult {
-    query: string;
-    response: string;
-    executionTime: number;
-    timestamp: Date;
-    success: boolean;
-    error?: string;
-}
+import { useLogAIInteraction, useUpdateInteractionFeedback } from "@/hooks/useAIAgents";
+import { AIFeedback } from "@/components/ai/AIFeedback";
+import { toast } from "sonner";
 
 export function AIAgentTester({ agentId, onClose }: AIAgentTesterProps) {
     const { data: agent } = useAIAgent(agentId || "");
     const [query, setQuery] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [testResults, setTestResults] = useState<TestResult[]>([]);
+
+    const logInteraction = useLogAIInteraction();
+    const updateFeedback = useUpdateInteractionFeedback();
 
     const sampleQueries = [
         "What are the current project risks?",
@@ -69,6 +59,21 @@ export function AIAgentTester({ agentId, onClose }: AIAgentTesterProps) {
             const executionTime = Date.now() - startTime;
 
             if (response.ok) {
+                // Log successful interaction
+                let logId: string | undefined;
+                try {
+                    logId = await logInteraction.mutateAsync({
+                        agentId: agent.id,
+                        query: testQuery,
+                        responseTimeMs: executionTime,
+                        tokens: Math.ceil(testQuery.length / 4) + Math.ceil((data.response?.length || 0) / 4), // Estimate tokens
+                        provider: agent.model_provider,
+                        model: agent.model_name
+                    });
+                } catch (err) {
+                    console.error("Failed to log interaction", err);
+                }
+
                 setTestResults((prev) => [
                     {
                         query: testQuery,
@@ -76,6 +81,7 @@ export function AIAgentTester({ agentId, onClose }: AIAgentTesterProps) {
                         executionTime,
                         timestamp: new Date(),
                         success: true,
+                        logId
                     },
                     ...prev,
                 ]);
@@ -110,6 +116,12 @@ export function AIAgentTester({ agentId, onClose }: AIAgentTesterProps) {
         } finally {
             setIsLoading(false);
         }
+    };
+
+    const handleFeedback = (logId: string, score: number, text?: string) => {
+        updateFeedback.mutate({ logId, score, text }, {
+            onSuccess: () => toast.success("Feedback submitted")
+        });
     };
 
     if (!agent) {
@@ -247,8 +259,17 @@ export function AIAgentTester({ agentId, onClose }: AIAgentTesterProps) {
                             </CardHeader>
                             <CardContent>
                                 {result.success ? (
-                                    <div className="prose prose-sm max-w-none">
-                                        <div className="whitespace-pre-wrap text-sm">{result.response}</div>
+                                    <div className="space-y-3">
+                                        <div className="prose prose-sm max-w-none">
+                                            <div className="whitespace-pre-wrap text-sm">{result.response}</div>
+                                        </div>
+                                        {(result as any).logId && (
+                                            <div className="pt-2 border-t flex justify-end">
+                                                <AIFeedback
+                                                    onFeedback={(score, text) => handleFeedback((result as any).logId, score, text)}
+                                                />
+                                            </div>
+                                        )}
                                     </div>
                                 ) : (
                                     <div className="text-sm text-destructive">

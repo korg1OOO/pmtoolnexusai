@@ -260,3 +260,62 @@ export function useActivateAgentVersion() {
         },
     });
 }
+
+/**
+ * Log AI interaction (for analytics & feedback)
+ */
+export function useLogAIInteraction() {
+    return useMutation({
+        mutationFn: ({
+            agentId,
+            query,
+            responseTimeMs,
+            tokens,
+            provider,
+            model,
+            feedbackScore,
+            feedbackText
+        }: {
+            agentId: string;
+            query: string;
+            responseTimeMs: number;
+            tokens: number;
+            provider: string;
+            model: string;
+            feedbackScore?: number;
+            feedbackText?: string;
+        }) => aiAgentService.logAIInteraction(
+            agentId,
+            query,
+            responseTimeMs,
+            tokens,
+            provider,
+            model,
+            feedbackScore,
+            feedbackText
+        ),
+    });
+}
+
+/**
+ * Update interaction feedback
+ */
+export function useUpdateInteractionFeedback() {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({
+            logId,
+            score,
+            text
+        }: {
+            logId: string;
+            score: number;
+            text?: string;
+        }) => aiAgentService.updateInteractionFeedback(logId, score, text),
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['ai-agent-analytics'] });
+        },
+    });
+}
+

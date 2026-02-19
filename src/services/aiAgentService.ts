@@ -407,3 +407,54 @@ export async function activateAgentVersion(versionId: string): Promise<void> {
         model_name: version.model_name || undefined,
     });
 }
+
+/**
+ * Log AI interaction
+ */
+export async function logAIInteraction(
+    agentId: string,
+    query: string,
+    responseTimeMs: number,
+    tokens: number,
+    provider: string,
+    model: string,
+    feedbackScore?: number,
+    feedbackText?: string
+): Promise<string> {
+    const { data, error } = await supabase
+        .from('ai_interaction_logs')
+        .insert({
+            agent_id: agentId,
+            query_summary: query.slice(0, 100) + (query.length > 100 ? '...' : ''),
+            response_time_ms: responseTimeMs,
+            tokens_total: tokens,
+            provider,
+            model,
+            feedback_score: feedbackScore,
+            feedback_text: feedbackText
+        })
+        .select('id')
+        .single();
+
+    if (error) throw error;
+    return data.id;
+}
+
+/**
+ * Update AI interaction feedback
+ */
+export async function updateInteractionFeedback(
+    logId: string,
+    score: number,
+    text?: string
+): Promise<void> {
+    const { error } = await supabase
+        .from('ai_interaction_logs')
+        .update({
+            feedback_score: score,
+            feedback_text: text,
+        })
+        .eq('id', logId);
+
+    if (error) throw error;
+}

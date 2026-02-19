@@ -26,13 +26,15 @@ import {
 import { useAIAgents, useAllAIAgents, useToggleAIAgent, useDeleteAIAgent } from "@/hooks/useAIAgents";
 import { AIAgentEditor } from "@/components/admin/ai-agents/AIAgentEditor";
 import { AIAgentTester } from "@/components/admin/ai-agents/AIAgentTester";
+import { AgentAnalytics } from "@/components/admin/ai-agents/AgentAnalytics";
 import { toast } from "sonner";
 
 export default function AdminAIAgents() {
     const [searchQuery, setSearchQuery] = useState("");
     const [filterStatus, setFilterStatus] = useState<"all" | "active" | "inactive">("all");
     const [selectedAgent, setSelectedAgent] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<"list" | "editor" | "tester">("list");
+    const [activeTab, setActiveTab] = useState<"list" | "editor" | "tester" | "analytics">("list");
+
 
     // Fetch all agents (including inactive)
     const { data: agents, isLoading } = useAllAIAgents();
@@ -165,6 +167,10 @@ export default function AdminAIAgents() {
                     <TabsTrigger value="tester" className="gap-2">
                         <Play className="h-4 w-4" />
                         Tester {selectedAgent && "(Testing)"}
+                    </TabsTrigger>
+                    <TabsTrigger value="analytics" className="gap-2">
+                        <Activity className="h-4 w-4" />
+                        Analytics
                     </TabsTrigger>
                 </TabsList>
 
@@ -323,12 +329,16 @@ export default function AdminAIAgents() {
                     />
                 </TabsContent>
 
-                {/* Tester View */}
                 <TabsContent value="tester">
                     <AIAgentTester
                         agentId={selectedAgent}
                         onClose={() => setActiveTab("list")}
                     />
+                </TabsContent>
+
+                {/* Analytics View */}
+                <TabsContent value="analytics">
+                    <AgentAnalytics />
                 </TabsContent>
             </Tabs>
         </div>

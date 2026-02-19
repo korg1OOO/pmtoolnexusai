@@ -409,203 +409,196 @@ function SubscriptionsTable({ configs }: { configs: PlanConfig[] }) {
     );
 }
 
-// ─── Plan Config Editor ──────────────────────────────────────────────────────
+// ─── Plan + Feature Matrix (combined inline section) ─────────────────────────
 
-function PlanConfigEditor() {
-    const { data: configs = [], isLoading } = usePlanConfigs();
+function PlanAndFeatureMatrix() {
+    const { data: configs = [], isLoading: configLoading } = usePlanConfigs();
+    const { data: flags = [], isLoading: flagLoading } = useSubscriptionFeatureFlags();
     const updateConfig = useUpdatePlanConfig();
+    const toggle = useToggleFeatureFlag();
     const refreshCache = useRefreshPricingCache();
 
-    // Local edits buffer per tier
     const [edits, setEdits] = useState<Record<string, Partial<PlanConfig>>>({});
+    const [expanded, setExpanded] = useState<'pricing' | 'features' | null>(null);
 
-    const setField = (tier: string, field: keyof PlanConfig, value: any) => {
-        setEdits(prev => ({
-            ...prev,
-            [tier]: { ...prev[tier], [field]: value === '' ? null : value },
-        }));
-    };
+    const setField = (tier: string, field: keyof PlanConfig, value: any) =>
+        setEdits(prev => ({ ...prev, [tier]: { ...prev[tier], [field]: value === '' ? null : value } }));
 
     const save = (tier: Tier) => {
         const patch = edits[tier] ?? {};
-        if (Object.keys(patch).length === 0) return;
+        if (!Object.keys(patch).length) return;
         updateConfig.mutate({ tier, ...patch });
         setEdits(prev => { const n = { ...prev }; delete n[tier]; return n; });
     };
 
-
-    if (isLoading) return (
-        <div className="flex items-center justify-center py-16">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-        </div>
-    );
-
-    return (
-        <div className="space-y-4">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h3 className="font-semibold">Plan Configuration</h3>
-                    <p className="text-sm text-muted-foreground">Edit pricing and limits inline. Changes don't affect the public pricing page until you click Refresh Pricing Cache.</p>
-                </div>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    disabled={refreshCache.isPending}
-                    onClick={() => refreshCache.mutate()}
-                >
-                    {refreshCache.isPending
-                        ? <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        : <RefreshCw className="h-4 w-4 mr-2" />}
-                    Refresh Pricing Cache
-                </Button>
-            </div>
-
-            <div className="rounded-lg border overflow-x-auto">
-                <table className="w-full text-sm">
-                    <thead>
-                        <tr className="border-b bg-muted/40">
-                            <th className="text-left px-4 py-3 font-medium w-24">Tier</th>
-                            <th className="text-left px-4 py-3 font-medium">Display Name</th>
-                            <th className="text-right px-4 py-3 font-medium">$/mo</th>
-                            <th className="text-right px-4 py-3 font-medium">$/yr</th>
-                            <th className="text-right px-4 py-3 font-medium">Projects</th>
-                            <th className="text-right px-4 py-3 font-medium">Members</th>
-                            <th className="text-right px-4 py-3 font-medium">Storage (MB)</th>
-                            <th className="text-right px-4 py-3 font-medium">AI Credits</th>
-                            <th className="text-center px-4 py-3 font-medium">Popular</th>
-                            <th className="px-4 py-3 font-medium"></th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {configs.map(cfg => {
-                            const e = edits[cfg.tier] ?? {};
-                            const isDirty = Object.keys(e).length > 0;
-
-                            return (
-                                <tr key={cfg.tier} className={`border-b last:border-0 ${isDirty ? 'bg-amber-50 dark:bg-amber-900/10' : 'hover:bg-muted/20'}`}>
-                                    <td className="px-4 py-2">
-                                        <Badge className={TIER_STYLES[cfg.tier]}>{cfg.tier}</Badge>
-                                    </td>
-                                    <td className="px-4 py-2">
-                                        <Input
-                                            className="h-8 text-sm"
-                                            defaultValue={cfg.display_name}
-                                            onChange={e => setField(cfg.tier, 'display_name', e.target.value)}
-                                        />
-                                    </td>
-                                    {(['price_monthly', 'price_annual'] as const).map(f => (
-                                        <td key={f} className="px-4 py-2">
-                                            <Input
-                                                type="number"
-                                                className="h-8 text-sm text-right w-24 ml-auto"
-                                                defaultValue={cfg[f]}
-                                                onChange={ev => setField(cfg.tier, f, parseFloat(ev.target.value))}
-                                            />
-                                        </td>
-                                    ))}
-                                    {(['max_projects', 'max_members', 'max_storage_mb', 'max_ai_credits'] as const).map(f => (
-                                        <td key={f} className="px-4 py-2">
-                                            <div className="flex justify-end items-center gap-1">
-                                                <Input
-                                                    type="number"
-                                                    className="h-8 text-sm text-right w-24"
-                                                    defaultValue={cfg[f]}
-                                                    title="-1 = unlimited"
-                                                    onChange={ev => setField(cfg.tier, f, parseInt(ev.target.value))}
-                                                />
-                                            </div>
-                                        </td>
-                                    ))}
-                                    <td className="px-4 py-2 text-center">
-                                        <Switch
-                                            checked={e.is_popular !== undefined ? !!e.is_popular : cfg.is_popular}
-                                            onCheckedChange={v => setField(cfg.tier, 'is_popular', v)}
-                                        />
-                                    </td>
-                                    <td className="px-4 py-2">
-                                        <Button
-                                            size="sm"
-                                            variant={isDirty ? 'default' : 'ghost'}
-                                            disabled={!isDirty || updateConfig.isPending}
-                                            onClick={() => save(cfg.tier as Tier)}
-                                        >
-                                            {updateConfig.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save'}
-                                        </Button>
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
-            </div>
-            <p className="text-xs text-muted-foreground flex items-center gap-1">
-                <AlertTriangle className="h-3 w-3" />
-                Set any limit to <strong>-1</strong> for unlimited. Changes to pricing are saved to DB but require "Refresh Pricing Cache" to appear on the public pricing page.
-            </p>
-        </div>
-    );
-}
-
-// ─── Feature Flag Panel ──────────────────────────────────────────────────────
-
-function FeatureFlagPanel() {
-    const { data: flags = [], isLoading } = useSubscriptionFeatureFlags();
-    const toggle = useToggleFeatureFlag();
-
-    // Group by tier
-    const byTier = useMemo(() => {
-        const map: Record<string, typeof flags> = {};
-        (flags as any[]).forEach(f => {
-            if (!map[f.tier]) map[f.tier] = [];
-            map[f.tier].push(f);
-        });
-        return map;
+    // Feature flags grouped by feature_key (rows) × tier (columns)
+    const featureKeys = useMemo(() => {
+        const keys = Array.from(new Set((flags as any[]).map((f: any) => f.feature_key)));
+        return keys;
     }, [flags]);
 
-    if (isLoading) return <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin" /></div>;
+    const flagMap = useMemo(() => {
+        const m: Record<string, Record<string, any>> = {};
+        (flags as any[]).forEach((f: any) => {
+            if (!m[f.feature_key]) m[f.feature_key] = {};
+            m[f.feature_key][f.tier] = f;
+        });
+        return m;
+    }, [flags]);
 
-    if (Object.keys(byTier).length === 0) return (
-        <div className="text-center py-12 text-muted-foreground">
-            No feature flags found. Run the subscription_features migration to populate.
-        </div>
-    );
+    const isLoading = configLoading || flagLoading;
 
     return (
-        <div className="space-y-6">
-            <div>
-                <h3 className="font-semibold">Feature Flag Toggles</h3>
-                <p className="text-sm text-muted-foreground">Changes take immediate effect — users will see the updated access on their next request.</p>
-            </div>
-            {TIERS.filter(t => byTier[t]?.length).map(tier => (
-                <Card key={tier}>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-base flex items-center gap-2">
-                            <Badge className={TIER_STYLES[tier]}>{tier}</Badge>
-                            <span className="text-muted-foreground font-normal text-sm">({byTier[tier]?.length ?? 0} features)</span>
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                            {(byTier[tier] as any[]).map(f => (
-                                <div key={f.feature_key} className="flex items-center justify-between p-3 rounded-lg border bg-card hover:bg-muted/30 transition-colors">
-                                    <div className="min-w-0">
-                                        <div className="text-sm font-medium truncate">{f.feature_name}</div>
-                                        {f.description && (
-                                            <div className="text-xs text-muted-foreground truncate">{f.description}</div>
-                                        )}
-                                    </div>
-                                    <Switch
-                                        checked={f.is_enabled}
-                                        disabled={toggle.isPending}
-                                        onCheckedChange={enabled => toggle.mutate({ tier, featureKey: f.feature_key, enabled })}
-                                        className="ml-3 flex-shrink-0"
-                                    />
-                                </div>
-                            ))}
+        <div className="space-y-3">
+            {/* ── Pricing & Limits ── */}
+            <div className="rounded-lg border bg-card overflow-hidden">
+                <button
+                    className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-muted/40 transition-colors"
+                    onClick={() => setExpanded(expanded === 'pricing' ? null : 'pricing')}
+                >
+                    <div className="flex items-center gap-3">
+                        <Settings2 className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                            <p className="font-semibold text-sm">Plan Pricing & Limits</p>
+                            <p className="text-xs text-muted-foreground">Edit inline — changes are saved to DB immediately. Click Refresh Pricing Cache to push to public pricing page.</p>
                         </div>
-                    </CardContent>
-                </Card>
-            ))}
+                    </div>
+                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${expanded === 'pricing' ? 'rotate-180' : ''}`} />
+                </button>
+
+                {expanded === 'pricing' && (
+                    <div className="border-t px-5 py-4">
+                        {isLoading ? (
+                            <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b bg-muted/40">
+                                            <th className="text-left px-3 py-2 font-medium">Tier</th>
+                                            <th className="text-left px-3 py-2 font-medium">Name</th>
+                                            <th className="text-right px-3 py-2 font-medium">$/mo</th>
+                                            <th className="text-right px-3 py-2 font-medium">$/yr</th>
+                                            <th className="text-right px-3 py-2 font-medium">Projects</th>
+                                            <th className="text-right px-3 py-2 font-medium">Members</th>
+                                            <th className="text-right px-3 py-2 font-medium">Storage MB</th>
+                                            <th className="text-right px-3 py-2 font-medium">AI Credits</th>
+                                            <th className="text-center px-3 py-2 font-medium">Popular</th>
+                                            <th className="px-3 py-2 w-16"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {configs.map(cfg => {
+                                            const e = edits[cfg.tier] ?? {};
+                                            const dirty = Object.keys(e).length > 0;
+                                            return (
+                                                <tr key={cfg.tier} className={`border-b last:border-0 ${dirty ? 'bg-amber-50 dark:bg-amber-900/10' : 'hover:bg-muted/20'}`}>
+                                                    <td className="px-3 py-2"><Badge className={TIER_STYLES[cfg.tier]}>{cfg.tier}</Badge></td>
+                                                    <td className="px-3 py-2">
+                                                        <Input className="h-7 text-sm w-28" defaultValue={cfg.display_name} onChange={ev => setField(cfg.tier, 'display_name', ev.target.value)} />
+                                                    </td>
+                                                    {(['price_monthly', 'price_annual'] as const).map(f => (
+                                                        <td key={f} className="px-3 py-2">
+                                                            <Input type="number" className="h-7 text-sm text-right w-20 ml-auto" defaultValue={cfg[f]} onChange={ev => setField(cfg.tier, f, parseFloat(ev.target.value))} />
+                                                        </td>
+                                                    ))}
+                                                    {(['max_projects', 'max_members', 'max_storage_mb', 'max_ai_credits'] as const).map(f => (
+                                                        <td key={f} className="px-3 py-2">
+                                                            <Input type="number" title="-1 = unlimited" className="h-7 text-sm text-right w-20 ml-auto" defaultValue={cfg[f]} onChange={ev => setField(cfg.tier, f, parseInt(ev.target.value))} />
+                                                        </td>
+                                                    ))}
+                                                    <td className="px-3 py-2 text-center">
+                                                        <Switch checked={e.is_popular !== undefined ? !!e.is_popular : cfg.is_popular} onCheckedChange={v => setField(cfg.tier, 'is_popular', v)} />
+                                                    </td>
+                                                    <td className="px-3 py-2">
+                                                        <Button size="sm" variant={dirty ? 'default' : 'ghost'} disabled={!dirty || updateConfig.isPending} onClick={() => save(cfg.tier as Tier)}>
+                                                            {updateConfig.isPending ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Save'}
+                                                        </Button>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                                <p className="text-xs text-muted-foreground mt-3 flex items-center gap-1">
+                                    <AlertTriangle className="h-3 w-3" /> Set any limit to <strong>-1</strong> for unlimited. After saving, click "Refresh Pricing Cache" in the toolbar to publish changes to the public pricing page.
+                                </p>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* ── Feature Flags Matrix ── */}
+            <div className="rounded-lg border bg-card overflow-hidden">
+                <button
+                    className="w-full flex items-center justify-between px-5 py-4 text-left hover:bg-muted/40 transition-colors"
+                    onClick={() => setExpanded(expanded === 'features' ? null : 'features')}
+                >
+                    <div className="flex items-center gap-3">
+                        <Zap className="h-5 w-5 text-muted-foreground" />
+                        <div>
+                            <p className="font-semibold text-sm">Feature Flags by Tier</p>
+                            <p className="text-xs text-muted-foreground">Toggle features per tier — changes take immediate effect on all authenticated users.</p>
+                        </div>
+                    </div>
+                    <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${expanded === 'features' ? 'rotate-180' : ''}`} />
+                </button>
+
+                {expanded === 'features' && (
+                    <div className="border-t px-5 py-4">
+                        {isLoading ? (
+                            <div className="flex justify-center py-8"><Loader2 className="h-5 w-5 animate-spin" /></div>
+                        ) : featureKeys.length === 0 ? (
+                            <p className="text-sm text-muted-foreground text-center py-8">No features found. Seed the subscription_features table first.</p>
+                        ) : (
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b bg-muted/40">
+                                            <th className="text-left px-3 py-2 font-medium">Feature</th>
+                                            {TIERS.map(t => (
+                                                <th key={t} className="text-center px-3 py-2 font-medium">
+                                                    <Badge className={TIER_STYLES[t]}>{t}</Badge>
+                                                </th>
+                                            ))}
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {featureKeys.map(key => {
+                                            const firstFlag = (flags as any[]).find((f: any) => f.feature_key === key);
+                                            return (
+                                                <tr key={key} className="border-b last:border-0 hover:bg-muted/20">
+                                                    <td className="px-3 py-2">
+                                                        <div className="font-medium">{firstFlag?.feature_name ?? key}</div>
+                                                        {firstFlag?.description && <div className="text-xs text-muted-foreground">{firstFlag.description}</div>}
+                                                    </td>
+                                                    {TIERS.map(tier => {
+                                                        const flag = flagMap[key]?.[tier];
+                                                        return (
+                                                            <td key={tier} className="px-3 py-2 text-center">
+                                                                {flag ? (
+                                                                    <Switch
+                                                                        checked={flag.is_enabled}
+                                                                        disabled={toggle.isPending}
+                                                                        onCheckedChange={enabled => toggle.mutate({ tier, featureKey: key, enabled })}
+                                                                    />
+                                                                ) : (
+                                                                    <span className="text-muted-foreground text-xs">—</span>
+                                                                )}
+                                                            </td>
+                                                        );
+                                                    })}
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
@@ -622,9 +615,7 @@ export function AdminSubscriptionsPage() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold">Subscriptions</h1>
-                    <p className="text-muted-foreground mt-1">
-                        Manage workspaces, plans, limits, and feature access
-                    </p>
+                    <p className="text-muted-foreground mt-1">Manage workspaces, plans, limits, and feature access</p>
                 </div>
                 <Button
                     variant="outline"
@@ -642,43 +633,22 @@ export function AdminSubscriptionsPage() {
             {/* Revenue summary */}
             <RevenueSummaryCards />
 
-            {/* Tabs */}
-            <Tabs defaultValue="subscriptions">
-                <TabsList>
-                    <TabsTrigger value="subscriptions" className="flex items-center gap-2">
-                        <Users className="h-4 w-4" />
-                        Subscriptions
-                    </TabsTrigger>
-                    <TabsTrigger value="plans" className="flex items-center gap-2">
-                        <Settings2 className="h-4 w-4" />
-                        Plan Config
-                    </TabsTrigger>
-                    <TabsTrigger value="features" className="flex items-center gap-2">
-                        <Zap className="h-4 w-4" />
-                        Feature Flags
-                    </TabsTrigger>
-                </TabsList>
+            {/* Inline Plan Pricing + Feature Matrix (collapsible accordion) */}
+            <PlanAndFeatureMatrix />
 
-                <TabsContent value="subscriptions" className="mt-4">
-                    <Card>
-                        <CardContent className="p-4">
-                            <SubscriptionsTable configs={configs} />
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="plans" className="mt-4">
-                    <Card>
-                        <CardContent className="p-6">
-                            <PlanConfigEditor />
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="features" className="mt-4">
-                    <FeatureFlagPanel />
-                </TabsContent>
-            </Tabs>
+            {/* Subscriptions table */}
+            <Card>
+                <CardContent className="p-4">
+                    <SubscriptionsTable configs={configs} />
+                </CardContent>
+            </Card>
         </div>
     );
 }
+
+
+
+
+
+
+

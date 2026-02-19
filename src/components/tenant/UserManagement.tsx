@@ -25,7 +25,11 @@ export function UserManagement() {
     });
 
     const createMutation = useMutation({
-        mutationFn: createUser,
+        mutationFn: async (data: any) => {
+            const { checkLimit } = await import('@/lib/enforcement');
+            await checkLimit('invite_member', { workspace_id: tenantId });
+            return createUser(data);
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['users'] });
             setCreateDialogOpen(false);

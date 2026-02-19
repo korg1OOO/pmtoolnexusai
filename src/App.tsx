@@ -73,6 +73,7 @@ import { ProjectPerformanceDetail, PortfolioDistributionDetail, ResourceUtilizat
 import { PortfolioDashboard, ResourcePlanningView, PortfolioBudgetOverview, StrategicRoadmap } from '@/components/portfolio';
 import { QueryParamRedirect, ProtectedProjectRoute, LoadingSpinner, RoutePreloader } from '@/components/routing';
 import { StakeholderManagement, AdvancedResourceAllocation, ProgramBudgetManagement } from '@/components/program';
+import { BillingPage } from '@/components/subscription/BillingPage';
 
 // Lazy-loaded View Components for Code Splitting (all components now use default exports)
 const DashboardHub = lazy(() => import('@/components/views/DashboardHub'));
@@ -230,6 +231,15 @@ const App = () => (
 
                 {/* Settings & Creation Routes */}
                 <Route path="/settings" element={<ProtectedProjectRoute><UserSettingsView /></ProtectedProjectRoute>} />
+                <Route path="/billing" element={
+                  <ProtectedRoute>
+                    <ProjectProvider>
+                      <PresenceProvider>
+                        <BillingPage />
+                      </PresenceProvider>
+                    </ProjectProvider>
+                  </ProtectedRoute>
+                } />
                 <Route path="/create-project" element={<ProtectedProjectRoute><ProjectCreationView /></ProtectedProjectRoute>} />
 
                 <Route path="/product-tour" element={

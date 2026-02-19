@@ -58,6 +58,7 @@ export function useCreateProject() {
 
   return useMutation({
     mutationFn: async (project: Omit<Project, 'id' | 'created_at' | 'updated_at'>) => {
+      await import('@/lib/enforcement').then(({ checkLimit }) => checkLimit('create_project'));
       const { data, error } = await supabase
         .from('projects')
         .insert(project)

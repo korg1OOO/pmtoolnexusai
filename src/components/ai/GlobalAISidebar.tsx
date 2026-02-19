@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { useAIChat } from '@/hooks/useAIChat';
+import { useAIAgent } from '@/hooks/useAIAgents';
 import { useUserRole } from '@/hooks/useUserRole';
 import { ChatMessage } from './ChatMessage';
 import { AgentIndicator } from './AgentIndicator';
@@ -72,6 +73,9 @@ export function GlobalAISidebar({
   const { data: userRole = 'viewer' } = useUserRole(projectId);
   const viewContext = getViewContext(currentView);
   const suggestedQuestions = getSuggestedQuestions(currentView);
+
+  // Fetch active agent config from DB when currentAgent is set
+  const { data: activeAgentConfig } = useAIAgent(currentAgent || '');
 
   const {
     messages,
@@ -261,9 +265,13 @@ export function GlobalAISidebar({
                   <Bot className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <h2 className="font-semibold">AI Assistant</h2>
+                  <h2 className="font-semibold">
+                    {activeAgentConfig ? activeAgentConfig.label : 'AI Assistant'}
+                  </h2>
                   <p className="text-xs text-muted-foreground">
-                    {projectName}
+                    {activeAgentConfig
+                      ? `${activeAgentConfig.model_provider} · ${activeAgentConfig.model_name}`
+                      : projectName}
                   </p>
                 </div>
               </div>

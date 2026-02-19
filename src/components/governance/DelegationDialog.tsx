@@ -1,5 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { X, Search, Users, Calendar, ChevronDown, Save } from 'lucide-react';
+import { Search, Calendar, Users } from 'lucide-react';
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
+} from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Checkbox } from '@/components/ui/checkbox';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Badge } from '@/components/ui/badge';
+import { toast } from 'sonner';
 import {
     bulkDelegateApprovals,
     getDelegationTemplates,
@@ -9,21 +32,22 @@ import {
 import type { DelegationTemplate } from '@/types/analytics';
 
 interface DelegationDialogProps {
-    isOpen: boolean;
-    onClose: () => void;
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
     approvalIds: string[];
     delegatorId: string;
     onSuccess?: () => void;
 }
 
 export default function DelegationDialog({
-    isOpen,
-    onClose,
+    open,
+    onOpenChange,
     approvalIds,
     delegatorId,
     onSuccess,
 }: DelegationDialogProps) {
     const [delegateId, setDelegateId] = useState('');
+    const [delegateName, setDelegateName] = useState('');
     const [delegationType, setDelegationType] = useState<'temporary' | 'permanent'>('temporary');
     const [reason, setReason] = useState('');
     const [expiryDate, setExpiryDate] = useState('');
@@ -37,39 +61,42 @@ export default function DelegationDialog({
     const [submitting, setSubmitting] = useState(false);
 
     useEffect(() => {
-        if (isOpen) {
+        if (open) {
             loadTemplates();
+            // Reset form
+            setDelegateId('');
+            setDelegateName('');
+            setDelegationType('temporary');
+            setReason('');
+            setExpiryDate('');
+            setCanSubdelegate(false);
+            setUseTemplate(false);
+            setSelectedTemplate('');
         }
-    }, [isOpen]);
+    }, [open]);
 
     useEffect(() => {
         if (searchQuery.length >= 2) {
-            searchUsers();
+            searchUsersForDelegation(searchQuery, delegatorId)
+                .then(setSearchResults)
+                .catch(console.error);
         } else {
             setSearchResults([]);
         }
-    }, [searchQuery]);
+    }, [searchQuery, delegatorId]);
 
     const loadTemplates = async () => {
         try {
             const data = await getDelegationTemplates(delegatorId);
             setTemplates(data);
-        } catch (error) {
-            console.error('Error loading templates:', error);
-        }
-    };
-
-    const searchUsers = async () => {
-        try {
-            const results = await searchUsersForDelegation(searchQuery, delegatorId);
-            setSearchResults(results);
-        } catch (error) {
-            console.error('Error searching users:', error);
+        } catch {
+            // templates are optional
         }
     };
 
     const handleSelectUser = (user: { id: string; name: string; email: string }) => {
         setDelegateId(user.id);
+        setDelegateName(user.name);
         setSearchQuery(user.name);
         setShowSearch(false);
     };
@@ -92,15 +119,13 @@ export default function DelegationDialog({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-
         if (!delegateId || !reason) {
-            alert('Please select a delegate and provide a reason');
+            toast.error('Please select a delegate and provide a reason');
             return;
         }
 
         try {
             setSubmitting(true);
-
             if (useTemplate && selectedTemplate) {
                 await applyDelegationTemplate(selectedTemplate, delegatorId, approvalIds);
             } else {
@@ -111,221 +136,184 @@ export default function DelegationDialog({
                     delegationType,
                     reason,
                     expiryDate || undefined,
-                    canSubdelegate
+                    canSubdelegate,
                 );
             }
-
-            alert(`Successfully delegated ${approvalIds.length} approval(s)`);
+            toast.success(`${approvalIds.length} approval${approvalIds.length > 1 ? 's' : ''} delegated to ${delegateName || 'delegate'}`);
             onSuccess?.();
-            onClose();
-        } catch (error) {
-            console.error('Error delegating approvals:', error);
-            alert('Failed to delegate approvals');
+            onOpenChange(false);
+        } catch (error: any) {
+            toast.error('Failed to delegate: ' + (error?.message ?? 'Unknown error'));
         } finally {
             setSubmitting(false);
         }
     };
 
-    if (!isOpen) return null;
-
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-                {/* Header */}
-                <div className="flex items-center justify-between p-6 border-b border-gray-200">
-                    <div>
-                        <h2 className="text-xl font-bold text-gray-900">Delegate Approvals</h2>
-                        <p className="text-sm text-gray-500 mt-1">
-                            Delegating {approvalIds.length} approval{approvalIds.length > 1 ? 's' : ''}
-                        </p>
-                    </div>
-                    <button
-                        onClick={onClose}
-                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                    >
-                        <X className="w-5 h-5 text-gray-500" />
-                    </button>
-                </div>
+        <Dialog open={open} onOpenChange={onOpenChange}>
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                    <DialogTitle>Delegate Approvals</DialogTitle>
+                    <DialogDescription>
+                        Delegating{' '}
+                        <Badge variant="secondary" className="mx-1">
+                            {approvalIds.length}
+                        </Badge>{' '}
+                        approval{approvalIds.length > 1 ? 's' : ''} to another user
+                    </DialogDescription>
+                </DialogHeader>
 
-                {/* Form */}
-                <form onSubmit={handleSubmit} className="p-6 space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-5 py-2">
                     {/* Template Toggle */}
                     {templates.length > 0 && (
                         <div className="flex items-center gap-2">
-                            <input
-                                type="checkbox"
+                            <Checkbox
                                 id="useTemplate"
                                 checked={useTemplate}
-                                onChange={(e) => setUseTemplate(e.target.checked)}
-                                className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                                onCheckedChange={(v) => setUseTemplate(!!v)}
                             />
-                            <label htmlFor="useTemplate" className="text-sm font-medium text-gray-700">
-                                Use saved template
-                            </label>
+                            <Label htmlFor="useTemplate">Use saved template</Label>
                         </div>
                     )}
 
                     {/* Template Selector */}
                     {useTemplate && templates.length > 0 && (
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Select Template
-                            </label>
-                            <select
-                                value={selectedTemplate}
-                                onChange={(e) => handleTemplateChange(e.target.value)}
-                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                            >
-                                <option value="">Choose a template...</option>
-                                {templates.map((template) => (
-                                    <option key={template.id} value={template.id}>
-                                        {template.name}
-                                    </option>
-                                ))}
-                            </select>
+                        <div className="space-y-1.5">
+                            <Label>Select Template</Label>
+                            <Select value={selectedTemplate} onValueChange={handleTemplateChange}>
+                                <SelectTrigger>
+                                    <SelectValue placeholder="Choose a template…" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    {templates.map((t) => (
+                                        <SelectItem key={t.id} value={t.id}>
+                                            {t.name}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                     )}
 
                     {/* User Search */}
                     {!useTemplate && (
-                        <div className="relative">
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Delegate To
-                            </label>
+                        <div className="relative space-y-1.5">
+                            <Label>Delegate To</Label>
                             <div className="relative">
-                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                <input
-                                    type="text"
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
                                     value={searchQuery}
                                     onChange={(e) => {
                                         setSearchQuery(e.target.value);
                                         setShowSearch(true);
                                     }}
                                     onFocus={() => setShowSearch(true)}
-                                    placeholder="Search users by name or email..."
-                                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    placeholder="Search users by name or email…"
+                                    className="pl-10"
                                 />
                             </div>
                             {showSearch && searchResults.length > 0 && (
-                                <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                                <div className="absolute z-20 w-full bg-popover border rounded-lg shadow-lg max-h-52 overflow-y-auto">
                                     {searchResults.map((user) => (
                                         <button
                                             key={user.id}
                                             type="button"
                                             onClick={() => handleSelectUser(user)}
-                                            className="w-full px-4 py-2 text-left hover:bg-gray-100 flex items-center gap-2"
+                                            className="w-full px-4 py-2.5 text-left hover:bg-muted flex items-center gap-3 transition-colors"
                                         >
-                                            <Users className="w-4 h-4 text-gray-400" />
+                                            <Users className="h-4 w-4 text-muted-foreground shrink-0" />
                                             <div>
-                                                <div className="font-medium text-gray-900">{user.name}</div>
-                                                <div className="text-sm text-gray-500">{user.email}</div>
+                                                <p className="text-sm font-medium">{user.name}</p>
+                                                <p className="text-xs text-muted-foreground">{user.email}</p>
                                             </div>
                                         </button>
                                     ))}
                                 </div>
+                            )}
+                            {delegateId && (
+                                <p className="text-xs text-muted-foreground">
+                                    Selected: <span className="font-medium text-foreground">{delegateName}</span>
+                                </p>
                             )}
                         </div>
                     )}
 
                     {/* Delegation Type */}
                     {!useTemplate && (
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Delegation Type
-                            </label>
-                            <div className="flex gap-4">
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        value="temporary"
-                                        checked={delegationType === 'temporary'}
-                                        onChange={(e) => setDelegationType(e.target.value as 'temporary')}
-                                        className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500"
-                                    />
-                                    <span className="text-sm text-gray-700">Temporary</span>
-                                </label>
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="radio"
-                                        value="permanent"
-                                        checked={delegationType === 'permanent'}
-                                        onChange={(e) => setDelegationType(e.target.value as 'permanent')}
-                                        className="w-4 h-4 text-purple-600 border-gray-300 focus:ring-purple-500"
-                                    />
-                                    <span className="text-sm text-gray-700">Permanent</span>
-                                </label>
-                            </div>
+                        <div className="space-y-1.5">
+                            <Label>Delegation Type</Label>
+                            <RadioGroup
+                                value={delegationType}
+                                onValueChange={(v) => setDelegationType(v as 'temporary' | 'permanent')}
+                                className="flex gap-6"
+                            >
+                                <div className="flex items-center gap-2">
+                                    <RadioGroupItem value="temporary" id="type-temp" />
+                                    <Label htmlFor="type-temp" className="font-normal cursor-pointer">Temporary</Label>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                    <RadioGroupItem value="permanent" id="type-perm" />
+                                    <Label htmlFor="type-perm" className="font-normal cursor-pointer">Permanent</Label>
+                                </div>
+                            </RadioGroup>
                         </div>
                     )}
 
                     {/* Expiry Date */}
                     {!useTemplate && delegationType === 'temporary' && (
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">
-                                Expiry Date (Optional)
-                            </label>
+                        <div className="space-y-1.5">
+                            <Label>Expiry Date (Optional)</Label>
                             <div className="relative">
-                                <Calendar className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                <input
+                                <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Input
                                     type="date"
                                     value={expiryDate}
                                     onChange={(e) => setExpiryDate(e.target.value)}
                                     min={new Date().toISOString().split('T')[0]}
-                                    className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                                    className="pl-10"
                                 />
                             </div>
                         </div>
                     )}
 
                     {/* Reason */}
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            Reason
-                        </label>
-                        <textarea
+                    <div className="space-y-1.5">
+                        <Label>Reason <span className="text-destructive">*</span></Label>
+                        <Textarea
                             value={reason}
                             onChange={(e) => setReason(e.target.value)}
                             rows={3}
-                            placeholder="Provide a reason for this delegation..."
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                            placeholder="Provide a reason for this delegation…"
                         />
                     </div>
 
                     {/* Sub-delegation */}
                     {!useTemplate && (
                         <div className="flex items-center gap-2">
-                            <input
-                                type="checkbox"
+                            <Checkbox
                                 id="canSubdelegate"
                                 checked={canSubdelegate}
-                                onChange={(e) => setCanSubdelegate(e.target.checked)}
-                                className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500"
+                                onCheckedChange={(v) => setCanSubdelegate(!!v)}
                             />
-                            <label htmlFor="canSubdelegate" className="text-sm text-gray-700">
+                            <Label htmlFor="canSubdelegate" className="font-normal">
                                 Allow delegate to sub-delegate
-                            </label>
+                            </Label>
                         </div>
                     )}
-
-                    {/* Actions */}
-                    <div className="flex items-center justify-end gap-3 pt-4 border-t border-gray-200">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            disabled={submitting || !delegateId || !reason}
-                            className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                        >
-                            {submitting ? 'Delegating...' : 'Delegate'}
-                        </button>
-                    </div>
                 </form>
-            </div>
-        </div>
+
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => onOpenChange(false)} type="button">
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={handleSubmit as any}
+                        disabled={submitting || !delegateId || !reason}
+                    >
+                        {submitting ? 'Delegating…' : 'Delegate'}
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
     );
 }

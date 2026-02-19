@@ -8,6 +8,13 @@ import { supabase as _supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 const supabase = _supabase as any;
 
+export interface PlanRevenue {
+    tier: string;
+    count: number;
+    mrr: number;
+    pct: number;
+}
+
 export interface Invoice {
     id: string;
     user_id: string;
@@ -155,5 +162,46 @@ export function useCreateInvoice() {
         onError: (error: Error) => {
             toast.error(`Failed to create invoice: ${error.message}`);
         },
+    });
+}
+
+/**
+ * Query subscriptions grouped by plan tier to build revenue breakdown
+ */
+export function useRevenueByPlan() {
+    return useQuery({
+        queryKey: ['revenue-by-plan'],
+        queryFn: async (): Promise<PlanRevenue[]> => {
+            const { data, error } = await supabase
+                .from('subscriptions')
+                .select('plan_id, monthly_amount')
+                .eq('status', 'active');
+
+            if (error) throw error;
+            if (!data || data.length === 0) return [];
+
+            // Group by plan_id
+            const planMap = new Map<string, { count: number; mrr: number }>();
+            for (const sub of data) {
+                const tier = sub.plan_id ?? 'Unknown';
+                const existing = planMap.get(tier) ?? { count: 0, mrr: 0 };
+                planMap.set(tier, {
+                    count: existing.count + 1,
+                    mrr: existing.mrr + (sub.monthly_amount || 0),
+                });
+            }
+
+            const totalMRR = Array.from(planMap.values()).reduce((s, v) => s + v.mrr, 0);
+
+            return Array.from(planMap.entries())
+                .map(([tier, { count, mrr }]) => ({
+                    tier,
+                    count,
+                    mrr,
+                    pct: totalMRR > 0 ? (mrr / totalMRR) * 100 : 0,
+                }))
+                .sort((a, b) => b.mrr - a.mrr); // highest MRR first
+        },
+        staleTime: 5 * 60 * 1000, // 5 min
     });
 }

@@ -105,26 +105,199 @@ export async function updateInvoice(id: string, updates: Partial<Invoice>) {
 }
 
 /**
- * Sync invoices from Stripe
- * This would call Stripe API to fetch latest invoices
+ * Sync invoices from Stripe via Edge Function
  */
 export async function syncStripeInvoices() {
     try {
-        console.log('Syncing invoices from Stripe...');
+        const { data, error } = await supabase.functions.invoke('sync-stripe-invoices', {
+            body: {},
+        });
 
-        // Note: This requires Stripe SDK to be fully configured
-        // For now, returning placeholder until Stripe keys are added to .env
+        if (error) {
+            // Edge Function not deployed yet — fall back gracefully
+            console.warn('sync-stripe-invoices Edge Function not available:', error.message);
+            return {
+                synced: 0,
+                errors: 0,
+                message: 'Stripe sync Edge Function not deployed. Add VITE_STRIPE_SECRET_KEY and deploy sync-stripe-invoices.',
+            };
+        }
 
-        // In production with Stripe configured:
-        // 1. Import stripeIntegrationService
-        // 2. List invoices from Stripe
-        // 3. Upsert into database
-        // 4. Return sync results
-
-        return { synced: 0, errors: 0, message: 'Stripe integration ready - add VITE_STRIPE_SECRET_KEY to .env' };
+        return {
+            synced: data?.synced ?? 0,
+            errors: data?.errors ?? 0,
+            message: data?.message ?? 'Sync complete',
+        };
     } catch (error) {
         console.error('Stripe sync error:', error);
         return { synced: 0, errors: 1, message: 'Stripe not configured' };
+    }
+}
+
+/**
+ * Export invoices as a downloadable CSV file
+ */
+export function exportInvoicesCSV(invoices: Invoice[]): void {
+    const headers = [
+        'Invoice ID',
+        'Stripe Invoice ID',
+        'User ID',
+        'Amount Due',
+        'Amount Paid',
+        'Currency',
+        'Status',
+        'Due Date',
+        'Paid At',
+        'Created At',
+    ];
+
+    const fmt = (amount: number, currency: string) =>
+        new Intl.NumberFormat('en-US', { style: 'currency', currency: currency.toUpperCase() }).format(
+            amount / 100
+        );
+
+    const rows = invoices.map((inv) => [
+        inv.id,
+        inv.stripe_invoice_id ?? '',
+        inv.user_id,
+        fmt(inv.amount_due, inv.currency),
+        fmt(inv.amount_paid, inv.currency),
+        inv.currency.toUpperCase(),
+        inv.status,
+        inv.due_date ? new Date(inv.due_date).toLocaleDateString() : '',
+        inv.paid_at ? new Date(inv.paid_at).toLocaleDateString() : '',
+        new Date(inv.created_at).toLocaleDateString(),
+    ]);
+
+    const csvContent = [headers, ...rows]
+        .map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(','))
+        .join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `invoices-${new Date().toISOString().slice(0, 10)}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+}
+
+export interface RevenueReportMetrics {
+    mrr: number;
+    arr: number;
+    activeSubscriptions: number;
+    planBreakdown: { tier: string; mrr: number; count: number; pct: number }[];
+}
+
+/**
+ * Export revenue report as a PDF using jsPDF (dynamically imported)
+ */
+export async function exportRevenueReportPDF(metrics: RevenueReportMetrics): Promise<void> {
+    // Dynamic import to avoid bundling jsPDF unless needed
+    const { jsPDF } = await import('jspdf');
+    const doc = new jsPDF();
+
+    const fmt = (n: number) =>
+        new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(n);
+
+    const today = new Date().toLocaleDateString('en-US', {
+        year: 'numeric', month: 'long', day: 'numeric',
+    });
+
+    // Header
+    doc.setFontSize(20);
+    doc.setTextColor(30, 30, 30);
+    doc.text('Revenue Report', 20, 24);
+
+    doc.setFontSize(10);
+    doc.setTextColor(100, 100, 100);
+    doc.text(`Generated: ${today}`, 20, 32);
+
+    // KPI metrics
+    doc.setFontSize(12);
+    doc.setTextColor(30, 30, 30);
+    doc.text('Key Metrics', 20, 48);
+
+    doc.setFontSize(10);
+    doc.setTextColor(60, 60, 60);
+    doc.text(`Monthly Recurring Revenue (MRR)`, 20, 58);
+    doc.setFontSize(14);
+    doc.setTextColor(30, 30, 30);
+    doc.text(fmt(metrics.mrr), 20, 66);
+
+    doc.setFontSize(10);
+    doc.setTextColor(60, 60, 60);
+    doc.text(`Annual Recurring Revenue (ARR)`, 100, 58);
+    doc.setFontSize(14);
+    doc.setTextColor(30, 30, 30);
+    doc.text(fmt(metrics.arr), 100, 66);
+
+    doc.setFontSize(10);
+    doc.setTextColor(60, 60, 60);
+    doc.text(`Active Subscriptions`, 20, 80);
+    doc.setFontSize(14);
+    doc.setTextColor(30, 30, 30);
+    doc.text(String(metrics.activeSubscriptions), 20, 88);
+
+    // Plan breakdown table
+    doc.setFontSize(12);
+    doc.setTextColor(30, 30, 30);
+    doc.text('Revenue by Plan', 20, 104);
+
+    const tableHeaders = ['Plan', 'Subscriptions', 'MRR', '% of Revenue'];
+    const colX = [20, 70, 120, 165];
+
+    doc.setFontSize(9);
+    doc.setTextColor(100, 100, 100);
+    tableHeaders.forEach((h, i) => doc.text(h, colX[i], 112));
+
+    doc.setDrawColor(200, 200, 200);
+    doc.line(20, 114, 190, 114);
+
+    doc.setTextColor(30, 30, 30);
+    metrics.planBreakdown.forEach((row, idx) => {
+        const y = 122 + idx * 10;
+        doc.text(row.tier, colX[0], y);
+        doc.text(String(row.count), colX[1], y);
+        doc.text(fmt(row.mrr), colX[2], y);
+        doc.text(`${row.pct.toFixed(1)}%`, colX[3], y);
+    });
+
+    // Footer
+    const lastY = 122 + metrics.planBreakdown.length * 10 + 10;
+    doc.setFontSize(8);
+    doc.setTextColor(150, 150, 150);
+    doc.text('This report is confidential and generated automatically by ProjectOye.', 20, lastY);
+
+    doc.save(`revenue-report-${new Date().toISOString().slice(0, 10)}.pdf`);
+}
+
+/**
+ * Sync payment methods from Stripe via Edge Function
+ */
+export async function syncPaymentMethods() {
+    try {
+        const { data, error } = await supabase.functions.invoke('sync-payment-methods', {
+            body: {},
+        });
+
+        if (error) {
+            console.warn('sync-payment-methods Edge Function not available:', error.message);
+            return {
+                synced: 0,
+                message: 'Payment methods sync Edge Function not deployed.',
+            };
+        }
+
+        return {
+            synced: data?.synced ?? 0,
+            message: data?.message ?? 'Payment methods synced',
+        };
+    } catch (error) {
+        console.error('Payment methods sync error:', error);
+        return { synced: 0, message: 'Sync failed' };
     }
 }
 
@@ -140,10 +313,10 @@ export async function getInvoiceStats() {
 
     const stats = {
         total: data.length,
-        paid: data.filter(i => i.status === 'paid').length,
-        open: data.filter(i => i.status === 'open').length,
-        overdue: data.filter(i => i.status === 'open' && i.due_date && new Date(i.due_date) < new Date()).length,
-        totalRevenue: data.filter(i => i.status === 'paid').reduce((sum, i) => sum + i.amount_paid, 0),
+        paid: data.filter((i: any) => i.status === 'paid').length,
+        open: data.filter((i: any) => i.status === 'open').length,
+        overdue: data.filter((i: any) => i.status === 'open' && i.due_date && new Date(i.due_date) < new Date()).length,
+        totalRevenue: data.filter((i: any) => i.status === 'paid').reduce((sum: number, i: any) => sum + i.amount_paid, 0),
     };
 
     return stats;

@@ -7,7 +7,7 @@ import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Shield, TrendingUp, AlertTriangle, CheckCircle, DollarSign,
-  Download, Target, Activity, Clock, BarChart3, PieChart
+  Download, Target, Activity, Clock, BarChart3, PieChart, CheckSquare
 } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend,
@@ -15,6 +15,10 @@ import {
   LineChart, Line, AreaChart, Area
 } from 'recharts';
 import { supabase as _supabase } from '@/integrations/supabase/client';
+import { useApprovals, useApproveApproval, useRejectApproval, useMarkApprovalDelegated } from '@/hooks/useApprovals';
+import { ApprovalWorkflows } from '@/components/analytics/governance/ApprovalWorkflows';
+import DelegationDialog from '@/components/governance/DelegationDialog';
+import { useAuth } from '@/hooks/useAuth';
 import { PDFExporter } from '@/components/common/PDFExporter';
 
 const supabase = _supabase as any;
@@ -43,10 +47,23 @@ async function fetchGovernanceOverview() {
 
 export default function GlobalGovernanceDashboard() {
   const contentRef = useRef<HTMLDivElement>(null);
+  const { user } = useAuth();
   const { data, isLoading } = useQuery({
     queryKey: ['governance-overview'],
     queryFn: fetchGovernanceOverview,
   });
+
+  // Approvals state
+  const { data: approvals = [] } = useApprovals();
+  const approveApproval = useApproveApproval();
+  const rejectApproval = useRejectApproval();
+  const markDelegated = useMarkApprovalDelegated();
+  const [delegationOpen, setDelegationOpen] = useState(false);
+  const [delegationApprovalIds, setDelegationApprovalIds] = useState<string[]>([]);
+  const openDelegation = (id: string) => {
+    setDelegationApprovalIds([id]);
+    setDelegationOpen(true);
+  };
 
   const metrics = useMemo(() => {
     if (!data) return null;
@@ -152,11 +169,20 @@ export default function GlobalGovernanceDashboard() {
 
       {/* Charts Grid */}
       <Tabs defaultValue="health" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-5">
           <TabsTrigger value="health">Project Health</TabsTrigger>
           <TabsTrigger value="budget">Budget Analysis</TabsTrigger>
           <TabsTrigger value="risk">Risk Heatmap</TabsTrigger>
           <TabsTrigger value="evm">EVM Trends</TabsTrigger>
+          <TabsTrigger value="approvals" className="flex items-center gap-1">
+            <CheckSquare className="h-3.5 w-3.5" />
+            Approvals
+            {approvals.filter(a => a.status === 'pending').length > 0 && (
+              <Badge variant="destructive" className="ml-1 h-4 w-4 p-0 flex items-center justify-center text-[9px]">
+                {approvals.filter(a => a.status === 'pending').length}
+              </Badge>
+            )}
+          </TabsTrigger>
         </TabsList>
 
         <TabsContent value="health" className="mt-4">
@@ -203,7 +229,7 @@ export default function GlobalGovernanceDashboard() {
                   <BarChart data={budgetChartData}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis dataKey="category" tick={{ fontSize: 12 }} />
-                    <YAxis tickFormatter={(v) => `$${(v/1000).toFixed(0)}K`} tick={{ fontSize: 11 }} />
+                    <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 11 }} />
                     <Tooltip formatter={(value: number) => `$${value.toLocaleString()}`} />
                     <Legend />
                     <Bar dataKey="planned" name="Planned" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} />
@@ -265,8 +291,8 @@ export default function GlobalGovernanceDashboard() {
                           (r.probability === prob.toLowerCase()) && (r.impact === imp)
                         ).length || 0;
                         const severity = (['high', 'high'].includes(prob.toLowerCase()) && imp === 'high') ? 'bg-red-500' :
-                          (prob.toLowerCase() === 'medium' && imp === 'medium') ? 'bg-amber-400' : 
-                          count > 0 ? 'bg-yellow-300' : 'bg-muted';
+                          (prob.toLowerCase() === 'medium' && imp === 'medium') ? 'bg-amber-400' :
+                            count > 0 ? 'bg-yellow-300' : 'bg-muted';
                         return (
                           <div key={`${prob}-${imp}`} className={`${severity} rounded p-3 text-center font-bold ${count > 0 ? 'text-white' : 'text-muted-foreground'}`}>
                             {count}
@@ -292,7 +318,7 @@ export default function GlobalGovernanceDashboard() {
                 <AreaChart data={evmChartData}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                   <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-                  <YAxis tickFormatter={(v) => `$${(v/1000).toFixed(0)}K`} tick={{ fontSize: 11 }} />
+                  <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 11 }} />
                   <Tooltip formatter={(value: number) => `$${value.toLocaleString()}`} />
                   <Legend />
                   <Area type="monotone" dataKey="PV" name="Planned Value" stroke="#3b82f6" fill="#3b82f6" fillOpacity={0.1} />
@@ -303,7 +329,38 @@ export default function GlobalGovernanceDashboard() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* ── Approvals Tab ── */}
+        <TabsContent value="approvals" className="mt-4">
+          <ApprovalWorkflows
+            approvals={approvals}
+            currentUserId={user?.id}
+            onApprove={(id) => approveApproval.mutate(id)}
+            onReject={(id) => rejectApproval.mutate({ approvalId: id })}
+            onAdminOverride={(id) => openDelegation(id)}
+            loading={approveApproval.isPending || rejectApproval.isPending}
+          />
+          {approvals.length === 0 && (
+            <div className="py-12 text-center text-muted-foreground">
+              <CheckSquare className="h-10 w-10 mx-auto mb-3 opacity-30" />
+              <p className="text-sm">No approvals found across all projects</p>
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
+
+      {/* Delegation Dialog */}
+      <DelegationDialog
+        open={delegationOpen}
+        onOpenChange={setDelegationOpen}
+        approvalIds={delegationApprovalIds}
+        delegatorId={user?.id ?? ''}
+        onSuccess={() => {
+          if (delegationApprovalIds.length > 0) {
+            markDelegated.mutate(delegationApprovalIds[0]);
+          }
+        }}
+      />
 
       {/* Milestones Timeline */}
       <Card>

@@ -1,85 +1,65 @@
-import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { DollarSign, TrendingUp, TrendingDown, Target } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
-import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
+import { DollarSign, TrendingUp, TrendingDown, Target, Loader2, RefreshCw } from 'lucide-react';
+import {
+    PieChart, Pie, Cell, LineChart, Line,
+    XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+} from 'recharts';
+import { usePortfolioBudget } from '@/hooks/usePortfolioBudget';
+import { useRef } from 'react';
+import { PDFExporter } from '@/components/common/PDFExporter';
 
-const COLORS = ['#3b82f6', '#10b981', '#f59e0b'];
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444'];
 
-interface ProgramBudget {
-    program_id: string;
-    program_name: string;
-    allocated: number;
-    spent: number;
-    roi: number;
-}
+const fmt = (n: number) =>
+    n >= 1_000_000
+        ? `$${(n / 1_000_000).toFixed(2)}M`
+        : n >= 1_000
+            ? `$${(n / 1_000).toFixed(0)}K`
+            : `$${n.toLocaleString()}`;
 
 export function PortfolioBudgetOverview() {
     const { portfolioId } = useParams();
+    const contentRef = useRef<HTMLDivElement>(null);
+    const { data, isLoading, refetch } = usePortfolioBudget(portfolioId);
 
-    const { data: budgetData } = useQuery({
-        queryKey: ['portfolio-budget', portfolioId],
-        queryFn: async () => {
-            return {
-                total_budget: 5000000,
-                total_spent: 3200000,
-                total_remaining: 1800000,
-                expected_roi: 8500000,
-                programs: [
-                    {
-                        program_id: '1',
-                        program_name: 'Cloud Migration',
-                        allocated: 2000000,
-                        spent: 1300000,
-                        roi: 3500000
-                    },
-                    {
-                        program_id: '2',
-                        program_name: 'Mobile App Redesign',
-                        allocated: 1500000,
-                        spent: 900000,
-                        roi: 2500000
-                    },
-                    {
-                        program_id: '3',
-                        program_name: 'API Platform',
-                        allocated: 1500000,
-                        spent: 1000000,
-                        roi: 2500000
-                    }
-                ] as ProgramBudget[],
-                spendTrend: [
-                    { month: 'Jan', budget: 800000, actual: 750000 },
-                    { month: 'Feb', budget: 1600000, actual: 1550000 },
-                    { month: 'Mar', budget: 2400000, actual: 2450000 },
-                    { month: 'Apr', budget: 3200000, actual: 3200000 }
-                ]
-            };
-        }
-    });
+    const spendRate = data && data.total_budget > 0
+        ? (data.total_spent / data.total_budget) * 100
+        : 0;
 
-    const spendRate = budgetData ? (budgetData.total_spent / budgetData.total_budget) * 100 : 0;
-    const expectedROI = budgetData ? ((budgetData.expected_roi - budgetData.total_budget) / budgetData.total_budget) * 100 : 0;
+    const expectedROI = data && data.total_budget > 0
+        ? ((data.expected_roi - data.total_budget) / data.total_budget) * 100
+        : 0;
 
-    const distributionData = budgetData?.programs.map(p => ({
+    const distributionData = data?.programs.map((p) => ({
         name: p.program_name,
-        value: p.allocated
+        value: p.allocated,
     }));
 
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center h-64">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+            </div>
+        );
+    }
+
     return (
-        <div className="p-6 space-y-6">
+        <div className="p-6 space-y-6" ref={contentRef}>
             {/* Header */}
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold">Portfolio Budget</h1>
-                    <p className="text-muted-foreground">Budget allocation and ROI analysis</p>
+                    <p className="text-muted-foreground">Budget allocation and ROI analysis across all programs</p>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline">Reallocate Budget</Button>
-                    <Button>Export Report</Button>
+                    <Button variant="outline" size="sm" onClick={() => refetch()}>
+                        <RefreshCw className="h-4 w-4 mr-2" /> Refresh
+                    </Button>
+                    <PDFExporter title="Portfolio Budget" filename="portfolio-budget" contentRef={contentRef} variant="button" />
                 </div>
             </div>
 
@@ -90,9 +70,7 @@ export function PortfolioBudgetOverview() {
                         <DollarSign className="w-8 h-8 text-blue-600" />
                         <div>
                             <p className="text-sm text-muted-foreground">Total Budget</p>
-                            <p className="text-2xl font-bold">
-                                ${((budgetData?.total_budget || 0) / 1000000).toFixed(1)}M
-                            </p>
+                            <p className="text-2xl font-bold">{fmt(data?.total_budget || 0)}</p>
                         </div>
                     </div>
                 </Card>
@@ -101,10 +79,9 @@ export function PortfolioBudgetOverview() {
                         <TrendingDown className="w-8 h-8 text-red-600" />
                         <div>
                             <p className="text-sm text-muted-foreground">Spent</p>
-                            <p className="text-2xl font-bold">
-                                ${((budgetData?.total_spent || 0) / 1000000).toFixed(1)}M
-                            </p>
+                            <p className="text-2xl font-bold">{fmt(data?.total_spent || 0)}</p>
                             <p className="text-xs text-muted-foreground">{spendRate.toFixed(0)}% of budget</p>
+                            <Progress value={spendRate} className="mt-2 h-1" />
                         </div>
                     </div>
                 </Card>
@@ -113,9 +90,7 @@ export function PortfolioBudgetOverview() {
                         <TrendingUp className="w-8 h-8 text-green-600" />
                         <div>
                             <p className="text-sm text-muted-foreground">Remaining</p>
-                            <p className="text-2xl font-bold">
-                                ${((budgetData?.total_remaining || 0) / 1000000).toFixed(1)}M
-                            </p>
+                            <p className="text-2xl font-bold">{fmt(data?.total_remaining || 0)}</p>
                         </div>
                     </div>
                 </Card>
@@ -133,86 +108,90 @@ export function PortfolioBudgetOverview() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Spend Trend */}
                 <Card className="p-6">
-                    <h2 className="text-xl font-semibold mb-4">Spend Trend</h2>
-                    <ResponsiveContainer width="100%" height={250}>
-                        <LineChart data={budgetData?.spendTrend}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="month" />
-                            <YAxis />
-                            <Tooltip />
-                            <Legend />
-                            <Line type="monotone" dataKey="budget" stroke="#3b82f6" name="Budgeted" />
-                            <Line type="monotone" dataKey="actual" stroke="#10b981" name="Actual" />
-                        </LineChart>
-                    </ResponsiveContainer>
+                    <h2 className="text-xl font-semibold mb-4">Cumulative Spend Trend</h2>
+                    {data?.spendTrend && data.spendTrend.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={250}>
+                            <LineChart data={data.spendTrend}>
+                                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                                <XAxis dataKey="month" />
+                                <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} tick={{ fontSize: 11 }} />
+                                <Tooltip formatter={(v: number) => fmt(v)} />
+                                <Legend />
+                                <Line type="monotone" dataKey="budget" stroke="#3b82f6" name="Budgeted" strokeWidth={2} />
+                                <Line type="monotone" dataKey="actual" stroke="#10b981" name="Actual" strokeWidth={2} />
+                            </LineChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <p className="text-center text-muted-foreground py-8">No trend data</p>
+                    )}
                 </Card>
 
-                {/* Budget Distribution */}
+                {/* Budget Distribution Pie */}
                 <Card className="p-6">
-                    <h2 className="text-xl font-semibold mb-4">Budget Distribution</h2>
-                    <ResponsiveContainer width="100%" height={250}>
-                        <PieChart>
-                            <Pie
-                                data={distributionData}
-                                cx="50%"
-                                cy="50%"
-                                labelLine={false}
-                                label={(entry) => `${entry.name}: $${(entry.value / 1000000).toFixed(1)}M`}
-                                outerRadius={80}
-                                fill="#8884d8"
-                                dataKey="value"
-                            >
-                                {distributionData?.map((entry, index) => (
-                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                ))}
-                            </Pie>
-                            <Tooltip />
-                        </PieChart>
-                    </ResponsiveContainer>
+                    <h2 className="text-xl font-semibold mb-4">Budget Distribution by Program</h2>
+                    {distributionData && distributionData.length > 0 ? (
+                        <ResponsiveContainer width="100%" height={250}>
+                            <PieChart>
+                                <Pie
+                                    data={distributionData}
+                                    cx="50%"
+                                    cy="50%"
+                                    labelLine={false}
+                                    label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                                    outerRadius={80}
+                                    dataKey="value"
+                                >
+                                    {distributionData.map((_, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip formatter={(v: number) => fmt(v)} />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    ) : (
+                        <p className="text-center text-muted-foreground py-8">No programs found</p>
+                    )}
                 </Card>
             </div>
 
-            {/* Program Allocations */}
+            {/* Program Budget Rows */}
             <Card className="p-6">
                 <h2 className="text-xl font-semibold mb-4">Program Budget Allocations</h2>
-                <div className="space-y-4">
-                    {budgetData?.programs.map((program) => {
-                        const spendPercent = (program.spent / program.allocated) * 100;
-                        const roi = ((program.roi - program.allocated) / program.allocated) * 100;
-
-                        return (
-                            <div key={program.program_id} className="border rounded-lg p-4">
-                                <div className="flex items-center justify-between mb-3">
-                                    <h3 className="font-semibold">{program.program_name}</h3>
-                                    <span className="text-sm px-2 py-1 bg-purple-100 text-purple-700 rounded">
-                                        ROI: {roi.toFixed(0)}%
-                                    </span>
+                {data?.programs && data.programs.length > 0 ? (
+                    <div className="space-y-4">
+                        {data.programs.map((program, idx) => {
+                            const spendPct = program.allocated > 0
+                                ? Math.min(100, (program.spent / program.allocated) * 100)
+                                : 0;
+                            const roi = program.allocated > 0
+                                ? ((program.roi - program.allocated) / program.allocated) * 100
+                                : 0;
+                            return (
+                                <div key={program.program_id} className="border rounded-lg p-4 hover:shadow-sm transition-shadow">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <div className="flex items-center gap-2">
+                                            <div className={`w-3 h-3 rounded-full ${['bg-blue-500', 'bg-green-500', 'bg-amber-500', 'bg-violet-500', 'bg-red-500'][idx % 5]}`} />
+                                            <h3 className="font-semibold">{program.program_name}</h3>
+                                        </div>
+                                        <Badge variant="secondary">ROI: {roi.toFixed(0)}%</Badge>
+                                    </div>
+                                    <div className="grid grid-cols-3 gap-4 mb-3 text-sm">
+                                        <div><p className="text-muted-foreground text-xs">Allocated</p><p className="font-semibold">{fmt(program.allocated)}</p></div>
+                                        <div><p className="text-muted-foreground text-xs">Spent</p><p className="font-semibold">{fmt(program.spent)}</p></div>
+                                        <div><p className="text-muted-foreground text-xs">Est. Return</p><p className="font-semibold text-green-600">{fmt(program.roi)}</p></div>
+                                    </div>
+                                    <Progress value={spendPct} className="h-2" />
+                                    <p className="text-xs text-muted-foreground mt-1">{spendPct.toFixed(0)}% spent</p>
                                 </div>
-
-                                <div className="grid grid-cols-3 gap-4 mb-3 text-sm">
-                                    <div>
-                                        <p className="text-muted-foreground">Allocated</p>
-                                        <p className="font-semibold">${(program.allocated / 1000000).toFixed(2)}M</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-muted-foreground">Spent</p>
-                                        <p className="font-semibold">${(program.spent / 1000000).toFixed(2)}M</p>
-                                    </div>
-                                    <div>
-                                        <p className="text-muted-foreground">Expected Return</p>
-                                        <p className="font-semibold">${(program.roi / 1000000).toFixed(2)}M</p>
-                                    </div>
-                                </div>
-
-                                <Progress value={spendPercent} className="h-2" />
-                                <p className="text-xs text-muted-foreground mt-1">{spendPercent.toFixed(0)}% spent</p>
-                            </div>
-                        );
-                    })}
-                </div>
+                            );
+                        })}
+                    </div>
+                ) : (
+                    <p className="text-muted-foreground text-center py-8">No programs in this portfolio</p>
+                )}
             </Card>
 
-            {/* ROI Analysis */}
+            {/* ROI Summary */}
             <Card className="p-6">
                 <h2 className="text-xl font-semibold mb-4">ROI Analysis</h2>
                 <div className="space-y-3">
@@ -221,24 +200,22 @@ export function PortfolioBudgetOverview() {
                             <p className="font-medium">Total Investment</p>
                             <p className="text-sm text-muted-foreground">Portfolio budget allocation</p>
                         </div>
-                        <p className="text-lg font-semibold">${((budgetData?.total_budget || 0) / 1000000).toFixed(2)}M</p>
+                        <p className="text-lg font-semibold">{fmt(data?.total_budget || 0)}</p>
                     </div>
                     <div className="flex justify-between p-3 border rounded-lg">
                         <div>
                             <p className="font-medium">Expected Returns</p>
-                            <p className="text-sm text-muted-foreground">Projected value creation</p>
+                            <p className="text-sm text-muted-foreground">Projected value creation (70% ROI assumption)</p>
                         </div>
-                        <p className="text-lg font-semibold text-green-600">
-                            ${((budgetData?.expected_roi || 0) / 1000000).toFixed(2)}M
-                        </p>
+                        <p className="text-lg font-semibold text-green-600">{fmt(data?.expected_roi || 0)}</p>
                     </div>
-                    <div className="flex justify-between p-3 border rounded-lg bg-green-50">
+                    <div className="flex justify-between p-3 border rounded-lg bg-green-50 dark:bg-green-950/20">
                         <div>
                             <p className="font-medium">Net Value</p>
                             <p className="text-sm text-muted-foreground">Expected profit</p>
                         </div>
                         <p className="text-lg font-semibold text-green-600">
-                            ${(((budgetData?.expected_roi || 0) - (budgetData?.total_budget || 0)) / 1000000).toFixed(2)}M
+                            {fmt((data?.expected_roi || 0) - (data?.total_budget || 0))}
                         </p>
                     </div>
                 </div>

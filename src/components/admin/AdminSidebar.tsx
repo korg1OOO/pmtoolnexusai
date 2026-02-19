@@ -51,6 +51,7 @@ interface NavItem {
 const navItems: NavItem[] = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, path: "/admin" },
   { id: "health", label: "Health Check", icon: Activity, path: "/admin/health" },
+  { id: "ai-agents", label: "AI Agents", icon: Bot, path: "/admin/ai-agents" },
   { id: "ai-usage", label: "AI Usage & Costs", icon: Bot, path: "/admin/ai-usage" },
   { id: "ml-models", label: "ML Models", icon: Brain, path: "/admin/ml" },
   { id: "users", label: "Users", icon: Users, path: "/admin/users" },

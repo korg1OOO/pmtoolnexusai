@@ -60,6 +60,7 @@ import {
   EmailTemplateManager,
   IMAPConfigurationManager,
   NotificationAnalyticsDashboard,
+  AdminAIAgents,
 } from "@/components/admin/pages";
 import MLDashboard from './components/ml/MLDashboard';
 import { HelmetProvider } from 'react-helmet-async';
@@ -530,6 +531,7 @@ const App = () => (
                     <Route path="health" element={<AdminHealthCheck />} />
                     <Route path="ai-usage" element={<AdminAIUsage />} />
                     <Route path="ai-credits" element={<AdminAICredits />} />
+                    <Route path="ai-agents" element={<AdminAIAgents />} />
                     <Route path="ml" element={<MLDashboard />} />
                     <Route path="ml/models" element={<MLModelsPage />} />
                     <Route path="ml/alerts" element={<MLAlertsPage />} />

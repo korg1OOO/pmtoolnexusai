@@ -31,6 +31,7 @@ export interface UserPreferences {
         title?: string;
         bio?: string;
     };
+    dashboard_layout?: any;
 }
 
 export const useUserPreferences = () => {
@@ -58,6 +59,7 @@ export const useUserPreferences = () => {
                 if (row.preference_key === "notifications") prefs.notifications = row.preference_value as any;
                 if (row.preference_key === "region") prefs.region = row.preference_value as any;
                 if (row.preference_key === "profile_extended") prefs.profile_extended = row.preference_value as any;
+                if (row.preference_key === "dashboard_layout") prefs.dashboard_layout = row.preference_value as any;
             });
 
             return prefs;

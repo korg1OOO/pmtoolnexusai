@@ -56,6 +56,7 @@ import {
   AdminAPIKeys,
   AdminAuditLogs,
   AdminSubscriptionsPage,
+  AdminPlansPage,
   EmailTemplateManager,
   IMAPConfigurationManager,
   NotificationAnalyticsDashboard,

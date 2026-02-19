@@ -98,8 +98,8 @@ export default function DashboardView({ onViewChange }: DashboardViewProps) {
 
   // --- Dashboard State ---
   // Using Supabase Persistence
-  const { getPreference, updatePreference, isLoading: loadingPrefs } = useUserPreferences(projectId);
-  const savedLayout = getPreference('dashboard_layout');
+  const { preferences, updatePreference, isLoading: loadingPrefs } = useUserPreferences();
+  const savedLayout = preferences?.dashboard_layout;
 
   const [layout, setLayout] = useState<DashboardWidget[]>(DEFAULT_LAYOUT);
   const [isEditMode, setIsEditMode] = useState(false);

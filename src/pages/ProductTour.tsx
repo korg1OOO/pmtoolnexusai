@@ -163,7 +163,7 @@ export default function ProductTour() {
                         color="from-cyan-500/20 via-teal-500/5"
                         onNextClick={() => scrollToSection(6)}
                     >
-                        <TraceabilityMatrixView demo={true} />
+                        <TraceabilityMatrixView />
                     </Section>
                 </div>
 
@@ -175,7 +175,7 @@ export default function ProductTour() {
                         color="from-violet-500/20 via-purple-500/5"
                         onNextClick={() => scrollToSection(7)}
                     >
-                        <EnhancedMeetingsView demo={true} />
+                        <EnhancedMeetingsView />
                     </Section>
                 </div>
 

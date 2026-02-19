@@ -582,6 +582,48 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_interaction_logs: {
+        Row: {
+          agent_id: string | null
+          created_at: string
+          feedback_score: number | null
+          feedback_text: string | null
+          id: string
+          model: string | null
+          provider: string | null
+          query_summary: string | null
+          response_time_ms: number | null
+          tokens: number | null
+          user_id: string | null
+        }
+        Insert: {
+          agent_id?: string | null
+          created_at?: string
+          feedback_score?: number | null
+          feedback_text?: string | null
+          id?: string
+          model?: string | null
+          provider?: string | null
+          query_summary?: string | null
+          response_time_ms?: number | null
+          tokens?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          agent_id?: string | null
+          created_at?: string
+          feedback_score?: number | null
+          feedback_text?: string | null
+          id?: string
+          model?: string | null
+          provider?: string | null
+          query_summary?: string | null
+          response_time_ms?: number | null
+          tokens?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       ai_messages: {
         Row: {
           agent_type: string | null

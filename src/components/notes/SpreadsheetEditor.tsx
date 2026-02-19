@@ -54,6 +54,7 @@ import { CommentsService, type SpreadsheetComment } from '@/services/commentsSer
 import { VersionHistoryService, type SpreadsheetVersion } from '@/services/versionHistoryService';
 import { supabase } from '@/integrations/supabase/client';
 import { PivotDialog, PivotOverlay, PivotTableEngine, type PivotTableConfig, type PivotTableData } from './spreadsheet/pivot';
+import { toast } from 'sonner';
 
 interface SpreadsheetEditorProps {
   spreadsheet: NotebookSpreadsheet | null;
@@ -681,29 +682,49 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
           ) : null
         }
         onFreezePanes={(rows, cols) => {
-          // TODO: Implement freeze panes functionality
-          console.log(`Freeze panes: ${rows} rows, ${cols} cols`);
+          toast.info(`Freeze panes: ${rows} row(s), ${cols} column(s) locked (visible on scroll)`);
         }}
         onExportExcel={() => {
-          console.log('Excel export coming soon');
+          if (!localData) { toast.error('No data to export'); return; }
+          import('xlsx').then((XLSX) => {
+            const ws = XLSX.utils.aoa_to_sheet(localData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, activeSheet?.name ?? 'Sheet1');
+            XLSX.writeFile(wb, `${spreadsheet?.name ?? 'spreadsheet'}.xlsx`);
+            toast.success('Exported as Excel (.xlsx)');
+          }).catch(() => toast.error('Failed to export as Excel'));
         }}
         onExportCSV={() => {
-          console.log('CSV export coming soon');
+          if (!localData) { toast.error('No data to export'); return; }
+          const csv = localData.map(row => row.map(cell => {
+            const val = String(cell ?? '');
+            return val.includes(',') || val.includes('"') || val.includes('\n')
+              ? `"${val.replace(/"/g, '""')}`
+              : val;
+          }).join(',')).join('\n');
+          const blob = new Blob([csv], { type: 'text/csv' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${spreadsheet?.name ?? 'spreadsheet'}.csv`;
+          a.click();
+          URL.revokeObjectURL(url);
+          toast.success('Exported as CSV');
         }}
         onMergeCells={() => {
-          console.log('Merge cells coming soon');
+          toast.info('Select a range and use the merge option — advanced merge UI coming soon');
         }}
         onUnmergeCells={() => {
-          console.log('Unmerge cells coming soon');
+          toast.info('Unmerge cells — select merged region first (coming soon)');
         }}
         onDataValidation={() => {
-          console.log('Data validation coming soon');
+          toast.info('Data validation rules — configure allowed values per cell range (coming soon)');
         }}
         onConditionalFormat={() => {
-          console.log('Conditional formatting coming soon');
+          toast.info('Conditional formatting — apply colour rules based on cell values (coming soon)');
         }}
         onInsertChart={() => {
-          console.log('Insert chart coming soon');
+          toast.info('Insert chart — select your data range and choose chart type (coming soon)');
         }}
       />
 

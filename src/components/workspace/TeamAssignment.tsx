@@ -33,16 +33,16 @@ export function TeamAssignment() {
         enabled: !!workspaceId
     });
 
-    // Map teams to members format for UI
+    // Map teams to members format for UI — uses profile data from joined query
     const members = teams?.map(team => ({
         id: team.id,
         user_id: team.user_id || 'unknown',
-        name: team.user_id || 'Unknown User', // TODO: Join with users table
-        email: `${team.user_id}@example.com`, // TODO: Get from users table
+        name: team.profiles?.full_name || team.profiles?.email || team.user_id || 'Unknown User',
+        email: team.profiles?.email || '',
         role: team.role,
-        skills: [], // TODO: Get from user profile
-        allocation: 100,
-        availability: 'available' as const
+        skills: team.skills || [],
+        allocation: team.allocation_percentage ?? 100,
+        availability: (team.availability_status || 'available') as 'available' | 'partial' | 'unavailable'
     })) || [];
 
     // Assign team member mutation
@@ -222,7 +222,15 @@ export function TeamAssignment() {
                                         <td className="py-3 px-4">
                                             <div className="flex gap-2">
                                                 <Button variant="outline" size="sm">Edit</Button>
-                                                <Button variant="outline" size="sm">Remove</Button>
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    className="text-destructive hover:text-destructive"
+                                                    onClick={() => removeMutation.mutate(member.id)}
+                                                    disabled={removeMutation.isPending}
+                                                >
+                                                    Remove
+                                                </Button>
                                             </div>
                                         </td>
                                     </tr>
@@ -251,22 +259,26 @@ export function TeamAssignment() {
             <AssignMemberDialog
                 open={assignDialogOpen}
                 onClose={() => setAssignDialogOpen(false)}
+                onSubmit={({ email, role }) => assignMutation.mutate({ userId: email, role })}
+                isSubmitting={assignMutation.isPending}
             />
         </div>
     );
 }
 
-function AssignMemberDialog({ open, onClose }: {
+function AssignMemberDialog({ open, onClose, onSubmit, isSubmitting }: {
     open: boolean;
     onClose: () => void;
+    onSubmit: (data: { email: string; role: string }) => void;
+    isSubmitting?: boolean;
 }) {
     const [email, setEmail] = useState('');
     const [role, setRole] = useState('Project Manager');
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        // TODO: Implement assign logic
-        onClose();
+        if (!email.trim()) return;
+        onSubmit({ email: email.trim(), role });
     };
 
     return (
@@ -305,7 +317,9 @@ function AssignMemberDialog({ open, onClose }: {
                         <Button type="button" variant="outline" onClick={onClose}>
                             Cancel
                         </Button>
-                        <Button type="submit">Assign Member</Button>
+                        <Button type="submit" disabled={isSubmitting}>
+                            {isSubmitting ? 'Assigning...' : 'Assign Member'}
+                        </Button>
                     </DialogFooter>
                 </form>
             </DialogContent>

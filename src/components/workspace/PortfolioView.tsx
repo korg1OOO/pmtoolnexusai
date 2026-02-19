@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { useParams } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Briefcase, Plus, Search, TrendingUp, DollarSign, AlertTriangle } from 'lucide-react';
+import { Briefcase, Plus, Search, TrendingUp, DollarSign, AlertTriangle, Loader2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
-import { getPortfolios, type Portfolio as ServicePortfolio } from '@/services/portfolioService';
+import { getPortfolios, createPortfolio, type Portfolio as ServicePortfolio } from '@/services/portfolioService';
+import { toast } from 'sonner';
 
 interface Portfolio {
     id: string;
@@ -151,6 +153,7 @@ export function PortfolioView() {
             <CreatePortfolioDialog
                 open={createDialogOpen}
                 onClose={() => setCreateDialogOpen(false)}
+                workspaceId={workspaceId ?? ''}
             />
         </div>
     );
@@ -228,18 +231,54 @@ function PortfolioCard({ portfolio }: { portfolio: Portfolio }) {
     );
 }
 
-function CreatePortfolioDialog({ open, onClose }: {
+function CreatePortfolioDialog({ open, onClose, workspaceId }: {
     open: boolean;
     onClose: () => void;
+    workspaceId: string;
 }) {
+    const queryClient = useQueryClient();
     const [name, setName] = useState('');
     const [description, setDescription] = useState('');
-    const [budget, setBudget] = useState('');
+
+    const mutation = useMutation({
+        mutationFn: async () => {
+            // Get current user to fetch tenant_id
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error('Not authenticated');
+
+            const { data: tenantRow } = await (supabase as any)
+                .from('user_tenants')
+                .select('tenant_id')
+                .eq('user_id', user.id)
+                .limit(1)
+                .single();
+
+            if (!tenantRow) throw new Error('Tenant not found');
+
+            const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+            return createPortfolio({
+                tenant_id: tenantRow.tenant_id,
+                workspace_id: workspaceId,
+                name,
+                description: description || undefined,
+                slug,
+            });
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['portfolios', workspaceId] });
+            toast.success('Portfolio created');
+            setName('');
+            setDescription('');
+            onClose();
+        },
+        onError: (err: any) => {
+            toast.error('Failed to create portfolio: ' + err.message);
+        },
+    });
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        // TODO: Implement create logic
-        onClose();
+        mutation.mutate();
     };
 
     return (
@@ -264,24 +303,17 @@ function CreatePortfolioDialog({ open, onClose }: {
                             value={description}
                             onChange={(e) => setDescription(e.target.value)}
                             placeholder="Strategic initiative description"
-                            required
-                        />
-                    </div>
-                    <div>
-                        <label className="text-sm font-medium">Budget ($)</label>
-                        <Input
-                            type="number"
-                            value={budget}
-                            onChange={(e) => setBudget(e.target.value)}
-                            placeholder="5000000"
-                            required
                         />
                     </div>
                     <DialogFooter>
-                        <Button type="button" variant="outline" onClick={onClose}>
+                        <Button type="button" variant="outline" onClick={onClose} disabled={mutation.isPending}>
                             Cancel
                         </Button>
-                        <Button type="submit">Create Portfolio</Button>
+                        <Button type="submit" disabled={mutation.isPending}>
+                            {mutation.isPending ? (
+                                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Creating…</>
+                            ) : 'Create Portfolio'}
+                        </Button>
                     </DialogFooter>
                 </form>
             </DialogContent>

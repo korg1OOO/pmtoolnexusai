@@ -30,6 +30,7 @@ import { getPortfolios, createPortfolio, getPortfolioStats } from '@/services/po
 import { getManualLearnings, createManualLearning, convertToPattern } from '@/services/manualLearningService';
 import { getMLSharingStats } from '@/services/mlSharingService';
 import { getDefaultTenant } from '@/services/tenantService';
+import { useAuth } from '@/hooks/useAuth';
 
 export function EnterpriseMultiTenancyDashboard() {
     const [activeTab, setActiveTab] = useState('workspaces');
@@ -362,6 +363,7 @@ function CreateLearningForm({ tenantId, onSubmit, onCancel }: any) {
     const [description, setDescription] = useState('');
     const [learningType, setLearningType] = useState('best_practice');
     const [scope, setScope] = useState('tenant');
+    const { user } = useAuth();
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -377,7 +379,7 @@ function CreateLearningForm({ tenantId, onSubmit, onCancel }: any) {
                 prediction_adjustment: { type: 'manual', value: description },
                 confidence: 0.8,
             },
-            created_by_user_id: 'current-user-id', // TODO: Get from auth
+            created_by_user_id: user?.id || null,
         });
     };
 

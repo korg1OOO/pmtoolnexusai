@@ -1,6 +1,6 @@
 -- ============================================================
 -- Migration: RACI Assignments, Approvals, Delegations
--- Date: 2026-02-19
+-- Date: 2026-02-19  (idempotent rewrite)
 -- ============================================================
 
 -- ─── RACI ASSIGNMENTS ────────────────────────────────────────
@@ -16,14 +16,23 @@ CREATE TABLE IF NOT EXISTS raci_assignments (
 );
 
 ALTER TABLE raci_assignments ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "raci_select" ON raci_assignments FOR SELECT USING (true);
-CREATE POLICY "raci_insert" ON raci_assignments FOR INSERT WITH CHECK (true);
-CREATE POLICY "raci_update" ON raci_assignments FOR UPDATE USING (true);
-CREATE POLICY "raci_delete" ON raci_assignments FOR DELETE USING (true);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='raci_assignments' AND policyname='raci_select') THEN
+    CREATE POLICY "raci_select" ON raci_assignments FOR SELECT USING (true); END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='raci_assignments' AND policyname='raci_insert') THEN
+    CREATE POLICY "raci_insert" ON raci_assignments FOR INSERT WITH CHECK (true); END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='raci_assignments' AND policyname='raci_update') THEN
+    CREATE POLICY "raci_update" ON raci_assignments FOR UPDATE USING (true); END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='raci_assignments' AND policyname='raci_delete') THEN
+    CREATE POLICY "raci_delete" ON raci_assignments FOR DELETE USING (true); END IF;
+END $$;
 
-CREATE TRIGGER set_raci_updated_at
-    BEFORE UPDATE ON raci_assignments
-    FOR EACH ROW EXECUTE FUNCTION handle_updated_at();
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname='set_raci_updated_at') THEN
+    CREATE TRIGGER set_raci_updated_at BEFORE UPDATE ON raci_assignments
+      FOR EACH ROW EXECUTE FUNCTION handle_updated_at();
+  END IF;
+END $$;
 
 -- ─── APPROVALS ───────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS approvals (
@@ -49,14 +58,23 @@ CREATE TABLE IF NOT EXISTS approvals (
 );
 
 ALTER TABLE approvals ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "approvals_select" ON approvals FOR SELECT USING (true);
-CREATE POLICY "approvals_insert" ON approvals FOR INSERT WITH CHECK (true);
-CREATE POLICY "approvals_update" ON approvals FOR UPDATE USING (true);
-CREATE POLICY "approvals_delete" ON approvals FOR DELETE USING (true);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='approvals' AND policyname='approvals_select') THEN
+    CREATE POLICY "approvals_select" ON approvals FOR SELECT USING (true); END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='approvals' AND policyname='approvals_insert') THEN
+    CREATE POLICY "approvals_insert" ON approvals FOR INSERT WITH CHECK (true); END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='approvals' AND policyname='approvals_update') THEN
+    CREATE POLICY "approvals_update" ON approvals FOR UPDATE USING (true); END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='approvals' AND policyname='approvals_delete') THEN
+    CREATE POLICY "approvals_delete" ON approvals FOR DELETE USING (true); END IF;
+END $$;
 
-CREATE TRIGGER set_approvals_updated_at
-    BEFORE UPDATE ON approvals
-    FOR EACH ROW EXECUTE FUNCTION handle_updated_at();
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname='set_approvals_updated_at') THEN
+    CREATE TRIGGER set_approvals_updated_at BEFORE UPDATE ON approvals
+      FOR EACH ROW EXECUTE FUNCTION handle_updated_at();
+  END IF;
+END $$;
 
 -- ─── DELEGATIONS ─────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS delegations (
@@ -77,19 +95,27 @@ CREATE TABLE IF NOT EXISTS delegations (
     delegation_depth    INTEGER DEFAULT 0,
     created_at          TIMESTAMPTZ DEFAULT NOW(),
     updated_at          TIMESTAMPTZ DEFAULT NOW(),
-    -- Prevent self-delegation
     CHECK (delegator_id != delegate_id)
 );
 
 ALTER TABLE delegations ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "delegations_select" ON delegations FOR SELECT USING (true);
-CREATE POLICY "delegations_insert" ON delegations FOR INSERT WITH CHECK (true);
-CREATE POLICY "delegations_update" ON delegations FOR UPDATE USING (true);
-CREATE POLICY "delegations_delete" ON delegations FOR DELETE USING (true);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='delegations' AND policyname='delegations_select') THEN
+    CREATE POLICY "delegations_select" ON delegations FOR SELECT USING (true); END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='delegations' AND policyname='delegations_insert') THEN
+    CREATE POLICY "delegations_insert" ON delegations FOR INSERT WITH CHECK (true); END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='delegations' AND policyname='delegations_update') THEN
+    CREATE POLICY "delegations_update" ON delegations FOR UPDATE USING (true); END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='delegations' AND policyname='delegations_delete') THEN
+    CREATE POLICY "delegations_delete" ON delegations FOR DELETE USING (true); END IF;
+END $$;
 
-CREATE TRIGGER set_delegations_updated_at
-    BEFORE UPDATE ON delegations
-    FOR EACH ROW EXECUTE FUNCTION handle_updated_at();
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname='set_delegations_updated_at') THEN
+    CREATE TRIGGER set_delegations_updated_at BEFORE UPDATE ON delegations
+      FOR EACH ROW EXECUTE FUNCTION handle_updated_at();
+  END IF;
+END $$;
 
 -- ─── DELEGATION TEMPLATES ────────────────────────────────────
 CREATE TABLE IF NOT EXISTS delegation_templates (
@@ -107,14 +133,23 @@ CREATE TABLE IF NOT EXISTS delegation_templates (
 );
 
 ALTER TABLE delegation_templates ENABLE ROW LEVEL SECURITY;
-CREATE POLICY "del_templates_select" ON delegation_templates FOR SELECT USING (true);
-CREATE POLICY "del_templates_insert" ON delegation_templates FOR INSERT WITH CHECK (true);
-CREATE POLICY "del_templates_update" ON delegation_templates FOR UPDATE USING (true);
-CREATE POLICY "del_templates_delete" ON delegation_templates FOR DELETE USING (true);
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='delegation_templates' AND policyname='del_templates_select') THEN
+    CREATE POLICY "del_templates_select" ON delegation_templates FOR SELECT USING (true); END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='delegation_templates' AND policyname='del_templates_insert') THEN
+    CREATE POLICY "del_templates_insert" ON delegation_templates FOR INSERT WITH CHECK (true); END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='delegation_templates' AND policyname='del_templates_update') THEN
+    CREATE POLICY "del_templates_update" ON delegation_templates FOR UPDATE USING (true); END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='delegation_templates' AND policyname='del_templates_delete') THEN
+    CREATE POLICY "del_templates_delete" ON delegation_templates FOR DELETE USING (true); END IF;
+END $$;
 
-CREATE TRIGGER set_delegation_templates_updated_at
-    BEFORE UPDATE ON delegation_templates
-    FOR EACH ROW EXECUTE FUNCTION handle_updated_at();
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname='set_delegation_templates_updated_at') THEN
+    CREATE TRIGGER set_delegation_templates_updated_at BEFORE UPDATE ON delegation_templates
+      FOR EACH ROW EXECUTE FUNCTION handle_updated_at();
+  END IF;
+END $$;
 
 -- ─── FUNCTION: Auto-expire delegations ───────────────────────
 CREATE OR REPLACE FUNCTION check_expired_delegations()
@@ -128,8 +163,10 @@ BEGIN
 END;
 $$;
 
--- ─── VIEW: Delegation history (denormalized) ─────────────────
-CREATE OR REPLACE VIEW delegation_history AS
+-- ─── VIEW: Delegation history ──────────────────────────────
+-- Drop first to avoid "cannot change column name" error on re-run
+DROP VIEW IF EXISTS delegation_history;
+CREATE VIEW delegation_history AS
     SELECT
         d.id,
         d.approval_id,

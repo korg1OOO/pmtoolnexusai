@@ -83,6 +83,25 @@ export default function ExecutiveDashboardView() {
     return financials?.trendData || [];
   }, [financials]);
 
+  // Compute period-over-period % change for budget spend (current month vs previous month)
+  const budgetDeltaPct = useMemo(() => {
+    if (trendData.length < 2) return 0;
+    const curr = trendData[trendData.length - 1]?.actual || 0;
+    const prev = trendData[trendData.length - 2]?.actual || 0;
+    if (prev === 0) return 0;
+    return parseFloat(((curr - prev) / prev * 100).toFixed(1));
+  }, [trendData]);
+
+  // Compute period-over-period progress delta (avg progress change vs prior state)
+  // Since we don't have time-series for progress, compare healthy vs at-risk ratio this period
+  const progressDeltaPct = useMemo(() => {
+    const totalProjects = projects.length;
+    if (totalProjects === 0) return 0;
+    const healthyRatio = metrics.healthCounts.green / totalProjects;
+    // Positive if majority on track, expressed as % above/below 50% baseline
+    return parseFloat(((healthyRatio - 0.5) * 100).toFixed(1));
+  }, [projects.length, metrics.healthCounts.green]);
+
   const maxValue = Math.max(...trendData.map(d => Math.max(d.budget, d.actual)));
 
   const handleRefresh = () => {
@@ -146,8 +165,12 @@ export default function ExecutiveDashboardView() {
                 <DollarSign className="h-6 w-6 text-primary" />
               </div>
               <div className="flex items-center gap-1 text-success">
-                <ArrowUpRight className="h-4 w-4" />
-                <span className="text-sm font-medium">2.4%</span>
+                {budgetDeltaPct >= 0
+                  ? <ArrowUpRight className="h-4 w-4 text-success" />
+                  : <ArrowDownRight className="h-4 w-4 text-destructive" />}
+                <span className={`text-sm font-medium ${budgetDeltaPct >= 0 ? 'text-success' : 'text-destructive'}`}>
+                  {budgetDeltaPct >= 0 ? '+' : ''}{budgetDeltaPct}%
+                </span>
               </div>
             </div>
             <p className="text-3xl font-bold">{formatCurrency(metrics.totalBudget)}</p>
@@ -168,8 +191,12 @@ export default function ExecutiveDashboardView() {
                 <Target className="h-6 w-6 text-success" />
               </div>
               <div className="flex items-center gap-1 text-success">
-                <ArrowUpRight className="h-4 w-4" />
-                <span className="text-sm font-medium">5.2%</span>
+                {progressDeltaPct >= 0
+                  ? <ArrowUpRight className="h-4 w-4 text-success" />
+                  : <ArrowDownRight className="h-4 w-4 text-destructive" />}
+                <span className={`text-sm font-medium ${progressDeltaPct >= 0 ? 'text-success' : 'text-destructive'}`}>
+                  {progressDeltaPct >= 0 ? '+' : ''}{progressDeltaPct}%
+                </span>
               </div>
             </div>
             <p className="text-3xl font-bold">{Math.round(metrics.avgProgress)}%</p>

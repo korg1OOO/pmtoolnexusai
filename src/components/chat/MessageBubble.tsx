@@ -41,6 +41,8 @@ export interface MessageBubbleProps {
   onJumpToMessage: (id: string) => void;
   onSaveEdit: (newContent: string) => void;
   onCancelEdit: () => void;
+  /** Called when the user clicks the thread/replies count indicator */
+  onOpenThread?: (messageId: string) => void;
 
   // Ref for scroll-to
   messageRef?: (el: HTMLDivElement | null) => void;
@@ -83,12 +85,13 @@ export function MessageBubble({
   onJumpToMessage,
   onSaveEdit,
   onCancelEdit,
+  onOpenThread,
   messageRef,
 }: MessageBubbleProps) {
   const [showActions, setShowActions] = useState(false);
   const isOwnMessage = message.user_id === currentUserId;
   const isDeleted = message.is_deleted;
-  
+
   // Convert to ThreadMessage array for reply count calculation
   const threadMessages = allMessages.map(toThreadMessage);
   const replyCount = getReplyCount(message.id, threadMessages);
@@ -185,7 +188,7 @@ export function MessageBubble({
           <ThreadIndicator
             replyCount={replyCount}
             lastReplyTime={lastReplyTime}
-            onClick={() => console.log('Open thread for message', message.id)}
+            onClick={() => onOpenThread ? onOpenThread(message.id) : onReply()}
           />
         )}
 
@@ -313,7 +316,7 @@ export function MessageBubble({
           <ThreadIndicator
             replyCount={replyCount}
             lastReplyTime={lastReplyTime}
-            onClick={() => console.log('Open thread for message', message.id)}
+            onClick={() => onOpenThread ? onOpenThread(message.id) : onReply()}
           />
         )}
 

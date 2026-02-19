@@ -113,6 +113,7 @@ export default function MilestonesView() {
   const [selectedGate, setSelectedGate] = useState<StageGate | null>(null);
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
   const [approvalComment, setApprovalComment] = useState('');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   // Creation State
   const [isCreateOpen, setIsCreateOpen] = useState(false);
@@ -153,10 +154,14 @@ export default function MilestonesView() {
   };
 
   const handleDelete = async (id: string) => {
-    if (confirm('Delete this milestone?')) {
-      await deleteMilestone.mutateAsync(id);
-      toast.success('Milestone deleted');
-    }
+    setDeleteConfirmId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirmId) return;
+    await deleteMilestone.mutateAsync(deleteConfirmId);
+    toast.success('Milestone deleted');
+    setDeleteConfirmId(null);
   };
 
   const handleApprove = async (gate: StageGate) => {
@@ -385,10 +390,37 @@ export default function MilestonesView() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    {/* ... keeping gate content structure but simplified for now ... */}
-                    <div className="text-sm text-muted-foreground">
-                      Gate details here (Mock Data)
-                    </div>
+                    {/* Gate Criteria */}
+                    {gate.criteria && gate.criteria.length > 0 && (
+                      <div className="space-y-2 mb-4">
+                        <p className="text-xs font-semibold uppercase text-muted-foreground">Criteria</p>
+                        {gate.criteria.map((c, i) => (
+                          <div key={i} className="flex items-center gap-2 text-sm">
+                            {getCriteriaIcon(c.status)}
+                            <span className={c.status === 'met' ? 'line-through text-muted-foreground' : ''}>{c.description}</span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                    {/* Approvers */}
+                    {gate.approvers && gate.approvers.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold uppercase text-muted-foreground">Approvers</p>
+                        <div className="flex flex-wrap gap-2">
+                          {gate.approvers.map((a, i) => (
+                            <span key={i} className={`text-xs px-2 py-1 rounded-full border ${a.status === 'approved' ? 'bg-green-50 border-green-200 text-green-700' :
+                                a.status === 'rejected' ? 'bg-red-50 border-red-200 text-red-700' :
+                                  'bg-muted border-muted-foreground/20'
+                              }`}>
+                              {a.user?.full_name || a.user?.email || a.role || 'Approver'} · {a.status}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {((!gate.criteria || gate.criteria.length === 0) && (!gate.approvers || gate.approvers.length === 0)) && (
+                      <p className="text-sm text-muted-foreground">No criteria or approvers defined for this gate.</p>
+                    )}
                   </CardContent>
                 </Card>
               </motion.div>
@@ -547,6 +579,24 @@ export default function MilestonesView() {
             <Button variant="outline" onClick={() => setApprovalDialogOpen(false)}>Cancel</Button>
             <Button variant="destructive" onClick={() => confirmApproval('rejected')}>Reject</Button>
             <Button className="bg-success hover:bg-success/90" onClick={() => confirmApproval('approved')}>Approve</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete Milestone</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this milestone? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={confirmDelete} disabled={deleteMilestone.isPending}>
+              {deleteMilestone.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Delete
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

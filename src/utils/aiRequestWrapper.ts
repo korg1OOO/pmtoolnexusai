@@ -52,8 +52,7 @@ export async function makeAIRequest<T = string>(
     }
 
     try {
-        // Make AI API request
-        // NOTE: Replace this with your actual AI API integration (OpenAI, Anthropic, etc.)
+        // Make AI API request via secure Edge Function proxy
         const response = await callAIAPI({
             model,
             prompt: params.prompt,
@@ -97,7 +96,8 @@ export async function makeAIRequest<T = string>(
 }
 
 /**
- * Mock AI API call (replace with actual implementation)
+ * Calls the ai-proxy Supabase Edge Function, which forwards the request
+ * to the Lovable AI gateway using a server-side API key.
  */
 async function callAIAPI(params: {
     model: string;
@@ -112,38 +112,36 @@ async function callAIAPI(params: {
         total_tokens: number;
     };
 }> {
-    // TODO: Replace with actual OpenAI/Anthropic/etc. API call
-    // Example with OpenAI:
-    /*
-    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-    
-    const response = await openai.chat.completions.create({
-        model: params.model,
-        messages: [{ role: 'user', content: params.prompt }],
-        max_tokens: params.maxTokens,
-        temperature: params.temperature
-    });
-    
-    return {
-        content: response.choices[0].message.content || '',
-        usage: {
-            prompt_tokens: response.usage!.prompt_tokens,
-            completion_tokens: response.usage!.completion_tokens,
-            total_tokens: response.usage!.total_tokens
-        }
-    };
-    */
+    // Dynamic import to avoid bundling supabase client at the module level
+    const { supabase } = await import('@/integrations/supabase/client');
 
-    // Mock response for now
+    const { data, error } = await (supabase as any).functions.invoke('ai-proxy', {
+        body: {
+            model: params.model,
+            prompt: params.prompt,
+            maxTokens: params.maxTokens,
+            temperature: params.temperature,
+        },
+    });
+
+    if (error) {
+        throw new Error(error.message ?? 'AI proxy invocation failed');
+    }
+
+    if (data?.error) {
+        throw new Error(data.error);
+    }
+
     return {
-        content: `Mock AI response for: ${params.prompt.substring(0, 50)}...`,
+        content: data.content ?? '',
         usage: {
-            prompt_tokens: Math.ceil(params.prompt.length / 4),
-            completion_tokens: 100,
-            total_tokens: Math.ceil(params.prompt.length / 4) + 100
-        }
+            prompt_tokens: data.usage?.prompt_tokens ?? 0,
+            completion_tokens: data.usage?.completion_tokens ?? 0,
+            total_tokens: data.usage?.total_tokens ?? 0,
+        },
     };
 }
+
 
 // =====================================================
 // FEATURE-SPECIFIC HELPERS

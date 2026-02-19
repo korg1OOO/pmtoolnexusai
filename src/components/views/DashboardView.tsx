@@ -260,10 +260,10 @@ export default function DashboardView({ onViewChange }: DashboardViewProps) {
 
     const avgVelocityVal = velocitySamples.length > 0 ? totalVelocity / velocitySamples.length : 0;
 
-    // 6. Utilization (Hard to calc without Timesheets, mock for now or use task assignments count)
-    // assigning 100% if > 3 tasks? 
-    // Let's keep 85% mock or randomize slightly to look alive, or avg progress of active tasks?
-    const teamUtilizationVal = 85;
+    // 6. Utilization: ratio of active/in-progress tasks vs total tasks
+    const activeTasks = tasks.filter((t: any) => t.status === 'in-progress' || t.status === 'pending').length;
+    const totalTasks = Math.max(1, tasks.length);
+    const teamUtilizationVal = Math.min(100, Math.round((activeTasks / totalTasks) * 100));
 
     return {
       scheduleVariance: scheduleVarianceVal,

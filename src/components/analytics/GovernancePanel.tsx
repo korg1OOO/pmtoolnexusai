@@ -28,6 +28,7 @@ import type { DelegationRequest } from '@/types/analytics';
 import { useAuth } from '@/hooks/useAuth';
 import { useGovernancePermissions } from '@/hooks/useGovernancePermissions';
 import { useToast } from '@/hooks/use-toast';
+import { useProjectMembers } from '@/hooks/useProjectMembers';
 import type { PolicyDocument, ChecklistItem } from '@/types/analytics';
 
 interface GovernancePanelProps {
@@ -49,6 +50,10 @@ export function GovernancePanel({
     const { canApproveWorkflow, canRejectWorkflow, getPermissionMessage, isAdmin, checkAdminStatus } = useGovernancePermissions(
         entityId,
         entityType
+    );
+    // Use the project members for delegation user selection
+    const { members: projectMembers } = useProjectMembers(
+        entityType === 'project' ? entityId : null
     );
     const [previewDocument, setPreviewDocument] = useState<{
         url: string;
@@ -498,7 +503,7 @@ export function GovernancePanel({
                 isOpen={delegationDialog.isOpen}
                 onClose={() => setDelegationDialog({ isOpen: false, approvalId: null, approvalTitle: '' })}
                 onConfirm={handleConfirmDelegation}
-                availableUsers={[]} // TODO: Fetch from API or pass as prop
+                availableUsers={projectMembers?.map(m => ({ id: m.user_id, name: m.profile?.full_name || m.profile?.email || m.user_id, email: m.profile?.email || '' })) || []}
             />
         </>
     );

@@ -61,6 +61,13 @@ export interface WorkspaceTeam {
     allocation_percentage: number;
     availability_status: string;
     assigned_at: string;
+    // Joined from profiles
+    profiles?: {
+        id: string;
+        full_name: string | null;
+        email: string | null;
+        avatar_url: string | null;
+    } | null;
 }
 
 export interface WorkspaceOverview {
@@ -314,7 +321,7 @@ export async function getDefaultWorkspace(tenantId: string): Promise<Workspace> 
 export async function getWorkspaceTeams(workspaceId: string): Promise<WorkspaceTeam[]> {
     const { data, error } = await supabase
         .from('workspace_teams')
-        .select('*')
+        .select('*, profiles(id, full_name, email, avatar_url)')
         .eq('workspace_id', workspaceId);
 
     if (error) throw error;

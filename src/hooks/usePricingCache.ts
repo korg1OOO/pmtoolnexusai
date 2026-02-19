@@ -16,9 +16,10 @@ export interface CachedPricingData {
     cached_at: string;
 }
 
-export function usePricingCache() {
+export function usePricingCache(options?: { enabled?: boolean }) {
     return useQuery<CachedPricingData | null>({
         queryKey: ['pricing-cache-public'],
+        enabled: options?.enabled ?? true,
         queryFn: async (): Promise<CachedPricingData | null> => {
             try {
                 const { data, error } = await supabase.functions.invoke('get-pricing-cache', {});

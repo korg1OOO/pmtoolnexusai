@@ -13,7 +13,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = join(__dirname, '..');
 
 // Load .env
-dotenvConfig({ path: join(rootDir, '.env') });
+dotenvConfig({ path: join(rootDir, '.env'), override: true });
 
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL;
 const SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -87,16 +87,20 @@ async function seedData() {
         ];
 
         for (const plan of plans) {
-            await supabase.from('subscription_plans').upsert({
+            const { error } = await supabase.from('subscription_plans').upsert({
                 tier: plan.tier,
                 name: plan.name,
                 price_monthly: plan.price_monthly,
                 price_annual: plan.price_annual,
                 limits: plan.limits,
                 active: plan.active,
-                features: {}, // Feature flags handled by 'features' table now, but keeping JSON for compat
+                features: {},
                 created_at: new Date().toISOString()
             }, { onConflict: 'tier' });
+
+            if (error) {
+                console.error(`   ❌ Failed to seed plan ${plan.tier}:`, error.message);
+            }
         }
         console.log(`   ✅  Seeded ${plans.length} plans.`);
 
@@ -180,21 +184,26 @@ async function seedData() {
 
         // 4. Seed Activity Log
         console.log('rg  Seeding Activity Log...');
-        const actions = ['login', 'update_profile', 'view_report', 'export_data', 'create_project', 'update_settings'];
-        const activityTypes = ['info', 'success', 'warning', 'error'];
+        if (users.length > 0) {
+            const actions = ['login', 'update_profile', 'view_report', 'export_data', 'create_project', 'update_settings'];
+            const activityTypes = ['info', 'success', 'warning', 'error'];
 
-        for (let j = 0; j < 50; j++) {
-            const uid = randomElement(users);
-            await supabase.from('admin_activity_log').insert({
-                user_id: uid,
-                user_email: `user${uid.substring(0, 4)}@example.com`, // Mock email
-                action: randomElement(actions),
-                action_type: randomElement(activityTypes),
-                metadata: { ip: '127.0.0.1', agent: 'Mozilla/5.0' },
-                created_at: randomDate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), new Date()).toISOString() // last 7 days
-            });
+            for (let j = 0; j < 50; j++) {
+                const uid = randomElement(users);
+                if (!uid) continue;
+                await supabase.from('admin_activity_log').insert({
+                    user_id: uid,
+                    user_email: `user${uid.substring(0, 4)}@example.com`,
+                    action: randomElement(actions),
+                    action_type: randomElement(activityTypes),
+                    metadata: { ip: '127.0.0.1', agent: 'Mozilla/5.0' },
+                    created_at: randomDate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), new Date()).toISOString()
+                });
+            }
+            console.log('   ✅  Activity logs seeded.');
+        } else {
+            console.log('   ⚠️  Skipping Activity Log (no users).');
         }
-        console.log('   ✅  Activity logs seeded.');
 
         // 5. Seed System Status
         console.log('hp  Seeding System Status...');

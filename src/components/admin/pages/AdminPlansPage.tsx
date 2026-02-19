@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 
 export default function AdminPlansPage() {
     const { data: plans, isLoading: plansLoading } = usePlanConfigs();
-    const { refetch: refreshCache, isRefetching: isRefreshing } = usePricingCache();
+    const { refetch: refreshCache, isRefetching: isRefreshing } = usePricingCache({ enabled: false });
 
     const handleRefreshCache = async () => {
         try {

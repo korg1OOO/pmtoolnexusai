@@ -153,71 +153,25 @@ interface Snapshot {
     data: Swimlane[];
 }
 
-const initialMonths = [
-    { id: "1", label: "Mar 2025" }, { id: "2", label: "Apr 2025" }, { id: "3", label: "May 2025" },
-    { id: "4", label: "Jun 2025" }, { id: "5", label: "Jul 2025" }, { id: "6", label: "Aug 2025" },
-    { id: "7", label: "Sep 2025" }, { id: "8", label: "Oct 2025" }, { id: "9", label: "Nov 2025" },
-    { id: "10", label: "Dec 2025" }, { id: "11", label: "Jan 2026" }, { id: "12", label: "Feb 2026" },
-];
+// Generate 12 months from today forward (dynamic, always relevant)
+const generateMonths = () => {
+    const now = new Date();
+    return Array.from({ length: 12 }, (_, i) => {
+        const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+        const label = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        return { id: String(i + 1), label };
+    });
+};
+const initialMonths = generateMonths();
 
-const initialSwimlanes: Swimlane[] = [
-    {
-        id: "pre-kickoff", label: "Pre-Kickoff", color: SWIMLANE_COLORS[0], collapsed: false,
-        activities: [
-            { id: "a1", name: "Resource Loading & Staffing", start: 0, duration: 3, color: COLORS[0], tags: ["resource"], notes: "Identify & onboard key resources" },
-            { id: "a2", name: "Vendor Evaluation", start: 1, duration: 2, color: COLORS[1], tags: ["vendor"], notes: "RFP & vendor shortlisting" },
-            { id: "a3", name: "Budget Approval", start: 0, duration: 2, color: COLORS[2], tags: ["finance"], notes: "Sign off on project budget" },
-        ]
-    },
-    {
-        id: "planning", label: "Planning & Design", color: SWIMLANE_COLORS[1], collapsed: false,
-        activities: [
-            { id: "a4", name: "Requirements Gathering", start: 2, duration: 3, color: COLORS[3], tags: ["planning"], notes: "" },
-            { id: "a5", name: "Architecture Design", start: 4, duration: 2, color: COLORS[4], tags: ["design"], notes: "" },
-            { id: "a6", name: "UX / UI Prototyping", start: 4, duration: 3, color: COLORS[5], tags: ["design"], notes: "" },
-        ]
-    },
-    {
-        id: "build", label: "Build & Develop", color: SWIMLANE_COLORS[2], collapsed: false,
-        activities: [
-            { id: "a7", name: "Backend Development", start: 5, duration: 4, color: COLORS[0], tags: ["dev"], notes: "" },
-            { id: "a8", name: "Frontend Development", start: 5, duration: 4, color: COLORS[1], tags: ["dev"], notes: "" },
-            { id: "a9", name: "Integration Development", start: 7, duration: 3, color: COLORS[2], tags: ["dev"], notes: "" },
-        ]
-    },
-    {
-        id: "testing", label: "Testing & QA", color: SWIMLANE_COLORS[3], collapsed: false,
-        activities: [
-            { id: "a10", name: "Unit & Integration Testing", start: 7, duration: 3, color: COLORS[3], tags: ["qa"], notes: "" },
-            { id: "a11", name: "UAT (User Acceptance)", start: 9, duration: 2, color: COLORS[4], tags: ["qa"], notes: "" },
-        ]
-    },
-    {
-        id: "deploy", label: "Deployment & Go-Live", color: SWIMLANE_COLORS[4], collapsed: false,
-        activities: [
-            { id: "a12", name: "Staging Deployment", start: 9, duration: 1, color: COLORS[5], tags: ["deploy"], notes: "" },
-            { id: "a13", name: "Go-Live", start: 10, duration: 1, color: COLORS[6], tags: ["golive"], notes: "🎯 TARGET GO-LIVE" },
-            { id: "a14", name: "Post-Launch Support", start: 10, duration: 2, color: COLORS[7], tags: ["support"], notes: "" },
-        ]
-    }
-];
 
-const initialTeams: Team[] = [
-    { id: "t1", name: "Core Platform Team", location: "Dubai", color: COLORS[0] },
-    { id: "t2", name: "Design & UX Team", location: "London", color: COLORS[1] },
-    { id: "t3", name: "QA & Testing Team", location: "Hyderabad", color: COLORS[2] },
-];
+// Empty initial swimlanes — populated from DB or created fresh by user
+const initialSwimlanes: Swimlane[] = [];
 
-const initialSites: Site[] = [
-    { id: "s1", name: "Dubai HQ", region: "Middle East" },
-    { id: "s2", name: "London Office", region: "Europe" },
-    { id: "s3", name: "Hyderabad Dev Center", region: "Asia Pacific" },
-];
-
-const initialComments: Comment[] = [
-    { id: "c1", user: "Sarah K.", avatar: "SK", text: "Resource loading for Backend needs to start earlier — vendor lead time is 6 weeks.", time: "2 hrs ago", activityId: "a1" },
-    { id: "c2", user: "James M.", avatar: "JM", text: "UAT dates look tight. Can we extend by 1 week?", time: "45 min ago", activityId: "a11" },
-];
+// Empty initial teams, sites, comments — user builds from scratch
+const initialTeams: Team[] = [];
+const initialSites: Site[] = [];
+const initialComments: Comment[] = [];
 
 // ─── UTILITY ─────────────────────────────────────────────────────────────────
 const uid = () => crypto.randomUUID();

@@ -479,8 +479,17 @@ export default function MorningBriefingView({ demo = false }: MorningBriefingVie
         return <DecisionsSection decisions={uiDecisions} />;
       case 'team-availability':
         return <TeamAvailabilitySection members={teamAvailability.members} summary={teamAvailability.summary} />;
-      default:
-        return <p className="text-sm text-muted-foreground">Section content coming soon...</p>;
+      default: {
+        // Unknown section key — this means a persisted preference references a section that
+        // no longer exists. Log it and guide the user to reset their preferences.
+        console.warn(`[MorningBriefingView] Unknown section key: "${sectionId}". Valid keys: critical-alerts, ai-insights, profit-loss, schedule-slippage, budget-analysis, risk-assessment, actions-due, issues-summary, meetings-today, recent-decisions, team-availability`);
+        return (
+          <div className="flex flex-col items-center gap-2 py-6 text-center">
+            <p className="text-sm font-medium text-muted-foreground">Unknown section: <code className="bg-muted px-1 rounded text-xs">{sectionId}</code></p>
+            <p className="text-xs text-muted-foreground">This section may have been removed. Reset your briefing preferences to restore the default layout.</p>
+          </div>
+        );
+      }
     }
   };
 

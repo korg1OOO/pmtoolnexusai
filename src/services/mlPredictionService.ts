@@ -222,18 +222,49 @@ export async function analyzePredictionPatterns(
             corrected: p.actual_outcome,
         }));
 
-    // This is a simplified analysis - in production, you'd use more sophisticated ML
-    const commonCorrections = [
-        { pattern: 'Priority adjustments', count: corrections.length },
-    ];
+    // Compute common corrections — group modified predictions by a string-ified key of the actual outcome type
+    const correctionGroups: Map<string, number> = new Map();
+    corrections.forEach(c => {
+        const key = typeof c.corrected === 'object' && c.corrected !== null
+            ? (c.corrected.type || c.corrected.category || JSON.stringify(c.corrected).slice(0, 40))
+            : String(c.corrected).slice(0, 40);
+        correctionGroups.set(key, (correctionGroups.get(key) || 0) + 1);
+    });
+    const commonCorrections = Array.from(correctionGroups.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([pattern, count]) => ({ pattern, count }));
 
-    const lowConfidenceAreas = [
-        { area: 'New project types', avgConfidence: 0.6 },
-    ];
+    // Compute low confidence areas — group by prediction_type, calc avg confidence
+    const confidenceByType: Map<string, { sum: number; count: number }> = new Map();
+    predictions.forEach(p => {
+        if (p.confidence !== null) {
+            const existing = confidenceByType.get(p.prediction_type) || { sum: 0, count: 0 };
+            confidenceByType.set(p.prediction_type, { sum: existing.sum + p.confidence, count: existing.count + 1 });
+        }
+    });
+    const lowConfidenceAreas = Array.from(confidenceByType.entries())
+        .map(([area, { sum, count }]) => ({ area, avgConfidence: count > 0 ? sum / count : 0 }))
+        .filter(a => a.avgConfidence < 0.75)
+        .sort((a, b) => a.avgConfidence - b.avgConfidence)
+        .slice(0, 5);
 
-    const highAccuracyPatterns = [
-        { pattern: 'Login/Auth tasks', accuracy: 0.95 },
-    ];
+    // Compute high accuracy patterns — group by prediction_type, calc acceptance rate
+    const accuracyByType: Map<string, { accepted: number; total: number }> = new Map();
+    predictions.forEach(p => {
+        if (p.user_accepted !== null) {
+            const existing = accuracyByType.get(p.prediction_type) || { accepted: 0, total: 0 };
+            accuracyByType.set(p.prediction_type, {
+                accepted: existing.accepted + (p.user_accepted ? 1 : 0),
+                total: existing.total + 1,
+            });
+        }
+    });
+    const highAccuracyPatterns = Array.from(accuracyByType.entries())
+        .map(([pattern, { accepted, total }]) => ({ pattern, accuracy: total > 0 ? accepted / total : 0 }))
+        .filter(a => a.accuracy >= 0.8 && a.accuracy > 0)
+        .sort((a, b) => b.accuracy - a.accuracy)
+        .slice(0, 5);
 
     return {
         commonCorrections,

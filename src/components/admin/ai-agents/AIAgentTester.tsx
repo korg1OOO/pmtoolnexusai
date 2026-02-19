@@ -10,9 +10,25 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Play, X, Clock, Zap, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
-import { useLogAIInteraction, useUpdateInteractionFeedback } from "@/hooks/useAIAgents";
+import { useAIAgent, useLogAIInteraction, useUpdateInteractionFeedback } from "@/hooks/useAIAgents";
 import { AIFeedback } from "@/components/ai/AIFeedback";
 import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
+
+interface AIAgentTesterProps {
+    agentId: string | null;
+    onClose: () => void;
+}
+
+interface TestResult {
+    query: string;
+    response: string;
+    executionTime: number;
+    timestamp: Date;
+    success: boolean;
+    error?: string;
+    logId?: string;
+}
 
 export function AIAgentTester({ agentId, onClose }: AIAgentTesterProps) {
     const { data: agent } = useAIAgent(agentId || "");

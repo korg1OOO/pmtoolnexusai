@@ -189,16 +189,16 @@ export async function getModelPerformance(
         const lowConfidenceCount = predictions.filter(p => p.confidence_score < 0.7).length;
 
         // Performance metrics require ml_execution_logs table
-        // To implement: Create table with columns: model_id, execution_time_ms, cache_hit, error, created_at
-        // Then query: SELECT AVG(execution_time_ms), SUM(CASE WHEN cache_hit THEN 1 ELSE 0 END) / COUNT(*)
+        // Current Schema: ml_predictions (confidence_score, prediction_data) only.
+        // Partial Wiring: We return real counts/confidence, but 0 for execution metrics until schema is updated.
         const performance: ModelPerformance = {
             model_id: 'current',
             prediction_count: totalPredictions,
             average_confidence: Math.round(avgConfidence * 1000) / 1000,
             low_confidence_count: lowConfidenceCount,
-            error_count: 0, // Requires error tracking in ml_execution_logs
-            cache_hit_rate: 0.75, // Requires cache_hit column in ml_execution_logs
-            avg_execution_time_ms: 1200, // Requires execution_time_ms column in ml_execution_logs
+            error_count: 0, // Not available in current schema
+            cache_hit_rate: 0, // Not available in current schema
+            avg_execution_time_ms: 0, // Not available in current schema
         };
 
         return { data: performance, error: null };
@@ -389,6 +389,25 @@ export async function scheduleRetraining(
     const nextRun = new Date(Date.now() + hoursUntilNext * 60 * 60 * 1000).toISOString();
 
     console.log(`Scheduled ${modelType} model retraining: ${schedule} (next run: ${nextRun})`);
+
+    // Log to admin_logs for audit trail
+    const { error: logError } = await supabase
+        .from('admin_logs')
+        .insert({
+            action_type: 'ML_RETRAINING_SCHEDULED',
+            target_type: 'ML_MODEL',
+            target_id: modelType,
+            details: {
+                schedule,
+                next_run: nextRun,
+                initiated_at: new Date().toISOString()
+            }
+        });
+
+    if (logError) {
+        console.error('Failed to log retraining schedule:', logError);
+        // We don't fail the operation just because logging failed
+    }
 
     // In production, this would create a job in a job queue
     return {

@@ -113,21 +113,8 @@ function TraceabilityNode({ item, isSelected, onClick }: TraceabilityNodeProps) 
   );
 }
 
-// Mock Data for Demo Mode
-const MOCK_TRACEABILITY_ITEMS: TraceabilityItem[] = [
-  { id: 'REQ-001', title: 'User Authentication', type: 'task', status: 'done', linkedTo: [{ id: 'TEST-001', title: 'Verify Login', type: 'sprint' }] },
-  { id: 'REQ-002', title: 'Payment Integration', type: 'task', status: 'in-progress', linkedTo: [{ id: 'RISK-01', title: 'PCI Compliance', type: 'risk' }] },
-  { id: 'RISK-01', title: 'PCI Compliance', type: 'risk', status: 'open', linkedTo: [{ id: 'REQ-002', title: 'Payment Integration', type: 'task' }] },
-  { id: 'DEC-05', title: 'Choose Stripe', type: 'decision', status: 'approved', linkedTo: [{ id: 'REQ-002', title: 'Payment Integration', type: 'task' }] },
-  { id: 'BUG-12', title: 'Login Timeout', type: 'issue', status: 'open', linkedTo: [{ id: 'REQ-001', title: 'User Authentication', type: 'task' }] }
-];
 
-interface TraceabilityMatrixViewProps {
-  demo?: boolean;
-}
-
-export default function TraceabilityMatrixView({ demo = false }: TraceabilityMatrixViewProps) {
-  // For testing purposes, we use the fixed project ID or fetch the first one
+export default function TraceabilityMatrixView() {
   const { data: projects } = useQuery({
     queryKey: ['projects-traceability'],
     queryFn: async () => {
@@ -137,10 +124,7 @@ export default function TraceabilityMatrixView({ demo = false }: TraceabilityMat
   });
 
   const projectId = projects?.[0]?.id;
-  const { data: realTraceabilityData, isLoading: isRealLoading } = useTraceability(projectId);
-
-  const traceabilityData = demo ? MOCK_TRACEABILITY_ITEMS : realTraceabilityData;
-  const isLoading = demo ? false : isRealLoading;
+  const { data: traceabilityData, isLoading } = useTraceability(projectId);
   const [selectedItem, setSelectedItem] = useState<TraceabilityItem | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('all');

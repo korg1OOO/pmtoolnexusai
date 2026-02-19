@@ -165,62 +165,14 @@ function mapMeetingToDisplay(meeting: MeetingWithRelations) {
   };
 }
 
-// Mock Data for Demo Mode
-const MOCK_MEETINGS = [
-  {
-    id: 'demo-1',
-    title: 'Product Strategy Sync',
-    type: 'strategy',
-    date: new Date().toISOString(),
-    start_time: '10:00',
-    end_time: '11:00',
-    status: 'scheduled',
-    meeting_participants: [
-      { id: 'p1', name: 'Alice Chen', role: 'Product Lead', attendance_status: 'accepted' },
-      { id: 'p2', name: 'Bob Smith', role: 'Eng Lead', attendance_status: 'accepted' }
-    ],
-    ai_summary: 'Discussed Q3 roadmap realignment. Key focus on "Project Oye" launch features.',
-    ai_confidence: 0.92,
-    meeting_decisions: [
-      { id: 'd1', description: 'Launch "Demo Mode" for Landing Page', decision_type: 'reversible', impact: 'high' }
-    ],
-    meeting_action_items: [
-      { id: 'a1', title: 'Update Landing Page UI', owner_name: 'Bob Smith', priority: 'high', status: 'pending' }
-    ],
-    meeting_risks: [],
-    meeting_agenda_items: [],
-    purpose: { type: 'decision', description: 'Finalize launch scope' },
-    ai_sentiment: { overall: 'positive', engagement: 0.85, positives: ['Clear consensus'], concerns: [] }
-  },
-  {
-    id: 'demo-2',
-    title: 'Weekly Team Standup',
-    type: 'status',
-    date: new Date().toISOString(),
-    start_time: '09:00',
-    end_time: '09:15',
-    status: 'completed',
-    meeting_participants: [],
-    ai_summary: 'Routine updates. No blockers reported.',
-    ai_confidence: 0.88,
-    meeting_decisions: [],
-    meeting_action_items: [],
-    meeting_risks: [],
-    meeting_agenda_items: []
-  }
-];
 
-interface EnhancedMeetingsViewProps {
-  demo?: boolean;
-}
-
-export default function EnhancedMeetingsView({ demo = false }: EnhancedMeetingsViewProps) {
+export default function EnhancedMeetingsView() {
   const { settings } = useProjectContext();
-  const projectId = settings?.id || 'demo';
+  const projectId = settings?.id;
 
   const {
-    meetings: realMeetings,
-    isLoading: isRealLoading,
+    meetings,
+    isLoading,
     createMeeting,
     addParticipant,
     addAgendaItem,
@@ -228,9 +180,6 @@ export default function EnhancedMeetingsView({ demo = false }: EnhancedMeetingsV
     processWithAI,
     generateMoM,
   } = useMeetings(projectId);
-
-  const meetings = demo ? MOCK_MEETINGS as any[] : realMeetings;
-  const isLoading = demo ? false : isRealLoading;
 
   const [selectedMeetingId, setSelectedMeetingId] = useState<string | null>(null);
   const [showMoM, setShowMoM] = useState(false);

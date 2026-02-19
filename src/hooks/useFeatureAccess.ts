@@ -5,6 +5,7 @@
 
 import { useQuery } from '@tanstack/react-query';
 import { supabase as _supabase } from '@/integrations/supabase/client';
+import { usePlanConfigs } from '@/hooks/usePlanConfigs';
 const supabase = _supabase as any;
 
 export type SubscriptionTier = 'free' | 'pro' | 'business' | 'agency';
@@ -118,7 +119,8 @@ export function isTierHigherOrEqual(userTier: SubscriptionTier, requiredTier: Su
 }
 
 /**
- * Tier pricing (can be moved to database later)
+ * Tier pricing (hardcoded fallback — kept for backwards-compat).
+ * @deprecated Use useTierPricing() to read live values from the DB.
  */
 export const TIER_PRICING = {
     free: { monthly: 0, annual: 0 },
@@ -128,31 +130,43 @@ export const TIER_PRICING = {
 } as const;
 
 /**
- * Tier limits
+ * Tier limits (hardcoded fallback — kept for backwards-compat).
+ * @deprecated Use useTierLimits(tier) to read live values from the DB.
  */
 export const TIER_LIMITS = {
-    free: {
-        projects: 3,
-        teamMembers: 1,
-        fileSize: 10, // MB
-        storage: 100, // MB
-    },
-    pro: {
-        projects: -1, // unlimited
-        teamMembers: 10,
-        fileSize: 100,
-        storage: 10000, // 10GB
-    },
-    business: {
-        projects: -1,
-        teamMembers: 50,
-        fileSize: 500,
-        storage: 100000, // 100GB
-    },
-    agency: {
-        projects: -1,
-        teamMembers: -1, // unlimited
-        fileSize: 1000,
-        storage: 500000, // 500GB
-    },
+    free: { projects: 3, teamMembers: 1, fileSize: 10, storage: 100, aiCredits: 0 },
+    pro: { projects: -1, teamMembers: 10, fileSize: 100, storage: 10000, aiCredits: 500 },
+    business: { projects: -1, teamMembers: 50, fileSize: 500, storage: 100000, aiCredits: 2000 },
+    agency: { projects: -1, teamMembers: -1, fileSize: 1000, storage: 500000, aiCredits: -1 },
 } as const;
+
+// ─── DB-backed reactive alternatives ─────────────────────────────────────────
+
+/**
+ * Returns live pricing for all tiers from the plan_configs DB table.
+ * Falls back to the hardcoded TIER_PRICING until the query resolves.
+ */
+export function useTierPricing() {
+    const { data: configs = [] } = usePlanConfigs();
+    if (configs.length === 0) return TIER_PRICING as Record<string, { monthly: number; annual: number }>;
+    return Object.fromEntries(
+        configs.map(c => [c.tier, { monthly: c.price_monthly, annual: c.price_annual }])
+    ) as Record<string, { monthly: number; annual: number }>;
+}
+
+/**
+ * Returns live limits for a specific tier from the plan_configs DB table.
+ * Falls back to the hardcoded TIER_LIMITS until the query resolves.
+ */
+export function useTierLimits(tier: SubscriptionTier) {
+    const { data: configs = [] } = usePlanConfigs();
+    const cfg = configs.find(c => c.tier === tier);
+    if (!cfg) return TIER_LIMITS[tier] as { projects: number; teamMembers: number; fileSize: number; storage: number; aiCredits: number };
+    return {
+        projects: cfg.max_projects,
+        teamMembers: cfg.max_members,
+        fileSize: cfg.max_file_size_mb,
+        storage: cfg.max_storage_mb,
+        aiCredits: cfg.max_ai_credits,
+    };
+}

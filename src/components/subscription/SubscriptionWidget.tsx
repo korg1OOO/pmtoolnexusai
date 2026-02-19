@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Crown, TrendingUp, Zap, ArrowRight, Check } from 'lucide-react';
-import { useUserTier, useUserFeatures, TIER_LIMITS, TIER_PRICING } from '@/hooks/useFeatureAccess';
+import { useUserTier, useUserFeatures, useTierPricing, useTierLimits } from '@/hooks/useFeatureAccess';
 import { useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
@@ -31,8 +31,8 @@ export function SubscriptionWidget({ compact = false }: SubscriptionWidgetProps)
     };
 
     const config = tierConfig[tier];
-    const limits = TIER_LIMITS[tier];
-    const pricing = TIER_PRICING[tier];
+    const limits = useTierLimits(tier);
+    const pricing = useTierPricing();
 
     // Real usage data from backend
     const { data: usage = { projects: 0, teamMembers: 0, storage: 0 } } = useQuery({
@@ -96,7 +96,7 @@ export function SubscriptionWidget({ compact = false }: SubscriptionWidgetProps)
                             <div>
                                 <p className="font-semibold">{config.name} Plan</p>
                                 <p className="text-sm text-muted-foreground">
-                                    {tier === 'free' ? 'Free Forever' : `$${pricing.monthly}/mo`}
+                                    {tier === 'free' ? 'Free Forever' : `$${pricing[tier]?.monthly ?? 0}/mo`}
                                 </p>
                             </div>
                         </div>
@@ -123,7 +123,7 @@ export function SubscriptionWidget({ compact = false }: SubscriptionWidgetProps)
                                 <Badge variant="outline" className={config.color}>Active</Badge>
                             </CardTitle>
                             <CardDescription>
-                                {tier === 'free' ? 'Free Forever' : `$${pricing.monthly}/month`}
+                                {tier === 'free' ? 'Free Forever' : `$${pricing[tier]?.monthly ?? 0}/month`}
                             </CardDescription>
                         </div>
                     </div>

@@ -1,5 +1,6 @@
 // Admin page exports
 export { AdminSubscriptionsPage } from './AdminSubscriptionsPage';
+export { default as AdminPlansPage } from './AdminPlansPage';
 export { AdminDashboard } from './AdminDashboard';
 export { AdminUsers } from './AdminUsers';
 export { AdminProUsers } from './AdminProUsers';

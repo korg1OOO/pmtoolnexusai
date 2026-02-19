@@ -1,0 +1,52 @@
+-- Create features table
+create table if not exists public.features (
+    key text primary key,
+    name text not null,
+    description text,
+    category text not null default 'CORE', -- CORE, ADVANCED, EXPERIMENTAL
+    min_plan_tier text not null default 'free',
+    is_enabled boolean not null default true,
+    sort_order integer default 0,
+    created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+    updated_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- Enable RLS
+alter table public.features enable row level security;
+
+-- Policies
+create policy "Public features are viewable by everyone"
+    on public.features for select
+    using (true);
+
+create policy "Admins can insert features"
+    on public.features for insert
+    with check (
+        auth.role() = 'service_role' 
+        or exists (select 1 from public.user_roles where user_id = auth.uid() and role = 'admin')
+    );
+
+create policy "Admins can update features"
+    on public.features for update
+    using (
+        auth.role() = 'service_role' 
+        or exists (select 1 from public.user_roles where user_id = auth.uid() and role = 'admin')
+    );
+
+create policy "Admins can delete features"
+    on public.features for delete
+    using (
+        auth.role() = 'service_role' 
+        or exists (select 1 from public.user_roles where user_id = auth.uid() and role = 'admin')
+    );
+
+-- Seed Data (ProjectOye Features)
+insert into public.features (key, name, category, min_plan_tier, sort_order) values
+('tube_map', 'Tube Map', 'CORE', 'free', 10),
+('process_mapper', 'Process Workbench', 'CORE', 'free', 20),
+('process_flows', 'Process Flows', 'CORE', 'free', 30),
+('impact_analysis', 'Impact Analysis', 'CORE', 'free', 40),
+('presentations', 'Presentations', 'CORE', 'starter', 50),
+('route_planner', 'Route Planner', 'ADVANCED', 'starter', 60),
+('design_studio', 'Design Studio', 'ADVANCED', 'pro', 70)
+on conflict (key) do nothing;

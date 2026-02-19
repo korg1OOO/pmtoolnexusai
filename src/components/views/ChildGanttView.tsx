@@ -44,7 +44,7 @@ export default function ChildGanttView() {
   const [timeScale, setTimeScale] = useState<TimeScale>('week');
   const [showCriticalPath, setShowCriticalPath] = useState(true);
   const [showSprintLinks, setShowSprintLinks] = useState(true);
-  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set(['T-010', 'T-011', 'T-013']));
+  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
 
   const { settings } = useProjectContext();
   const { data: tasks, isLoading } = useTasks(settings.id);
@@ -386,7 +386,7 @@ export default function ChildGanttView() {
                 className="absolute top-0 bottom-0 w-0.5 bg-destructive z-10"
                 style={{
                   left: `${((new Date().getTime() - dateRange.start.getTime()) /
-                      (dateRange.end.getTime() - dateRange.start.getTime())) *
+                    (dateRange.end.getTime() - dateRange.start.getTime())) *
                     100
                     }%`,
                 }}

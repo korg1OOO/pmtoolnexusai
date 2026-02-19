@@ -42,16 +42,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useTheme } from 'next-themes';
 import { EmailAccountSettings } from '@/components/communications/EmailAccountSettings';
 import { useProfile, useUpdateProfile } from '@/hooks/useProfile';
-import { useForm } from 'react-hook-form'; // Assuming react-hook-form is available or I'll use simple state
+import { useForm } from 'react-hook-form';
+import { useUserPreferences } from '@/hooks/useUserPreferences';
 
 interface Session {
   id: string;
-  device: string;
-  browser: string;
-  location: string;
-  lastActive: string;
-  current: boolean;
-  type: 'desktop' | 'mobile'; // Added strict type
+  created_at: string;
+  updated_at: string;
+  user_agent?: string;
+  ip?: string;
+  last_sign_in_at?: string;
 }
 
 // Mocks removed - Session management handled by Supabase Auth
@@ -74,21 +74,85 @@ export default function UserSettingsView() {
     avatar_url: ''
   });
 
+  const { preferences, updatePreference } = useUserPreferences();
+  const [localPreferences, setLocalPreferences] = useState(preferences);
+
+  // Sync preferences to local state when loaded
+  useEffect(() => {
+    if (preferences) {
+      setLocalPreferences(preferences);
+      // Also update form data with extended profile info if available
+      setFormData(prev => ({
+        ...prev,
+        phone_number: preferences.profile_extended?.phone_number || prev.phone_number,
+        department: preferences.profile_extended?.department || prev.department,
+        title: preferences.profile_extended?.title || prev.title,
+        bio: preferences.profile_extended?.bio || '',
+      }));
+    }
+  }, [preferences]);
+
   useEffect(() => {
     if (profile) {
-      setFormData({
-        full_name: profile.full_name || '',
-        email: profile.email || '',
-        phone_number: (profile as any).phone_number || '', // Cast as any if TS doesn't see new columns yet
-        department: (profile as any).department || '',
-        title: (profile as any).title || '',
-        avatar_url: profile.avatar_url || ''
-      });
+      setFormData(prev => ({
+        ...prev,
+        full_name: profile.full_name || prev.full_name,
+        email: profile.email || prev.email,
+        avatar_url: profile.avatar_url || prev.avatar_url
+      }));
     }
   }, [profile]);
 
-  const handleSave = () => {
-    updateProfile.mutate(formData);
+  const [mfaEnabled, setMfaEnabled] = useState(false);
+  const [activeSessions, setActiveSessions] = useState<Session[]>([]);
+
+  useEffect(() => {
+    // Check MFA status
+    const checkMfa = async () => {
+      const { data, error } = await supabase.auth.mfa.listFactors();
+      if (!error && data.all.length > 0) {
+        setMfaEnabled(data.all.some(f => f.status === 'verified'));
+      }
+    };
+    checkMfa();
+
+    // Fetch active sessions (Mock for now as Supabase doesn't expose session management API easily to client without edge functions)
+    // But we can show current session at least
+    const getSession = async () => {
+      const { data } = await supabase.auth.getSession();
+      if (data.session) {
+        setActiveSessions([{
+          id: 'current',
+          created_at: new Date().toISOString(), // approximated
+          updated_at: new Date().toISOString(),
+          user_agent: navigator.userAgent,
+          last_sign_in_at: new Date().toISOString()
+        }]);
+      }
+    };
+    getSession();
+
+  }, []);
+
+  const handleSave = async () => {
+    // Update basic profile
+    updateProfile.mutate({
+      full_name: formData.full_name,
+      avatar_url: formData.avatar_url
+    });
+
+    // Update extended profile info
+    updatePreference.mutate({
+      key: 'profile_extended',
+      value: {
+        phone_number: formData.phone_number,
+        department: formData.department,
+        title: formData.title,
+        // bio: formData.bio // If we had bio in formData
+      }
+    });
+
+    toast.success("Settings saved");
   };
 
   // Password State
@@ -276,7 +340,11 @@ export default function UserSettingsView() {
                   <Textarea
                     id="bio"
                     placeholder="Tell us about yourself..."
-                    defaultValue=""
+                    value={preferences?.profile_extended?.bio || ''}
+                    onChange={(e) => updatePreference.mutate({
+                      key: 'profile_extended',
+                      value: { ...preferences?.profile_extended, bio: e.target.value }
+                    })}
                     rows={3}
                   />
                 </div>
@@ -298,18 +366,30 @@ export default function UserSettingsView() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {[
-                  { label: 'Task Assignments', description: 'When you are assigned to a new task' },
-                  { label: 'Due Date Reminders', description: 'Reminders before tasks are due' },
-                  { label: 'Meeting Invites', description: 'When you are invited to meetings' },
-                  { label: 'SLA Warnings', description: 'When issues are approaching SLA breach' },
-                  { label: 'Weekly Digest', description: 'Summary of project activity' },
+                  { label: 'Task Assignments', description: 'When you are assigned to a new task', key: 'taskAssignments' },
+                  { label: 'Due Date Reminders', description: 'Reminders before tasks are due', key: 'dueReminders' },
+                  { label: 'Meeting Invites', description: 'When you are invited to meetings', key: 'meetingInvites' },
+                  { label: 'SLA Warnings', description: 'When issues are approaching SLA breach', key: 'slaWarnings' },
+                  { label: 'Weekly Digest', description: 'Summary of project activity', key: 'weeklyDigest' },
                 ].map((item) => (
                   <div key={item.label} className="flex items-center justify-between">
                     <div>
                       <div className="font-medium text-sm">{item.label}</div>
                       <div className="text-xs text-muted-foreground">{item.description}</div>
                     </div>
-                    <Switch defaultChecked />
+                    <Switch
+                      checked={preferences?.notifications?.email?.[item.key as keyof typeof preferences.notifications.email] ?? true}
+                      onCheckedChange={(checked) => {
+                        const currentEmailPrefs = preferences?.notifications?.email || {};
+                        updatePreference.mutate({
+                          key: 'notifications',
+                          value: {
+                            ...preferences?.notifications,
+                            email: { ...currentEmailPrefs, [item.key]: checked }
+                          }
+                        });
+                      }}
+                    />
                   </div>
                 ))}
               </CardContent>
@@ -322,16 +402,28 @@ export default function UserSettingsView() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {[
-                  { label: 'Desktop Notifications', description: 'Show notifications on your desktop' },
-                  { label: 'Mobile Push', description: 'Send notifications to mobile app' },
-                  { label: 'Sound Alerts', description: 'Play sound for notifications' },
+                  { label: 'Desktop Notifications', description: 'Show notifications on your desktop', key: 'desktop' },
+                  { label: 'Mobile Push', description: 'Send notifications to mobile app', key: 'mobile' },
+                  { label: 'Sound Alerts', description: 'Play sound for notifications', key: 'sound' },
                 ].map((item) => (
                   <div key={item.label} className="flex items-center justify-between">
                     <div>
                       <div className="font-medium text-sm">{item.label}</div>
                       <div className="text-xs text-muted-foreground">{item.description}</div>
                     </div>
-                    <Switch defaultChecked />
+                    <Switch
+                      checked={preferences?.notifications?.push?.[item.key as keyof typeof preferences.notifications.push] ?? true}
+                      onCheckedChange={(checked) => {
+                        const currentPushPrefs = preferences?.notifications?.push || {};
+                        updatePreference.mutate({
+                          key: 'notifications',
+                          value: {
+                            ...preferences?.notifications,
+                            push: { ...currentPushPrefs, [item.key]: checked }
+                          }
+                        });
+                      }}
+                    />
                   </div>
                 ))}
               </CardContent>
@@ -426,11 +518,11 @@ export default function UserSettingsView() {
                       <Shield className="h-5 w-5 text-success" />
                     </div>
                     <div>
-                      <div className="font-medium">2FA is enabled</div>
-                      <div className="text-sm text-muted-foreground">Using authenticator app</div>
+                      <div className="font-medium">{mfaEnabled ? '2FA is enabled' : '2FA is disabled'}</div>
+                      <div className="text-sm text-muted-foreground">{mfaEnabled ? 'Your account is secured.' : 'Enable 2FA for better security.'}</div>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm">Configure</Button>
+                  <Button variant="outline" size="sm" onClick={() => toast.info("MFA configuration coming soon")}>Configure</Button>
                 </div>
 
                 <div className="space-y-2">
@@ -452,14 +544,17 @@ export default function UserSettingsView() {
                 <CardDescription>Manage your active login sessions</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="p-4 rounded-lg border bg-muted/20 text-center">
-                  <Shield className="h-8 w-8 mx-auto text-primary mb-2" />
-                  <p className="font-medium">Session Management</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Your sessions are managed securely by your identity provider.
-                    Check your provider dashboard for active session details.
-                  </p>
-                </div>
+                {activeSessions.map((session, i) => (
+                  <div key={i} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div>
+                      <p className="font-medium text-sm">Current Session</p>
+                      <p className="text-xs text-muted-foreground">{session.user_agent}</p>
+                      <p className="text-xs text-muted-foreground">Last active: {new Date(session.last_sign_in_at || '').toLocaleString()}</p>
+                    </div>
+                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Active</Badge>
+                  </div>
+                ))}
+                {activeSessions.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No active session info available</p>}
               </CardContent>
             </Card>
 

@@ -23,15 +23,75 @@ export function usePricingCache() {
             try {
                 const { data, error } = await supabase.functions.invoke('get-pricing-cache', {});
                 if (error) throw error;
-                return data as CachedPricingData;
+
+                // If features are missing in cache (e.g. edge function not updated), fetch from DB
+                const cachedData = data as CachedPricingData;
+                if (!cachedData.features || Object.keys(cachedData.features).length === 0) {
+                    // Fetch features from DB and merge
+                    const { data: featureFlags } = await supabase
+                        .from('features')
+                        .select('*')
+                        .eq('is_enabled', true)
+                        .order('sort_order', { ascending: true });
+
+                    const featuresByTier: Record<string, any[]> = {};
+                    (cachedData.plans || []).forEach((p: any) => {
+                        featuresByTier[p.tier] = (featureFlags || [])
+                            .filter((f: any) => {
+                                const tiers = ['free', 'starter', 'pro', 'business', 'agency', 'enterprise'];
+                                const pIndex = tiers.indexOf(p.tier.toLowerCase());
+                                const fIndex = tiers.indexOf(f.min_plan_tier.toLowerCase());
+                                return pIndex >= fIndex && fIndex !== -1;
+                            })
+                            .map((f: any) => ({
+                                key: f.key,
+                                name: f.name,
+                                description: f.description
+                            }));
+                    });
+                    return { ...cachedData, features: featuresByTier };
+                }
+
+                return cachedData;
             } catch {
-                // Fallback: read plan_configs directly if Edge Function unavailable
+                // Fallback: read plan_configs and features directly if Edge Function unavailable
                 const { data: plans } = await supabase
                     .from('plan_configs')
                     .select('*')
                     .eq('is_active', true)
                     .order('sort_order', { ascending: true });
-                return { plans: plans ?? [], features: {}, cached_at: new Date().toISOString() };
+
+                const { data: featureFlags } = await supabase
+                    .from('features')
+                    .select('*')
+                    .eq('is_enabled', true)
+                    .order('sort_order', { ascending: true });
+
+                // Transform features to Record<tier, features[]>
+                const featuresByTier: Record<string, any[]> = {};
+                (plans || []).forEach((p: any) => {
+                    featuresByTier[p.tier] = (featureFlags || [])
+                        .filter((f: any) => {
+                            // Simple tier check (assuming order: free, starter, pro, business/agency)
+                            // This is a naive client-side fallback check. 
+                            // Real logic should be in Edge Function or a robust utility.
+                            const tiers = ['free', 'starter', 'pro', 'business', 'agency', 'enterprise'];
+                            const pIndex = tiers.indexOf(p.tier.toLowerCase());
+                            const fIndex = tiers.indexOf(f.min_plan_tier.toLowerCase());
+                            return pIndex >= fIndex && fIndex !== -1;
+                        })
+                        .map((f: any) => ({
+                            key: f.key,
+                            name: f.name,
+                            description: f.description
+                        }));
+                });
+
+                return {
+                    plans: plans ?? [],
+                    features: featuresByTier,
+                    cached_at: new Date().toISOString()
+                };
             }
         },
         staleTime: 5 * 60 * 1000, // 5 min client-side stale

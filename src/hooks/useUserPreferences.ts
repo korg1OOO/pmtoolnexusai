@@ -1,91 +1,100 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from './useAuth';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
+import { Database } from "@/integrations/supabase/types";
 
-export interface UserPreference {
-    id: string;
-    user_id: string;
-    project_id: string;
-    preference_key: string;
-    preference_value: unknown;
-    updated_at: string;
+export type UserPreferenceValue = string | number | boolean | null | { [key: string]: any };
+
+export interface UserPreferences {
+    theme?: 'light' | 'dark' | 'system';
+    notifications?: {
+        email: {
+            taskAssignments: boolean;
+            dueReminders: boolean;
+            meetingInvites: boolean;
+            slaWarnings: boolean;
+            weeklyDigest: boolean;
+        };
+        push: {
+            desktop: boolean;
+            mobile: boolean;
+            sound: boolean;
+        };
+    };
+    region?: {
+        language: string;
+        timezone: string;
+    };
+    profile_extended?: {
+        phone_number?: string;
+        department?: string;
+        title?: string;
+        bio?: string;
+    };
 }
 
-export function useUserPreferences(projectId: string | null) {
-    const { user } = useAuth();
+export const useUserPreferences = () => {
     const queryClient = useQueryClient();
 
-    // Fetch all preferences for this project/user
-    const query = useQuery({
-        queryKey: ['user-preferences', projectId, user?.id],
-        queryFn: async () => {
-            if (!projectId || !user) return [];
-            try {
-                const { data, error } = await (supabase as any)
-                    .from('user_preferences')
-                    .select('*')
-                    .eq('project_id', projectId)
-                    .eq('user_id', user.id);
+    const { data: preferences, isLoading } = useQuery({
+        queryKey: ["user_preferences"],
+        queryFn: async (): Promise<UserPreferences> => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return {};
 
-                if (error) {
-                    // Return empty if table doesn't exist yet (for smooth dev experience)
-                    console.warn('user_preferences table may not exist:', error);
-                    return [];
-                }
-                return (data || []) as UserPreference[];
-            } catch (e) {
-                console.warn('Failed to fetch user preferences:', e);
-                return [];
+            const { data, error } = await supabase
+                .from("user_preferences")
+                .select("preference_key, preference_value")
+                .eq("user_id", user.id);
+
+            if (error) {
+                console.error("Error fetching preferences:", error);
+                return {};
             }
+
+            const prefs: UserPreferences = {};
+            data?.forEach(row => {
+                if (row.preference_key === "theme") prefs.theme = row.preference_value as any;
+                if (row.preference_key === "notifications") prefs.notifications = row.preference_value as any;
+                if (row.preference_key === "region") prefs.region = row.preference_value as any;
+                if (row.preference_key === "profile_extended") prefs.profile_extended = row.preference_value as any;
+            });
+
+            return prefs;
         },
-        enabled: !!projectId && !!user,
     });
 
     const updatePreference = useMutation({
-        mutationFn: async ({ key, value }: { key: string; value: unknown }) => {
-            if (!projectId || !user) throw new Error('No project or user');
+        mutationFn: async ({ key, value }: { key: keyof UserPreferences; value: UserPreferenceValue }) => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error("No user");
 
-            const { data, error } = await (supabase as any)
-                .from('user_preferences')
+            const { error } = await supabase
+                .from("user_preferences")
                 .upsert({
                     user_id: user.id,
-                    project_id: projectId,
                     preference_key: key,
-                    preference_value: value,
-                    updated_at: new Date().toISOString(),
-                }, { onConflict: 'user_id, project_id, preference_key' })
-                .select()
-                .single();
+                    preference_value: value as any
+                }, { onConflict: 'user_id, preference_key' });
 
             if (error) throw error;
-            return data as UserPreference;
+            return { key, value };
         },
         onSuccess: (data) => {
-            queryClient.setQueryData(
-                ['user-preferences', projectId, user?.id],
-                (old: UserPreference[] | undefined) => {
-                    if (!old) return [data];
-                    const index = old.findIndex(p => p.preference_key === data.preference_key);
-                    if (index >= 0) {
-                        return [...old.slice(0, index), data, ...old.slice(index + 1)];
-                    }
-                    return [...old, data];
-                }
-            );
+            queryClient.setQueryData(["user_preferences"], (old: UserPreferences | undefined) => ({
+                ...old,
+                [data.key]: data.value
+            }));
+            // toast.success(`Updated ${data.key}`);
         },
-        onError: (error) => {
-            console.error('Failed to save preference:', error);
+        onError: (error: Error) => {
+            toast.error("Failed to update preference: " + error.message);
         }
     });
 
-    const getPreference = (key: string) => {
-        return query.data?.find(p => p.preference_key === key)?.preference_value;
-    };
-
     return {
-        preferences: query.data || [],
-        isLoading: query.isLoading,
-        updatePreference,
-        getPreference,
+        preferences,
+        isLoading,
+        updatePreference
     };
-}
+};

@@ -54,23 +54,31 @@ CREATE TABLE IF NOT EXISTS pricing_cache (
 
 -- Allow anonymous read on pricing_cache (for public pricing page)
 ALTER TABLE pricing_cache ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "pricing_cache_public_read"
-    ON pricing_cache FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "pricing_cache_service_write"
-    ON pricing_cache FOR ALL USING (auth.role() = 'service_role');
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='pricing_cache' AND policyname='pricing_cache_public_read') THEN
+    CREATE POLICY "pricing_cache_public_read" ON pricing_cache FOR SELECT USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='pricing_cache' AND policyname='pricing_cache_service_write') THEN
+    CREATE POLICY "pricing_cache_service_write" ON pricing_cache FOR ALL USING (auth.role() = 'service_role');
+  END IF;
+END $$;
 
--- Allow admin read on plan_configs
+-- Allow admin read/write on plan_configs
 ALTER TABLE plan_configs ENABLE ROW LEVEL SECURITY;
-CREATE POLICY IF NOT EXISTS "plan_configs_public_read"
-    ON plan_configs FOR SELECT USING (true);
-CREATE POLICY IF NOT EXISTS "plan_configs_admin_write"
-    ON plan_configs FOR ALL USING (
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='plan_configs' AND policyname='plan_configs_public_read') THEN
+    CREATE POLICY "plan_configs_public_read" ON plan_configs FOR SELECT USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE tablename='plan_configs' AND policyname='plan_configs_admin_write') THEN
+    CREATE POLICY "plan_configs_admin_write" ON plan_configs FOR ALL USING (
         EXISTS (
             SELECT 1 FROM profiles
             WHERE profiles.id = auth.uid()
             AND profiles.role = 'admin'
         )
     );
+  END IF;
+END $$;
 
 -- 3. Add Stripe columns to subscriptions if they don't exist
 ALTER TABLE subscriptions

@@ -7,7 +7,7 @@
 
 -- Table: tenants (Companies)
 CREATE TABLE IF NOT EXISTS tenants (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     slug TEXT UNIQUE NOT NULL,
     
@@ -37,7 +37,7 @@ CREATE TABLE IF NOT EXISTS tenants (
 
 -- Table: workspaces (Divisions/Departments)
 CREATE TABLE IF NOT EXISTS workspaces (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     
     -- Basic Info
@@ -68,7 +68,7 @@ CREATE TABLE IF NOT EXISTS workspaces (
 
 -- Table: portfolios (Programs/Initiatives)
 CREATE TABLE IF NOT EXISTS portfolios (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
     
@@ -100,9 +100,16 @@ CREATE TABLE IF NOT EXISTS portfolios (
     UNIQUE(workspace_id, slug)
 );
 
+-- Ensure columns exist if table already existed
+ALTER TABLE portfolios ADD COLUMN IF NOT EXISTS tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE;
+ALTER TABLE portfolios ADD COLUMN IF NOT EXISTS workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE;
+ALTER TABLE portfolios ADD COLUMN IF NOT EXISTS portfolio_type TEXT DEFAULT 'program';
+ALTER TABLE portfolios ADD COLUMN IF NOT EXISTS total_budget DECIMAL;
+ALTER TABLE portfolios ADD COLUMN IF NOT EXISTS currency TEXT DEFAULT 'USD';
+
 -- Table: workspace_members (Team Collaboration)
 CREATE TABLE IF NOT EXISTS workspace_members (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
     user_id UUID NOT NULL,
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
@@ -157,7 +164,7 @@ ALTER TABLE ml_learning_patterns ADD COLUMN IF NOT EXISTS promotion_reason TEXT;
 
 -- Table: ml_manual_learnings
 CREATE TABLE IF NOT EXISTS ml_manual_learnings (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     workspace_id UUID REFERENCES workspaces(id),
     portfolio_id UUID REFERENCES portfolios(id),
@@ -196,7 +203,7 @@ CREATE TABLE IF NOT EXISTS ml_manual_learnings (
 
 -- Table: ml_pattern_sharing_log
 CREATE TABLE IF NOT EXISTS ml_pattern_sharing_log (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     pattern_id UUID NOT NULL REFERENCES ml_learning_patterns(id) ON DELETE CASCADE,
     
     -- Sharing Details

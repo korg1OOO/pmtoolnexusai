@@ -18,7 +18,7 @@ ALTER TABLE tenants ADD COLUMN IF NOT EXISTS notification_preferences JSONB DEFA
 
 -- Departments table
 CREATE TABLE IF NOT EXISTS departments (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE NOT NULL,
   parent_id UUID REFERENCES departments(id) ON DELETE SET NULL,
   name TEXT NOT NULL,
@@ -37,7 +37,7 @@ CREATE INDEX IF NOT EXISTS idx_departments_manager ON departments(manager_id);
 
 -- Licenses table
 CREATE TABLE IF NOT EXISTS licenses (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE NOT NULL,
   license_type TEXT NOT NULL,
   total_licenses INTEGER NOT NULL,
@@ -64,7 +64,7 @@ ALTER TABLE workspaces ADD COLUMN IF NOT EXISTS settings JSONB DEFAULT '{}';
 
 -- Workspace teams table
 CREATE TABLE IF NOT EXISTS workspace_teams (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE NOT NULL,
   user_id UUID NOT NULL,  -- References user, but no FK constraint
   role TEXT NOT NULL,
@@ -92,7 +92,7 @@ ALTER TABLE portfolios ADD COLUMN IF NOT EXISTS strategic_goals JSONB DEFAULT '[
 
 -- Portfolio initiatives table
 CREATE TABLE IF NOT EXISTS portfolio_initiatives (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   portfolio_id UUID REFERENCES portfolios(id) ON DELETE CASCADE NOT NULL,
   name TEXT NOT NULL,
   start_date DATE,
@@ -108,7 +108,7 @@ CREATE INDEX IF NOT EXISTS idx_portfolio_initiatives_portfolio ON portfolio_init
 
 -- Portfolio resources table
 CREATE TABLE IF NOT EXISTS portfolio_resources (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   portfolio_id UUID REFERENCES portfolios(id) ON DELETE CASCADE NOT NULL,
   program_id UUID REFERENCES programs(id),
   required INTEGER NOT NULL,
@@ -133,7 +133,7 @@ ALTER TABLE programs ADD COLUMN IF NOT EXISTS forecast DECIMAL(15,2);
 
 -- Program stakeholders table
 CREATE TABLE IF NOT EXISTS program_stakeholders (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   program_id UUID REFERENCES programs(id) ON DELETE CASCADE NOT NULL,
   name TEXT NOT NULL,
   role TEXT,
@@ -152,7 +152,7 @@ CREATE INDEX IF NOT EXISTS idx_program_stakeholders_program ON program_stakehold
 
 -- Program resources table
 CREATE TABLE IF NOT EXISTS program_resources (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   program_id UUID REFERENCES programs(id) ON DELETE CASCADE NOT NULL,
   project_id UUID REFERENCES projects(id),
   required INTEGER NOT NULL,

@@ -1,6 +1,6 @@
 -- Users table for user management
 CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE,
     email TEXT NOT NULL UNIQUE,
     full_name TEXT NOT NULL,
@@ -50,7 +50,7 @@ CREATE POLICY users_delete_policy ON users
 
 -- User roles table for role-based access control
 CREATE TABLE IF NOT EXISTS user_roles (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
     role_name TEXT NOT NULL,
     permissions JSONB DEFAULT '[]'::jsonb,
@@ -61,6 +61,46 @@ CREATE TABLE IF NOT EXISTS user_roles (
     created_at TIMESTAMPTZ DEFAULT NOW(),
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Update user_roles if it exists
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'user_roles' AND column_name = 'role_name') THEN
+        ALTER TABLE user_roles ADD COLUMN role_name TEXT;
+        -- If 'role' column exists (from previous schema), copy it
+        IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'user_roles' AND column_name = 'role') THEN
+            UPDATE user_roles SET role_name = role::text WHERE role_name IS NULL;
+        END IF;
+        -- Default for new rows or if role was null/missing
+        UPDATE user_roles SET role_name = 'member' WHERE role_name IS NULL;
+        ALTER TABLE user_roles ALTER COLUMN role_name SET NOT NULL;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'user_roles' AND column_name = 'permissions') THEN
+        ALTER TABLE user_roles ADD COLUMN permissions JSONB DEFAULT '[]'::jsonb;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'user_roles' AND column_name = 'assigned_by') THEN
+        ALTER TABLE user_roles ADD COLUMN assigned_by UUID REFERENCES users(id);
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'user_roles' AND column_name = 'assigned_at') THEN
+        ALTER TABLE user_roles ADD COLUMN assigned_at TIMESTAMPTZ DEFAULT NOW();
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'user_roles' AND column_name = 'expires_at') THEN
+        ALTER TABLE user_roles ADD COLUMN expires_at TIMESTAMPTZ;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'user_roles' AND column_name = 'is_active') THEN
+        ALTER TABLE user_roles ADD COLUMN is_active BOOLEAN DEFAULT true;
+    END IF;
+    
+    -- Ensure updated_at exists
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'user_roles' AND column_name = 'updated_at') THEN
+        ALTER TABLE user_roles ADD COLUMN updated_at TIMESTAMPTZ DEFAULT NOW();
+    END IF;
+END $$;
 
 -- Indexes
 CREATE INDEX IF NOT EXISTS idx_user_roles_user ON user_roles(user_id);

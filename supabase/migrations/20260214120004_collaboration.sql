@@ -6,7 +6,17 @@
 -- 4. Version history/snapshots
 
 -- Enable realtime for spreadsheet_sheets table
-ALTER PUBLICATION supabase_realtime ADD TABLE spreadsheet_sheets;
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1
+    FROM pg_publication_tables
+    WHERE pubname = 'supabase_realtime'
+    AND tablename = 'spreadsheet_sheets'
+  ) THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE spreadsheet_sheets;
+  END IF;
+END $$;
 
 -- ===== PRESENCE SYSTEM =====
 
@@ -149,7 +159,10 @@ CREATE POLICY "Users can view presence for sheets they have access to"
 ON spreadsheet_presence FOR SELECT
 USING (
   sheet_id IN (
-    SELECT id FROM spreadsheet_sheets WHERE notebook_id IN (
+    SELECT s.id 
+    FROM spreadsheet_sheets s
+    JOIN notebook_spreadsheets ns ON s.spreadsheet_id = ns.id
+    WHERE ns.notebook_id IN (
       SELECT id FROM notebooks WHERE user_id = auth.uid()
     )
   )
@@ -174,7 +187,10 @@ CREATE POLICY "Users can view comments on sheets they have access to"
 ON spreadsheet_comments FOR SELECT
 USING (
   sheet_id IN (
-    SELECT id FROM spreadsheet_sheets WHERE notebook_id IN (
+    SELECT s.id 
+    FROM spreadsheet_sheets s
+    JOIN notebook_spreadsheets ns ON s.spreadsheet_id = ns.id
+    WHERE ns.notebook_id IN (
       SELECT id FROM notebooks WHERE user_id = auth.uid()
     )
   )
@@ -184,7 +200,10 @@ CREATE POLICY "Users can insert comments on sheets they have edit access"
 ON spreadsheet_comments FOR INSERT
 WITH CHECK (
   sheet_id IN (
-    SELECT id FROM spreadsheet_sheets WHERE notebook_id IN (
+    SELECT s.id 
+    FROM spreadsheet_sheets s
+    JOIN notebook_spreadsheets ns ON s.spreadsheet_id = ns.id
+    WHERE ns.notebook_id IN (
       SELECT id FROM notebooks WHERE user_id = auth.uid()
     )
   )
@@ -205,7 +224,10 @@ CREATE POLICY "Users can view shares for their spreadsheets"
 ON spreadsheet_shares FOR SELECT
 USING (
   spreadsheet_id IN (
-    SELECT id FROM notebook_spreadsheets WHERE user_id = auth.uid()
+    SELECT ns.id 
+    FROM notebook_spreadsheets ns
+    JOIN notebooks n ON ns.notebook_id = n.id
+    WHERE n.user_id = auth.uid()
   ) OR
   shared_with_user_id = auth.uid()
 );
@@ -214,7 +236,10 @@ CREATE POLICY "Spreadsheet owners can manage shares"
 ON spreadsheet_shares FOR ALL
 USING (
   spreadsheet_id IN (
-    SELECT id FROM notebook_spreadsheets WHERE user_id = auth.uid()
+    SELECT ns.id 
+    FROM notebook_spreadsheets ns
+    JOIN notebooks n ON ns.notebook_id = n.id
+    WHERE n.user_id = auth.uid()
   )
 );
 
@@ -225,7 +250,10 @@ CREATE POLICY "Users can view versions for their sheets"
 ON spreadsheet_versions FOR SELECT
 USING (
   sheet_id IN (
-    SELECT id FROM spreadsheet_sheets WHERE notebook_id IN (
+    SELECT s.id 
+    FROM spreadsheet_sheets s
+    JOIN notebook_spreadsheets ns ON s.spreadsheet_id = ns.id
+    WHERE ns.notebook_id IN (
       SELECT id FROM notebooks WHERE user_id = auth.uid()
     )
   )
@@ -235,7 +263,10 @@ CREATE POLICY "Users can create versions for their sheets"
 ON spreadsheet_versions FOR INSERT
 WITH CHECK (
   sheet_id IN (
-    SELECT id FROM spreadsheet_sheets WHERE notebook_id IN (
+    SELECT s.id 
+    FROM spreadsheet_sheets s
+    JOIN notebook_spreadsheets ns ON s.spreadsheet_id = ns.id
+    WHERE ns.notebook_id IN (
       SELECT id FROM notebooks WHERE user_id = auth.uid()
     )
   )

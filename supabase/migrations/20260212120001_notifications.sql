@@ -1,7 +1,7 @@
 -- notifications.sql: Notifications system for real-time user alerts
 -- Create notifications table
 CREATE TABLE IF NOT EXISTS notifications (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     type VARCHAR(50) NOT NULL CHECK (type IN ('sla_breach', 'sla_warning', 'action_overdue', 'sync_failed', 'mention', 'info')),
     title TEXT NOT NULL,

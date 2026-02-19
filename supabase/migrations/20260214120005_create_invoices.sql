@@ -2,7 +2,7 @@
 -- Stores invoice data synced from Stripe
 
 CREATE TABLE IF NOT EXISTS invoices (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   subscription_id UUID REFERENCES subscriptions(id) ON DELETE SET NULL,
   stripe_invoice_id TEXT UNIQUE,
@@ -18,6 +18,21 @@ CREATE TABLE IF NOT EXISTS invoices (
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
+-- Ensure user_id exists and backfill if possible
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'invoices' AND column_name = 'user_id') THEN
+        ALTER TABLE invoices ADD COLUMN user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
+        
+        -- Backfill from subscriptions if possible
+        UPDATE invoices i
+        SET user_id = s.user_id
+        FROM subscriptions s
+        WHERE i.subscription_id = s.id
+        AND i.user_id IS NULL;
+    END IF;
+END $$;
+
 -- Create indexes for faster lookups
 CREATE INDEX IF NOT EXISTS idx_invoices_user ON invoices(user_id);
 CREATE INDEX IF NOT EXISTS idx_invoices_subscription ON invoices(subscription_id);
@@ -27,6 +42,11 @@ CREATE INDEX IF NOT EXISTS idx_invoices_created ON invoices(created_at DESC);
 
 -- Enable RLS
 ALTER TABLE invoices ENABLE ROW LEVEL SECURITY;
+
+-- Drop existing policies to avoid conflicts
+DROP POLICY IF EXISTS "Users can view their own invoices" ON invoices;
+DROP POLICY IF EXISTS "Admins can view all invoices" ON invoices;
+DROP POLICY IF EXISTS "Admins can manage invoices" ON invoices;
 
 -- Policy: Users can view their own invoices
 CREATE POLICY "Users can view their own invoices"
@@ -59,7 +79,13 @@ CREATE POLICY "Admins can manage invoices"
   );
 
 -- Add updated_at trigger
-CREATE TRIGGER update_invoices_updated_at
-  BEFORE UPDATE ON invoices
-  FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
+-- Add updated_at trigger
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_trigger WHERE tgname = 'update_invoices_updated_at') THEN
+        CREATE TRIGGER update_invoices_updated_at
+          BEFORE UPDATE ON invoices
+          FOR EACH ROW
+          EXECUTE FUNCTION update_updated_at_column();
+    END IF;
+END $$;

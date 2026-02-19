@@ -2,7 +2,7 @@
 -- Stores global password requirements and security settings
 
 CREATE TABLE IF NOT EXISTS password_policies (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   min_length INTEGER DEFAULT 8 CHECK (min_length >= 6 AND min_length <= 128),
   require_uppercase BOOLEAN DEFAULT true,
   require_lowercase BOOLEAN DEFAULT true,

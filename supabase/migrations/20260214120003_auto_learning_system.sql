@@ -4,7 +4,7 @@
 -- Table: ml_auto_learning_config
 -- Stores configuration for auto-learning system
 CREATE TABLE IF NOT EXISTS ml_auto_learning_config (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     enabled BOOLEAN DEFAULT true,
     min_feedbacks_for_pattern INTEGER DEFAULT 3,
     min_success_rate_threshold DECIMAL DEFAULT 0.4,
@@ -22,7 +22,7 @@ ON CONFLICT DO NOTHING;
 -- Table: ml_learning_velocity
 -- Tracks learning velocity metrics over time
 CREATE TABLE IF NOT EXISTS ml_learning_velocity (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     date DATE NOT NULL,
     prediction_type TEXT NOT NULL,
     patterns_created INTEGER DEFAULT 0,

@@ -6,7 +6,7 @@
 -- STRIPE CUSTOMERS TABLE
 -- =====================================================
 CREATE TABLE IF NOT EXISTS stripe_customers (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     stripe_customer_id TEXT NOT NULL UNIQUE,
     email TEXT NOT NULL,
@@ -22,7 +22,7 @@ CREATE INDEX idx_stripe_customers_stripe_id ON stripe_customers(stripe_customer_
 -- PAYMENT METHODS TABLE
 -- =====================================================
 CREATE TABLE IF NOT EXISTS payment_methods (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     customer_id TEXT NOT NULL, -- Stripe customer ID
     stripe_payment_method_id TEXT NOT NULL UNIQUE,
     type TEXT NOT NULL DEFAULT 'card', -- card, bank_account, etc.
@@ -43,7 +43,7 @@ CREATE INDEX idx_payment_methods_default ON payment_methods(customer_id, is_defa
 -- USER PAYMENT METHODS TABLE (for auto-recharge)
 -- =====================================================
 CREATE TABLE IF NOT EXISTS user_payment_methods (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     stripe_payment_method_id TEXT NOT NULL,
     type TEXT NOT NULL DEFAULT 'card',
@@ -63,7 +63,7 @@ CREATE INDEX idx_user_payment_methods_default ON user_payment_methods(user_id, i
 -- AUTO RECHARGE LOGS TABLE
 -- =====================================================
 CREATE TABLE IF NOT EXISTS auto_recharge_logs (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     credits_attempted INTEGER NOT NULL,

@@ -2,7 +2,7 @@
 -- Logs authentication events, security changes, and suspicious activities
 
 CREATE TABLE IF NOT EXISTS security_audit_logs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   event_type TEXT NOT NULL, -- login_success, login_failed, password_changed, 2fa_enabled, etc.
   user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   user_email TEXT,

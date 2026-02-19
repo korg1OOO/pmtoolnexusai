@@ -52,27 +52,47 @@ async function seedData() {
                 user_metadata: { full_name: fullName },
             });
 
+            let userId;
+
             if (authError) {
-                console.warn(`   ⚠️  Failed to create user ${email}: ${authError.message}`);
-                continue;
+                // If user exists, try to fetch their ID
+                if (authError.status === 422 || authError.message?.includes('registered')) {
+                    // We can't easily get ID by email via admin API without listing all or using a different call.
+                    // But we can try to proceed if we had a way.
+                    // Actually, listUsers is the way.
+                    const { data: listData } = await supabase.auth.admin.listUsers();
+                    const existing = listData.users.find(u => u.email === email);
+                    if (existing) {
+                        userId = existing.id;
+                        console.log(`   ℹ️  User ${email} already exists. Using ID: ${userId}`);
+                    } else {
+                        console.warn(`   ⚠️  Failed to create user ${email} and could not find existing:`, authError);
+                        continue;
+                    }
+                } else {
+                    console.warn(`   ⚠️  Failed to create user ${email}:`, authError);
+                    continue;
+                }
+            } else {
+                userId = authData.user.id;
             }
 
-            const userId = authData.user.id;
-            users.push(userId);
+            users.push({ id: userId, email });
 
             // Upsert Profile (Trigger might handle this, but explicit update ensures data)
             const role = i === 0 ? 'admin' : randomElement(roles); // Ensure at least one admin
             const status = randomElement(statuses);
 
-            await supabase.from('profiles').upsert({
+            const { error: profileError } = await supabase.from('profiles').upsert({
                 id: userId,
                 full_name: fullName,
-                email: email, // If profile has email column
+                email: email,
                 role: role,
                 status: status,
                 last_active_at: new Date().toISOString(),
                 updated_at: new Date().toISOString()
             });
+            if (profileError) console.warn(`   ⚠️  Profile upsert failed for ${email}:`, profileError.message);
         }
         console.log(`   ✅  Created ${users.length} users.`);
 
@@ -147,27 +167,32 @@ async function seedData() {
         // 2. Seed Subscriptions
         console.log('💳  Seeding Subscriptions...');
         const subs = [];
-        for (const uid of users) {
+        for (const user of users) {
             // 80% chance of having a subscription
             if (Math.random() > 0.2) {
                 const tier = randomElement(tiers);
                 const status = Math.random() > 0.1 ? 'active' : 'cancelled';
-                const price = tier === 'free' ? 0 : tier === 'pro' ? 2900 : tier === 'business' ? 9900 : 29900; // in cents
+                const mrr = tier === 'free' ? 0 : tier === 'pro' ? 29 : tier === 'business' ? 99 : 299;
 
-                const { data: sub } = await supabase.from('subscriptions').insert({
-                    user_id: uid,
+                const { data: sub, error: subError } = await supabase.from('subscriptions').insert({
+                    user_id: user.id,
+                    email: user.email,          // required NOT NULL field
+                    full_name: `User ${users.indexOf(user)}`,
                     tier: tier,
                     status: status,
-                    mrr: price / 100, // stored as dollars usually? check schema. Hook says mrr number.
-                    plan_id: tier,
-                    monthly_amount: price / 100, // For revenue breakdown
+                    mrr: mrr,
                     joined_at: randomDate(new Date(2025, 0, 1), new Date()),
                     created_at: new Date().toISOString(),
                     updated_at: new Date().toISOString(),
                     metadata: {}
                 }).select().single();
 
-                if (sub) subs.push(sub);
+                if (subError) {
+                    console.warn(`   ⚠️  Subscription insert failed for ${user.email}:`, subError.message);
+                } else if (sub) {
+                    // Store mrr on sub object for invoice seeding later
+                    subs.push({ ...sub, monthly_amount: mrr });
+                }
             }
         }
         console.log(`   ✅  Created ${subs.length} subscriptions.`);
@@ -190,7 +215,7 @@ async function seedData() {
                     amount_paid: amount,
                     currency: 'usd',
                     status: 'paid',
-                    created_at: randomDate(new Date(sub.joined_at), new Date()).toISOString()
+                    created_at: randomDate(new Date(sub.joined_at), new Date())
                 });
             }
         }
@@ -203,16 +228,17 @@ async function seedData() {
             const activityTypes = ['info', 'success', 'warning', 'error'];
 
             for (let j = 0; j < 50; j++) {
-                const uid = randomElement(users);
-                if (!uid) continue;
-                await supabase.from('admin_activity_log').insert({
-                    user_id: uid,
-                    user_email: `user${uid.substring(0, 4)}@example.com`,
+                const user = randomElement(users);
+                if (!user) continue;
+                const { error: logError } = await supabase.from('admin_activity_log').insert({
+                    user_id: user.id,
+                    user_email: user.email,
                     action: randomElement(actions),
                     action_type: randomElement(activityTypes),
                     metadata: { ip: '127.0.0.1', agent: 'Mozilla/5.0' },
-                    created_at: randomDate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), new Date()).toISOString()
+                    created_at: randomDate(new Date(Date.now() - 7 * 24 * 60 * 60 * 1000), new Date())
                 });
+                if (logError) console.warn(`   ⚠️  Activity log insert failed:`, logError.message);
             }
             console.log('   ✅  Activity logs seeded.');
         } else {

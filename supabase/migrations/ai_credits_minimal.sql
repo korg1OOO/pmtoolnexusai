@@ -7,7 +7,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Table 1: AI Credits Balance
 CREATE TABLE IF NOT EXISTS ai_credits (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
     total_credits DECIMAL(12, 2) NOT NULL DEFAULT 0,
     used_credits DECIMAL(12, 2) NOT NULL DEFAULT 0,
@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS ai_credits (
 
 -- Table 2: AI Usage Logs
 CREATE TABLE IF NOT EXISTS ai_usage_logs (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     feature_type TEXT NOT NULL,
     credits_used DECIMAL(12, 2) NOT NULL,
@@ -35,7 +35,7 @@ CREATE TABLE IF NOT EXISTS ai_usage_logs (
 
 -- Table 3: AI Credit Purchases
 CREATE TABLE IF NOT EXISTS ai_credit_purchases (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     credits_purchased DECIMAL(12, 2) NOT NULL,
     amount_paid DECIMAL(12, 2) NOT NULL,
@@ -48,7 +48,7 @@ CREATE TABLE IF NOT EXISTS ai_credit_purchases (
 
 -- Table 4: AI Credit Pricing
 CREATE TABLE IF NOT EXISTS ai_credit_pricing (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tier_name TEXT NOT NULL UNIQUE,
     credits DECIMAL(12, 2) NOT NULL,
     price DECIMAL(12, 2) NOT NULL,

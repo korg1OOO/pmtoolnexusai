@@ -2,6 +2,7 @@
 -- Syncs Stripe invoices to local database for reporting
 
 -- Create invoices table
+DROP TABLE IF EXISTS invoices CASCADE;
 CREATE TABLE IF NOT EXISTS invoices (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     subscription_id UUID REFERENCES subscriptions(id) ON DELETE CASCADE,

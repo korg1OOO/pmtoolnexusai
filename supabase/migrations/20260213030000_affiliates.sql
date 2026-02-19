@@ -41,7 +41,7 @@ SELECT
   rc.commission_rate,
   rc.payout_status,
   CASE WHEN rc.uses_count > 0 
-    THEN ROUND((rc.successful_conversions::FLOAT / rc.uses_count) * 100, 2)
+    THEN ROUND(((rc.successful_conversions::FLOAT / rc.uses_count) * 100)::NUMERIC, 2)
     ELSE 0 
   END as conversion_rate
 FROM referral_codes rc

@@ -2,7 +2,7 @@
 -- Stores refund data synced from Stripe
 
 CREATE TABLE IF NOT EXISTS refunds (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   invoice_id UUID REFERENCES invoices(id) ON DELETE CASCADE,
   stripe_refund_id TEXT UNIQUE,
   amount INTEGER NOT NULL, -- Amount in cents

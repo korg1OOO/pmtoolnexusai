@@ -8,7 +8,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- MEETING ANALYTICS TABLE
 -- =====================================================
 CREATE TABLE IF NOT EXISTS meeting_analytics (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL,
     meeting_id UUID NOT NULL REFERENCES meetings(id) ON DELETE CASCADE,
     
@@ -49,7 +49,7 @@ CREATE TABLE IF NOT EXISTS meeting_analytics (
 -- ATTENDANCE PATTERNS TABLE
 -- =====================================================
 CREATE TABLE IF NOT EXISTS attendance_patterns (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     
@@ -80,7 +80,7 @@ CREATE TABLE IF NOT EXISTS attendance_patterns (
 -- MEETING TRENDS TABLE (for aggregated data)
 -- =====================================================
 CREATE TABLE IF NOT EXISTS meeting_trends (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL,
     program_id UUID,
     portfolio_id UUID,
@@ -393,7 +393,7 @@ ALTER TABLE meeting_trends ENABLE ROW LEVEL SECURITY;
 CREATE POLICY meeting_analytics_select ON meeting_analytics
     FOR SELECT USING (
         tenant_id IN (
-            SELECT tenant_id FROM user_tenants 
+            SELECT tenant_id FROM workspace_members 
             WHERE user_id = auth.uid()
         )
     );
@@ -403,7 +403,7 @@ CREATE POLICY attendance_patterns_select ON attendance_patterns
     FOR SELECT USING (
         user_id = auth.uid() OR
         tenant_id IN (
-            SELECT tenant_id FROM user_tenants 
+            SELECT tenant_id FROM workspace_members 
             WHERE user_id = auth.uid() AND role IN ('admin', 'owner')
         )
     );
@@ -412,7 +412,7 @@ CREATE POLICY attendance_patterns_select ON attendance_patterns
 CREATE POLICY meeting_trends_select ON meeting_trends
     FOR SELECT USING (
         tenant_id IN (
-            SELECT tenant_id FROM user_tenants 
+            SELECT tenant_id FROM workspace_members 
             WHERE user_id = auth.uid()
         )
     );

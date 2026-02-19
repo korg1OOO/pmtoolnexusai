@@ -87,7 +87,7 @@ async function main() {
 
   // Push migrations
   log('📤 Pushing migrations to remote database...', 'yellow');
-  execCommand('npx supabase db push');
+  execCommand('npx supabase db push --include-all');
 
   // Success
   log('✅ Migration completed successfully!', 'green');

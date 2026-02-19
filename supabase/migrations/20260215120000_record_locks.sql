@@ -2,7 +2,7 @@
 -- Stores temporary locks on records to prevent concurrent edits
 
 CREATE TABLE IF NOT EXISTS record_locks (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     table_name TEXT NOT NULL,
     record_id UUID NOT NULL,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,

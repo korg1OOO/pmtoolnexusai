@@ -1,7 +1,7 @@
 -- ai_provider_settings.sql: AI provider configuration storage
 -- Create ai_provider_settings table for storing AI configuration per organization/user
 CREATE TABLE IF NOT EXISTS ai_provider_settings (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
     
@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS ai_provider_settings (
 
 -- Create ai_provider_api_keys table for storing encrypted API keys
 CREATE TABLE IF NOT EXISTS ai_provider_api_keys (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     organization_id UUID REFERENCES organizations(id) ON DELETE CASCADE,
     

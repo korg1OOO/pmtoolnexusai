@@ -11,7 +11,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS ai_credits (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL,
     
@@ -47,7 +47,7 @@ CREATE INDEX IF NOT EXISTS idx_ai_credits_auto_recharge ON ai_credits(auto_recha
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS ai_usage_logs (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     
@@ -76,6 +76,24 @@ CREATE TABLE IF NOT EXISTS ai_usage_logs (
     CONSTRAINT positive_credits_used CHECK (credits_used >= 0)
 );
 
+-- Ensure all columns exist if table already existed
+ALTER TABLE ai_usage_logs ADD COLUMN IF NOT EXISTS tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE;
+ALTER TABLE ai_usage_logs ADD COLUMN IF NOT EXISTS feature_type VARCHAR(50);
+ALTER TABLE ai_usage_logs ADD COLUMN IF NOT EXISTS request_id UUID;
+ALTER TABLE ai_usage_logs ADD COLUMN IF NOT EXISTS model_name VARCHAR(100);
+ALTER TABLE ai_usage_logs ADD COLUMN IF NOT EXISTS prompt_tokens INTEGER DEFAULT 0;
+ALTER TABLE ai_usage_logs ADD COLUMN IF NOT EXISTS completion_tokens INTEGER DEFAULT 0;
+-- Note: Generated columns cannot be easily added via IF NOT EXISTS in one line in standard Postgres 13 without more complex PL/pgSQL, 
+-- but normally if table exists, we assume it might not have generated columns. 
+-- However, for simplicity, we will skip adding the generated col if it's complex, or just try it.
+-- Let's add the physical columns first.
+ALTER TABLE ai_usage_logs ADD COLUMN IF NOT EXISTS credits_used DECIMAL(10, 4);
+ALTER TABLE ai_usage_logs ADD COLUMN IF NOT EXISTS credits_before DECIMAL(12, 2);
+ALTER TABLE ai_usage_logs ADD COLUMN IF NOT EXISTS credits_after DECIMAL(12, 2);
+ALTER TABLE ai_usage_logs ADD COLUMN IF NOT EXISTS request_duration_ms INTEGER;
+ALTER TABLE ai_usage_logs ADD COLUMN IF NOT EXISTS success BOOLEAN DEFAULT true;
+ALTER TABLE ai_usage_logs ADD COLUMN IF NOT EXISTS error_message TEXT;
+
 -- Indexes for ai_usage_logs
 CREATE INDEX IF NOT EXISTS idx_ai_usage_tenant ON ai_usage_logs(tenant_id);
 CREATE INDEX IF NOT EXISTS idx_ai_usage_user ON ai_usage_logs(user_id);
@@ -89,7 +107,7 @@ CREATE INDEX IF NOT EXISTS idx_ai_usage_tenant_created ON ai_usage_logs(tenant_i
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS ai_credit_purchases (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     
@@ -124,7 +142,7 @@ CREATE INDEX IF NOT EXISTS idx_credit_purchases_purchased ON ai_credit_purchases
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS ai_credit_pricing (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     
     -- Tier Details
     tier_name VARCHAR(100) NOT NULL,
@@ -290,52 +308,58 @@ ALTER TABLE ai_credit_purchases ENABLE ROW LEVEL SECURITY;
 ALTER TABLE ai_credit_pricing ENABLE ROW LEVEL SECURITY;
 
 -- ai_credits policies
+DROP POLICY IF EXISTS ai_credits_select ON ai_credits;
 CREATE POLICY ai_credits_select ON ai_credits
     FOR SELECT USING (
         tenant_id IN (
-            SELECT tenant_id FROM user_tenants
+            SELECT tenant_id FROM workspace_members
             WHERE user_id = auth.uid()
         )
     );
 
+DROP POLICY IF EXISTS ai_credits_update ON ai_credits;
 CREATE POLICY ai_credits_update ON ai_credits
     FOR UPDATE USING (
         tenant_id IN (
-            SELECT tenant_id FROM user_tenants
+            SELECT tenant_id FROM workspace_members
             WHERE user_id = auth.uid()
         )
     );
 
 -- ai_usage_logs policies
+DROP POLICY IF EXISTS ai_usage_logs_select ON ai_usage_logs;
 CREATE POLICY ai_usage_logs_select ON ai_usage_logs
     FOR SELECT USING (
         tenant_id IN (
-            SELECT tenant_id FROM user_tenants
+            SELECT tenant_id FROM workspace_members
             WHERE user_id = auth.uid()
         )
     );
 
+DROP POLICY IF EXISTS ai_usage_logs_insert ON ai_usage_logs;
 CREATE POLICY ai_usage_logs_insert ON ai_usage_logs
     FOR INSERT WITH CHECK (
         tenant_id IN (
-            SELECT tenant_id FROM user_tenants
+            SELECT tenant_id FROM workspace_members
             WHERE user_id = auth.uid()
         )
     );
 
 -- ai_credit_purchases policies
+DROP POLICY IF EXISTS ai_credit_purchases_select ON ai_credit_purchases;
 CREATE POLICY ai_credit_purchases_select ON ai_credit_purchases
     FOR SELECT USING (
         tenant_id IN (
-            SELECT tenant_id FROM user_tenants
+            SELECT tenant_id FROM workspace_members
             WHERE user_id = auth.uid()
         )
     );
 
+DROP POLICY IF EXISTS ai_credit_purchases_insert ON ai_credit_purchases;
 CREATE POLICY ai_credit_purchases_insert ON ai_credit_purchases
     FOR INSERT WITH CHECK (
         tenant_id IN (
-            SELECT tenant_id FROM user_tenants
+            SELECT tenant_id FROM workspace_members
             WHERE user_id = auth.uid()
         )
     );

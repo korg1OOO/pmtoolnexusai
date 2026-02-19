@@ -66,6 +66,7 @@ import MLDashboard from './components/ml/MLDashboard';
 import { HelmetProvider } from 'react-helmet-async';
 import { DevErrorBoundary, DevBuildErrorOverlay } from '@/components/dev/DevErrorOverlay';
 import { TicketDetail } from '@/components/admin/pages/TicketDetail';
+import AIAgentDetailPage from '@/components/admin/ai-agents/AIAgentDetailPage';
 import { EmailTemplateEditor } from '@/components/admin/pages/EmailTemplateEditor';
 import { EmailCampaignBuilder } from '@/components/admin/pages/EmailCampaignBuilder';
 import { EmailCampaignDetail } from '@/components/admin/pages/EmailCampaignDetail';
@@ -532,6 +533,7 @@ const App = () => (
                     <Route path="ai-usage" element={<AdminAIUsage />} />
                     <Route path="ai-credits" element={<AdminAICredits />} />
                     <Route path="ai-agents" element={<AdminAIAgents />} />
+                    <Route path="ai-agents/:agentType" element={<AIAgentDetailPage />} />
                     <Route path="ml" element={<MLDashboard />} />
                     <Route path="ml/models" element={<MLModelsPage />} />
                     <Route path="ml/alerts" element={<MLAlertsPage />} />

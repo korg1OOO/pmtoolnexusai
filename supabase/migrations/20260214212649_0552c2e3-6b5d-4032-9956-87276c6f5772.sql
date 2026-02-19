@@ -4,7 +4,7 @@
 -- ============================================
 
 -- 1. TENANTS
-CREATE TABLE public.tenants (
+CREATE TABLE IF NOT EXISTS public.tenants (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     name TEXT NOT NULL,
     slug TEXT NOT NULL UNIQUE,
@@ -21,7 +21,7 @@ CREATE TABLE public.tenants (
 ALTER TABLE public.tenants ENABLE ROW LEVEL SECURITY;
 
 -- 2. WORKSPACES
-CREATE TABLE public.workspaces (
+CREATE TABLE IF NOT EXISTS public.workspaces (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
@@ -39,7 +39,7 @@ CREATE TABLE public.workspaces (
 ALTER TABLE public.workspaces ENABLE ROW LEVEL SECURITY;
 
 -- 3. WORKSPACE_MEMBERS
-CREATE TABLE public.workspace_members (
+CREATE TABLE IF NOT EXISTS public.workspace_members (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
     user_id UUID NOT NULL,
@@ -53,7 +53,7 @@ CREATE TABLE public.workspace_members (
 ALTER TABLE public.workspace_members ENABLE ROW LEVEL SECURITY;
 
 -- 4. DEPARTMENTS
-CREATE TABLE public.departments (
+CREATE TABLE IF NOT EXISTS public.departments (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
     parent_id UUID REFERENCES public.departments(id) ON DELETE SET NULL,
@@ -69,7 +69,7 @@ CREATE TABLE public.departments (
 ALTER TABLE public.departments ENABLE ROW LEVEL SECURITY;
 
 -- 5. LICENSES
-CREATE TABLE public.licenses (
+CREATE TABLE IF NOT EXISTS public.licenses (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     tenant_id UUID NOT NULL REFERENCES public.tenants(id) ON DELETE CASCADE,
     license_type TEXT NOT NULL,
@@ -84,7 +84,7 @@ CREATE TABLE public.licenses (
 ALTER TABLE public.licenses ENABLE ROW LEVEL SECURITY;
 
 -- 6. LICENSE_KEYS
-CREATE TABLE public.license_keys (
+CREATE TABLE IF NOT EXISTS public.license_keys (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     key TEXT NOT NULL UNIQUE,
     plan TEXT NOT NULL DEFAULT 'pro',
@@ -100,7 +100,7 @@ CREATE TABLE public.license_keys (
 ALTER TABLE public.license_keys ENABLE ROW LEVEL SECURITY;
 
 -- 7. DISCOUNT_CODES
-CREATE TABLE public.discount_codes (
+CREATE TABLE IF NOT EXISTS public.discount_codes (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     code TEXT NOT NULL UNIQUE,
     discount_type TEXT NOT NULL DEFAULT 'percentage',
@@ -119,7 +119,7 @@ CREATE TABLE public.discount_codes (
 ALTER TABLE public.discount_codes ENABLE ROW LEVEL SECURITY;
 
 -- 8. TEAM_MEMBERS
-CREATE TABLE public.team_members (
+CREATE TABLE IF NOT EXISTS public.team_members (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
     user_id UUID,
@@ -132,7 +132,7 @@ CREATE TABLE public.team_members (
 ALTER TABLE public.team_members ENABLE ROW LEVEL SECURITY;
 
 -- 9. PROJECT_MEMBERS
-CREATE TABLE public.project_members (
+CREATE TABLE IF NOT EXISTS public.project_members (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     project_id UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
     user_id UUID NOT NULL,
@@ -144,7 +144,7 @@ CREATE TABLE public.project_members (
 ALTER TABLE public.project_members ENABLE ROW LEVEL SECURITY;
 
 -- 10. PROJECT_CUSTOM_ROLES
-CREATE TABLE public.project_custom_roles (
+CREATE TABLE IF NOT EXISTS public.project_custom_roles (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     project_id UUID NOT NULL REFERENCES public.projects(id) ON DELETE CASCADE,
     role_id TEXT NOT NULL,
@@ -163,7 +163,7 @@ CREATE TABLE public.project_custom_roles (
 ALTER TABLE public.project_custom_roles ENABLE ROW LEVEL SECURITY;
 
 -- 11. WORKSPACE_BUDGETS
-CREATE TABLE public.workspace_budgets (
+CREATE TABLE IF NOT EXISTS public.workspace_budgets (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
     total_budget NUMERIC NOT NULL DEFAULT 0,
@@ -179,7 +179,7 @@ CREATE TABLE public.workspace_budgets (
 ALTER TABLE public.workspace_budgets ENABLE ROW LEVEL SECURITY;
 
 -- 12. WORKSPACE_RESOURCES
-CREATE TABLE public.workspace_resources (
+CREATE TABLE IF NOT EXISTS public.workspace_resources (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
     resource_name TEXT NOT NULL,
@@ -193,7 +193,7 @@ CREATE TABLE public.workspace_resources (
 ALTER TABLE public.workspace_resources ENABLE ROW LEVEL SECURITY;
 
 -- 13. AI_PROVIDER_API_KEYS
-CREATE TABLE public.ai_provider_api_keys (
+CREATE TABLE IF NOT EXISTS public.ai_provider_api_keys (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     provider TEXT NOT NULL,
     encrypted_key TEXT NOT NULL,
@@ -205,7 +205,7 @@ CREATE TABLE public.ai_provider_api_keys (
 ALTER TABLE public.ai_provider_api_keys ENABLE ROW LEVEL SECURITY;
 
 -- 14. SPREADSHEET_COMMENTS
-CREATE TABLE public.spreadsheet_comments (
+CREATE TABLE IF NOT EXISTS public.spreadsheet_comments (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     spreadsheet_id UUID NOT NULL,
     cell_reference TEXT NOT NULL,
@@ -220,7 +220,7 @@ CREATE TABLE public.spreadsheet_comments (
 ALTER TABLE public.spreadsheet_comments ENABLE ROW LEVEL SECURITY;
 
 -- 15. WORKSPACE_TEAMS
-CREATE TABLE public.workspace_teams (
+CREATE TABLE IF NOT EXISTS public.workspace_teams (
     id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
     workspace_id UUID NOT NULL REFERENCES public.workspaces(id) ON DELETE CASCADE,
     user_id UUID,
@@ -248,85 +248,103 @@ ALTER TABLE public.user_tenants ADD COLUMN IF NOT EXISTS tenant_name TEXT;
 -- RLS Policies (using text cast for user_tenants.tenant_id)
 -- ============================================
 
+DROP POLICY IF EXISTS "Users can view their tenants" ON public.tenants;
 CREATE POLICY "Users can view their tenants" ON public.tenants
     FOR SELECT USING (
         id::text IN (SELECT tenant_id FROM public.user_tenants WHERE user_id = auth.uid())
     );
 
+DROP POLICY IF EXISTS "Users can update their tenants" ON public.tenants;
 CREATE POLICY "Users can update their tenants" ON public.tenants
     FOR UPDATE USING (
         id::text IN (SELECT tenant_id FROM public.user_tenants WHERE user_id = auth.uid() AND role IN ('owner', 'admin'))
     );
 
+DROP POLICY IF EXISTS "Users can insert tenants" ON public.tenants;
 CREATE POLICY "Users can insert tenants" ON public.tenants
     FOR INSERT WITH CHECK (auth.uid() IS NOT NULL);
 
+DROP POLICY IF EXISTS "Users can view workspaces in their tenant" ON public.workspaces;
 CREATE POLICY "Users can view workspaces in their tenant" ON public.workspaces
     FOR SELECT USING (
         tenant_id::text IN (SELECT tenant_id FROM public.user_tenants WHERE user_id = auth.uid())
     );
 
+DROP POLICY IF EXISTS "Admins can insert workspaces" ON public.workspaces;
 CREATE POLICY "Admins can insert workspaces" ON public.workspaces
     FOR INSERT WITH CHECK (
         tenant_id::text IN (SELECT tenant_id FROM public.user_tenants WHERE user_id = auth.uid() AND role IN ('owner', 'admin'))
     );
 
+DROP POLICY IF EXISTS "Admins can update workspaces" ON public.workspaces;
 CREATE POLICY "Admins can update workspaces" ON public.workspaces
     FOR UPDATE USING (
         tenant_id::text IN (SELECT tenant_id FROM public.user_tenants WHERE user_id = auth.uid() AND role IN ('owner', 'admin'))
     );
 
+DROP POLICY IF EXISTS "Admins can delete workspaces" ON public.workspaces;
 CREATE POLICY "Admins can delete workspaces" ON public.workspaces
     FOR DELETE USING (
         tenant_id::text IN (SELECT tenant_id FROM public.user_tenants WHERE user_id = auth.uid() AND role IN ('owner', 'admin'))
     );
 
+DROP POLICY IF EXISTS "Users can view workspace members" ON public.workspace_members;
 CREATE POLICY "Users can view workspace members" ON public.workspace_members
     FOR SELECT USING (
         tenant_id::text IN (SELECT tenant_id FROM public.user_tenants WHERE user_id = auth.uid())
     );
 
+DROP POLICY IF EXISTS "Admins can insert workspace members" ON public.workspace_members;
 CREATE POLICY "Admins can insert workspace members" ON public.workspace_members
     FOR INSERT WITH CHECK (
         tenant_id::text IN (SELECT tenant_id FROM public.user_tenants WHERE user_id = auth.uid() AND role IN ('owner', 'admin'))
     );
 
+DROP POLICY IF EXISTS "Admins can update workspace members" ON public.workspace_members;
 CREATE POLICY "Admins can update workspace members" ON public.workspace_members
     FOR UPDATE USING (
         tenant_id::text IN (SELECT tenant_id FROM public.user_tenants WHERE user_id = auth.uid() AND role IN ('owner', 'admin'))
     );
 
+DROP POLICY IF EXISTS "Admins can delete workspace members" ON public.workspace_members;
 CREATE POLICY "Admins can delete workspace members" ON public.workspace_members
     FOR DELETE USING (
         tenant_id::text IN (SELECT tenant_id FROM public.user_tenants WHERE user_id = auth.uid() AND role IN ('owner', 'admin'))
     );
 
+DROP POLICY IF EXISTS "Users can view departments" ON public.departments;
 CREATE POLICY "Users can view departments" ON public.departments
     FOR SELECT USING (
         tenant_id::text IN (SELECT tenant_id FROM public.user_tenants WHERE user_id = auth.uid())
     );
 
+DROP POLICY IF EXISTS "Admins can manage departments" ON public.departments;
 CREATE POLICY "Admins can manage departments" ON public.departments
     FOR ALL USING (
         tenant_id::text IN (SELECT tenant_id FROM public.user_tenants WHERE user_id = auth.uid() AND role IN ('owner', 'admin'))
     );
 
+DROP POLICY IF EXISTS "Users can view licenses" ON public.licenses;
 CREATE POLICY "Users can view licenses" ON public.licenses
     FOR SELECT USING (
         tenant_id::text IN (SELECT tenant_id FROM public.user_tenants WHERE user_id = auth.uid())
     );
 
+DROP POLICY IF EXISTS "Admins can manage licenses" ON public.licenses;
 CREATE POLICY "Admins can manage licenses" ON public.licenses
     FOR ALL USING (
         tenant_id::text IN (SELECT tenant_id FROM public.user_tenants WHERE user_id = auth.uid() AND role IN ('owner', 'admin'))
     );
 
+DROP POLICY IF EXISTS "Admins can manage license keys" ON public.license_keys;
 CREATE POLICY "Admins can manage license keys" ON public.license_keys
     FOR ALL USING (auth.uid() IS NOT NULL);
 
+DROP POLICY IF EXISTS "Admins can manage discount codes" ON public.discount_codes;
 CREATE POLICY "Admins can manage discount codes" ON public.discount_codes
     FOR ALL USING (auth.uid() IS NOT NULL);
 
+DROP POLICY IF EXISTS "Users can view team members" ON public.team_members;
 CREATE POLICY "Users can view team members" ON public.team_members
     FOR SELECT USING (
         workspace_id IN (
@@ -335,6 +353,7 @@ CREATE POLICY "Users can view team members" ON public.team_members
         )
     );
 
+DROP POLICY IF EXISTS "Admins can manage team members" ON public.team_members;
 CREATE POLICY "Admins can manage team members" ON public.team_members
     FOR ALL USING (
         workspace_id IN (
@@ -343,18 +362,23 @@ CREATE POLICY "Admins can manage team members" ON public.team_members
         )
     );
 
+DROP POLICY IF EXISTS "Users can view project members" ON public.project_members;
 CREATE POLICY "Users can view project members" ON public.project_members
     FOR SELECT USING (auth.uid() IS NOT NULL);
 
+DROP POLICY IF EXISTS "Users can manage project members" ON public.project_members;
 CREATE POLICY "Users can manage project members" ON public.project_members
     FOR ALL USING (auth.uid() IS NOT NULL);
 
+DROP POLICY IF EXISTS "Users can view project roles" ON public.project_custom_roles;
 CREATE POLICY "Users can view project roles" ON public.project_custom_roles
     FOR SELECT USING (auth.uid() IS NOT NULL);
 
+DROP POLICY IF EXISTS "Users can manage project roles" ON public.project_custom_roles;
 CREATE POLICY "Users can manage project roles" ON public.project_custom_roles
     FOR ALL USING (auth.uid() IS NOT NULL);
 
+DROP POLICY IF EXISTS "Users can view workspace budgets" ON public.workspace_budgets;
 CREATE POLICY "Users can view workspace budgets" ON public.workspace_budgets
     FOR SELECT USING (
         workspace_id IN (
@@ -363,6 +387,7 @@ CREATE POLICY "Users can view workspace budgets" ON public.workspace_budgets
         )
     );
 
+DROP POLICY IF EXISTS "Admins can manage workspace budgets" ON public.workspace_budgets;
 CREATE POLICY "Admins can manage workspace budgets" ON public.workspace_budgets
     FOR ALL USING (
         workspace_id IN (
@@ -371,6 +396,7 @@ CREATE POLICY "Admins can manage workspace budgets" ON public.workspace_budgets
         )
     );
 
+DROP POLICY IF EXISTS "Users can view workspace resources" ON public.workspace_resources;
 CREATE POLICY "Users can view workspace resources" ON public.workspace_resources
     FOR SELECT USING (
         workspace_id IN (
@@ -379,6 +405,7 @@ CREATE POLICY "Users can view workspace resources" ON public.workspace_resources
         )
     );
 
+DROP POLICY IF EXISTS "Admins can manage workspace resources" ON public.workspace_resources;
 CREATE POLICY "Admins can manage workspace resources" ON public.workspace_resources
     FOR ALL USING (
         workspace_id IN (
@@ -387,15 +414,19 @@ CREATE POLICY "Admins can manage workspace resources" ON public.workspace_resour
         )
     );
 
+DROP POLICY IF EXISTS "Admins can manage AI provider keys" ON public.ai_provider_api_keys;
 CREATE POLICY "Admins can manage AI provider keys" ON public.ai_provider_api_keys
     FOR ALL USING (auth.uid() IS NOT NULL);
 
+DROP POLICY IF EXISTS "Users can view spreadsheet comments" ON public.spreadsheet_comments;
 CREATE POLICY "Users can view spreadsheet comments" ON public.spreadsheet_comments
     FOR SELECT USING (auth.uid() IS NOT NULL);
 
+DROP POLICY IF EXISTS "Users can manage their comments" ON public.spreadsheet_comments;
 CREATE POLICY "Users can manage their comments" ON public.spreadsheet_comments
     FOR ALL USING (auth.uid() = user_id);
 
+DROP POLICY IF EXISTS "Users can view workspace teams" ON public.workspace_teams;
 CREATE POLICY "Users can view workspace teams" ON public.workspace_teams
     FOR SELECT USING (
         workspace_id IN (
@@ -404,6 +435,7 @@ CREATE POLICY "Users can view workspace teams" ON public.workspace_teams
         )
     );
 
+DROP POLICY IF EXISTS "Admins can manage workspace teams" ON public.workspace_teams;
 CREATE POLICY "Admins can manage workspace teams" ON public.workspace_teams
     FOR ALL USING (
         workspace_id IN (
@@ -423,33 +455,33 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SET search_path = public;
 
-CREATE TRIGGER update_tenants_updated_at BEFORE UPDATE ON public.tenants FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE TRIGGER update_workspaces_updated_at BEFORE UPDATE ON public.workspaces FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE TRIGGER update_departments_updated_at BEFORE UPDATE ON public.departments FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE TRIGGER update_licenses_updated_at BEFORE UPDATE ON public.licenses FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE TRIGGER update_license_keys_updated_at BEFORE UPDATE ON public.license_keys FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE TRIGGER update_discount_codes_updated_at BEFORE UPDATE ON public.discount_codes FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE TRIGGER update_workspace_budgets_updated_at BEFORE UPDATE ON public.workspace_budgets FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE TRIGGER update_workspace_resources_updated_at BEFORE UPDATE ON public.workspace_resources FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE TRIGGER update_ai_provider_api_keys_updated_at BEFORE UPDATE ON public.ai_provider_api_keys FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE TRIGGER update_spreadsheet_comments_updated_at BEFORE UPDATE ON public.spreadsheet_comments FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
-CREATE TRIGGER update_project_custom_roles_updated_at BEFORE UPDATE ON public.project_custom_roles FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE OR REPLACE TRIGGER update_tenants_updated_at BEFORE UPDATE ON public.tenants FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE OR REPLACE TRIGGER update_workspaces_updated_at BEFORE UPDATE ON public.workspaces FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE OR REPLACE TRIGGER update_departments_updated_at BEFORE UPDATE ON public.departments FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE OR REPLACE TRIGGER update_licenses_updated_at BEFORE UPDATE ON public.licenses FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE OR REPLACE TRIGGER update_license_keys_updated_at BEFORE UPDATE ON public.license_keys FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE OR REPLACE TRIGGER update_discount_codes_updated_at BEFORE UPDATE ON public.discount_codes FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE OR REPLACE TRIGGER update_workspace_budgets_updated_at BEFORE UPDATE ON public.workspace_budgets FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE OR REPLACE TRIGGER update_workspace_resources_updated_at BEFORE UPDATE ON public.workspace_resources FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE OR REPLACE TRIGGER update_ai_provider_api_keys_updated_at BEFORE UPDATE ON public.ai_provider_api_keys FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE OR REPLACE TRIGGER update_spreadsheet_comments_updated_at BEFORE UPDATE ON public.spreadsheet_comments FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
+CREATE OR REPLACE TRIGGER update_project_custom_roles_updated_at BEFORE UPDATE ON public.project_custom_roles FOR EACH ROW EXECUTE FUNCTION public.update_updated_at_column();
 
 -- ============================================
 -- Indexes
 -- ============================================
-CREATE INDEX idx_workspaces_tenant_id ON public.workspaces(tenant_id);
-CREATE INDEX idx_workspace_members_workspace_id ON public.workspace_members(workspace_id);
-CREATE INDEX idx_workspace_members_user_id ON public.workspace_members(user_id);
-CREATE INDEX idx_departments_tenant_id ON public.departments(tenant_id);
-CREATE INDEX idx_licenses_tenant_id ON public.licenses(tenant_id);
-CREATE INDEX idx_team_members_workspace_id ON public.team_members(workspace_id);
-CREATE INDEX idx_project_members_project_id ON public.project_members(project_id);
-CREATE INDEX idx_project_members_user_id ON public.project_members(user_id);
-CREATE INDEX idx_workspace_teams_workspace_id ON public.workspace_teams(workspace_id);
-CREATE INDEX idx_projects_workspace_id ON public.projects(workspace_id);
-CREATE INDEX idx_projects_tenant_id ON public.projects(tenant_id);
-CREATE INDEX idx_programs_workspace_id ON public.programs(workspace_id);
-CREATE INDEX idx_programs_tenant_id ON public.programs(tenant_id);
-CREATE INDEX idx_portfolios_workspace_id ON public.portfolios(workspace_id);
-CREATE INDEX idx_portfolios_tenant_id ON public.portfolios(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_workspaces_tenant_id ON public.workspaces(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_workspace_members_workspace_id ON public.workspace_members(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_workspace_members_user_id ON public.workspace_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_departments_tenant_id ON public.departments(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_licenses_tenant_id ON public.licenses(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_team_members_workspace_id ON public.team_members(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_project_members_project_id ON public.project_members(project_id);
+CREATE INDEX IF NOT EXISTS idx_project_members_user_id ON public.project_members(user_id);
+CREATE INDEX IF NOT EXISTS idx_workspace_teams_workspace_id ON public.workspace_teams(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_projects_workspace_id ON public.projects(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_projects_tenant_id ON public.projects(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_programs_workspace_id ON public.programs(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_programs_tenant_id ON public.programs(tenant_id);
+CREATE INDEX IF NOT EXISTS idx_portfolios_workspace_id ON public.portfolios(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_portfolios_tenant_id ON public.portfolios(tenant_id);

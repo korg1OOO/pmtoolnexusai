@@ -2,7 +2,7 @@
 -- Stores scheduled report configurations and execution history
 
 CREATE TABLE IF NOT EXISTS scheduled_reports (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     project_id UUID REFERENCES projects(id) ON DELETE CASCADE,
     name TEXT NOT NULL,
@@ -28,7 +28,7 @@ CREATE INDEX IF NOT EXISTS idx_scheduled_reports_active ON scheduled_reports(is_
 
 -- Report execution history
 CREATE TABLE IF NOT EXISTS report_executions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     scheduled_report_id UUID NOT NULL REFERENCES scheduled_reports(id) ON DELETE CASCADE,
     status TEXT NOT NULL CHECK (status IN ('success', 'failed')),
     error_message TEXT,

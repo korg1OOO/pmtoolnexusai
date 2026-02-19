@@ -2,11 +2,55 @@
 -- Migration for Programs table and project hierarchy enhancements
 
 -- ============================================
+-- FIX PORTFOLIOS SCHEMA
+-- ============================================
+
+DO $$
+BEGIN
+    -- Add slug if missing
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'portfolios' AND column_name = 'slug') THEN
+        ALTER TABLE portfolios ADD COLUMN slug TEXT;
+        -- Generate slug from name
+        UPDATE portfolios SET slug = LOWER(REGEXP_REPLACE(name, '[^a-zA-Z0-9]', '-', 'g')) WHERE slug IS NULL;
+        -- Handle potential empty slugs if name was empty or weird
+        UPDATE portfolios SET slug = 'portfolio-' || id WHERE slug IS NULL OR slug = '';
+        ALTER TABLE portfolios ALTER COLUMN slug SET NOT NULL;
+        -- Add unique constraint
+        ALTER TABLE portfolios ADD CONSTRAINT portfolios_workspace_slug_key UNIQUE (workspace_id, slug);
+    END IF;
+
+    -- Add other columns
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'portfolios' AND column_name = 'start_date') THEN
+        ALTER TABLE portfolios ADD COLUMN start_date DATE;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'portfolios' AND column_name = 'end_date') THEN
+        ALTER TABLE portfolios ADD COLUMN end_date DATE;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'portfolios' AND column_name = 'ml_sharing_scope') THEN
+        ALTER TABLE portfolios ADD COLUMN ml_sharing_scope TEXT DEFAULT 'portfolio';
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'portfolios' AND column_name = 'inherit_workspace_ml') THEN
+        ALTER TABLE portfolios ADD COLUMN inherit_workspace_ml BOOLEAN DEFAULT true;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'portfolios' AND column_name = 'is_active') THEN
+        ALTER TABLE portfolios ADD COLUMN is_active BOOLEAN DEFAULT true;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'portfolios' AND column_name = 'created_by_user_id') THEN
+        ALTER TABLE portfolios ADD COLUMN created_by_user_id UUID;
+    END IF;
+END $$;
+
+-- ============================================
 -- PROGRAMS TABLE
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS programs (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     workspace_id UUID NOT NULL REFERENCES workspaces(id) ON DELETE CASCADE,
     portfolio_id UUID NOT NULL REFERENCES portfolios(id) ON DELETE CASCADE,
@@ -50,6 +94,55 @@ CREATE TABLE IF NOT EXISTS programs (
     UNIQUE(tenant_id, code)
 );
 
+-- Ensure necessary columns exist if table already existed
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'programs' AND column_name = 'tenant_id') THEN
+        ALTER TABLE programs ADD COLUMN tenant_id UUID REFERENCES tenants(id) ON DELETE CASCADE;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'programs' AND column_name = 'workspace_id') THEN
+        ALTER TABLE programs ADD COLUMN workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'programs' AND column_name = 'portfolio_id') THEN
+        ALTER TABLE programs ADD COLUMN portfolio_id UUID REFERENCES portfolios(id) ON DELETE CASCADE;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'programs' AND column_name = 'code') THEN
+        ALTER TABLE programs ADD COLUMN code TEXT;
+        -- Generate code from name if possible, or random
+        UPDATE programs SET code = UPPER(SUBSTRING(name, 1, 3)) || '-' || SUBSTRING(id::text, 1, 4) WHERE code IS NULL;
+        ALTER TABLE programs ALTER COLUMN code SET NOT NULL;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'programs' AND column_name = 'program_type') THEN
+        ALTER TABLE programs ADD COLUMN program_type TEXT DEFAULT 'standard' CHECK (program_type IN ('standard', 'strategic', 'operational', 'transformation'));
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'programs' AND column_name = 'health') THEN
+        ALTER TABLE programs ADD COLUMN health TEXT DEFAULT 'green' CHECK (health IN ('green', 'amber', 'red'));
+    END IF;
+    
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'programs' AND column_name = 'total_budget') THEN
+        ALTER TABLE programs ADD COLUMN total_budget DECIMAL(15,2) DEFAULT 0;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'programs' AND column_name = 'settings') THEN
+        ALTER TABLE programs ADD COLUMN settings JSONB DEFAULT '{
+            "auto_rollup_status": true,
+            "auto_rollup_budget": true,
+            "auto_rollup_progress": true,
+            "allow_cross_project_dependencies": true,
+            "require_project_approval": false
+        }'::jsonb;
+    END IF;
+
+    IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'programs_tenant_id_code_key') THEN
+        ALTER TABLE programs ADD CONSTRAINT programs_tenant_id_code_key UNIQUE (tenant_id, code);
+    END IF;
+END $$;
+
 -- ============================================
 -- MODIFY PROJECTS TABLE
 -- ============================================
@@ -74,7 +167,7 @@ ALTER TABLE projects ADD COLUMN IF NOT EXISTS visibility_scope TEXT DEFAULT 'pro
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS program_members (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     program_id UUID NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
     user_id UUID NOT NULL,
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
@@ -102,7 +195,7 @@ CREATE TABLE IF NOT EXISTS program_members (
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS program_milestones (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     program_id UUID NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     
@@ -134,7 +227,7 @@ CREATE TABLE IF NOT EXISTS program_milestones (
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS cross_project_dependencies (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     program_id UUID NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
     

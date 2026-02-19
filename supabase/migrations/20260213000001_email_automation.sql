@@ -1,24 +1,15 @@
 -- Phase 13: Email Automation
 -- Create email templates, campaigns, and analytics system
 
--- Email Templates Table
-CREATE TABLE IF NOT EXISTS email_templates (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  name TEXT NOT NULL,
-  subject TEXT NOT NULL,
-  html_content TEXT NOT NULL,
-  template_type TEXT NOT NULL CHECK (template_type IN ('transactional', 'marketing', 'onboarding')),
-  variables JSONB DEFAULT '[]'::jsonb, -- ['name', 'email', 'amount']
-  is_active BOOLEAN DEFAULT true,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  updated_at TIMESTAMPTZ DEFAULT NOW()
-);
+-- Email Templates Table (Already created in 20260212230000)
+-- Schema: id TEXT, name TEXT, category TEXT, active BOOLEAN, ...
+
 
 -- Email Campaigns Table
 CREATE TABLE IF NOT EXISTS email_campaigns (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
-  template_id UUID REFERENCES email_templates(id) ON DELETE SET NULL,
+  template_id TEXT REFERENCES email_templates(id) ON DELETE SET NULL,
   subject TEXT NOT NULL,
   status TEXT DEFAULT 'draft' CHECK (status IN ('draft', 'scheduled', 'sending', 'sent', 'cancelled')),
   target_audience JSONB, -- { tier: ['pro'], created_after: '2024-01-01' }
@@ -56,15 +47,15 @@ SELECT
   ec.open_count,
   ec.click_count,
   CASE WHEN ec.sent_count > 0 
-    THEN ROUND((ec.open_count::FLOAT / ec.sent_count) * 100, 2) 
+    THEN ROUND(((ec.open_count::FLOAT / ec.sent_count) * 100)::NUMERIC, 2) 
     ELSE 0 
   END as open_rate,
   CASE WHEN ec.open_count > 0 
-    THEN ROUND((ec.click_count::FLOAT / ec.open_count) * 100, 2) 
+    THEN ROUND(((ec.click_count::FLOAT / ec.open_count) * 100)::NUMERIC, 2) 
     ELSE 0 
   END as click_rate,
   CASE WHEN ec.sent_count > 0 AND ec.click_count > 0
-    THEN ROUND((ec.click_count::FLOAT / ec.sent_count) * 100, 2)
+    THEN ROUND(((ec.click_count::FLOAT / ec.sent_count) * 100)::NUMERIC, 2)
     ELSE 0
   END as click_through_rate,
   ec.created_at,
@@ -78,25 +69,25 @@ CREATE OR REPLACE VIEW template_performance AS
 SELECT 
   et.id as template_id,
   et.name as template_name,
-  et.template_type,
+  et.category as template_type,
   COUNT(ec.id) as campaigns_count,
   SUM(ec.sent_count) as total_sent,
   AVG(CASE WHEN ec.sent_count > 0 
     THEN (ec.open_count::FLOAT / ec.sent_count) * 100 
     ELSE 0 
-  END) as avg_open_rate,
+  END)::NUMERIC(10,2) as avg_open_rate,
   AVG(CASE WHEN ec.open_count > 0 
     THEN (ec.click_count::FLOAT / ec.open_count) * 100 
     ELSE 0 
-  END) as avg_click_rate
+  END)::NUMERIC(10,2) as avg_click_rate
 FROM email_templates et
 LEFT JOIN email_campaigns ec ON et.id = ec.template_id
-WHERE et.is_active = true
-GROUP BY et.id, et.name, et.template_type;
+WHERE et.active = true
+GROUP BY et.id, et.name, et.category;
 
 -- Create indexes for performance
-CREATE INDEX IF NOT EXISTS idx_email_templates_type ON email_templates(template_type);
-CREATE INDEX IF NOT EXISTS idx_email_templates_active ON email_templates(is_active);
+CREATE INDEX IF NOT EXISTS idx_email_templates_category ON email_templates(category);
+CREATE INDEX IF NOT EXISTS idx_email_templates_active ON email_templates(active);
 CREATE INDEX IF NOT EXISTS idx_email_campaigns_status ON email_campaigns(status);
 CREATE INDEX IF NOT EXISTS idx_email_campaigns_template ON email_campaigns(template_id);
 CREATE INDEX IF NOT EXISTS idx_email_campaigns_created_by ON email_campaigns(created_by);

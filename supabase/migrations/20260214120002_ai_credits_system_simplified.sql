@@ -11,7 +11,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS ai_credits (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     
     -- Balance
@@ -45,7 +45,7 @@ CREATE INDEX IF NOT EXISTS idx_ai_credits_auto_recharge ON ai_credits(auto_recha
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS ai_usage_logs (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     
     -- Usage Details
@@ -73,7 +73,7 @@ CREATE INDEX IF NOT EXISTS idx_ai_usage_created ON ai_usage_logs(created_at DESC
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS ai_credit_purchases (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
     
     -- Purchase Details
@@ -103,7 +103,7 @@ CREATE INDEX IF NOT EXISTS idx_ai_purchases_date ON ai_credit_purchases(purchase
 -- =====================================================
 
 CREATE TABLE IF NOT EXISTS ai_credit_pricing (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tier_name TEXT NOT NULL UNIQUE,
     credits DECIMAL(12, 2) NOT NULL,
     price DECIMAL(12, 2) NOT NULL,
@@ -116,6 +116,9 @@ CREATE TABLE IF NOT EXISTS ai_credit_pricing (
     CONSTRAINT positive_credits CHECK (credits > 0),
     CONSTRAINT positive_price CHECK (price > 0)
 );
+
+-- Ensure is_popular exists if table already existed (from previous phase)
+ALTER TABLE ai_credit_pricing ADD COLUMN IF NOT EXISTS is_popular BOOLEAN DEFAULT false;
 
 -- Index for ai_credit_pricing
 CREATE INDEX IF NOT EXISTS idx_ai_pricing_order ON ai_credit_pricing(display_order);
@@ -301,6 +304,17 @@ CREATE POLICY "Anyone can view pricing"
 -- =====================================================
 -- SEED DATA: Default Pricing Tiers
 -- =====================================================
+
+-- Ensure unique constraint exists for ON CONFLICT to work
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint 
+        WHERE conname = 'ai_credit_pricing_tier_name_key'
+    ) THEN
+        ALTER TABLE ai_credit_pricing ADD CONSTRAINT ai_credit_pricing_tier_name_key UNIQUE (tier_name);
+    END IF;
+END $$;
 
 INSERT INTO ai_credit_pricing (tier_name, credits, price, discount_percentage, is_popular, display_order)
 VALUES

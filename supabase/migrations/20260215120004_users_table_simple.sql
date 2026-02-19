@@ -1,6 +1,6 @@
 -- Users table for user management (simplified - no conflict with existing user_roles)
 CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID,
     email TEXT NOT NULL UNIQUE,
     full_name TEXT NOT NULL,

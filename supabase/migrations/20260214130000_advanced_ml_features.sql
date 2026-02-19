@@ -8,7 +8,7 @@
 -- Table: ml_ab_tests
 -- Stores A/B test configurations
 CREATE TABLE IF NOT EXISTS ml_ab_tests (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name TEXT NOT NULL,
     description TEXT,
     pattern_a_id UUID REFERENCES ml_learning_patterns(id),
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS ml_ab_tests (
 -- Table: ml_ab_test_results
 -- Stores individual A/B test results
 CREATE TABLE IF NOT EXISTS ml_ab_test_results (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     ab_test_id UUID REFERENCES ml_ab_tests(id) ON DELETE CASCADE,
     pattern_id UUID REFERENCES ml_learning_patterns(id),
     prediction_id UUID REFERENCES ml_predictions(id),
@@ -48,7 +48,7 @@ CREATE INDEX IF NOT EXISTS idx_ab_test_results_variant ON ml_ab_test_results(ab_
 -- Table: ml_pattern_versions
 -- Stores pattern version snapshots
 CREATE TABLE IF NOT EXISTS ml_pattern_versions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     pattern_id UUID REFERENCES ml_learning_patterns(id) ON DELETE CASCADE,
     version_number INTEGER NOT NULL,
     version_tag TEXT, -- 'v1.0', 'v2.0', etc.
@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS ml_pattern_versions (
 -- Table: ml_pattern_changelog
 -- Stores pattern change history
 CREATE TABLE IF NOT EXISTS ml_pattern_changelog (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     pattern_id UUID REFERENCES ml_learning_patterns(id) ON DELETE CASCADE,
     version_from INTEGER,
     version_to INTEGER,

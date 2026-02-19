@@ -29,7 +29,7 @@ ALTER TABLE tasks ADD COLUMN IF NOT EXISTS tags TEXT[] DEFAULT '{}';
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS task_templates (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
     program_id UUID REFERENCES programs(id) ON DELETE CASCADE,
@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS task_templates (
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS task_comments (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
     project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     
@@ -97,7 +97,7 @@ CREATE TABLE IF NOT EXISTS task_comments (
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS task_links (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     
     -- Source task
     source_task_id UUID NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,

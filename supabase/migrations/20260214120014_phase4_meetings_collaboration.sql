@@ -38,7 +38,7 @@ ALTER TABLE meetings ADD COLUMN IF NOT EXISTS template_id UUID;
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS meeting_attendees (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     meeting_id UUID NOT NULL REFERENCES meetings(id) ON DELETE CASCADE,
     user_id UUID NOT NULL,
     
@@ -72,7 +72,7 @@ ALTER TABLE meeting_action_items ADD COLUMN IF NOT EXISTS created_by_user_id UUI
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS meeting_templates (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
     program_id UUID REFERENCES programs(id) ON DELETE CASCADE,
@@ -112,7 +112,7 @@ CREATE TABLE IF NOT EXISTS meeting_templates (
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS collaboration_spaces (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     program_id UUID NOT NULL REFERENCES programs(id) ON DELETE CASCADE,
     
     -- Space Info
@@ -138,7 +138,7 @@ CREATE TABLE IF NOT EXISTS collaboration_spaces (
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS collaboration_space_members (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     space_id UUID NOT NULL REFERENCES collaboration_spaces(id) ON DELETE CASCADE,
     user_id UUID NOT NULL,
     project_id UUID REFERENCES projects(id),

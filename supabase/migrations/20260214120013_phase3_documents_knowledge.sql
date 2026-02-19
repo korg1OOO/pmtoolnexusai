@@ -36,7 +36,7 @@ ALTER TABLE documents ADD COLUMN IF NOT EXISTS parent_document_id UUID REFERENCE
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS document_version_history (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
     version_number INTEGER NOT NULL,
     
@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS document_version_history (
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS knowledge_articles (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
     program_id UUID REFERENCES programs(id) ON DELETE CASCADE,
@@ -108,7 +108,7 @@ CREATE TABLE IF NOT EXISTS knowledge_articles (
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS document_templates (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tenant_id UUID NOT NULL REFERENCES tenants(id) ON DELETE CASCADE,
     workspace_id UUID REFERENCES workspaces(id) ON DELETE CASCADE,
     program_id UUID REFERENCES programs(id) ON DELETE CASCADE,
@@ -145,7 +145,7 @@ CREATE TABLE IF NOT EXISTS document_templates (
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS document_collaborators (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
     user_id UUID NOT NULL,
     
@@ -171,7 +171,7 @@ CREATE TABLE IF NOT EXISTS document_collaborators (
 -- ============================================
 
 CREATE TABLE IF NOT EXISTS document_comments (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     document_id UUID NOT NULL REFERENCES documents(id) ON DELETE CASCADE,
     
     -- Comment

@@ -2,6 +2,7 @@
 -- Create in-app announcements and feature flags
 
 -- In-App Announcements Table
+DROP TABLE IF EXISTS announcements CASCADE;
 CREATE TABLE IF NOT EXISTS announcements (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL,
@@ -27,6 +28,7 @@ CREATE TABLE IF NOT EXISTS announcement_dismissals (
 );
 
 -- Feature Flags Table
+DROP TABLE IF EXISTS feature_flags CASCADE;
 CREATE TABLE IF NOT EXISTS feature_flags (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT UNIQUE NOT NULL,

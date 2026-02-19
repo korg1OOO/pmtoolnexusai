@@ -1,6 +1,6 @@
 -- Create delegations table for tracking approval delegations
 CREATE TABLE IF NOT EXISTS delegations (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     delegator_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     delegate_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     approval_id UUID REFERENCES approval_workflows(id) ON DELETE CASCADE, -- NULL for permanent delegation

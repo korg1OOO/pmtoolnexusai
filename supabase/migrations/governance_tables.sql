@@ -6,7 +6,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Policy Documents Table
 CREATE TABLE IF NOT EXISTS policy_documents (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     title TEXT NOT NULL,
     category TEXT NOT NULL,
     version TEXT NOT NULL,
@@ -29,7 +29,7 @@ CREATE INDEX IF NOT EXISTS idx_policy_documents_status ON policy_documents(statu
 
 -- Approval Workflows Table
 CREATE TABLE IF NOT EXISTS approval_workflows (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     type TEXT NOT NULL,
     title TEXT NOT NULL,
     status TEXT CHECK (status IN ('pending', 'approved', 'rejected', 'escalated')) DEFAULT 'pending',
@@ -51,7 +51,7 @@ CREATE INDEX IF NOT EXISTS idx_approval_workflows_status ON approval_workflows(s
 
 -- Approvers Table (for approval chain)
 CREATE TABLE IF NOT EXISTS approvers (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     approval_id UUID NOT NULL REFERENCES approval_workflows(id) ON DELETE CASCADE,
     user_id UUID,
     name TEXT NOT NULL,
@@ -69,7 +69,7 @@ CREATE INDEX IF NOT EXISTS idx_approvers_user_id ON approvers(user_id);
 
 -- Compliance Checklists Table
 CREATE TABLE IF NOT EXISTS compliance_checklists (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     framework TEXT NOT NULL,
     entity_id UUID NOT NULL,
     entity_type TEXT CHECK (entity_type IN ('project', 'portfolio', 'program', 'workspace')) NOT NULL,
@@ -88,7 +88,7 @@ CREATE INDEX IF NOT EXISTS idx_compliance_checklists_status ON compliance_checkl
 
 -- Checklist Items Table
 CREATE TABLE IF NOT EXISTS checklist_items (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     checklist_id UUID NOT NULL REFERENCES compliance_checklists(id) ON DELETE CASCADE,
     requirement TEXT NOT NULL,
     description TEXT,

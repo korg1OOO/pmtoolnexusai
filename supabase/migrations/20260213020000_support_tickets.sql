@@ -2,6 +2,7 @@
 -- Create support ticket system with auto-generated ticket numbers
 
 -- Support Tickets Table
+DROP TABLE IF EXISTS support_tickets CASCADE;
 CREATE TABLE IF NOT EXISTS support_tickets (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   ticket_number TEXT UNIQUE NOT NULL,

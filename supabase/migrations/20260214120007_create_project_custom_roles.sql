@@ -2,7 +2,7 @@
 -- This allows Project Managers to define custom roles and modify standard roles per project
 
 CREATE TABLE IF NOT EXISTS project_custom_roles (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   project_id UUID NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
   role_id TEXT NOT NULL, -- e.g., 'project_manager', 'custom_architect'
   role_name TEXT NOT NULL,
@@ -33,9 +33,9 @@ CREATE POLICY "Users can view project roles they have access to"
   FOR SELECT
   USING (
     EXISTS (
-      SELECT 1 FROM project_members
-      WHERE project_members.project_id = project_custom_roles.project_id
-      AND project_members.user_id = auth.uid()
+      SELECT 1 FROM user_roles
+      WHERE user_roles.project_id = project_custom_roles.project_id
+      AND user_roles.user_id = auth.uid()
     )
   );
 
@@ -45,10 +45,10 @@ CREATE POLICY "Project managers can manage custom roles"
   FOR ALL
   USING (
     EXISTS (
-      SELECT 1 FROM project_members
-      WHERE project_members.project_id = project_custom_roles.project_id
-      AND project_members.user_id = auth.uid()
-      AND project_members.role IN ('admin', 'pm')
+      SELECT 1 FROM user_roles
+      WHERE user_roles.project_id = project_custom_roles.project_id
+      AND user_roles.user_id = auth.uid()
+      AND user_roles.role IN ('admin', 'pm')
     )
   );
 

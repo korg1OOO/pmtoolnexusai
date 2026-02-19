@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -40,7 +41,7 @@ import {
     Filter,
     DollarSign,
 } from 'lucide-react';
-import type { BudgetVariance, LineItem } from '@/types/analytics';
+import type { BudgetVariance, LineItem, VarianceTrend } from '@/types/analytics';
 
 interface BudgetVarianceDetailProps {
     workspaceId?: string;
@@ -71,70 +72,108 @@ export function BudgetVarianceDetail({
     const loadBudgetVariance = async () => {
         setLoading(true);
         try {
-            // TODO: Replace with actual API call
-            const mockData: BudgetVariance = {
-                projectId: projectId || 'proj-001',
-                projectName: 'Digital Transformation Initiative',
-                portfolioId: portfolioId,
-                portfolioName: 'Strategic Initiatives',
-                plannedBudget: 500000,
-                actualSpend: 425000,
-                forecast: 550000,
-                variance: 50000,
-                variancePercent: 10,
-                status: 'over',
-                breakdown: [
-                    {
-                        id: '1',
-                        category: 'Personnel',
-                        planned: 300000,
-                        actual: 280000,
-                        variance: -20000,
-                        variancePercent: -6.67,
-                    },
-                    {
-                        id: '2',
-                        category: 'Software & Licenses',
-                        planned: 100000,
-                        actual: 85000,
-                        variance: -15000,
-                        variancePercent: -15,
-                    },
-                    {
-                        id: '3',
-                        category: 'Infrastructure',
-                        planned: 50000,
-                        actual: 35000,
-                        variance: -15000,
-                        variancePercent: -30,
-                    },
-                    {
-                        id: '4',
-                        category: 'Consulting',
-                        planned: 30000,
-                        actual: 15000,
-                        variance: -15000,
-                        variancePercent: -50,
-                    },
-                    {
-                        id: '5',
-                        category: 'Training',
-                        planned: 20000,
-                        actual: 10000,
-                        variance: -10000,
-                        variancePercent: -50,
-                    },
-                ],
-                trend: [
-                    { month: 'Jan', planned: 50000, actual: 45000, variance: -5000 },
-                    { month: 'Feb', planned: 100000, actual: 95000, variance: -5000 },
-                    { month: 'Mar', planned: 150000, actual: 155000, variance: 5000 },
-                    { month: 'Apr', planned: 200000, actual: 215000, variance: 15000 },
-                    { month: 'May', planned: 250000, actual: 280000, variance: 30000 },
-                    { month: 'Jun', planned: 300000, actual: 350000, variance: 50000 },
-                ],
-            };
-            setBudgetData(mockData);
+            // Fetch project info
+            let pid = projectId;
+            let projectName = 'Project';
+            let portfolioName: string | undefined;
+
+            if (pid) {
+                const { data: project } = await supabase
+                    .from('projects')
+                    .select('id, name, budget, spent')
+                    .eq('id', pid)
+                    .single();
+                if (project) projectName = project.name;
+            } else {
+                const { data: firstProject } = await supabase
+                    .from('projects')
+                    .select('id, name, budget, spent')
+                    .limit(1)
+                    .single();
+                if (firstProject) {
+                    pid = firstProject.id;
+                    projectName = firstProject.name;
+                }
+            }
+
+            if (!pid) { setLoading(false); return; }
+
+            if (portfolioId) {
+                const { data: portfolio } = await supabase
+                    .from('portfolios')
+                    .select('name')
+                    .eq('id', portfolioId)
+                    .single();
+                if (portfolio) portfolioName = portfolio.name;
+            }
+
+            // Fetch budget items grouped by category
+            const { data: budgetItems } = await supabase
+                .from('project_budget_items')
+                .select('*')
+                .eq('project_id', pid);
+
+            // Build breakdown by category
+            const categoryMap: Record<string, { planned: number; actual: number }> = {};
+            (budgetItems || []).forEach(item => {
+                const cat = item.category || 'Uncategorized';
+                if (!categoryMap[cat]) categoryMap[cat] = { planned: 0, actual: 0 };
+                categoryMap[cat].planned += item.budgeted_amount || 0;
+                categoryMap[cat].actual += item.actual_amount || 0;
+            });
+
+            const breakdown: LineItem[] = Object.entries(categoryMap).map(([category, vals], idx) => ({
+                id: String(idx + 1),
+                category,
+                planned: vals.planned,
+                actual: vals.actual,
+                variance: vals.actual - vals.planned,
+                variancePercent: vals.planned > 0 ? ((vals.actual - vals.planned) / vals.planned) * 100 : 0,
+            }));
+
+            const totalPlanned = breakdown.reduce((s, b) => s + b.planned, 0);
+            const totalActual = breakdown.reduce((s, b) => s + b.actual, 0);
+            const totalVariance = totalActual - totalPlanned;
+            const variancePercent = totalPlanned > 0 ? (totalVariance / totalPlanned) * 100 : 0;
+
+            // Build trend from EVM snapshots
+            const { data: evmSnapshots } = await supabase
+                .from('project_evm_snapshots')
+                .select('snapshot_date, pv, ac, ev')
+                .eq('project_id', pid)
+                .order('snapshot_date');
+
+            const trend: VarianceTrend[] = (evmSnapshots || []).map(snap => {
+                const d = new Date(snap.snapshot_date);
+                const month = d.toLocaleDateString('en-US', { month: 'short' });
+                return {
+                    month,
+                    planned: snap.pv || 0,
+                    actual: snap.ac || 0,
+                    variance: (snap.ac || 0) - (snap.pv || 0),
+                };
+            });
+
+            const budgetStatus: BudgetVariance['status'] = 
+                variancePercent > 5 ? 'over' : variancePercent < -5 ? 'under' : 'on-track';
+
+            // Estimate forecast from trend
+            const forecast = totalActual + (totalPlanned - totalActual) * (totalActual > 0 ? totalActual / Math.max(totalPlanned, 1) : 1);
+
+            setBudgetData({
+                projectId: pid,
+                projectName,
+                portfolioId,
+                portfolioName,
+                plannedBudget: totalPlanned,
+                actualSpend: totalActual,
+                forecast: Math.round(forecast),
+                variance: totalVariance,
+                variancePercent,
+                status: budgetStatus,
+                breakdown,
+                trend,
+            });
         } catch (error) {
             console.error('Failed to load budget variance:', error);
         } finally {

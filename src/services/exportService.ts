@@ -258,7 +258,8 @@ export const exportService = {
     },
 
     /**
-     * Email a report (requires backend integration)
+     * Email a report — calls the `send-report-email` Supabase Edge Function.
+     * The function receives a base64-encoded file, recipient list, subject and message.
      */
     async emailReport(
         file: Blob,
@@ -266,24 +267,29 @@ export const exportService = {
         subject: string,
         message?: string
     ): Promise<void> {
-        // This would typically call a backend API endpoint
-        // For now, we'll just log it
-        console.log('Email report:', {
-            recipients,
-            subject,
-            message,
-            fileSize: file.size
+        // Convert Blob → base64 for JSON transport
+        const arrayBuffer = await file.arrayBuffer();
+        const bytes = new Uint8Array(arrayBuffer);
+        let binary = '';
+        for (let i = 0; i < bytes.byteLength; i++) {
+            binary += String.fromCharCode(bytes[i]);
+        }
+        const base64 = btoa(binary);
+
+        const { supabase: _supabase } = await import('@/integrations/supabase/client');
+        const { error } = await (_supabase as any).functions.invoke('send-report-email', {
+            body: {
+                recipients,
+                subject,
+                message: message ?? '',
+                attachment_base64: base64,
+                attachment_type: file.type,
+                attachment_size: file.size,
+            },
         });
 
-        // TODO: Implement actual email sending via backend API
-        // Example:
-        // const formData = new FormData();
-        // formData.append('file', file);
-        // formData.append('recipients', JSON.stringify(recipients));
-        // formData.append('subject', subject);
-        // formData.append('message', message || '');
-        // await fetch('/api/send-report-email', { method: 'POST', body: formData });
-
-        throw new Error('Email delivery not yet implemented');
+        if (error) {
+            throw new Error(`Email delivery failed: ${error.message ?? String(error)}`);
+        }
     }
 };

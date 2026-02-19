@@ -28,6 +28,7 @@ import { MessageSearch, SearchToggle } from '@/components/chat/MessageSearch';
 import { DeleteConfirmDialog, EditHistoryDialog } from '@/components/chat/MessageEditor';
 import { ForwardMessageDialog } from '@/components/chat/MessageForward';
 import { TypingIndicator } from '@/components/chat/TypingIndicator';
+import { ThreadPanel } from '@/components/chat/ThreadPanel';
 
 // Mock data removed - now using live team members from database
 
@@ -49,6 +50,7 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
   const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null);
   const [viewingHistoryMessage, setViewingHistoryMessage] = useState<ChatMessage | null>(null);
   const [forwardingMessage, setForwardingMessage] = useState<ChatMessage | null>(null);
+  const [openThreadMessageId, setOpenThreadMessageId] = useState<string | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -172,6 +174,16 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
   // Group messages by sender for compact display
   const groupedMessages = groupMessagesBySender(visibleMessages);
 
+  // Derive the parent message for the open thread
+  const openThreadParent = openThreadMessageId
+    ? messages.find((m) => m.id === openThreadMessageId) ?? null
+    : null;
+
+  // Handler to send a reply inside the thread panel
+  const handleSendThreadReply = async (content: string, replyToId: string) => {
+    await sendMessage(content, null, replyToId);
+  };
+
   return (
     <>
       {/* Toggle Button */}
@@ -185,139 +197,154 @@ export function ProjectChat({ projectId, isOpen, onToggle }: ProjectChatProps) {
         )}
       </Button>
 
-      {/* Chat Panel */}
+      {/* Chat Panel + Thread Panel side-by-side */}
       {isOpen && (
-        <div className="fixed bottom-4 right-4 w-80 h-[500px] bg-card border border-border rounded-lg shadow-lg flex flex-col z-50">
-          {/* Header */}
-          <div className="flex items-center justify-between p-3 border-b">
-            <div className="flex items-center gap-2">
-              <MessageCircle className="h-4 w-4 text-primary" />
-              <span className="font-medium text-sm">Project Chat</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <SearchToggle onClick={() => setShowSearch(!showSearch)} />
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="iconSm"
-                    onClick={handleToggleNotifications}
-                    className={notificationsEnabled ? '' : 'text-muted-foreground'}
-                  >
-                    {notificationsEnabled ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  {notificationsEnabled ? 'Disable notifications' : 'Enable notifications'}
-                </TooltipContent>
-              </Tooltip>
-              <Button variant="ghost" size="iconSm" onClick={onToggle}>
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Search */}
-          {showSearch && (
-            <MessageSearch
-              messages={visibleMessages}
-              onJumpToMessage={handleJumpToMessage}
-              onClose={() => setShowSearch(false)}
+        <div className="fixed bottom-4 right-4 flex flex-row-reverse gap-0 z-50 shadow-lg rounded-lg overflow-hidden h-[500px]">
+          {/* Thread Panel (shown alongside chat when a thread is open) */}
+          {openThreadMessageId && (
+            <ThreadPanel
+              parentMessage={openThreadParent}
+              allMessages={messages}
+              currentUserId={currentUserId || ''}
+              isSending={isSending}
+              onSendReply={handleSendThreadReply}
+              onClose={() => setOpenThreadMessageId(null)}
             />
           )}
 
-          {/* Pinned Messages */}
-          <PinnedMessages
-            messages={pinnedMessages}
-            onUnpin={(id) => togglePin(id, true)}
-            onJumpToMessage={handleJumpToMessage}
-            canManagePins={!!currentUserId}
-          />
+          <div className="w-80 bg-card border border-border flex flex-col">
+            {/* Header */}
+            <div className="flex items-center justify-between p-3 border-b">
+              <div className="flex items-center gap-2">
+                <MessageCircle className="h-4 w-4 text-primary" />
+                <span className="font-medium text-sm">Project Chat</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <SearchToggle onClick={() => setShowSearch(!showSearch)} />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="iconSm"
+                      onClick={handleToggleNotifications}
+                      className={notificationsEnabled ? '' : 'text-muted-foreground'}
+                    >
+                      {notificationsEnabled ? <Bell className="h-4 w-4" /> : <BellOff className="h-4 w-4" />}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {notificationsEnabled ? 'Disable notifications' : 'Enable notifications'}
+                  </TooltipContent>
+                </Tooltip>
+                <Button variant="ghost" size="iconSm" onClick={onToggle}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
 
-          {/* Messages */}
-          <ScrollArea className="flex-1 p-3" ref={scrollRef}>
-            {visibleMessages.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-sm">
-                <MessageCircle className="h-8 w-8 mb-2 opacity-50" />
-                <p>No messages yet</p>
-                <p className="text-xs">Start the conversation!</p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {groupedMessages.map((group, groupIndex) => {
-                  const isOwnGroup = group[0].user_id === currentUserId;
-                  return (
-                    <div key={groupIndex} className={cn('flex gap-2', isOwnGroup && 'flex-row-reverse')}>
-                      {!isOwnGroup && (
-                        <Avatar className="h-7 w-7 shrink-0">
-                          <AvatarFallback className={cn('text-xs text-white', getColorForUser(group[0].user_id))}>
-                            {getInitials(group[0].user_email)}
-                          </AvatarFallback>
-                        </Avatar>
-                      )}
-                      <div className={cn('flex flex-col gap-1 max-w-[220px]', isOwnGroup && 'items-end')}>
-                        {!isOwnGroup && (
-                          <span className="text-xs text-muted-foreground ml-1">
-                            {group[0].user_email.split('@')[0]}
-                          </span>
-                        )}
-                        {group.map((msg, msgIndex) => (
-                          <MessageBubble
-                            key={msg.id}
-                            message={msg}
-                            currentUserId={currentUserId}
-                            variant="compact"
-                            isEditing={editingMessageId === msg.id}
-                            parentMessage={getParentMessage(msg.reply_to)}
-                            allMessages={messages}
-                            showAvatar={false}
-                            showSender={false}
-                            onReply={() => setReplyingTo(msg)}
-                            onForward={() => setForwardingMessage(msg)}
-                            onPin={() => togglePin(msg.id, msg.is_pinned || false)}
-                            onEdit={() => setEditingMessageId(msg.id)}
-                            onDelete={() => setDeletingMessageId(msg.id)}
-                            onViewHistory={() => setViewingHistoryMessage(msg)}
-                            onAddReaction={(emoji) => addReaction(msg.id, emoji)}
-                            onRemoveReaction={(emoji) => removeReaction(msg.id, emoji)}
-                            onJumpToMessage={handleJumpToMessage}
-                            onSaveEdit={(content) => handleEditMessage(msg.id, content)}
-                            onCancelEdit={() => setEditingMessageId(null)}
-                            messageRef={(el) => {
-                              if (el) messageRefs.current.set(msg.id, el);
-                            }}
-                          />
-                        ))}
-                        <span className="text-[10px] text-muted-foreground ml-1">
-                          {formatMessageTime(group[group.length - 1].created_at)}
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+            {/* Search */}
+            {showSearch && (
+              <MessageSearch
+                messages={visibleMessages}
+                onJumpToMessage={handleJumpToMessage}
+                onClose={() => setShowSearch(false)}
+              />
             )}
-            <TypingIndicator typingUsers={typingUsers} currentUserId={currentUserId} />
-          </ScrollArea>
 
-          {/* Compose Area */}
-          <ComposeArea
-            value={newMessage}
-            onChange={handleInputChange}
-            onSubmit={handleSendMessage}
-            onTyping={startTyping}
-            variant="compact"
-            replyingTo={replyingTo}
-            onCancelReply={() => setReplyingTo(null)}
-            pendingAttachment={pendingAttachment}
-            onAttach={setPendingAttachment}
-            onRemoveAttachment={() => setPendingAttachment(null)}
-            mentionableUsers={mentionableUsers}
-            typingUsers={typingUsers}
-            currentUserId={currentUserId}
-            isLoading={isSending}
-            disabled={!currentUserId}
-          />
+            {/* Pinned Messages */}
+            <PinnedMessages
+              messages={pinnedMessages}
+              onUnpin={(id) => togglePin(id, true)}
+              onJumpToMessage={handleJumpToMessage}
+              canManagePins={!!currentUserId}
+            />
+
+            {/* Messages */}
+            <ScrollArea className="flex-1 p-3" ref={scrollRef}>
+              {visibleMessages.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-full text-muted-foreground text-sm">
+                  <MessageCircle className="h-8 w-8 mb-2 opacity-50" />
+                  <p>No messages yet</p>
+                  <p className="text-xs">Start the conversation!</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {groupedMessages.map((group, groupIndex) => {
+                    const isOwnGroup = group[0].user_id === currentUserId;
+                    return (
+                      <div key={groupIndex} className={cn('flex gap-2', isOwnGroup && 'flex-row-reverse')}>
+                        {!isOwnGroup && (
+                          <Avatar className="h-7 w-7 shrink-0">
+                            <AvatarFallback className={cn('text-xs text-white', getColorForUser(group[0].user_id))}>
+                              {getInitials(group[0].user_email)}
+                            </AvatarFallback>
+                          </Avatar>
+                        )}
+                        <div className={cn('flex flex-col gap-1 max-w-[220px]', isOwnGroup && 'items-end')}>
+                          {!isOwnGroup && (
+                            <span className="text-xs text-muted-foreground ml-1">
+                              {group[0].user_email.split('@')[0]}
+                            </span>
+                          )}
+                          {group.map((msg, msgIndex) => (
+                            <MessageBubble
+                              key={msg.id}
+                              message={msg}
+                              currentUserId={currentUserId}
+                              variant="compact"
+                              isEditing={editingMessageId === msg.id}
+                              parentMessage={getParentMessage(msg.reply_to)}
+                              allMessages={messages}
+                              showAvatar={false}
+                              showSender={false}
+                              onReply={() => setReplyingTo(msg)}
+                              onOpenThread={(msgId) => setOpenThreadMessageId(openThreadMessageId === msgId ? null : msgId)}
+                              onForward={() => setForwardingMessage(msg)}
+                              onPin={() => togglePin(msg.id, msg.is_pinned || false)}
+                              onEdit={() => setEditingMessageId(msg.id)}
+                              onDelete={() => setDeletingMessageId(msg.id)}
+                              onViewHistory={() => setViewingHistoryMessage(msg)}
+                              onAddReaction={(emoji) => addReaction(msg.id, emoji)}
+                              onRemoveReaction={(emoji) => removeReaction(msg.id, emoji)}
+                              onJumpToMessage={handleJumpToMessage}
+                              onSaveEdit={(content) => handleEditMessage(msg.id, content)}
+                              onCancelEdit={() => setEditingMessageId(null)}
+                              messageRef={(el) => {
+                                if (el) messageRefs.current.set(msg.id, el);
+                              }}
+                            />
+                          ))}
+                          <span className="text-[10px] text-muted-foreground ml-1">
+                            {formatMessageTime(group[group.length - 1].created_at)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+              <TypingIndicator typingUsers={typingUsers} currentUserId={currentUserId} />
+            </ScrollArea>
+
+            {/* Compose Area */}
+            <ComposeArea
+              value={newMessage}
+              onChange={handleInputChange}
+              onSubmit={handleSendMessage}
+              onTyping={startTyping}
+              variant="compact"
+              replyingTo={replyingTo}
+              onCancelReply={() => setReplyingTo(null)}
+              pendingAttachment={pendingAttachment}
+              onAttach={setPendingAttachment}
+              onRemoveAttachment={() => setPendingAttachment(null)}
+              mentionableUsers={mentionableUsers}
+              typingUsers={typingUsers}
+              currentUserId={currentUserId}
+              isLoading={isSending}
+              disabled={!currentUserId}
+            />
+          </div>
         </div>
       )}
 

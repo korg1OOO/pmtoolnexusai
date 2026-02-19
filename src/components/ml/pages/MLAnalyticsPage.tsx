@@ -9,6 +9,7 @@ import { ConfidenceAccuracyPlot } from '@/components/ml/analytics/charts/Confide
 import { PredictionVolumeChart } from '@/components/ml/analytics/charts/PredictionVolumeChart';
 import { PatternPerformanceChart } from '@/components/ml/analytics/charts/PatternPerformanceChart';
 import { InsightTypeBreakdown } from '@/components/ml/analytics/charts/InsightTypeBreakdown';
+import { PredictionHeatmap } from '@/components/ml/analytics/charts/PredictionHeatmap';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, BarChart3 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
@@ -57,14 +58,7 @@ export function MLAnalyticsPage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <InsightTypeBreakdown />
 
-                {/* Placeholder for future chart */}
-                <div className="border-2 border-dashed rounded-lg p-8 flex items-center justify-center text-muted-foreground">
-                    <div className="text-center">
-                        <BarChart3 className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                        <p className="font-medium">Additional Chart</p>
-                        <p className="text-sm">Coming soon: Time-series heatmap</p>
-                    </div>
-                </div>
+                <PredictionHeatmap />
             </div>
 
             {/* Info Footer */}

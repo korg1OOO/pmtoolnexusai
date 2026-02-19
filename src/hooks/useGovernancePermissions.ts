@@ -1,6 +1,7 @@
 import { useMemo, useState, useEffect } from 'react';
 import type { ApprovalWorkflow } from '@/types/analytics';
 import { isUserAdmin } from '@/services/governanceService';
+import { useAuth } from '@/hooks/useAuth';
 
 /**
  * Hook for managing governance-related permissions
@@ -12,14 +13,7 @@ export function useGovernancePermissions(
 ) {
     const [isAdmin, setIsAdmin] = useState(false);
     const [adminCheckLoading, setAdminCheckLoading] = useState(true);
-
-    // Check admin status on mount - we'll need userId from useAuth
-    // For now, this will be called from the component that uses this hook
-    useEffect(() => {
-        // This effect is a placeholder - actual admin check will be done
-        // when userId is available from the component
-        setAdminCheckLoading(false);
-    }, []);
+    const { user } = useAuth();
 
     // Function to check and update admin status
     const checkAdminStatus = async (userId: string | undefined) => {
@@ -34,6 +28,12 @@ export function useGovernancePermissions(
         setIsAdmin(adminStatus);
         setAdminCheckLoading(false);
     };
+
+    // Automatically check admin status whenever the current user changes
+    useEffect(() => {
+        checkAdminStatus(user?.id);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.id]);
 
     /**
      * Check if user can approve a specific workflow

@@ -181,7 +181,15 @@ export async function getMemberEngagement(
         const documents_shared = documentsCount || 0;
         const meetings_attended = meetingsCount || 0;
         const tasks_completed = tasksCount || 0;
-        const messages_sent = 0; // Placeholder - would need messages table
+
+        // Count messages sent in the date range. project_chat_messages stores sender as user_id
+        const { count: msgCount } = await supabase
+            .from('project_chat_messages' as any)
+            .select('*', { count: 'exact', head: true })
+            .eq('user_id', member.user_id)
+            .gte('created_at', startDate)
+            .lte('created_at', endDate);
+        const messages_sent = msgCount || 0;
 
         // Calculate engagement score
         const engagement_score = (
@@ -390,16 +398,7 @@ export async function trackSpaceActivity(
     activityType: 'document' | 'meeting' | 'task' | 'message',
     metadata?: any
 ): Promise<void> {
-    // This would typically insert into an activity log table
-    // For now, we'll just log it
-    console.log('Space activity tracked:', {
-        spaceId,
-        activityType,
-        metadata,
-        timestamp: new Date().toISOString()
-    });
-
-    // Update last_active for the user
+    // Update last_active for the user and record the activity type
     const { data: { user } } = await supabase.auth.getUser();
     if (user) {
         await supabase

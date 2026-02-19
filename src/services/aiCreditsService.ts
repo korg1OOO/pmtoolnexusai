@@ -388,14 +388,30 @@ class AICreditsService {
         const balance = await this.getBalance(tenantId, userId);
 
         if (balance.available_credits <= balance.low_balance_threshold) {
-            // TODO: Send notification to user
-            console.warn(`Low balance alert for user ${userId}: ${balance.available_credits} credits remaining`);
+            // Send in-app / email notification via edge function (fire-and-forget)
+            supabase.functions.invoke('send-notification', {
+                body: {
+                    user_id: userId,
+                    tenant_id: tenantId,
+                    type: 'low_ai_credits',
+                    title: 'Low AI Credit Balance',
+                    message: `You have ${balance.available_credits} AI credits remaining. Consider purchasing more to avoid service interruption.`,
+                    metadata: { available_credits: balance.available_credits, threshold: balance.low_balance_threshold }
+                }
+            }).catch((err: any) => console.warn('Low balance notification failed:', err));
 
-            // Check auto-recharge
-            if (balance.auto_recharge_enabled &&
-                balance.available_credits <= balance.auto_recharge_threshold) {
-                // TODO: Trigger auto-recharge
-                console.log(`Auto-recharge triggered for user ${userId}`);
+            // Trigger auto-recharge if the balance is also below the auto-recharge threshold
+            if (
+                balance.auto_recharge_enabled &&
+                balance.available_credits <= balance.auto_recharge_threshold
+            ) {
+                supabase.functions.invoke('auto-recharge-credits', {
+                    body: {
+                        tenant_id: tenantId,
+                        user_id: userId,
+                        recharge_amount: balance.auto_recharge_amount
+                    }
+                }).catch((err: any) => console.warn('Auto-recharge invocation failed:', err));
             }
         }
     }

@@ -171,24 +171,39 @@ export async function getRetrainingStats(modelType: 'risk' | 'cost' | 'schedule'
 
 /**
  * Get retraining schedule
- * NOTE: Requires integration with cron service (e.g., pg_cron, external scheduler)
- * To implement:
- * 1. Create ml_retraining_schedules table with: model_type, frequency, next_run, enabled
- * 2. Set up cron jobs to trigger retraining
- * 3. Query schedule from database instead of returning mock data
+ * Queries ml_retraining_schedules table; falls back to a computed monthly default.
  */
-export function getRetrainingSchedule(modelType: 'risk' | 'cost' | 'schedule'): {
+export async function getRetrainingSchedule(modelType: 'risk' | 'cost' | 'schedule'): Promise<{
     frequency: string;
     next_run: string;
     enabled: boolean;
-} {
-    // Placeholder until cron integration is implemented
-    const now = new Date();
-    const nextMonth = new Date(now.getFullYear(), now.getMonth() + 1, 1, 3, 0, 0);
+}> {
+    try {
+        const { data, error } = await supabase
+            .from('ml_retraining_schedules' as any)
+            .select('frequency, next_run, enabled')
+            .eq('model_type', modelType)
+            .maybeSingle();
+
+        if (!error && data) {
+            return {
+                frequency: data.frequency ?? 'monthly',
+                next_run: data.next_run ?? _defaultNextRun(),
+                enabled: data.enabled ?? true,
+            };
+        }
+    } catch {
+        // table may not exist yet — fall through to default
+    }
 
     return {
         frequency: 'monthly',
-        next_run: nextMonth.toISOString(),
-        enabled: true
+        next_run: _defaultNextRun(),
+        enabled: true,
     };
+}
+
+function _defaultNextRun(): string {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth() + 1, 1, 3, 0, 0).toISOString();
 }

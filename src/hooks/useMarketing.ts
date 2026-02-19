@@ -368,6 +368,22 @@ export function useIsFeatureEnabled(flagName: string): boolean {
     const { data: flag } = useFeatureFlagByName(flagName);
     const { user } = useAuth();
 
+    // Fetch user's subscription tier from profiles (async but tracked by React Query)
+    const { data: profile } = useQuery({
+        queryKey: ['profile-tier', user?.id],
+        queryFn: async () => {
+            if (!user?.id) return null;
+            const { data } = await supabase
+                .from('profiles')
+                .select('subscription_tier')
+                .eq('id', user.id)
+                .maybeSingle();
+            return data;
+        },
+        enabled: !!user?.id,
+        staleTime: 5 * 60 * 1000, // 5-minute cache — tier rarely changes
+    });
+
     if (!flag || !flag.is_enabled) return false;
 
     // Check rollout percentage (0-100)
@@ -388,10 +404,9 @@ export function useIsFeatureEnabled(flagName: string): boolean {
 
     // Check tier restrictions if specified
     if (flag.target_tiers && flag.target_tiers.length > 0) {
-        // TODO: Fetch user's subscription tier from subscription_tiers table
-        // For now, assume all users have access
-        // In production, you would query the user's tier and check against target_tiers
-        return true;
+        if (!user?.id) return false;
+        const userTier = (profile as any)?.subscription_tier ?? 'free';
+        return flag.target_tiers.includes(userTier);
     }
 
     return true;

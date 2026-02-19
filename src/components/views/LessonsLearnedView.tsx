@@ -28,10 +28,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useProjectContext } from '@/contexts/ProjectContext';
+import { useAuth } from '@/hooks/useAuth';
 import { useLessonsLearned, LessonLearned, useUpdateLessonLearned, useCreateLessonLearned } from '@/hooks/useLessonsLearned';
 
 export default function LessonsLearnedView() {
   const { settings } = useProjectContext();
+  const { user } = useAuth();
   const { data: lessons = [], isLoading } = useLessonsLearned(settings.id);
   const updateLesson = useUpdateLessonLearned();
   const createLesson = useCreateLessonLearned();
@@ -58,7 +60,7 @@ export default function LessonsLearnedView() {
       category: 'General',
       impact_level: 'medium',
       phase: 'Execution',
-      submitted_by: 'current-user-id',
+      submitted_by: user?.id ?? '',
       submitted_by_name: 'Project Team Member',
       votes: 0,
       tags: ['new'],

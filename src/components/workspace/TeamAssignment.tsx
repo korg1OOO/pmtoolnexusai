@@ -45,15 +45,27 @@ export function TeamAssignment() {
         availability: (team.availability_status || 'available') as 'available' | 'partial' | 'unavailable'
     })) || [];
 
-    // Assign team member mutation
+    // Assign team member mutation — looks up profile UUID by email first
     const assignMutation = useMutation({
-        mutationFn: (data: { userId: string; role: string }) =>
-            assignTeamMember(workspaceId!, data.userId, {
+        mutationFn: async (data: { email: string; role: string }) => {
+            // Resolve email → profile UUID
+            const { supabase } = await import('@/integrations/supabase/client');
+            const { data: profile, error } = await (supabase as any)
+                .from('profiles')
+                .select('id')
+                .eq('email', data.email.toLowerCase().trim())
+                .maybeSingle();
+
+            if (error) throw new Error(error.message);
+            if (!profile) throw new Error(`No user found with email "${data.email}"`);
+
+            return assignTeamMember(workspaceId!, profile.id, {
                 role: data.role,
                 skills: [],
                 allocation_percentage: 100,
                 availability_status: 'available'
-            }),
+            });
+        },
         onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: ['workspace-teams', workspaceId] });
             toast.success('Team member assigned successfully');
@@ -259,7 +271,7 @@ export function TeamAssignment() {
             <AssignMemberDialog
                 open={assignDialogOpen}
                 onClose={() => setAssignDialogOpen(false)}
-                onSubmit={({ email, role }) => assignMutation.mutate({ userId: email, role })}
+                onSubmit={({ email, role }) => assignMutation.mutate({ email, role })}
                 isSubmitting={assignMutation.isPending}
             />
         </div>

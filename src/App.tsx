@@ -55,6 +55,7 @@ import {
   AdminSecurity,
   AdminAPIKeys,
   AdminAuditLogs,
+  AdminSubscriptionsPage,
   EmailTemplateManager,
   IMAPConfigurationManager,
   NotificationAnalyticsDashboard,
@@ -531,6 +532,7 @@ const App = () => (
                   <Route path="licenses" element={<AdminLicenseKeys />} />
                   <Route path="security" element={<AdminSecurityAudit />} />
                   <Route path="billing" element={<AdminBilling />} />
+                  <Route path="subscriptions" element={<AdminSubscriptionsPage />} />
                   <Route path="discounts" element={<AdminDiscountCodes />} />
                   <Route path="management" element={<AdminManagement />} />
                   <Route path="migration" element={<DatabaseMigrationPanel />} />

@@ -210,7 +210,19 @@ export function AdminDashboard() {
                             <RefreshCw className="h-4 w-4 mr-2" />
                             Sync Stripe
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => toast.info('Invoice creation coming soon')}>
+                        <Button variant="outline" size="sm" onClick={async () => {
+                            try {
+                                const { supabase } = await import('@/integrations/supabase/client');
+                                const { data, error } = await (supabase as any).functions.invoke('create-billing-portal-session', {
+                                    body: { returnUrl: window.location.href },
+                                });
+                                if (error) throw error;
+                                if (data?.url) { window.location.href = data.url; }
+                                else { toast.info('Invoice creation — billing portal unavailable'); }
+                            } catch {
+                                toast.error('Failed to open billing portal');
+                            }
+                        }}>
                             <DollarSign className="h-4 w-4 mr-2" />
                             Create Invoice
                         </Button>

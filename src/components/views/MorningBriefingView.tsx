@@ -323,18 +323,25 @@ export default function MorningBriefingView({ demo = false }: MorningBriefingVie
     ...overdueActionsList.map(a => ({ id: a.id, type: 'warning', severity: 'high', title: `Action Overdue: ${a.title}`, description: a.description || '', message: `Action Overdue: ${a.title}`, timestamp: a.created_at, source: 'Actions Register' })),
   ], [criticalRisks, criticalIssues, overdueActionsList]);
 
-  const riskAssessmentData = {
-    totalRisks: risks.length,
-    criticalRisks: criticalRisks.length,
-    newRisksIdentified: [], // Wired to API in future, placeholder for now to prevent crash
-    escalatedRisks: [], // Wired to API in future
-    mitigationSuggestions: [], // Wired to API in future
-    riskScore: {
-      current: 65,
-      previous: 62,
-      trend: 'worsening' as const
-    }
-  };
+  const riskAssessmentData = useMemo(() => {
+    const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+    const newRisks = risks.filter(r => r.created_at && new Date(r.created_at) > weekAgo);
+    const escalated = risks.filter(r =>
+      r.impact === 'critical' || r.impact === 'high'
+    );
+    return {
+      totalRisks: risks.length,
+      criticalRisks: criticalRisks.length,
+      newRisksIdentified: newRisks as any[],
+      escalatedRisks: escalated as any[],
+      mitigationSuggestions: [],
+      riskScore: {
+        current: Math.min(100, Math.round(30 + criticalRisks.length * 10 + openRisks.length * 2)),
+        previous: 62,
+        trend: criticalRisks.length > 0 ? ('worsening' as const) : ('stable' as const)
+      }
+    };
+  }, [risks, criticalRisks, openRisks]);
 
   const issuesData = useMemo(() => openIssues.map(i => ({
     id: i.id,

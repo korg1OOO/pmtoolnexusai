@@ -29,6 +29,7 @@ import {
     Brain,
     Building2,
     Shield,
+    ReceiptText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -62,6 +63,7 @@ const navItems: NavItem[] = [
     { id: 'audit-logs', label: 'Audit Logs', icon: FileText, path: '/admin/audit-logs' },
     { id: 'security', label: 'Security & Audit', icon: ShieldCheck, path: '/admin/management' },
     { id: 'billing', label: 'Billing', icon: CreditCard, path: '/admin/billing' },
+    { id: 'subscriptions', label: 'Subscriptions', icon: ReceiptText, path: '/admin/subscriptions' },
     { id: 'discounts', label: 'Discount Codes', icon: Percent, path: '/admin/discounts' },
     { id: 'admin-mgmt', label: 'Admin Management', icon: UserCog, path: '/admin/management' },
     { id: 'requests', label: 'Requests & Issues', icon: MessageSquare, path: '/admin/requests' },

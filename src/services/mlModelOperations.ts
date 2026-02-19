@@ -253,15 +253,34 @@ export async function checkModelDrift(
             };
         }
 
-        // Calculate drift metrics (simplified)
-        const recentAvgConfidence = recentPredictions.reduce((sum, p) => sum + p.confidence_score, 0) / recentPredictions.length;
-        const historicalAvgConfidence = historicalPredictions.reduce((sum, p) => sum + p.confidence_score, 0) / historicalPredictions.length;
+        // PSI (Population Stability Index) approximation on confidence score distributions
+        // Bucket both sets into 10 bins over [0, 1], compute PSI = Σ (P_i - Q_i) * ln(P_i / Q_i)
+        const BINS = 10;
+        const toBinCounts = (preds: { confidence_score: number }[]): number[] => {
+            const counts = Array(BINS).fill(0);
+            preds.forEach(p => {
+                const bin = Math.min(BINS - 1, Math.floor(p.confidence_score * BINS));
+                counts[bin]++;
+            });
+            return counts;
+        };
+        const toFreq = (counts: number[], total: number) =>
+            counts.map(c => Math.max(c / total, 1e-4)); // avoid division by zero
 
-        const confidenceDrift = Math.abs(recentAvgConfidence - historicalAvgConfidence);
+        const recentCounts = toBinCounts(recentPredictions);
+        const historicalCounts = toBinCounts(historicalPredictions);
+        const recentFreq = toFreq(recentCounts, recentPredictions.length);
+        const historicalFreq = toFreq(historicalCounts, historicalPredictions.length);
 
-        // Mock data drift (would need actual feature distribution comparison)
-        const dataDriftScore = confidenceDrift * 1.5; // Simplified
-        const predictionDriftScore = confidenceDrift;
+        const psi = recentFreq.reduce((sum, p, i) => {
+            const q = historicalFreq[i];
+            return sum + (p - q) * Math.log(p / q);
+        }, 0);
+        const dataDriftScore = Math.round(psi * 1000) / 1000;
+        const predictionDriftScore = Math.abs(
+            recentPredictions.reduce((s, p) => s + p.confidence_score, 0) / recentPredictions.length -
+            historicalPredictions.reduce((s, p) => s + p.confidence_score, 0) / historicalPredictions.length
+        );
 
         const threshold = 0.3;
         const isDrifting = dataDriftScore > threshold || predictionDriftScore > threshold;
@@ -269,7 +288,7 @@ export async function checkModelDrift(
         const recommendations: string[] = [];
         if (isDrifting) {
             recommendations.push('Model drift detected - consider retraining');
-            if (recentAvgConfidence < 0.7) {
+            if (recentPredictions.reduce((s, p) => s + p.confidence_score, 0) / recentPredictions.length < 0.7) {
                 recommendations.push('Low confidence scores - check input data quality');
             }
             recommendations.push('Review recent predictions for accuracy');

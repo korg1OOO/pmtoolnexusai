@@ -76,7 +76,7 @@ export default function PresentationsView() {
     saveSlideDebounced,
     uploadImage,
   } = useSlides(selectedPresentationId || undefined);
-  
+
   // Embedded components hooks
   const {
     addEmbeddedComponent,
@@ -85,7 +85,7 @@ export default function PresentationsView() {
     refreshComponent,
     refreshAllComponents,
   } = useEmbeddedComponents(selectedSlideId || undefined);
-  
+
   const {
     activePresentation,
     setActivePresentationId,
@@ -284,14 +284,14 @@ export default function PresentationsView() {
   // Handle inserting embedded component
   const handleInsertComponent = async (component: EmbeddableComponent) => {
     if (!selectedSlideId) return;
-    
+
     const position = {
       x: 50,
       y: 50,
       width: component.defaultSize.width,
       height: component.defaultSize.height,
     };
-    
+
     await addEmbeddedComponent(component, position);
     setShowComponentPicker(false);
   };
@@ -324,23 +324,38 @@ export default function PresentationsView() {
         }}
         onPresent={() => setPresentationMode(true)}
         onExport={() => {
-          toast({
-            title: 'Export',
-            description: 'PDF export feature coming soon',
-          });
+          if (!selectedPresentation) {
+            toast({ title: 'No presentation selected', variant: 'destructive' });
+            return;
+          }
+          const slideContent = slides.map((s, i) =>
+            `<div style="page-break-after:always;padding:40px;"><h2>${s.title || `Slide ${i + 1}`}</h2>${s.html_content || ''}</div>`
+          ).join('');
+          const win = window.open('', '_blank');
+          if (win) {
+            win.document.write(`<!DOCTYPE html><html><head><title>${selectedPresentation.title}</title><style>body{font-family:sans-serif}</style></head><body>${slideContent}<script>window.onload=()=>window.print()<\/script></body></html>`);
+            win.document.close();
+            toast({ title: 'Print dialog opened', description: 'Choose "Save as PDF" from your browser print dialog.' });
+          }
         }}
         onShare={() => {
-          toast({
-            title: 'Share',
-            description: 'Sharing feature coming soon',
-          });
+          if (selectedPresentationId) {
+            const url = `${window.location.origin}${window.location.pathname}?presentationId=${selectedPresentationId}`;
+            navigator.clipboard.writeText(url).then(() => {
+              toast({ title: 'Link copied', description: 'Shareable link copied to clipboard.' });
+            }).catch(() => {
+              toast({ title: 'Copy failed', description: url, variant: 'destructive' });
+            });
+          } else {
+            toast({ title: 'No presentation selected', variant: 'destructive' });
+          }
         }}
         onInsertImage={handleInsertImage}
         onInsertShape={handleInsertShape}
         onInsertChart={() => {
           toast({
-            title: 'Insert Chart',
-            description: 'Chart insertion feature coming soon',
+            title: 'Insert Live Chart',
+            description: 'Use the "Insert Component" button to embed interactive charts from your project data.',
           });
         }}
         onInsertComponent={() => setShowComponentPicker(true)}
@@ -435,7 +450,7 @@ export default function PresentationsView() {
               <Presentation className="h-16 w-16 mb-4 opacity-50" />
               <p className="text-lg font-medium mb-2">No Slide Selected</p>
               <p className="text-sm mb-4">
-                {presentations.length === 0 
+                {presentations.length === 0
                   ? 'Create a presentation to get started'
                   : 'Select a slide from the sidebar or add a new one'}
               </p>
@@ -562,8 +577,8 @@ export default function PresentationsView() {
               <Button variant="outline" onClick={() => setShowAIGenerateDialog(false)}>
                 Cancel
               </Button>
-              <Button 
-                onClick={handleAIGenerate} 
+              <Button
+                onClick={handleAIGenerate}
                 disabled={!aiPrompt.trim() || aiGenerating}
                 className="gap-2"
               >
@@ -596,8 +611,8 @@ export default function PresentationsView() {
             <div className="h-full w-full">
               <SlideEditor
                 slide={selectedSlide}
-                onContentChange={() => {}}
-                onEditorReady={() => {}}
+                onContentChange={() => { }}
+                onEditorReady={() => { }}
                 isEditable={false}
               />
             </div>

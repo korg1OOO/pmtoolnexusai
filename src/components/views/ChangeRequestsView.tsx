@@ -25,6 +25,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useProjectContext } from '@/contexts/ProjectContext';
+import { useAuth } from '@/hooks/useAuth';
 import { useChangeRequests, ChangeRequest, useUpdateChangeRequest, useCreateChangeRequest } from '@/hooks/useChangeRequests';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
@@ -32,6 +33,7 @@ import { toast } from 'sonner';
 
 export default function ChangeRequestsView() {
   const { settings } = useProjectContext();
+  const { user } = useAuth();
   const { data: changeRequests = [], isLoading } = useChangeRequests(settings.id);
   const updateCR = useUpdateChangeRequest();
   const createCR = useCreateChangeRequest();
@@ -53,7 +55,7 @@ export default function ChangeRequestsView() {
       type: 'scope',
       priority: 'medium',
       status: 'pending',
-      requested_by_id: 'current-user-id',
+      requested_by_id: user?.id ?? '',
       requested_by_name: 'Project Manager',
       requested_at: new Date().toISOString(),
     });

@@ -6,7 +6,7 @@
 import React, { useState, useMemo } from 'react';
 import {
     Search, RefreshCw, ExternalLink, Ban, CreditCard, DollarSign,
-    TrendingDown, Users, Loader2, ChevronLeft, ChevronRight,
+    TrendingDown, Users, Loader2, ChevronLeft, ChevronRight, ChevronDown,
     Settings2, Zap, Edit2, Check, X, AlertTriangle, Activity,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';

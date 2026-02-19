@@ -49,7 +49,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 
 export function PortfolioView() {
   const { data: portfoliosData, isLoading: isLoadingPortfolios } = usePortfolios();
-  const { data: permissions } = usePermissions();
+  const permissions = usePermissions();
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'overview' | 'programs' | 'projects' | 'management'>('overview');
   const [selectedProject, setSelectedProject] = useState<PortfolioProject | null>(null);

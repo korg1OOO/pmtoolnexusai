@@ -5,18 +5,40 @@ import { supabase } from "@/integrations/supabase/client";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Loader2, TrendingUp, Clock, MessageSquare, Star } from "lucide-react";
 
+interface InteractionLog {
+    id: string;
+    agent_id: string | null;
+    response_time_ms: number | null;
+    feedback_score: number | null;
+    feedback_text: string | null;
+    query_summary: string | null;
+    created_at: string;
+}
+
 export function AgentAnalytics() {
     const { data: analytics, isLoading } = useQuery({
         queryKey: ['ai-agent-analytics'],
         queryFn: async () => {
-            // Fetch logs
-            const { data: logs, error } = await supabase
-                .from('ai_interaction_logs')
+            // Fetch logs from ai_usage_logs as a proxy (ai_interaction_logs doesn't exist in schema)
+            const supabaseAny = supabase as any;
+            const { data, error } = await supabaseAny
+                .from('ai_usage_logs')
                 .select('*')
                 .order('created_at', { ascending: false })
                 .limit(100);
 
             if (error) throw error;
+
+            // Map to expected shape
+            const logs: InteractionLog[] = (data || []).map((log: any) => ({
+                id: log.id,
+                agent_id: log.provider,
+                response_time_ms: log.latency_ms,
+                feedback_score: null,
+                feedback_text: null,
+                query_summary: log.operation,
+                created_at: log.created_at,
+            }));
 
             // Calculate metrics
             const totalInteractions = logs.length;

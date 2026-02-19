@@ -66,7 +66,7 @@ export default function MorningBriefingView({ demo = false }: MorningBriefingVie
   const { actions, overdueActions: overdueActionsList } = useActions();
 
   // New Wired Hooks
-  const { budget, isLoading: loadingFinancials } = useFinancials(settings.id);
+  const { budget, invoices, isLoading: loadingFinancials } = useFinancials(settings.id);
   const { data: tasks = [], isLoading: loadingTasks } = useTasks(settings.id);
   const { meetings, isLoading: loadingMeetings } = useMeetings(settings.id);
   const { data: teamMembers = [], isLoading: loadingTeam } = useTeamMembers(settings.id);
@@ -99,7 +99,32 @@ export default function MorningBriefingView({ demo = false }: MorningBriefingVie
     const totalBudget = budget.reduce((sum, item) => sum + (item.planned || 0), 0);
     const totalSpent = budget.reduce((sum, item) => sum + (item.actual || 0), 0);
     const totalRemaining = totalBudget - totalSpent;
-    const burnRate = 25000; // Hardcoded default for calculation until time-series data
+
+    // Calculate Burn Rate
+    // Method 1: Spend in last 30 days based on invoices (most accurate for "current operational tempo")
+    const now = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(now.getDate() - 30);
+
+    // We need invoices to calculate precise periodic burn.
+    // Ensure useFinancials returns invoices (it does).
+    // Note: If invoices are missing from the destructuring above, we need to add them.
+    // Assuming 'invoices' is available in scope (we will ensure it is added to the hook call).
+    const recentSpend = (invoices || [])
+      .filter(inv => new Date(inv.date) >= thirtyDaysAgo && inv.status !== 'cancelled')
+      .reduce((sum, inv) => sum + (inv.amount || 0), 0);
+
+    // Method 2: Average monthly spend if no recent invoices (fallback)
+    let averageMonthlyBurn = 0;
+    if (settings?.start_date) {
+      const startDate = new Date(settings.start_date);
+      const monthsActive = Math.max(1, (now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30));
+      averageMonthlyBurn = totalSpent / monthsActive;
+    }
+
+    // Use recent spend if available and significant, otherwise fallback to average
+    // If project is brand new (no spend), burn is 0.
+    const burnRate = recentSpend > 0 ? recentSpend : averageMonthlyBurn;
 
     // Variance: Positive means Under Budget (Good)
     const costVariance = totalBudget - totalSpent;
@@ -120,7 +145,7 @@ export default function MorningBriefingView({ demo = false }: MorningBriefingVie
       estimateToComplete: estimateAtCompletion - totalSpent,
       forecasts: { optimistic: estimateAtCompletion * 0.9, likely: estimateAtCompletion, pessimistic: estimateAtCompletion * 1.2 },
     };
-  }, [budget]);
+  }, [budget, invoices, settings?.start_date]);
 
   // Adapt Budget to P&L shape for the ProfitLoss component
   const profitLossData = useMemo(() => ({

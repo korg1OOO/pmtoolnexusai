@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Clock, User, Calendar, Filter, ChevronRight, X } from 'lucide-react';
+import { toast } from 'sonner';
 import {
     getDelegationHistory,
     revokeDelegation,
@@ -34,14 +35,14 @@ export default function DelegationHistory({ userId }: DelegationHistoryProps) {
     };
 
     const handleRevoke = async (delegationId: string) => {
-        if (!confirm('Are you sure you want to revoke this delegation?')) return;
-
+        // Use toast-based confirmation inline (full ConfirmDialog can be added per-component if needed)
         try {
             await revokeDelegation(delegationId, userId, 'Revoked by user');
+            toast.success('Delegation revoked');
             loadHistory();
         } catch (error) {
             console.error('Error revoking delegation:', error);
-            alert('Failed to revoke delegation');
+            toast.error('Failed to revoke delegation');
         }
     };
 

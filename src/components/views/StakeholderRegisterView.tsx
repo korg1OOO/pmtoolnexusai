@@ -69,6 +69,8 @@ import {
 import DelegationDialog from '@/components/governance/DelegationDialog';
 import { ApprovalWorkflows } from '@/components/analytics/governance/ApprovalWorkflows';
 import { useAuth } from '@/hooks/useAuth';
+import { usePermissions } from '@/hooks/usePermissions';
+import { useRealtimeTable } from '@/hooks/useRealtimeTable';
 
 // ─── RACI Badge ──────────────────────────────────────────────
 const RACI_COLORS: Record<string, string> = {
@@ -132,6 +134,17 @@ export default function StakeholderRegisterView() {
   const approveApproval = useApproveApproval();
   const rejectApproval = useRejectApproval();
   const markDelegated = useMarkApprovalDelegated();
+
+  // RBAC permission checks
+  const { can } = usePermissions(projectId);
+
+  // Realtime subscription — invalidates stakeholders + approvals on any DB change
+  useRealtimeTable({
+    table: 'project_members',
+    filter: projectId ? `project_id=eq.${projectId}` : undefined,
+    queryKeys: [['stakeholders', projectId], ['approvals', projectId]],
+    enabled: !!projectId,
+  });
 
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');

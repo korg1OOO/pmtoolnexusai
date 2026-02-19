@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Save, Trash2, Plus, Edit2 } from 'lucide-react';
+import { toast } from 'sonner';
 import {
     getDelegationTemplates,
     saveDelegationTemplate,
@@ -70,7 +71,7 @@ export default function DelegationTemplates({ userId }: DelegationTemplatesProps
         e.preventDefault();
 
         if (!formData.name || !formData.delegateId) {
-            alert('Please provide a name and select a delegate');
+            toast.error('Please provide a name and select a delegate');
             return;
         }
 
@@ -98,19 +99,18 @@ export default function DelegationTemplates({ userId }: DelegationTemplatesProps
             loadTemplates();
         } catch (error) {
             console.error('Error saving template:', error);
-            alert('Failed to save template');
+            toast.error('Failed to save template');
         }
     };
 
     const handleDelete = async (templateId: string) => {
-        if (!confirm('Are you sure you want to delete this template?')) return;
-
         try {
             await deleteDelegationTemplate(templateId, userId);
+            toast.success('Template deleted');
             loadTemplates();
         } catch (error) {
             console.error('Error deleting template:', error);
-            alert('Failed to delete template');
+            toast.error('Failed to delete template');
         }
     };
 

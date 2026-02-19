@@ -102,7 +102,7 @@ export function GovernancePanel({
         },
         onError: (error) => {
             console.error('Failed to approve:', error);
-            alert('Failed to approve. Please try again.');
+            toast({ title: 'Error', description: 'Failed to approve. Please try again.', variant: 'destructive' });
         },
     });
 
@@ -116,7 +116,7 @@ export function GovernancePanel({
         },
         onError: (error) => {
             console.error('Failed to reject:', error);
-            alert('Failed to reject. Please try again.');
+            toast({ title: 'Error', description: 'Failed to reject. Please try again.', variant: 'destructive' });
         },
     });
 

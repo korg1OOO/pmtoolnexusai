@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, Mail, MessageSquare, Smartphone, Save, TestTube } from 'lucide-react';
+import { toast } from 'sonner';
 import {
     getUserPreferences,
     updateUserPreferences,
@@ -45,10 +46,10 @@ export default function NotificationPreferencesComponent({
         try {
             setSaving(true);
             await updateUserPreferences(userId, preferences);
-            alert('Preferences saved successfully!');
+            toast.success('Preferences saved successfully!');
         } catch (error) {
             console.error('Error saving preferences:', error);
-            alert('Failed to save preferences');
+            toast.error('Failed to save preferences');
         } finally {
             setSaving(false);
         }
@@ -59,13 +60,13 @@ export default function NotificationPreferencesComponent({
             setTestingEmail(true);
             const result = await sendTestEmail('test@example.com');
             if (result.success) {
-                alert('Test email sent! Check your inbox.');
+                toast.success('Test email sent! Check your inbox.');
             } else {
-                alert(`Failed to send test email: ${result.error}`);
+                toast.error(`Failed to send test email: ${result.error}`);
             }
         } catch (error) {
             console.error('Error testing email:', error);
-            alert('Failed to send test email');
+            toast.error('Failed to send test email');
         } finally {
             setTestingEmail(false);
         }
@@ -73,7 +74,7 @@ export default function NotificationPreferencesComponent({
 
     const handleTestSlack = async () => {
         if (!preferences?.slackWebhookUrl) {
-            alert('Please enter a Slack webhook URL first');
+            toast.error('Please enter a Slack webhook URL first');
             return;
         }
 
@@ -81,13 +82,13 @@ export default function NotificationPreferencesComponent({
             setTestingSlack(true);
             const result = await sendTestSlackMessage(preferences.slackWebhookUrl);
             if (result.success) {
-                alert('Test message sent to Slack!');
+                toast.success('Test message sent to Slack!');
             } else {
-                alert(`Failed to send test message: ${result.error}`);
+                toast.error(`Failed to send test message: ${result.error}`);
             }
         } catch (error) {
             console.error('Error testing Slack:', error);
-            alert('Failed to send test message');
+            toast.error('Failed to send test message');
         } finally {
             setTestingSlack(false);
         }
@@ -98,13 +99,13 @@ export default function NotificationPreferencesComponent({
             setTestingPush(true);
             const result = await sendTestPushNotification();
             if (result.success) {
-                alert('Test push notification sent!');
+                toast.success('Test push notification sent!');
             } else {
-                alert(`Failed to send test notification: ${result.error}`);
+                toast.error(`Failed to send test notification: ${result.error}`);
             }
         } catch (error) {
             console.error('Error testing push:', error);
-            alert('Failed to send test notification');
+            toast.error('Failed to send test notification');
         } finally {
             setTestingPush(false);
         }

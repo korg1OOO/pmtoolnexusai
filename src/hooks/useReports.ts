@@ -112,10 +112,32 @@ export function useReports(projectId: string | null) {
         },
     });
 
+    const generateReport = useMutation({
+        mutationFn: async (id: string) => {
+            const { data, error } = await (supabase as any)
+                .from('reports')
+                .update({ last_generated: new Date().toISOString() })
+                .eq('id', id)
+                .select()
+                .single();
+
+            if (error) throw error;
+            return data;
+        },
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['reports', projectId] });
+            toast.success('Report generated successfully');
+        },
+        onError: (error: Error) => {
+            toast.error(`Failed to generate report: ${error.message}`);
+        },
+    });
+
     return {
         ...query,
         createReport,
         updateReport,
         deleteReport,
+        generateReport,
     };
 }

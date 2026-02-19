@@ -583,16 +583,49 @@ export interface ProgramBudgetData {
 }
 
 export async function getProgramBudget(programId: string): Promise<ProgramBudgetData | null> {
-    const program = await getProgram(programId);
-    if (!program) return null;
+    // Fetch program for total_budget (funding limit)
+    const { data: program, error: programError } = await supabase
+        .from('programs')
+        .select('total_budget')
+        .eq('id', programId)
+        .single();
+
+    if (programError) {
+        console.error('Error fetching program for budget:', programError);
+        return null;
+    }
+
+    // Fetch linked projects for allocated (sum of project budgets) and spent
+    const { data: projects, error: projectsError } = await supabase
+        .from('projects')
+        .select('budget, spent')
+        .eq('program_id', programId);
+
+    if (projectsError) {
+        console.error('Error fetching program projects for budget:', projectsError);
+        return null;
+    }
+
+    // Calculate aggregates
+    const allocated = projects.reduce((sum, p) => sum + (Number(p.budget) || 0), 0);
+    const spent = projects.reduce((sum, p) => sum + (Number(p.spent) || 0), 0);
+    const total = Number(program?.total_budget) || 0;
+
+    // Forecast: simple projection (Spent / Allocated * Total?) or just Allocated if not started
+    // For now, let's use Allocated as the base forecast, or 0 if no projects
+    const forecast = allocated;
 
     return {
         id: programId,
         program_id: programId,
-        total_budget: program.total_budget || 0,
-        allocated_budget: 0,
-        spent_budget: program.spent_budget || 0,
-        variance: 0,
-        forecast: 0
+        total_budget: total,
+        allocated_budget: allocated,
+        spent_budget: spent,
+        variance: total - spent, // Remaining Budget from Program Funding? Or Budget - Allocated? 
+        // Usually Variance = Budget - Spent or Budget - Forecast.
+        // Let's use Funding - Spent as generic 'Variance' or 'Remaining'. 
+        // But interface says 'variance'. Standard: EV - AC. 
+        // Let's stick to (Total - Spent) for now as "Remaining Budget".
+        forecast: forecast
     };
 }

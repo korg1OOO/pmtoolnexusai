@@ -61,7 +61,7 @@ interface ReportsViewProps {
 
 export default function ReportsView({ demo = false }: ReportsViewProps) {
   const { settings } = useProjectContext();
-  const { data: reports, isLoading, createReport, deleteReport } = useReports(settings.id);
+  const { data: reports, isLoading, createReport, deleteReport, generateReport } = useReports(settings.id);
 
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<ReportCategory | 'all'>('all');
@@ -105,19 +105,17 @@ export default function ReportsView({ demo = false }: ReportsViewProps) {
 
   const scheduledCount = reports?.filter((r) => r.is_scheduled).length || 0;
 
-  const handleGenerate = (report: Report) => {
-    toast.promise(
-      new Promise((resolve) => setTimeout(resolve, 2000)),
-      {
-        loading: `Generating "${report.name}"...`,
-        success: () => {
-          // In a real app, this would refresh the report data from the backend
-          setSelectedReport(report);
-          return `Report "${report.name}" generated successfully`;
-        },
-        error: 'Failed to generate report'
+  const handleGenerate = async (report: Report) => {
+    try {
+      if (generateReport) {
+        await generateReport.mutateAsync(report.id);
+      } else {
+        // Fallback if hook hasn't updated layout yet (shouldn't happen)
+        console.error('generateReport function not returned from hook');
       }
-    );
+    } catch (error) {
+      console.error('Generation failed', error);
+    }
   };
 
   const handleExport = (report: Report) => {

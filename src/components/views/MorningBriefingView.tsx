@@ -116,8 +116,8 @@ export default function MorningBriefingView({ demo = false }: MorningBriefingVie
 
     // Method 2: Average monthly spend if no recent invoices (fallback)
     let averageMonthlyBurn = 0;
-    if (settings?.start_date) {
-      const startDate = new Date(settings.start_date);
+    if (settings?.startDate) {
+      const startDate = new Date(settings.startDate);
       const monthsActive = Math.max(1, (now.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30));
       averageMonthlyBurn = totalSpent / monthsActive;
     }
@@ -145,7 +145,7 @@ export default function MorningBriefingView({ demo = false }: MorningBriefingVie
       estimateToComplete: estimateAtCompletion - totalSpent,
       forecasts: { optimistic: estimateAtCompletion * 0.9, likely: estimateAtCompletion, pessimistic: estimateAtCompletion * 1.2 },
     };
-  }, [budget, invoices, settings?.start_date]);
+  }, [budget, invoices, settings?.startDate]);
 
   // Adapt Budget to P&L shape for the ProfitLoss component
   const profitLossData = useMemo(() => ({

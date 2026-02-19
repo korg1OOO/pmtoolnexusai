@@ -62,6 +62,7 @@ import {
 } from "@/components/admin/pages";
 import MLDashboard from './components/ml/MLDashboard';
 import { HelmetProvider } from 'react-helmet-async';
+import { DevErrorBoundary, DevBuildErrorOverlay } from '@/components/dev/DevErrorOverlay';
 import { TicketDetail } from '@/components/admin/pages/TicketDetail';
 import { EmailTemplateEditor } from '@/components/admin/pages/EmailTemplateEditor';
 import { EmailCampaignBuilder } from '@/components/admin/pages/EmailCampaignBuilder';
@@ -139,9 +140,11 @@ const App = () => (
   <HelmetProvider>
     <QueryClientProvider client={queryClient}>
       <ThemeProvider attribute="class" defaultTheme="dark" enableSystem={false}>
+        <DevErrorBoundary>
         <TooltipProvider>
           <Toaster />
           <Sonner />
+          <DevBuildErrorOverlay />
           <BrowserRouter>
             <RoutePreloader />
             <TenantProvider>
@@ -577,6 +580,7 @@ const App = () => (
             </TenantProvider>
           </BrowserRouter>
         </TooltipProvider>
+        </DevErrorBoundary>
       </ThemeProvider>
     </QueryClientProvider>
   </HelmetProvider>

@@ -4,7 +4,7 @@ import type { ProjectRole } from '@/types/ai-agents';
 import { toast } from 'sonner';
 
 // Permission matrix — what each role can do
-const ROLE_PERMISSIONS: Record<ProjectRole, Permission[]> = {
+const ROLE_PERMISSIONS: Record<string, Permission[]> = {
     owner: [
         'project.delete', 'project.settings', 'project.members.manage',
         'task.create', 'task.edit', 'task.delete', 'task.assign',
@@ -127,7 +127,7 @@ export function usePermissions(projectId?: string | null): UsePermissionsReturn 
         [permissions]
     );
 
-    const isOwnerOrAdmin = role === 'owner' || role === 'admin';
+    const isOwnerOrAdmin = role === 'owner' as string || role === 'admin';
 
     return {
         role,

@@ -92,9 +92,9 @@ export function ProgramBudgetManagement() {
                             <p className={`text-2xl font-bold ${(data?.total_variance || 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                                 {(data?.total_variance || 0) >= 0 ? '+' : ''}{fmt(data?.total_variance || 0)}
                             </p>
-                            <badge className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${(data?.total_variance || 0) >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium ${(data?.total_variance || 0) >= 0 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                 {(data?.total_variance || 0) >= 0 ? 'Under Budget' : 'Over Budget'}
-                            </badge>
+                            </span>
                         </div>
                     </div>
                 </Card>

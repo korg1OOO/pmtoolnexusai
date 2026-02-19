@@ -74,9 +74,6 @@ export function GlobalAISidebar({
   const viewContext = getViewContext(currentView);
   const suggestedQuestions = getSuggestedQuestions(currentView);
 
-  // Fetch active agent config from DB when currentAgent is set
-  const { data: activeAgentConfig } = useAIAgent(currentAgent || '');
-
   const {
     messages,
     conversations,
@@ -91,6 +88,9 @@ export function GlobalAISidebar({
     deleteConversation,
     clearClarification,
   } = useAIChat({ projectId, currentView, intentMode });
+
+  // Fetch active agent config from DB when currentAgent is set
+  const { data: activeAgentConfig } = useAIAgent(currentAgent || '');
 
   // Handle action confirmation from chat messages
   const handleActionRequest = useCallback((action: AIAction) => {

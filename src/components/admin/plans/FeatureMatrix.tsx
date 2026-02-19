@@ -46,13 +46,28 @@ export function FeatureMatrix({ plans }: FeatureMatrixProps) {
 
     const handleSeed = () => {
         seedFeatures.mutate([
-            { key: 'tube_map', name: 'Tube Map', category: 'CORE', min_plan_tier: 'free' },
-            { key: 'process_mapper', name: 'Process Workbench', category: 'CORE', min_plan_tier: 'free' },
-            { key: 'process_flows', name: 'Process Flows', category: 'CORE', min_plan_tier: 'free' },
-            { key: 'impact_analysis', name: 'Impact Analysis', category: 'CORE', min_plan_tier: 'free' },
-            { key: 'presentations', name: 'Presentations', category: 'CORE', min_plan_tier: 'starter' }, // Assuming 'starter' is > free
-            { key: 'route_planner', name: 'Route Planner', category: 'ADVANCED', min_plan_tier: 'starter' },
-            { key: 'design_studio', name: 'Design Studio', category: 'ADVANCED', min_plan_tier: 'pro' },
+            // CORE
+            { key: 'dashboard', name: 'Dashboard', category: 'CORE', min_plan_tier: 'free' },
+            { key: 'projects', name: 'Projects & Tasks', category: 'CORE', min_plan_tier: 'free' },
+            { key: 'documents', name: 'Document Center', category: 'CORE', min_plan_tier: 'free' },
+            { key: 'notes', name: 'Notes & Wiki', category: 'CORE', min_plan_tier: 'free' },
+            { key: 'team_chat', name: 'Team Chat', category: 'CORE', min_plan_tier: 'pro' },
+            { key: 'calendar', name: 'Calendar', category: 'CORE', min_plan_tier: 'free' },
+
+            // ADVANCED
+            { key: 'gantt', name: 'Gantt Charts', category: 'ADVANCED', min_plan_tier: 'pro' },
+            { key: 'portfolio', name: 'Portfolio Management', category: 'ADVANCED', min_plan_tier: 'business' },
+            { key: 'financials', name: 'Budget & EVM', category: 'ADVANCED', min_plan_tier: 'business' },
+            { key: 'risks', name: 'Risk Management', category: 'ADVANCED', min_plan_tier: 'pro' },
+            { key: 'reporting', name: 'Advanced Reporting', category: 'ADVANCED', min_plan_tier: 'business' },
+            { key: 'stakeholders', name: 'Stakeholder Register', category: 'ADVANCED', min_plan_tier: 'pro' },
+
+            // EXPERIMENTAL
+            { key: 'ai_meetings', name: 'AI Meeting Assistant', category: 'EXPERIMENTAL', min_plan_tier: 'business' },
+            { key: 'scenarios', name: 'Scenario Planning', category: 'EXPERIMENTAL', min_plan_tier: 'agency' },
+            { key: 'morning_briefing', name: 'Morning Briefing', category: 'EXPERIMENTAL', min_plan_tier: 'pro' },
+            { key: 'communication_intelligence', name: 'Comm. Intelligence', category: 'EXPERIMENTAL', min_plan_tier: 'agency' },
+            { key: 'ai_credits', name: 'AI Credits System', category: 'EXPERIMENTAL', min_plan_tier: 'free' }
         ]);
     };
 
@@ -81,8 +96,6 @@ export function FeatureMatrix({ plans }: FeatureMatrixProps) {
                                     <Badge variant="outline">{p.display_name}</Badge>
                                 </TableHead>
                             ))}
-                            <TableHead className="text-center w-[150px]">Min Plan (DB)</TableHead>
-                            <TableHead className="text-center w-[100px]">Enabled</TableHead>
                         </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -93,7 +106,7 @@ export function FeatureMatrix({ plans }: FeatureMatrixProps) {
                             return (
                                 <>
                                     <TableRow className="bg-muted/50 hover:bg-muted/50">
-                                        <TableCell colSpan={plans.length + 3} className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-2">
+                                        <TableCell colSpan={plans.length + 1} className="font-bold text-xs uppercase tracking-wider text-muted-foreground py-2">
                                             {category}
                                         </TableCell>
                                     </TableRow>
@@ -108,61 +121,55 @@ export function FeatureMatrix({ plans }: FeatureMatrixProps) {
                                                 </TableCell>
                                                 {plans.map((p, pIndex) => {
                                                     // Determine if checked based on min plan
-                                                    // If min plan index is -1 (not found), default to disabled? or show error
-                                                    // If current plan index >= feature min index, it's included.
+                                                    // Hierarchical: included if current plan index >= feature min index
                                                     const included = featureMinIndex !== -1 && pIndex >= featureMinIndex;
+                                                    const isChecked = feature.is_enabled && included;
+
+                                                    const handleToggle = (checked: boolean) => {
+                                                        if (checked) {
+                                                            // Case 1: Enabling a plan (was unchecked)
+                                                            // This plan becomes the new minimum. All higher plans also get enabled implicitly.
+                                                            updateFeature.mutate({
+                                                                key: feature.key,
+                                                                min_plan_tier: p.tier,
+                                                                is_enabled: true
+                                                            });
+                                                        } else {
+                                                            // Case 2: Disabling a plan (was checked)
+                                                            // Since it's hierarchical, disabling Plan X means the feature is no longer available on X.
+                                                            // The new minimum must be the plan ABOVE X.
+                                                            // If X was the highest plan, the feature is disabled entirely.
+
+                                                            const nextPlan = plans[pIndex + 1];
+                                                            if (nextPlan) {
+                                                                // Move minimum to next plan
+                                                                updateFeature.mutate({
+                                                                    key: feature.key,
+                                                                    min_plan_tier: nextPlan.tier,
+                                                                    is_enabled: true
+                                                                });
+                                                            } else {
+                                                                // No higher plan, disable feature globally
+                                                                updateFeature.mutate({
+                                                                    key: feature.key,
+                                                                    is_enabled: false
+                                                                });
+                                                            }
+                                                        }
+                                                    };
 
                                                     return (
-                                                        <TableCell key={p.tier} className="text-center">
-                                                            {feature.is_enabled ? (
-                                                                included ?
-                                                                    <CheckCircle2 className="h-5 w-5 text-green-500 mx-auto" /> :
-                                                                    <XCircle className="h-4 w-4 text-muted-foreground/30 mx-auto" />
-                                                            ) : (
-                                                                <span className="text-muted-foreground/20">-</span>
-                                                            )}
+                                                        <TableCell key={p.tier} className="text-center p-2">
+                                                            <div className="flex justify-center">
+                                                                <Switch
+                                                                    checked={isChecked}
+                                                                    onCheckedChange={handleToggle}
+                                                                    className="data-[state=checked]:bg-primary"
+                                                                />
+                                                            </div>
                                                         </TableCell>
                                                     );
                                                 })}
-                                                <TableCell>
-                                                    <Select
-                                                        value={feature.min_plan_tier}
-                                                        onValueChange={(val) => handleMinPlanChange(feature.key, val)}
-                                                    >
-                                                        <SelectTrigger className="h-8 text-xs">
-                                                            <SelectValue />
-                                                        </SelectTrigger>
-                                                        <SelectContent>
-                                                            {plans.map(p => (
-                                                                <SelectItem key={p.tier} value={p.tier}>
-                                                                    {p.tier}
-                                                                </SelectItem>
-                                                            ))}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </TableCell>
-                                                <TableCell className="text-center">
-                                                    {feature.is_enabled ?
-                                                        <span
-                                                            className="text-xs text-green-600 cursor-pointer hover:underline"
-                                                            onClick={() => handleToggleEnabled(feature.key, true)}
-                                                        >
-                                                            Active
-                                                        </span> :
-                                                        <span
-                                                            className="text-xs text-muted-foreground cursor-pointer hover:underline italic"
-                                                            onClick={() => handleToggleEnabled(feature.key, false)}
-                                                        >
-                                                            not seeded
-                                                        </span>
-                                                    }
-                                                    {/* Using text for now as switch in table sometimes tricky with row clicks */}
-                                                    <Switch
-                                                        checked={feature.is_enabled}
-                                                        onCheckedChange={() => handleToggleEnabled(feature.key, feature.is_enabled)}
-                                                        className="ml-2 scale-75"
-                                                    />
-                                                </TableCell>
                                             </TableRow>
                                         );
                                     })}

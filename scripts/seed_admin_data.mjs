@@ -107,14 +107,28 @@ async function seedData() {
         // 1.6 Seed Features (CRITICAL for Feature Matrix)
         console.log('✨  Seeding Features...');
         const features = [
-            { key: 'sso', name: 'Single Sign-On (SSO)', category: 'security', min_plan_tier: 'business', is_enabled: true, sort_order: 1 },
-            { key: 'analytics_advanced', name: 'Advanced Analytics', category: 'analytics', min_plan_tier: 'pro', is_enabled: true, sort_order: 2 },
-            { key: 'custom_domain', name: 'Custom Domain', category: 'branding', min_plan_tier: 'pro', is_enabled: true, sort_order: 3 },
-            { key: 'api_access', name: 'API Access', category: 'developer', min_plan_tier: 'business', is_enabled: true, sort_order: 4 },
-            { key: 'audit_logs', name: 'Audit Logs', category: 'compliance', min_plan_tier: 'business', is_enabled: true, sort_order: 5 },
-            { key: 'white_label', name: 'White Labeling', category: 'branding', min_plan_tier: 'agency', is_enabled: true, sort_order: 6 },
-            { key: 'priority_support', name: 'Priority Support', category: 'support', min_plan_tier: 'pro', is_enabled: true, sort_order: 7 },
-            { key: 'sla', name: '99.9% SLA', category: 'support', min_plan_tier: 'agency', is_enabled: true, sort_order: 8 }
+            // CORE
+            { key: 'dashboard', name: 'Dashboard', category: 'CORE', min_plan_tier: 'free', is_enabled: true, sort_order: 1 },
+            { key: 'projects', name: 'Projects & Tasks', category: 'CORE', min_plan_tier: 'free', is_enabled: true, sort_order: 2 },
+            { key: 'documents', name: 'Document Center', category: 'CORE', min_plan_tier: 'free', is_enabled: true, sort_order: 3 },
+            { key: 'notes', name: 'Notes & Wiki', category: 'CORE', min_plan_tier: 'free', is_enabled: true, sort_order: 4 },
+            { key: 'team_chat', name: 'Team Chat', category: 'CORE', min_plan_tier: 'pro', is_enabled: true, sort_order: 5 },
+            { key: 'calendar', name: 'Calendar', category: 'CORE', min_plan_tier: 'free', is_enabled: true, sort_order: 6 },
+
+            // ADVANCED
+            { key: 'gantt', name: 'Gantt Charts', category: 'ADVANCED', min_plan_tier: 'pro', is_enabled: true, sort_order: 10 },
+            { key: 'portfolio', name: 'Portfolio Management', category: 'ADVANCED', min_plan_tier: 'business', is_enabled: true, sort_order: 11 },
+            { key: 'financials', name: 'Budget & EVM', category: 'ADVANCED', min_plan_tier: 'business', is_enabled: true, sort_order: 12 },
+            { key: 'risks', name: 'Risk Management', category: 'ADVANCED', min_plan_tier: 'pro', is_enabled: true, sort_order: 13 },
+            { key: 'reporting', name: 'Advanced Reporting', category: 'ADVANCED', min_plan_tier: 'business', is_enabled: true, sort_order: 14 },
+            { key: 'stakeholders', name: 'Stakeholder Register', category: 'ADVANCED', min_plan_tier: 'pro', is_enabled: true, sort_order: 15 },
+
+            // EXPERIMENTAL
+            { key: 'ai_meetings', name: 'AI Meeting Assistant', category: 'EXPERIMENTAL', min_plan_tier: 'business', is_enabled: true, sort_order: 20 },
+            { key: 'scenarios', name: 'Scenario Planning', category: 'EXPERIMENTAL', min_plan_tier: 'agency', is_enabled: true, sort_order: 21 },
+            { key: 'morning_briefing', name: 'Morning Briefing', category: 'EXPERIMENTAL', min_plan_tier: 'pro', is_enabled: true, sort_order: 22 },
+            { key: 'communication_intelligence', name: 'Comm. Intelligence', category: 'EXPERIMENTAL', min_plan_tier: 'agency', is_enabled: true, sort_order: 23 },
+            { key: 'ai_credits', name: 'AI Credits System', category: 'EXPERIMENTAL', min_plan_tier: 'free', is_enabled: true, sort_order: 24 }
         ];
 
         for (const feat of features) {

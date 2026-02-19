@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,7 +42,7 @@ import {
     Filter,
     CheckCircle2,
 } from 'lucide-react';
-import type { TimelineSlippage, SlippedMilestone } from '@/types/analytics';
+import type { TimelineSlippage, SlippedMilestone, RootCause } from '@/types/analytics';
 
 interface TimelineSlippageDetailProps {
     workspaceId?: string;
@@ -66,104 +67,135 @@ export function TimelineSlippageDetail({
     const loadTimelineSlippage = async () => {
         setLoading(true);
         try {
-            // TODO: Replace with actual API call
-            const mockData: TimelineSlippage = {
-                projectId: projectId || 'proj-001',
-                projectName: 'Digital Transformation Initiative',
-                baselineStart: new Date('2024-01-01'),
-                baselineEnd: new Date('2024-12-31'),
-                currentStart: new Date('2024-01-15'),
-                currentEnd: new Date('2025-02-28'),
-                slippageDays: 59,
-                criticalPath: true,
-                status: 'severe',
-                impactedMilestones: [
-                    {
-                        id: 'm1',
-                        name: 'Requirements Complete',
-                        baselineDate: new Date('2024-03-31'),
-                        currentDate: new Date('2024-04-15'),
-                        slippageDays: 15,
-                        impact: 'medium',
-                        dependencies: ['Phase 1 Kickoff'],
-                    },
-                    {
-                        id: 'm2',
-                        name: 'Design Approval',
-                        baselineDate: new Date('2024-06-30'),
-                        currentDate: new Date('2024-07-20'),
-                        slippageDays: 20,
-                        impact: 'high',
-                        dependencies: ['Requirements Complete'],
-                    },
-                    {
-                        id: 'm3',
-                        name: 'Development Complete',
-                        baselineDate: new Date('2024-10-31'),
-                        currentDate: new Date('2024-12-15'),
-                        slippageDays: 45,
-                        impact: 'high',
-                        dependencies: ['Design Approval'],
-                    },
-                    {
-                        id: 'm4',
-                        name: 'UAT Complete',
-                        baselineDate: new Date('2024-11-30'),
-                        currentDate: new Date('2025-01-31'),
-                        slippageDays: 62,
-                        impact: 'high',
-                        dependencies: ['Development Complete'],
-                    },
-                ],
-                rootCauses: [
-                    {
-                        category: 'resource',
-                        description: 'Key developer unavailability',
-                        impact: 25,
-                    },
-                    {
-                        category: 'scope-change',
-                        description: 'Additional features requested',
-                        impact: 20,
-                    },
-                    {
-                        category: 'technical',
-                        description: 'Integration complexity underestimated',
-                        impact: 14,
-                    },
-                ],
-                recoveryPlan: {
-                    id: 'rp-001',
-                    description: 'Accelerated development with additional resources',
-                    actions: [
-                        {
-                            id: 'a1',
-                            description: 'Add 2 senior developers',
-                            daysToRecover: 15,
-                            status: 'in-progress',
-                            assignedTo: 'Resource Manager',
-                        },
-                        {
-                            id: 'a2',
-                            description: 'Reduce scope for v1.0',
-                            daysToRecover: 20,
-                            status: 'pending',
-                            assignedTo: 'Product Owner',
-                        },
-                        {
-                            id: 'a3',
-                            description: 'Parallel testing approach',
-                            daysToRecover: 10,
-                            status: 'completed',
-                            assignedTo: 'QA Lead',
-                        },
-                    ],
-                    targetDate: new Date('2025-01-31'),
-                    status: 'in-progress',
-                    owner: 'Project Manager',
-                },
+            // Fetch the project
+            const { data: project } = await supabase
+                .from('projects')
+                .select('id, name, start_date, end_date, status, health, progress, budget, spent')
+                .eq('id', projectId || '')
+                .single();
+
+            if (!project) {
+                // Fallback: fetch first project
+                const { data: firstProject } = await supabase
+                    .from('projects')
+                    .select('id, name, start_date, end_date, status, health, progress, budget, spent')
+                    .limit(1)
+                    .single();
+                if (!firstProject) { setLoading(false); return; }
+                Object.assign(project || {}, firstProject);
+            }
+
+            const pid = project?.id || projectId;
+
+            // Fetch task baselines for slippage comparison
+            const { data: tasks } = await supabase
+                .from('tasks')
+                .select('id, name, start_date, end_date, is_critical, status, baseline_start, baseline_end')
+                .eq('project_id', pid!);
+
+            // Fetch milestones
+            const { data: milestones } = await supabase
+                .from('timeline_milestones')
+                .select('*')
+                .eq('project_id', pid!);
+
+            // Fetch task baselines
+            const taskIds = (tasks || []).map(t => t.id);
+            const { data: taskBaselines } = taskIds.length > 0
+                ? await supabase
+                    .from('task_baselines')
+                    .select('*')
+                    .in('task_id', taskIds)
+                : { data: [] };
+
+            // Calculate slippage from tasks with baselines
+            const baselineStart = project?.start_date ? new Date(project.start_date) : new Date();
+            const baselineEnd = project?.end_date ? new Date(project.end_date) : new Date();
+            
+            // Find actual current dates from tasks
+            const taskDates = (tasks || []).filter(t => t.end_date).map(t => new Date(t.end_date!));
+            const currentEnd = taskDates.length > 0 
+                ? new Date(Math.max(...taskDates.map(d => d.getTime())))
+                : baselineEnd;
+            const currentStart = baselineStart;
+
+            const slippageDays = Math.max(0, Math.round((currentEnd.getTime() - baselineEnd.getTime()) / (1000 * 60 * 60 * 24)));
+            const hasCritical = (tasks || []).some(t => t.is_critical);
+
+            // Build impacted milestones from task baselines
+            const impactedMilestones: SlippedMilestone[] = (taskBaselines || [])
+                .map(tb => {
+                    const task = (tasks || []).find(t => t.id === tb.task_id);
+                    if (!task || !task.end_date) return null;
+                    const bEnd = new Date(tb.baseline_end);
+                    const cEnd = new Date(task.end_date);
+                    const slip = Math.round((cEnd.getTime() - bEnd.getTime()) / (1000 * 60 * 60 * 24));
+                    if (slip <= 0) return null;
+                    return {
+                        id: tb.id,
+                        name: task.name,
+                        baselineDate: bEnd,
+                        currentDate: cEnd,
+                        slippageDays: slip,
+                        impact: slip >= 45 ? 'high' as const : slip >= 20 ? 'medium' as const : 'low' as const,
+                        dependencies: [],
+                    };
+                })
+                .filter(Boolean) as SlippedMilestone[];
+
+            // Also add timeline_milestones as indicators
+            (milestones || []).forEach(m => {
+                impactedMilestones.push({
+                    id: m.id,
+                    name: m.label,
+                    baselineDate: new Date(m.created_at),
+                    currentDate: new Date(m.created_at),
+                    slippageDays: 0,
+                    impact: 'low',
+                    dependencies: [],
+                });
+            });
+
+            // Determine root causes from change requests
+            const { data: changeRequests } = await supabase
+                .from('change_requests')
+                .select('type, title, status')
+                .eq('project_id', pid!);
+
+            const rootCauses: RootCause[] = [];
+            const crTypes: Record<string, number> = {};
+            (changeRequests || []).forEach(cr => {
+                const cat = cr.type || 'other';
+                crTypes[cat] = (crTypes[cat] || 0) + 1;
+            });
+            Object.entries(crTypes).forEach(([cat, count]) => {
+                const category = cat === 'scope' ? 'scope-change' : cat === 'resource' ? 'resource' : cat === 'technical' ? 'technical' : 'other';
+                rootCauses.push({
+                    category: category as RootCause['category'],
+                    description: `${count} ${cat} change request(s)`,
+                    impact: Math.round(slippageDays * (count / Math.max(1, (changeRequests || []).length))),
+                });
+            });
+            if (rootCauses.length === 0) {
+                rootCauses.push({ category: 'other', description: 'No change requests logged', impact: slippageDays });
+            }
+
+            const status: TimelineSlippage['status'] = slippageDays >= 45 ? 'severe' : slippageDays >= 20 ? 'moderate' : 'minor';
+
+            const data: TimelineSlippage = {
+                projectId: pid!,
+                projectName: project?.name || 'Project',
+                baselineStart,
+                baselineEnd,
+                currentStart,
+                currentEnd,
+                slippageDays,
+                criticalPath: hasCritical,
+                status,
+                impactedMilestones: impactedMilestones.filter(m => m.slippageDays > 0),
+                rootCauses,
             };
-            setSlippageData(mockData);
+            setSlippageData(data);
         } catch (error) {
             console.error('Failed to load timeline slippage:', error);
         } finally {

@@ -38,6 +38,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { useProjectContext, ModuleVisibility } from '@/contexts/ProjectContext';
 import { preloadRoute } from '@/utils/routePreloader';
 import { useSidebarBadges } from '@/hooks/useSidebarBadges';
+import { CreditBalanceWidget } from '@/components/credits/CreditBalanceWidget';
 
 interface NavItem {
   id: string;
@@ -462,6 +463,11 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
         {/* Admin Items */}
         {adminItems.map((item) => renderNavItem(item))}
       </nav>
+
+      {/* Low Credits widget — pinned to sidebar bottom */}
+      <div className={`border-t border-sidebar-border p-3 ${collapsed ? 'flex justify-center' : ''}`}>
+        <CreditBalanceWidget compact showPurchaseButton={!collapsed} />
+      </div>
     </motion.aside>
   );
 }

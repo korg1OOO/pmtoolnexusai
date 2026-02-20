@@ -1,15 +1,9 @@
-/**
- * Public Routes — no authentication required.
- * Use these for marketing pages, auth flows, and OAuth callbacks.
- */
-
-import { Route } from 'react-router-dom';
-import { ProjectProvider } from '@/contexts/ProjectContext';
-import { PresenceProvider } from '@/contexts/PresenceContext';
+import { Route, Navigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { QueryParamRedirect } from '@/components/routing';
 import { SubscriptionSuccessPage } from '@/pages/SubscriptionSuccessPage';
-import Index from '@/pages/Index';
 import NotFound from '@/pages/NotFound';
 import OAuthCallback from '@/pages/OAuthCallback';
 import AboutUs from '@/pages/AboutUs';
@@ -21,24 +15,43 @@ import PublicFAQs from '@/pages/PublicFAQs';
 import PublicBlog from '@/pages/PublicBlog';
 import BlogPostView from '@/pages/BlogPostView';
 import PublicDocs from '@/pages/PublicDocs';
+import LandingPage from '@/pages/LandingPage';
+
+/**
+ * Smart root redirect: authenticated users → /dashboard, guests → LandingPage.
+ */
+function RootRedirect() {
+    const [authed, setAuthed] = useState<boolean | null>(null);
+
+    useEffect(() => {
+        supabase.auth.getSession().then(({ data: { session } }) => {
+            setAuthed(!!session);
+        });
+    }, []);
+
+    if (authed === null) return null; // brief flash-free wait
+    if (authed) return <Navigate to="/dashboard" replace />;
+    return <LandingPage />;
+}
 
 export function PublicRoutes() {
     return (
         <>
-            {/* Root — redirects based on auth state */}
-            <Route path="/" element={
-                <ProjectProvider>
-                    <PresenceProvider>
-                        <QueryParamRedirect />
-                    </PresenceProvider>
-                </ProjectProvider>
+            {/* Root — LandingPage for guests, /dashboard for authenticated users */}
+            <Route path="/" element={<RootRedirect />} />
+
+            {/* Backward-compat: old ?view= URLs for authenticated users */}
+            <Route path="/app" element={
+                <ProtectedRoute>
+                    <QueryParamRedirect />
+                </ProtectedRoute>
             } />
 
             {/* Auth */}
             <Route path="/login" element={<Auth />} />
             <Route path="/oauth/callback" element={<OAuthCallback />} />
 
-            {/* Marketing */}
+            {/* Marketing — fully public, no auth required */}
             <Route path="/about" element={<AboutUs />} />
             <Route path="/contact" element={<ContactUs />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
@@ -46,15 +59,7 @@ export function PublicRoutes() {
             <Route path="/blog" element={<PublicBlog />} />
             <Route path="/blog/:slug" element={<BlogPostView />} />
             <Route path="/docs" element={<PublicDocs />} />
-
-            {/* Product tour (no auth needed) */}
-            <Route path="/product-tour" element={
-                <ProjectProvider>
-                    <PresenceProvider>
-                        <ProductTour />
-                    </PresenceProvider>
-                </ProjectProvider>
-            } />
+            <Route path="/product-tour" element={<ProductTour />} />
 
             {/* Post-payment landing */}
             <Route path="/subscription/success" element={

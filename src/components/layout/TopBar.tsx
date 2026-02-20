@@ -11,7 +11,6 @@ import { PresenceIndicator } from '@/components/collaboration/PresenceIndicator'
 import { usePresenceContext } from '@/contexts/PresenceContext';
 import { ProjectSwitcher } from '@/components/layout/ProjectSwitcher';
 import { useProfile } from '@/hooks/useProfile';
-import { CreditBalanceWidget } from '@/components/credits/CreditBalanceWidget';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { User } from 'lucide-react';
@@ -177,9 +176,6 @@ export function TopBar({ projectName, projectCode, className, onCreateProject, o
       <div className="flex items-center gap-1">
         {/* Presence Indicator */}
         <PresenceIndicator users={users} className="mr-2" />
-
-        {/* AI Credits Balance */}
-        <CreditBalanceWidget />
 
         <Button variant="ghost" size="iconSm"><LayoutGrid className="h-4 w-4" /></Button>
         <ThemeToggle />

@@ -47,16 +47,16 @@ const App = () => (
               <TenantProvider>
                 <Suspense fallback={null}>
                   <Routes>
-                    <ProjectRoutes />
-                    <TenantWorkspaceRoutes />
-                    <CreditsRoutes />
+                    {ProjectRoutes()}
+                    {TenantWorkspaceRoutes()}
+                    {CreditsRoutes()}
                     {AdminRoutes()}
                     {/* Dev-only debug route — admin role required */}
                     {import.meta.env.DEV && (
                       <Route path="/debug" element={<AdminRoute><Debug /></AdminRoute>} />
                     )}
                     {/* Public & marketing routes (includes 404 catch-all) */}
-                    <PublicRoutes />
+                    {PublicRoutes()}
                   </Routes>
                 </Suspense>
               </TenantProvider>

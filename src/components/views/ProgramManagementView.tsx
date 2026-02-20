@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CrossProjectDependencyManager } from '@/components/program/CrossProjectDependencyManager';
 import { ProgramMilestoneTracker } from '@/components/program/ProgramMilestoneTracker';
 import { SharedTaskBoard } from '@/components/program/SharedTaskBoard';
+import { ProgramInsightsDashboard } from '@/components/analytics/ProgramInsightsDashboard';
 import {
     Building2,
     Plus,
@@ -411,6 +412,10 @@ function ProgramDashboard({
                         <Users className="h-4 w-4 mr-2" />
                         Members ({members.length})
                     </TabsTrigger>
+                    <TabsTrigger value="insights">
+                        <TrendingUp className="h-4 w-4 mr-2" />
+                        Insights
+                    </TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="projects" className="space-y-4">
@@ -493,6 +498,10 @@ function ProgramDashboard({
                             </CardContent>
                         </Card>
                     )}
+                </TabsContent>
+
+                <TabsContent value="insights" className="space-y-4">
+                    <ProgramInsightsDashboard programId={program.id} />
                 </TabsContent>
             </Tabs>
         </div>

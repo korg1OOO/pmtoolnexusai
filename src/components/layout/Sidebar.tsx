@@ -30,6 +30,8 @@ import {
   MessageSquare,
   Calendar,
   Folder,
+  TrendingUp,
+  Brain,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -55,6 +57,8 @@ const navItems: NavItem[] = [
     children: [
       { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, moduleKey: 'dashboard' },
       { id: 'morning-briefing', label: 'Morning Briefing', icon: Sparkles, alwaysShow: true },
+      { id: 'executive-dashboard', label: 'Executive Dashboard', icon: TrendingUp, moduleKey: 'dashboard' },
+      { id: 'strategic-dashboard', label: 'Strategic Dashboard', icon: Brain, moduleKey: 'dashboard' },
       { id: 'portfolio', label: 'Portfolio', icon: FolderKanban, moduleKey: 'portfolio' },
       { id: 'program-timeline', label: 'Project Timeline', icon: Clock, moduleKey: 'programTimeline' },
       { id: 'reports', label: 'Reports', icon: BarChart3, moduleKey: 'reports' },
@@ -114,6 +118,7 @@ const navItems: NavItem[] = [
     children: [
       { id: 'financials', label: 'Budget & Billing', icon: DollarSign, moduleKey: 'financials' },
       { id: 'evm', label: 'Earned Value (EVM)', icon: BarChart3, alwaysShow: true },
+      { id: 'timeline-slippage', label: 'Timeline Slippage', icon: TrendingUp, alwaysShow: true },
       { id: 'tracking', label: 'Baseline & Tracking', icon: Target, alwaysShow: true },
     ]
   },
@@ -122,7 +127,9 @@ const navItems: NavItem[] = [
     label: 'Collaboration',
     icon: Users,
     children: [
+      { id: 'collaboration-dashboard', label: 'Collab Dashboard', icon: LayoutDashboard, alwaysShow: true },
       { id: 'meetings', label: 'AI Meetings', icon: Users, badge: 2, moduleKey: 'meetings' },
+      { id: 'meeting-analytics', label: 'Meeting Analytics', icon: BarChart3, moduleKey: 'meetings' },
       { id: 'calendar', label: 'Calendar', icon: Calendar, alwaysShow: true },
       { id: 'collaboration-spaces', label: 'Collaboration Spaces', icon: Users, alwaysShow: true },
       { id: 'team-chat', label: 'Team Chat', icon: MessageSquare, alwaysShow: true },

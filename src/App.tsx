@@ -94,6 +94,7 @@ const MilestonesView = lazy(() => import('@/components/views/MilestonesView'));
 const BacklogView = lazy(() => import('@/components/views/BacklogView'));
 const ReportsView = lazy(() => import('@/components/views/ReportsView'));
 const EnhancedMeetingsView = lazy(() => import('@/components/views/EnhancedMeetingsView'));
+const MeetingAnalyticsView = lazy(() => import('@/components/views/MeetingAnalyticsView'));
 const CalendarView = lazy(() => import('@/components/views/CalendarView'));
 const StrategicDashboardView = lazy(() => import('@/components/views/StrategicDashboardView'));
 const CommunicationIntelligenceView = lazy(() => import('@/components/views/CommunicationIntelligenceView'));
@@ -116,6 +117,7 @@ const ScenariosView = lazy(() => import('@/components/views/ScenariosView'));
 const DeliverablesView = lazy(() => import('@/components/views/DeliverablesView'));
 const ChangeRequestsView = lazy(() => import('@/components/views/ChangeRequestsView'));
 const EVMView = lazy(() => import('@/components/views/EVMView'));
+const TimelineSlippageView = lazy(() => import('@/components/views/TimelineSlippageView'));
 const DocumentCenterView = lazy(() => import('@/components/views/DocumentCenterView'));
 const FinalReportView = lazy(() => import('@/components/views/FinalReportView'));
 const LessonsLearnedView = lazy(() => import('@/components/views/LessonsLearnedView'));
@@ -128,6 +130,7 @@ const TimelinePlannerTab = lazy(() => import('@/components/views/TimelinePlanner
 const KnowledgeBaseView = lazy(() => import('@/components/views/KnowledgeBaseView'));
 const ProgramDocumentsView = lazy(() => import('@/components/views/ProgramDocumentsView'));
 const CollaborationSpacesView = lazy(() => import('@/components/views/CollaborationSpacesView'));
+const CollaborationDashboardView = lazy(() => import('@/components/views/CollaborationDashboardView'));
 const ProgramManagementView = lazy(() => import('@/components/views/ProgramManagementView'));
 import {
   MLModelsPage,
@@ -209,14 +212,17 @@ const App = () => (
                   {/* Financial Routes */}
                   <Route path="/financials" element={<ProtectedProjectRoute><FinancialsView /></ProtectedProjectRoute>} />
                   <Route path="/evm" element={<ProtectedProjectRoute><EVMView /></ProtectedProjectRoute>} />
+                  <Route path="/timeline-slippage" element={<ProtectedProjectRoute><TimelineSlippageView /></ProtectedProjectRoute>} />
 
                   {/* Collaboration Routes */}
                   <Route path="/meetings" element={<ProtectedProjectRoute><EnhancedMeetingsView /></ProtectedProjectRoute>} />
+                  <Route path="/meeting-analytics" element={<ProtectedProjectRoute><MeetingAnalyticsView /></ProtectedProjectRoute>} />
                   <Route path="/calendar" element={<ProtectedProjectRoute><CalendarView /></ProtectedProjectRoute>} />
                   <Route path="/team-chat" element={<ProtectedProjectRoute><TeamChatView /></ProtectedProjectRoute>} />
                   <Route path="/communications" element={<ProtectedProjectRoute><CommunicationsView /></ProtectedProjectRoute>} />
                   <Route path="/communication-intelligence" element={<ProtectedProjectRoute><CommunicationIntelligenceView /></ProtectedProjectRoute>} />
                   <Route path="/collaboration-spaces" element={<ProtectedProjectRoute><CollaborationSpacesView /></ProtectedProjectRoute>} />
+                  <Route path="/collaboration-dashboard" element={<ProtectedProjectRoute><CollaborationDashboardView /></ProtectedProjectRoute>} />
 
                   {/* Documents & Knowledge Routes */}
                   <Route path="/notes" element={<ProtectedProjectRoute><NotesView /></ProtectedProjectRoute>} />

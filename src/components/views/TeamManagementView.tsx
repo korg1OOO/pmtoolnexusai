@@ -34,6 +34,7 @@ import { useTeamMembers, useAddTeamMember, useRemoveTeamMember } from '@/hooks/u
 import { ProjectRole } from '@/types/ai-agents';
 import { RoleManagementDialog } from '@/components/team/RoleManagementDialog';
 import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { AttendanceReportView } from '@/components/analytics/AttendanceReportView';
 
 interface Team {
   id: string;
@@ -272,6 +273,10 @@ export default function TeamManagementView() {
             <Shield className="h-4 w-4" />
             Roles & Permissions
           </TabsTrigger>
+          <TabsTrigger value="attendance" className="gap-2">
+            <UserCheck className="h-4 w-4" />
+            Attendance Report
+          </TabsTrigger>
         </TabsList>
 
         {/* Members Tab */}
@@ -384,6 +389,11 @@ export default function TeamManagementView() {
               </Card>
             ))}
           </div>
+        </TabsContent>
+
+        {/* Attendance Report Tab */}
+        <TabsContent value="attendance" className="flex-1 mt-4">
+          <AttendanceReportView programId={settings.id} />
         </TabsContent>
       </Tabs>
 

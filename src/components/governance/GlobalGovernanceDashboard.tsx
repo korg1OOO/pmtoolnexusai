@@ -19,7 +19,9 @@ import { useApprovals, useApproveApproval, useRejectApproval, useMarkApprovalDel
 import { ApprovalWorkflows } from '@/components/analytics/governance/ApprovalWorkflows';
 import DelegationDialog from '@/components/governance/DelegationDialog';
 import DelegationTemplates from '@/components/governance/DelegationTemplates';
+import DelegationHistory from '@/components/governance/DelegationHistory';
 import NotificationBadge from '@/components/governance/NotificationBadge';
+import NotificationHistory from '@/components/governance/NotificationHistory';
 import { useAuth } from '@/hooks/useAuth';
 import { PDFExporter } from '@/components/common/PDFExporter';
 
@@ -174,7 +176,7 @@ export default function GlobalGovernanceDashboard() {
 
       {/* Charts Grid */}
       <Tabs defaultValue="health" className="w-full">
-        <TabsList className="grid w-full grid-cols-6">
+        <TabsList className="grid w-full grid-cols-8">
           <TabsTrigger value="health">Project Health</TabsTrigger>
           <TabsTrigger value="budget">Budget Analysis</TabsTrigger>
           <TabsTrigger value="risk">Risk Heatmap</TabsTrigger>
@@ -189,6 +191,8 @@ export default function GlobalGovernanceDashboard() {
             )}
           </TabsTrigger>
           <TabsTrigger value="delegation-templates">Del. Templates</TabsTrigger>
+          <TabsTrigger value="delegation-history">Del. History</TabsTrigger>
+          <TabsTrigger value="notifications">Notifications</TabsTrigger>
         </TabsList>
 
         <TabsContent value="health" className="mt-4">
@@ -360,6 +364,24 @@ export default function GlobalGovernanceDashboard() {
             <DelegationTemplates userId={user.id} />
           ) : (
             <p className="text-sm text-muted-foreground text-center py-8">Sign in to manage delegation templates</p>
+          )}
+        </TabsContent>
+
+        {/* ── Delegation History Tab ── */}
+        <TabsContent value="delegation-history" className="mt-4">
+          {user?.id ? (
+            <DelegationHistory userId={user.id} />
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-8">Sign in to view delegation history</p>
+          )}
+        </TabsContent>
+
+        {/* ── Notification History Tab ── */}
+        <TabsContent value="notifications" className="mt-4">
+          {user?.id ? (
+            <NotificationHistory userId={user.id} />
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-8">Sign in to view notification history</p>
           )}
         </TabsContent>
       </Tabs>

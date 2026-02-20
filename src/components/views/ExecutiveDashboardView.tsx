@@ -32,8 +32,10 @@ import { usePortfolios } from '@/hooks/usePortfolios';
 import { usePrograms } from '@/hooks/usePrograms';
 import { useRisks } from '@/hooks/useRisks';
 import { useOrgFinancials } from '@/hooks/useOrgFinancials';
+import { useNavigate } from 'react-router-dom';
 
 export default function ExecutiveDashboardView() {
+  const navigate = useNavigate();
   const [timeRange, setTimeRange] = useState<'week' | 'month' | 'quarter' | 'year'>('month');
 
   const { data: projects = [], isLoading: loadingProjects, refetch: refetchProjects } = useProjects();
@@ -477,19 +479,19 @@ export default function ExecutiveDashboardView() {
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 gap-3">
-              <Button variant="outline" className="h-auto py-4 flex-col gap-2">
+              <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => navigate('/create-project')}>
                 <Briefcase className="h-5 w-5" />
                 <span className="text-xs">New Project</span>
               </Button>
-              <Button variant="outline" className="h-auto py-4 flex-col gap-2">
+              <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => navigate('/risks')}>
                 <AlertTriangle className="h-5 w-5" />
                 <span className="text-xs">Log Risk</span>
               </Button>
-              <Button variant="outline" className="h-auto py-4 flex-col gap-2">
+              <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => navigate('/calendar')}>
                 <Calendar className="h-5 w-5" />
                 <span className="text-xs">Schedule</span>
               </Button>
-              <Button variant="outline" className="h-auto py-4 flex-col gap-2">
+              <Button variant="outline" className="h-auto py-4 flex-col gap-2" onClick={() => navigate('/strategic-dashboard')}>
                 <Zap className="h-5 w-5" />
                 <span className="text-xs">AI Insights</span>
               </Button>

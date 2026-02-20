@@ -500,6 +500,38 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
     saveData(newData);
   }, [selection, localData, cellFormats, pushHistory, saveData]);
 
+  const handleInsertRowAbove = useCallback(() => {
+    if (!selection || !localData) return;
+    const targetRow = selection.start.row;
+    const colCount = localData[0]?.length || 26;
+    const newRow = Array(colCount).fill('');
+    const newData = [
+      ...localData.slice(0, targetRow),
+      newRow,
+      ...localData.slice(targetRow),
+    ];
+    setLocalData(newData);
+    pushHistory(newData, cellFormats);
+    saveData(newData);
+    toast.success('Row inserted above');
+  }, [selection, localData, cellFormats, pushHistory, saveData]);
+
+  const handleInsertRowBelow = useCallback(() => {
+    if (!selection || !localData) return;
+    const targetRow = selection.start.row + 1;
+    const colCount = localData[0]?.length || 26;
+    const newRow = Array(colCount).fill('');
+    const newData = [
+      ...localData.slice(0, targetRow),
+      newRow,
+      ...localData.slice(targetRow),
+    ];
+    setLocalData(newData);
+    pushHistory(newData, cellFormats);
+    saveData(newData);
+    toast.success('Row inserted below');
+  }, [selection, localData, cellFormats, pushHistory, saveData]);
+
   // Undo/Redo
   const handleUndo = useCallback(() => {
     if (historyIndex > 0) {
@@ -866,11 +898,11 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
                           Paste
                         </ContextMenuItem>
                         <ContextMenuSeparator />
-                        <ContextMenuItem onClick={() => {/* Insert row above */ }}>
+                        <ContextMenuItem onClick={handleInsertRowAbove}>
                           <ArrowUp className="h-4 w-4 mr-2" />
                           Insert Row Above
                         </ContextMenuItem>
-                        <ContextMenuItem onClick={() => {/* Insert row below */ }}>
+                        <ContextMenuItem onClick={handleInsertRowBelow}>
                           <ArrowDown className="h-4 w-4 mr-2" />
                           Insert Row Below
                         </ContextMenuItem>

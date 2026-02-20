@@ -141,12 +141,7 @@ export default function LandingPage() {
     };
 
     const handleHomeClick = () => {
-        const scrollTop = containerRef.current?.scrollTop || 0;
-        if (scrollTop < 50) {
-            window.location.reload();
-        } else {
-            scrollToSection('hero');
-        }
+        scrollToSection('hero');
     };
 
     return (

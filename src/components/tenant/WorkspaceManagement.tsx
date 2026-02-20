@@ -9,6 +9,7 @@ import { getWorkspaces, createWorkspace, updateWorkspace, deleteWorkspace, type 
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 import { useTenant } from '@/contexts/TenantContext';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 export function WorkspaceManagement() {
     const navigate = useNavigate();
@@ -18,6 +19,7 @@ export function WorkspaceManagement() {
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [selectedWorkspace, setSelectedWorkspace] = useState<WorkspaceListItem | null>(null);
+    const { confirm, ConfirmDialog } = useConfirmDialog();
 
     const { data: workspaces, isLoading } = useQuery({
         queryKey: ['tenant-workspaces', tenantId],
@@ -104,8 +106,8 @@ export function WorkspaceManagement() {
                                 setSelectedWorkspace(workspace);
                                 setEditDialogOpen(true);
                             }}
-                            onDelete={() => {
-                                if (confirm(`Are you sure you want to delete "${workspace.name}"?`)) {
+                            onDelete={async () => {
+                                if (await confirm(`Are you sure you want to delete "${workspace.name}"?`, { confirmLabel: 'Delete', variant: 'destructive' })) {
                                     deleteMutation.mutate(workspace.id);
                                 }
                             }}
@@ -150,6 +152,7 @@ export function WorkspaceManagement() {
                     isLoading={updateMutation.isPending}
                 />
             )}
+            <ConfirmDialog />
         </div>
     );
 }

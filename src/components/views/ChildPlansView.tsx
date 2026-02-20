@@ -309,7 +309,7 @@ export default function ChildPlansView() {
 
   // Derive parent task / summary metrics from root tasks or project settings
   const parentSummary = {
-    wbs: 'P-1', // Placeholder or use project code
+    wbs: hierarchy[0]?.wbs?.split('.')[0] || settings?.project_code || 'P-1',
     priority: 'high',
     name: settings?.name || 'Project Plan',
     progress: Math.round(visibleTasks.reduce((acc, t) => acc + (t.progress || 0), 0) / (visibleTasks.length || 1))

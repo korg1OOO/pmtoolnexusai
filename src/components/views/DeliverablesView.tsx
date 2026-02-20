@@ -49,9 +49,11 @@ import { Label } from '@/components/ui/label';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { useDeliverables, Deliverable } from '@/hooks/useDeliverables';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 export default function DeliverablesView() {
   const { settings } = useProjectContext();
+  const { confirm, ConfirmDialog } = useConfirmDialog();
   const { data: deliverables, isLoading, createDeliverable, updateDeliverable, deleteDeliverable } = useDeliverables(settings.id);
   const { data: teamMembers } = useTeamMembers(settings.id);
 
@@ -106,7 +108,7 @@ export default function DeliverablesView() {
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm('Are you sure you want to delete this deliverable?')) {
+    if (await confirm('Are you sure you want to delete this deliverable?', { confirmText: 'Delete', destructive: true })) {
       await deleteDeliverable.mutateAsync(id);
       if (selectedDeliverable?.id === id) setSelectedDeliverable(null);
     }
@@ -457,6 +459,7 @@ export default function DeliverablesView() {
           </div>
         )}
       </div>
+      <ConfirmDialog />
     </div>
   );
 }

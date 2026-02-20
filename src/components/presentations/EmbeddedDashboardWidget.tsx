@@ -96,8 +96,11 @@ export function EmbeddedDashboardWidget({
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    await onRefresh(data.id);
-    setTimeout(() => setIsRefreshing(false), 1000);
+    try {
+      await onRefresh(data.id);
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   const Icon = componentDef?.icon;

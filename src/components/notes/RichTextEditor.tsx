@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Placeholder from '@tiptap/extension-placeholder';
@@ -6,20 +6,16 @@ import Link from '@tiptap/extension-link';
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
-  Bold,
-  Italic,
-  Strikethrough,
-  Heading1,
-  Heading2,
-  List,
-  ListOrdered,
-  CheckSquare,
-  Code2,
-  Quote,
-  Link2,
-  Undo,
-  Redo,
+  Dialog, DialogContent, DialogFooter,
+  DialogHeader, DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Bold, Italic, Strikethrough, Heading1, Heading2,
+  List, ListOrdered, CheckSquare, Code2, Quote,
+  Link2, Undo, Redo,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -31,59 +27,51 @@ interface RichTextEditorProps {
 }
 
 export function RichTextEditor({ content, onChange, placeholder, className }: RichTextEditorProps) {
+  const [linkDialogOpen, setLinkDialogOpen] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('');
+
   const editor = useEditor({
     extensions: [
-      StarterKit.configure({
-        heading: {
-          levels: [1, 2, 3],
-        },
-      }),
-      Placeholder.configure({
-        placeholder: placeholder || 'Start writing...',
-      }),
+      StarterKit.configure({ heading: { levels: [1, 2, 3] } }),
+      Placeholder.configure({ placeholder: placeholder || 'Start writing...' }),
       Link.configure({
         openOnClick: false,
-        HTMLAttributes: {
-          class: 'text-primary underline cursor-pointer',
-        },
+        HTMLAttributes: { class: 'text-primary underline cursor-pointer' },
       }),
       TaskList,
-      TaskItem.configure({
-        nested: true,
-      }),
+      TaskItem.configure({ nested: true }),
     ],
     content: content || '',
-    onUpdate: ({ editor }) => {
-      onChange(editor.getHTML());
-    },
+    onUpdate: ({ editor }) => { onChange(editor.getHTML()); },
     editorProps: {
-      attributes: {
-        class: 'prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[500px] px-0',
-      },
+      attributes: { class: 'prose prose-sm dark:prose-invert max-w-none focus:outline-none min-h-[500px] px-0' },
     },
   });
 
-  // Update content when it changes externally
   useEffect(() => {
     if (editor && content !== editor.getHTML()) {
       editor.commands.setContent(content || '');
     }
   }, [content, editor]);
 
+  /** Open the link dialog, pre-filling the current href if one exists */
   const setLink = useCallback(() => {
     if (!editor) return;
-    
-    const previousUrl = editor.getAttributes('link').href;
-    const url = window.prompt('URL', previousUrl);
-
-    if (url === null) return;
-    if (url === '') {
-      editor.chain().focus().extendMarkRange('link').unsetLink().run();
-      return;
-    }
-
-    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+    const previousUrl = editor.getAttributes('link').href || '';
+    setLinkUrl(previousUrl);
+    setLinkDialogOpen(true);
   }, [editor]);
+
+  /** Apply or remove the link when the dialog confirms */
+  const handleLinkConfirm = useCallback(() => {
+    if (!editor) return;
+    setLinkDialogOpen(false);
+    if (linkUrl === '') {
+      editor.chain().focus().extendMarkRange('link').unsetLink().run();
+    } else {
+      editor.chain().focus().extendMarkRange('link').setLink({ href: linkUrl }).run();
+    }
+  }, [editor, linkUrl]);
 
   if (!editor) {
     return null;
@@ -120,9 +108,9 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
         >
           <Strikethrough className="h-4 w-4" />
         </Button>
-        
+
         <div className="w-px h-4 bg-border mx-1" />
-        
+
         <Button
           variant="ghost"
           size="iconSm"
@@ -150,9 +138,9 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
         >
           <Quote className="h-4 w-4" />
         </Button>
-        
+
         <div className="w-px h-4 bg-border mx-1" />
-        
+
         <Button
           variant="ghost"
           size="iconSm"
@@ -180,9 +168,9 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
         >
           <CheckSquare className="h-4 w-4" />
         </Button>
-        
+
         <div className="w-px h-4 bg-border mx-1" />
-        
+
         <Button
           variant="ghost"
           size="iconSm"
@@ -201,9 +189,9 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
         >
           <Link2 className="h-4 w-4" />
         </Button>
-        
+
         <div className="w-px h-4 bg-border mx-1" />
-        
+
         <Button
           variant="ghost"
           size="iconSm"
@@ -226,6 +214,30 @@ export function RichTextEditor({ content, onChange, placeholder, className }: Ri
 
       {/* Editor */}
       <EditorContent editor={editor} className="flex-1" />
+
+      {/* Link Dialog — replaces window.prompt() */}
+      <Dialog open={linkDialogOpen} onOpenChange={setLinkDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Insert Link</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            <Label htmlFor="link-url">URL</Label>
+            <Input
+              id="link-url"
+              value={linkUrl}
+              onChange={(e) => setLinkUrl(e.target.value)}
+              placeholder="https://example.com"
+              onKeyDown={(e) => e.key === 'Enter' && handleLinkConfirm()}
+              autoFocus
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLinkDialogOpen(false)}>Cancel</Button>
+            <Button onClick={handleLinkConfirm}>{linkUrl ? 'Apply Link' : 'Remove Link'}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -4,6 +4,7 @@
  */
 
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Bell } from 'lucide-react';
 import {
     DropdownMenu,
@@ -19,6 +20,7 @@ import { formatDistanceToNow } from 'date-fns';
 
 export function NotificationBell() {
     const [open, setOpen] = useState(false);
+    const navigate = useNavigate();
     const { data: notifications = [] } = useNotifications('unread');
     const { data: unreadCount = 0 } = useUnreadCount();
     const markRead = useMarkNotificationRead();
@@ -75,7 +77,13 @@ export function NotificationBell() {
                                 onClick={() => {
                                     handleMarkAsRead(notification.id);
                                     if (notification.action_url) {
-                                        window.location.href = notification.action_url;
+                                        const url: string = notification.action_url;
+                                        if (url.startsWith('http://') || url.startsWith('https://')) {
+                                            window.open(url, '_blank', 'noopener,noreferrer');
+                                        } else {
+                                            navigate(url);
+                                            setOpen(false);
+                                        }
                                     }
                                 }}
                             >

@@ -33,6 +33,7 @@ import { useProjectContext } from '@/contexts/ProjectContext';
 import { useTeamMembers, useAddTeamMember, useRemoveTeamMember } from '@/hooks/useTeamMembers';
 import { ProjectRole } from '@/types/ai-agents';
 import { RoleManagementDialog } from '@/components/team/RoleManagementDialog';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 interface Team {
   id: string;
@@ -108,6 +109,7 @@ const roles: Role[] = [
 
 export default function TeamManagementView() {
   const { settings } = useProjectContext();
+  const { confirm, ConfirmDialog } = useConfirmDialog();
   const { data: members, isLoading } = useTeamMembers(settings.id);
   const addMember = useAddTeamMember();
   const removeMember = useRemoveTeamMember();
@@ -138,8 +140,8 @@ export default function TeamManagementView() {
     }
   };
 
-  const handleRemoveMember = (userId: string) => {
-    if (confirm('Are you sure you want to remove this member?')) {
+  const handleRemoveMember = async (userId: string) => {
+    if (await confirm('Are you sure you want to remove this member?', { confirmText: 'Remove', destructive: true })) {
       removeMember.mutate({ projectId: settings.id, userId });
     }
   };
@@ -391,6 +393,7 @@ export default function TeamManagementView() {
         onOpenChange={setIsRoleManagementOpen}
         projectId={settings.id}
       />
+      <ConfirmDialog />
     </div >
   );
 }

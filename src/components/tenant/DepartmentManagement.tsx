@@ -8,6 +8,7 @@ import { Building2, Plus, Edit, Trash2, Users, DollarSign, ChevronRight, Chevron
 import { getDepartments, createDepartment, updateDepartment, deleteDepartment } from '@/services/tenantService';
 import { toast } from 'sonner';
 import { useTenant } from '@/contexts/TenantContext';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 interface Department {
     id: string;
@@ -26,6 +27,7 @@ export function DepartmentManagement() {
     const [editDialogOpen, setEditDialogOpen] = useState(false);
     const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
     const queryClient = useQueryClient();
+    const { confirm, ConfirmDialog } = useConfirmDialog();
 
     // Fetch departments from database
     const { data: departments, isLoading } = useQuery({
@@ -104,8 +106,8 @@ export function DepartmentManagement() {
                                 setSelectedDepartment(d);
                                 setEditDialogOpen(true);
                             }}
-                            onDelete={(id) => {
-                                if (confirm('Are you sure you want to delete this department?')) {
+                            onDelete={async (id) => {
+                                if (await confirm('Are you sure you want to delete this department?', { confirmLabel: 'Delete', variant: 'destructive' })) {
                                     deleteMutation.mutate(id);
                                 }
                             }}
@@ -147,6 +149,7 @@ export function DepartmentManagement() {
                     title="Edit Department"
                 />
             )}
+            <ConfirmDialog />
         </div>
     );
 }

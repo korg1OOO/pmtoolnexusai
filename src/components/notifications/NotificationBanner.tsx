@@ -4,11 +4,13 @@
  */
 
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AlertTriangle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNotifications, useMarkNotificationRead } from '@/hooks/useNotifications';
 
 export function NotificationBanner() {
+    const navigate = useNavigate();
     const { data: notifications = [] } = useNotifications('unread');
     const markRead = useMarkNotificationRead();
 
@@ -27,7 +29,12 @@ export function NotificationBanner() {
 
     const handleAction = () => {
         if (notification.action_url) {
-            window.location.href = notification.action_url;
+            const url: string = notification.action_url;
+            if (url.startsWith('http://') || url.startsWith('https://')) {
+                window.open(url, '_blank', 'noopener,noreferrer');
+            } else {
+                navigate(url);
+            }
         }
         markRead.mutate(notification.id);
     };

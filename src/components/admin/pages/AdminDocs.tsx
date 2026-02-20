@@ -56,6 +56,7 @@ import {
     Documentation,
 } from '@/hooks/useContentManagement';
 import { toast } from 'sonner';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 export function AdminDocs() {
     const [selectedVersion, setSelectedVersion] = useState<string>('v1.0');
@@ -74,6 +75,7 @@ export function AdminDocs() {
     const createDoc = useCreateDoc();
     const updateDoc = useUpdateDoc();
     const deleteDoc = useDeleteDoc();
+    const { confirm, ConfirmDialog } = useConfirmDialog();
 
     // Toggle expanded nodes
     const toggleExpand = (id: string) => {
@@ -182,8 +184,8 @@ export function AdminDocs() {
                                             expandedNodes={expandedNodes}
                                             toggleExpand={toggleExpand}
                                             onEdit={setEditingDoc}
-                                            onDelete={(id) => {
-                                                if (confirm('Delete this document? Children will be detached.')) {
+                                            onDelete={async (id) => {
+                                                if (await confirm('Delete this document? Children will be detached.', { confirmLabel: 'Delete', variant: 'destructive' })) {
                                                     deleteDoc.mutate(id);
                                                 }
                                             }}
@@ -277,6 +279,7 @@ export function AdminDocs() {
                 categories={categories}
                 documents={docs}
             />
+            <ConfirmDialog />
         </div>
     );
 }

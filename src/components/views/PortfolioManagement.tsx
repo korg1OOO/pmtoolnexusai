@@ -29,8 +29,10 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { toast } from 'sonner';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 export function PortfolioManagement() {
+    const { confirm, ConfirmDialog } = useConfirmDialog();
     return (
         <Card className="w-full">
             <CardHeader>
@@ -49,18 +51,21 @@ export function PortfolioManagement() {
                         <TabsTrigger value="programs">Programs</TabsTrigger>
                     </TabsList>
                     <TabsContent value="portfolios">
-                        <PortfoliosManager />
+                        <PortfoliosManager confirm={confirm} />
                     </TabsContent>
                     <TabsContent value="programs">
-                        <ProgramsManager />
+                        <ProgramsManager confirm={confirm} />
                     </TabsContent>
                 </Tabs>
             </CardContent>
+            <ConfirmDialog />
         </Card>
     );
 }
 
-function PortfoliosManager() {
+type ConfirmFn = (message: string, opts?: Record<string, any>) => Promise<boolean>;
+
+function PortfoliosManager({ confirm }: { confirm: ConfirmFn }) {
     const { data: portfolios } = usePortfolios();
     const createPortfolio = useCreatePortfolio();
     const updatePortfolio = useUpdatePortfolio();
@@ -104,7 +109,7 @@ function PortfoliosManager() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this portfolio? This action cannot be undone.')) return;
+        if (!await confirm('Are you sure you want to delete this portfolio? This action cannot be undone.', { confirmText: 'Delete', destructive: true })) return;
         try {
             await deletePortfolio.mutateAsync(id);
             toast.success('Portfolio deleted');
@@ -228,7 +233,7 @@ function PortfoliosManager() {
     );
 }
 
-function ProgramsManager() {
+function ProgramsManager({ confirm }: { confirm: ConfirmFn }) {
     const { data: portfolios } = usePortfolios();
     const { data: programs } = usePrograms();
     const createProgram = useCreateProgram();
@@ -274,7 +279,7 @@ function ProgramsManager() {
     };
 
     const handleDelete = async (id: string) => {
-        if (!confirm('Are you sure you want to delete this program? This action cannot be undone.')) return;
+        if (!await confirm('Are you sure you want to delete this program? This action cannot be undone.', { confirmText: 'Delete', destructive: true })) return;
         try {
             await deleteProgram.mutateAsync(id);
             toast.success('Program deleted');

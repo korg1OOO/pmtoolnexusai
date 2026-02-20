@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -84,7 +85,7 @@ export function ChartDialog({ open, onOpenChange, selection, spreadsheetData, on
         );
 
         if (!validation.valid) {
-            alert(validation.error);
+            toast.error(validation.error);
             return;
         }
 

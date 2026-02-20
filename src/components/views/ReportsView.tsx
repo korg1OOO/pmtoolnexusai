@@ -54,6 +54,7 @@ import {
 } from "@/components/ui/select"
 import { Textarea } from '@/components/ui/textarea';
 import { useTeamMembers } from '@/hooks/useTeamMembers';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 interface ReportsViewProps {
   demo?: boolean;
@@ -61,6 +62,7 @@ interface ReportsViewProps {
 
 export default function ReportsView({ demo = false }: ReportsViewProps) {
   const { settings } = useProjectContext();
+  const { confirm, ConfirmDialog } = useConfirmDialog();
   const { data: reports, isLoading, createReport, deleteReport, generateReport } = useReports(settings.id);
 
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
@@ -170,7 +172,7 @@ export default function ReportsView({ demo = false }: ReportsViewProps) {
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm('Are you sure you want to delete this report configuration?')) {
+    if (await confirm('Are you sure you want to delete this report configuration?', { confirmText: 'Delete', destructive: true })) {
       await deleteReport.mutateAsync(id);
       if (selectedReport?.id === id) setSelectedReport(null);
     }
@@ -439,6 +441,7 @@ export default function ReportsView({ demo = false }: ReportsViewProps) {
         open={scheduleDialogOpen}
         onOpenChange={setScheduleDialogOpen}
       />
+      <ConfirmDialog />
     </div>
   );
 }

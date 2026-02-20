@@ -152,11 +152,20 @@ export default function CommunicationIntelligenceView() {
   const handleExportPDF = () => {
     const el = document.getElementById('status-report-section');
     if (!el) { toast.error('Generate a status report first'); return; }
-    const orig = document.body.innerHTML;
-    document.body.innerHTML = el.outerHTML;
+    // Inject a temporary print stylesheet that hides everything except the
+    // status report section — this preserves React state entirely.
+    const style = document.createElement('style');
+    style.id = '__print_override__';
+    style.textContent = `
+      @media print {
+        body > * { display: none !important; }
+        #status-report-section,
+        #status-report-section * { display: revert !important; }
+      }
+    `;
+    document.head.appendChild(style);
     window.print();
-    document.body.innerHTML = orig;
-    window.location.reload();
+    document.head.removeChild(style);
   };
 
   const handleExportPPT = () => {

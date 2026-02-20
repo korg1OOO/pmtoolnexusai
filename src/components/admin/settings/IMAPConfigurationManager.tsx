@@ -25,6 +25,7 @@ import {
     useSyncIMAPAccount
 } from '@/hooks/useIMAP';
 import { IMAPAccount } from '@/services/imapService';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 export function IMAPConfigurationManager() {
     const [showAddDialog, setShowAddDialog] = useState(false);
@@ -48,6 +49,7 @@ export function IMAPConfigurationManager() {
     const deleteAccount = useDeleteIMAPAccount();
     const testConnection = useTestIMAPConnection();
     const syncAccount = useSyncIMAPAccount();
+    const { confirm, ConfirmDialog } = useConfirmDialog();
 
     const handleSelectPreset = (provider: string) => {
         const preset = presets?.find(p => p.provider === provider);
@@ -96,7 +98,7 @@ export function IMAPConfigurationManager() {
     };
 
     const handleDelete = async (accountId: string) => {
-        if (confirm('Are you sure you want to delete this IMAP account?')) {
+        if (await confirm('Are you sure you want to delete this IMAP account?', { confirmLabel: 'Delete', variant: 'destructive' })) {
             await deleteAccount.mutateAsync(accountId);
         }
     };
@@ -425,6 +427,7 @@ export function IMAPConfigurationManager() {
                     </DialogFooter>
                 </DialogContent>
             </Dialog>
+            <ConfirmDialog />
         </div>
     );
 }

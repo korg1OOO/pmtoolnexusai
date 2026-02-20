@@ -26,6 +26,7 @@ import {
 } from '@/components/ui/select';
 import { Calendar as CalendarIcon, Plus, Trash2, Loader2, Clock, Sun } from 'lucide-react';
 import type { ProjectCalendar, CalendarException, WorkingDays, WorkHours } from '@/hooks/useCalendars';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 interface CalendarDialogProps {
   open: boolean;
@@ -77,6 +78,7 @@ export function CalendarDialog({
     endDate: new Date(),
     type: 'holiday' as 'holiday' | 'working',
   });
+  const { confirm, ConfirmDialog } = useConfirmDialog();
 
   // Reset form when calendar changes
   useEffect(() => {
@@ -144,14 +146,14 @@ export function CalendarDialog({
 
   const handleDeleteCalendar = async () => {
     if (!selectedCalendar || selectedCalendar.is_default) return;
-    if (confirm(`Delete calendar "${selectedCalendar.name}"?`)) {
+    if (await confirm(`Delete calendar "${selectedCalendar.name}"?`, { confirmLabel: 'Delete', variant: 'destructive' })) {
       await onDeleteCalendar(selectedCalendar.id);
     }
   };
 
   const handleAddException = async () => {
     if (!selectedCalendar || !newException.name) return;
-    
+
     await onAddException({
       calendar_id: selectedCalendar.id,
       name: newException.name,
@@ -160,7 +162,7 @@ export function CalendarDialog({
       end_date: newException.endDate.toISOString().split('T')[0],
       work_hours: null,
     });
-    
+
     setNewException({
       name: '',
       startDate: new Date(),
@@ -481,5 +483,6 @@ export function CalendarDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    <ConfirmDialog />
   );
 }

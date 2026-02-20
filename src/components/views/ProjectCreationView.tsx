@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
@@ -65,6 +66,7 @@ const priorityOptions = [
 ];
 
 export default function ProjectCreationView() {
+  const navigate = useNavigate();
   const { data: templates, isLoading: isLoadingTemplates } = useTemplates();
   const createProjectMutation = useCreateProjectFromTemplate();
 
@@ -184,7 +186,7 @@ export default function ProjectCreationView() {
 
         if (data) {
           localStorage.setItem('projectoye_selected_project', data.id);
-          setTimeout(() => window.location.href = '/', 1000);
+          navigate('/');
         }
 
       } else {
@@ -208,7 +210,7 @@ export default function ProjectCreationView() {
 
         if (data) {
           localStorage.setItem('projectoye_selected_project', data.id);
-          setTimeout(() => window.location.href = '/', 1000);
+          navigate('/');
         }
       }
     } catch (error: any) {

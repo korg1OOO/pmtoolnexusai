@@ -30,6 +30,7 @@ import {
     useEmailCampaign,
     useCancelCampaign
 } from '@/hooks/useEmailAutomation';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 import { format, addHours, startOfHour } from 'date-fns';
 
 /**
@@ -61,6 +62,7 @@ export function EmailCampaignDetail() {
     const navigate = useNavigate();
     const { data: campaign } = useEmailCampaign(id || '');
     const cancelCampaign = useCancelCampaign();
+    const { confirm, ConfirmDialog } = useConfirmDialog();
 
     const timelineData = useMemo(() => {
         if (!campaign) return [];
@@ -81,7 +83,7 @@ export function EmailCampaignDetail() {
     }
 
     const handleCancel = async () => {
-        if (confirm('Are you sure you want to cancel this campaign?')) {
+        if (await confirm('Are you sure you want to cancel this campaign?', { confirmLabel: 'Cancel Campaign', variant: 'destructive' })) {
             await cancelCampaign.mutateAsync(campaign.id);
             navigate('/admin/email');
         }

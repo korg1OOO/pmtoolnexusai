@@ -9,12 +9,14 @@ import { Badge } from '@/components/ui/badge';
 import { getUsers, getUserRoles, assignUserRole, revokeUserRole, User, UserRole } from '@/services/userService';
 import { toast } from 'sonner';
 import { useTenant } from '@/contexts/TenantContext';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 export function UserRoleManagement() {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedUser, setSelectedUser] = useState<User | null>(null);
     const [assignDialogOpen, setAssignDialogOpen] = useState(false);
     const queryClient = useQueryClient();
+    const { confirm, ConfirmDialog } = useConfirmDialog();
 
     const { tenantId } = useTenant();
 
@@ -93,8 +95,8 @@ export function UserRoleManagement() {
                                     key={user.id}
                                     onClick={() => setSelectedUser(user)}
                                     className={`w-full text-left p-3 rounded-lg border transition-colors ${selectedUser?.id === user.id
-                                            ? 'border-primary bg-primary/5'
-                                            : 'border-border hover:border-primary/50'
+                                        ? 'border-primary bg-primary/5'
+                                        : 'border-border hover:border-primary/50'
                                         }`}
                                 >
                                     <div className="flex items-center gap-3">
@@ -209,8 +211,8 @@ export function UserRoleManagement() {
                                                     <Button
                                                         variant="ghost"
                                                         size="sm"
-                                                        onClick={() => {
-                                                            if (confirm('Are you sure you want to revoke this role?')) {
+                                                        onClick={async () => {
+                                                            if (await confirm('Are you sure you want to revoke this role?', { confirmLabel: 'Revoke', variant: 'destructive' })) {
                                                                 revokeMutation.mutate(role.id);
                                                             }
                                                         }}
@@ -286,6 +288,7 @@ export function UserRoleManagement() {
                     }
                 }}
             />
+            <ConfirmDialog />
         </div>
     );
 }

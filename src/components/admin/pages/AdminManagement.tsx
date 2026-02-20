@@ -45,6 +45,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Shield, UserPlus, Users, Activity, Key, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 export function AdminManagement() {
     const [searchQuery, setSearchQuery] = useState('');
@@ -59,6 +60,7 @@ export function AdminManagement() {
     const revokeAccess = useRevokeAdminAccess();
     const updateRole = useUpdateAdminRole_User();
     const createRole = useCreateAdminRole();
+    const { confirm, ConfirmDialog } = useConfirmDialog();
 
     // Grant Admin Form State
     const [grantForm, setGrantForm] = useState({
@@ -82,7 +84,7 @@ export function AdminManagement() {
     };
 
     const handleRevokeAccess = async (userId: string) => {
-        if (confirm('Are you sure you want to revoke admin access?')) {
+        if (await confirm('Are you sure you want to revoke admin access?', { confirmLabel: 'Revoke', variant: 'destructive' })) {
             await revokeAccess.mutateAsync(userId);
         }
     };

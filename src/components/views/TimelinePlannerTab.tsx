@@ -59,6 +59,7 @@ const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Se
 const COLORS = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#ef4444", "#06b6d4", "#f97316"];
 const SWIMLANE_COLORS = ["#1e293b", "#312e81", "#4c1d95", "#1e3a5f", "#14532d", "#450a0a"];
 import { useTimelineGenerator } from "@/hooks/useTimelineGenerator";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
 
 
 const SwimlaneDragHandle = () => {
@@ -568,6 +569,7 @@ interface TimelinePlannerTabProps {
 
 export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabProps) {
     const { settings, activeGlobalPanel, setActiveGlobalPanel } = useProjectContext();
+    const { confirm, ConfirmDialog } = useConfirmDialog();
     const [state, dispatch] = React.useReducer(timelineReducer, {
         swimlanes: [], // Initial empty state, will load from DB
         milestones: [],
@@ -763,8 +765,8 @@ export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabP
         }
     };
 
-    const handleLoadSnapshot = (snapshot: Snapshot) => {
-        if (!confirm(`Load snapshot "${snapshot.name}"? Unsaved changes will be lost.`)) return;
+    const handleLoadSnapshot = async (snapshot: Snapshot) => {
+        if (!await confirm(`Load snapshot "${snapshot.name}"? Unsaved changes will be lost.`, { title: 'Load Snapshot', confirmLabel: 'Load' })) return;
 
         // The snapshot data might be just swimlanes or { swimlanes, milestones }
         // Migration check:
@@ -790,7 +792,7 @@ export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabP
 
     const handleGeneratePlan = async () => {
         if (!settings.id) return;
-        if (!confirm("This will generate a new Project Plan based on this timeline. This will append tasks to your existing plan. Continue?")) return;
+        if (!await confirm("This will generate a new Project Plan based on this timeline. This will append tasks to your existing plan. Continue?", { title: 'Generate Plan', confirmLabel: 'Generate' })) return;
 
         await generatePlan(settings.id, {
             swimlanes: state.swimlanes,
@@ -899,7 +901,7 @@ export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabP
             link.click();
             document.body.removeChild(link);
         } finally {
-            setTimeout(() => setIsExporting(false), 1000);
+            setIsExporting(false);
         }
     };
 
@@ -933,7 +935,7 @@ export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabP
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(activitiesData), "Activities");
             XLSX.writeFile(wb, `project_orchestration_${new Date().toISOString().split('T')[0]}.xlsx`);
         } finally {
-            setTimeout(() => setIsExporting(false), 1000);
+            setIsExporting(false);
         }
     };
 

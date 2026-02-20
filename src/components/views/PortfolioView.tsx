@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePortfolios, PortfolioWithPrograms, PortfolioProgram, PortfolioProject } from '@/hooks/usePortfolios';
 import { usePrograms } from '@/hooks/usePrograms';
@@ -46,13 +47,44 @@ import {
 } from 'recharts';
 import { PortfolioManagement } from './PortfolioManagement';
 import { usePermissions } from '@/hooks/usePermissions';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 export function PortfolioView() {
   const { data: portfoliosData, isLoading: isLoadingPortfolios } = usePortfolios();
   const permissions = usePermissions();
+  const queryClient = useQueryClient();
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'overview' | 'programs' | 'projects' | 'management'>('overview');
   const [selectedProject, setSelectedProject] = useState<PortfolioProject | null>(null);
+
+  // Create Portfolio Dialog
+  const [isCreatePortfolioOpen, setIsCreatePortfolioOpen] = useState(false);
+  const [newPortfolioName, setNewPortfolioName] = useState('');
+  const [isCreatingPortfolio, setIsCreatingPortfolio] = useState(false);
+
+  const handleCreatePortfolio = async () => {
+    if (!newPortfolioName.trim()) return;
+    setIsCreatingPortfolio(true);
+    try {
+      const { error } = await (supabase as any).from('portfolios').insert({
+        name: newPortfolioName.trim(),
+        description: `Portfolio created on ${new Date().toLocaleDateString()}`
+      });
+      if (error) throw error;
+      toast.success('Portfolio created successfully!');
+      queryClient.invalidateQueries({ queryKey: ['portfolios'] });
+      setNewPortfolioName('');
+      setIsCreatePortfolioOpen(false);
+    } catch (err: any) {
+      toast.error('Failed to create portfolio', { description: err.message });
+    } finally {
+      setIsCreatingPortfolio(false);
+    }
+  };
 
   // Set initial selected portfolio if not set
   if (!selectedPortfolioId && portfoliosData && portfoliosData.length > 0) {
@@ -136,7 +168,7 @@ export function PortfolioView() {
 
             console.log('[Portfolio] Created successfully:', data);
             toast.success('Portfolio created successfully!');
-            setTimeout(() => window.location.reload(), 1000);
+            queryClient.invalidateQueries({ queryKey: ['portfolios'] });
           } catch (err: any) {
             console.error('[Portfolio] Unexpected error:', err);
             const { toast } = await import('sonner');
@@ -158,38 +190,8 @@ export function PortfolioView() {
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm"><Filter className="h-4 w-4 mr-2" />Filter</Button>
           <Button variant="outline" size="sm"><Download className="h-4 w-4 mr-2" />Export</Button>
-          <Button variant="outline" size="sm" onClick={() => window.location.reload()}><RefreshCw className="h-4 w-4 mr-2" />Refresh</Button>
-          <Button size="sm" onClick={async () => {
-            try {
-              const portfolioName = prompt('Enter portfolio name:');
-              if (!portfolioName || portfolioName.trim() === '') {
-                return; // User cancelled or entered empty name
-              }
-
-              console.log('[Portfolio] Creating portfolio...');
-              const { supabase } = await import('@/integrations/supabase/client');
-              const { toast } = await import('sonner');
-
-              const { data, error } = await supabase.from('portfolios').insert({
-                name: portfolioName.trim(),
-                description: `Portfolio created on ${new Date().toLocaleDateString()}`
-              }).select().single();
-
-              if (error) {
-                console.error('[Portfolio] Creation error:', error);
-                toast.error('Failed to create portfolio', { description: error.message });
-                return;
-              }
-
-              console.log('[Portfolio] Created successfully:', data);
-              toast.success('Portfolio created successfully!');
-              setTimeout(() => window.location.reload(), 1000);
-            } catch (err: any) {
-              console.error('[Portfolio] Unexpected error:', err);
-              const { toast } = await import('sonner');
-              toast.error('Unexpected error', { description: err.message });
-            }
-          }}><Plus className="h-4 w-4 mr-2" />Create Portfolio</Button>
+          <Button variant="outline" size="sm" onClick={() => queryClient.invalidateQueries({ queryKey: ['portfolios'] })}><RefreshCw className="h-4 w-4 mr-2" />Refresh</Button>
+          <Button size="sm" onClick={() => setIsCreatePortfolioOpen(true)}><Plus className="h-4 w-4 mr-2" />Create Portfolio</Button>
         </div>
       </div>
 
@@ -595,6 +597,33 @@ export function PortfolioView() {
           </>
         )}
       </AnimatePresence>
+
+      {/* Create Portfolio Dialog */}
+      <Dialog open={isCreatePortfolioOpen} onOpenChange={setIsCreatePortfolioOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Portfolio</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Label htmlFor="portfolio-name">Portfolio Name</Label>
+            <Input
+              id="portfolio-name"
+              placeholder="e.g. Digital Transformation Portfolio"
+              value={newPortfolioName}
+              onChange={(e) => setNewPortfolioName(e.target.value)}
+              autoFocus
+              onKeyDown={(e) => { if (e.key === 'Enter') handleCreatePortfolio(); }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreatePortfolioOpen(false)}>Cancel</Button>
+            <Button onClick={handleCreatePortfolio} disabled={isCreatingPortfolio || !newPortfolioName.trim()}>
+              {isCreatingPortfolio ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Create Portfolio
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

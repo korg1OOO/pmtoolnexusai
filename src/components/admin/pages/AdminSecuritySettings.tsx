@@ -19,12 +19,17 @@ import {
     Globe,
     FileText,
     Save,
+    Loader2,
     AlertTriangle,
     CheckCircle,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSecurityLogs } from '@/hooks/useSecurityLogs';
-import { getPasswordPolicy, updatePasswordPolicy, PasswordPolicy } from '@/services/passwordPolicyService';
+import { getPasswordPolicy, updatePasswordPolicy } from '@/services/passwordPolicyService';
+import { useSecuritySettings, useUpdateSecuritySetting } from '@/hooks/useSecuritySettings';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+
+const supabase = _supabase as any;
 
 export function AdminSecuritySettings() {
     const [passwordPolicy, setPasswordPolicy] = useState({
@@ -36,11 +41,21 @@ export function AdminSecuritySettings() {
         expiryDays: 90,
     });
 
-    const [twoFactorEnabled, setTwoFactorEnabled] = useState(true);
+    // Session timeout: local state, persisted on save
     const [sessionTimeout, setSessionTimeout] = useState(30);
+    // IP whitelist: local state (comma-separated string), persisted on save
     const [ipWhitelist, setIpWhitelist] = useState('');
+    const [isSavingSession, setIsSavingSession] = useState(false);
+    const [isSavingIp, setIsSavingIp] = useState(false);
 
     const { data: securityLogs = [] } = useSecurityLogs({ limit: 10 });
+
+    // Live security settings from platform_settings table
+    const { data: securitySettings } = useSecuritySettings();
+    const updateSetting = useUpdateSecuritySetting();
+
+    // Derive twoFactorEnabled from live DB data; local toggle updates optimistically via mutation
+    const twoFactorEnabled = securitySettings?.mfa_enforced ?? true;
 
     const handleSavePasswordPolicy = async () => {
         try {
@@ -55,6 +70,41 @@ export function AdminSecuritySettings() {
             toast.success('Password policy updated successfully');
         } catch (error) {
             toast.error('Failed to update password policy');
+        }
+    };
+
+    const handleSave2FA = () => {
+        updateSetting.mutate({ key: 'mfa_enforced', value: twoFactorEnabled });
+    };
+
+    const handleSaveSession = async () => {
+        setIsSavingSession(true);
+        try {
+            const { error } = await supabase
+                .from('platform_settings')
+                .upsert({ key: 'session_timeout_minutes', value: sessionTimeout }, { onConflict: 'key' });
+            if (error) throw error;
+            toast.success('Session settings saved');
+        } catch {
+            toast.error('Failed to save session settings');
+        } finally {
+            setIsSavingSession(false);
+        }
+    };
+
+    const handleSaveIpWhitelist = async () => {
+        setIsSavingIp(true);
+        try {
+            const ips = ipWhitelist.split(',').map(s => s.trim()).filter(Boolean);
+            const { error } = await supabase
+                .from('platform_settings')
+                .upsert({ key: 'ip_allowlist', value: JSON.stringify(ips) }, { onConflict: 'key' });
+            if (error) throw error;
+            toast.success('IP whitelist saved');
+        } catch {
+            toast.error('Failed to save IP whitelist');
+        } finally {
+            setIsSavingIp(false);
         }
     };
 
@@ -190,7 +240,9 @@ export function AdminSecuritySettings() {
                                 <Switch
                                     id="enforce2fa"
                                     checked={twoFactorEnabled}
-                                    onCheckedChange={setTwoFactorEnabled}
+                                    onCheckedChange={(checked) =>
+                                        updateSetting.mutate({ key: 'mfa_enforced', value: checked })
+                                    }
                                 />
                             </div>
 
@@ -206,8 +258,12 @@ export function AdminSecuritySettings() {
                                 </div>
                             </div>
 
-                            <Button onClick={() => toast.success('2FA settings updated')}>
-                                <Save className="h-4 w-4 mr-2" />
+                            <Button onClick={handleSave2FA} disabled={updateSetting.isPending}>
+                                {updateSetting.isPending ? (
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                    <Save className="h-4 w-4 mr-2" />
+                                )}
                                 Save 2FA Settings
                             </Button>
                         </CardContent>
@@ -242,8 +298,12 @@ export function AdminSecuritySettings() {
                                 </div>
                             </div>
 
-                            <Button onClick={() => toast.success('Session settings saved')}>
-                                <Save className="h-4 w-4 mr-2" />
+                            <Button onClick={handleSaveSession} disabled={isSavingSession}>
+                                {isSavingSession ? (
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                    <Save className="h-4 w-4 mr-2" />
+                                )}
                                 Save Session Settings
                             </Button>
                         </CardContent>
@@ -273,8 +333,12 @@ export function AdminSecuritySettings() {
                                 </p>
                             </div>
 
-                            <Button onClick={() => toast.success('IP whitelist saved')}>
-                                <Save className="h-4 w-4 mr-2" />
+                            <Button onClick={handleSaveIpWhitelist} disabled={isSavingIp}>
+                                {isSavingIp ? (
+                                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                ) : (
+                                    <Save className="h-4 w-4 mr-2" />
+                                )}
                                 Save IP Whitelist
                             </Button>
                         </CardContent>

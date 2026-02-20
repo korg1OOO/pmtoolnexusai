@@ -3,7 +3,7 @@
  * Manage admin roles, permissions, and activity logging
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
     useAdminRoles,
     useAdminUsers,
@@ -90,6 +90,16 @@ export function AdminManagement() {
     const handleUpdateRole = async (userId: string, roleId: string) => {
         await updateRole.mutateAsync({ userId, roleId });
     };
+
+    // Compute how many unique resource types are defined across all role permission sets
+    const uniqueResourceTypes = useMemo(() => {
+        if (!roles) return 0;
+        const keys = new Set<string>();
+        roles.forEach(role => {
+            Object.keys(role.permissions ?? {}).forEach(k => keys.add(k));
+        });
+        return keys.size;
+    }, [roles]);
 
     const filteredAdmins = adminUsers?.filter((admin) =>
         admin.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -213,7 +223,7 @@ export function AdminManagement() {
                         <Key className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">8</div>
+                        <div className="text-2xl font-bold">{uniqueResourceTypes}</div>
                         <p className="text-xs text-muted-foreground">Resource types</p>
                     </CardContent>
                 </Card>

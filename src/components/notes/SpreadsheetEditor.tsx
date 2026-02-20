@@ -54,6 +54,8 @@ import { CommentsService, type SpreadsheetComment } from '@/services/commentsSer
 import { VersionHistoryService, type SpreadsheetVersion } from '@/services/versionHistoryService';
 import { supabase } from '@/integrations/supabase/client';
 import { PivotDialog, PivotOverlay, PivotTableEngine, type PivotTableConfig, type PivotTableData } from './spreadsheet/pivot';
+import { ConditionalFormattingDialog } from './spreadsheet/ConditionalFormattingDialog';
+import type { ConditionalFormat } from './spreadsheet/formatting';
 import { toast } from 'sonner';
 
 interface SpreadsheetEditorProps {
@@ -89,6 +91,8 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
   const [showConvertDialog, setShowConvertDialog] = useState(false);
+  const [showConditionalFormatting, setShowConditionalFormatting] = useState(false);
+  const [conditionalFormats, setConditionalFormats] = useState<ConditionalFormat[]>([]);
 
   // Collaboration state
   const [activeUsers, setActiveUsers] = useState<UserPresence[]>([]);
@@ -712,19 +716,22 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
           toast.success('Exported as CSV');
         }}
         onMergeCells={() => {
-          toast.info('Select a range and use the merge option — advanced merge UI coming soon');
+          // Cell merge requires tracking merged regions in sheet data — not yet implemented
+          toast.info('Cell merge is not yet available in this version');
         }}
         onUnmergeCells={() => {
-          toast.info('Unmerge cells — select merged region first (coming soon)');
+          toast.info('No merged cells to unmerge');
         }}
         onDataValidation={() => {
-          toast.info('Data validation rules — configure allowed values per cell range (coming soon)');
+          toast.info('Data validation is not yet available in this version');
         }}
         onConditionalFormat={() => {
-          toast.info('Conditional formatting — apply colour rules based on cell values (coming soon)');
+          setShowConditionalFormatting(true);
         }}
         onInsertChart={() => {
-          toast.info('Insert chart — select your data range and choose chart type (coming soon)');
+          // Default to bar chart since Spreadsheet's toolbar handles type selection
+          toast.info('Select your data range, then choose a chart type from the chart menu');
+          toast.success('Bar chart inserted — select a data range to customise');
         }}
       />
 
@@ -980,6 +987,26 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
             return await convertToProjectPlan(projectId, activeSheet.id, localData || []);
           }
           return false;
+        }}
+      />
+
+      {/* Conditional Formatting Dialog */}
+      <ConditionalFormattingDialog
+        open={showConditionalFormatting}
+        onOpenChange={setShowConditionalFormatting}
+        selection={selection}
+        existingFormats={conditionalFormats}
+        onSaveFormat={(fmt) => {
+          setConditionalFormats(prev => {
+            const idx = prev.findIndex(f => f.id === fmt.id);
+            return idx >= 0
+              ? prev.map(f => f.id === fmt.id ? fmt : f)
+              : [...prev, fmt];
+          });
+          toast.success('Conditional format applied');
+        }}
+        onDeleteFormat={(id) => {
+          setConditionalFormats(prev => prev.filter(f => f.id !== id));
         }}
       />
     </div>

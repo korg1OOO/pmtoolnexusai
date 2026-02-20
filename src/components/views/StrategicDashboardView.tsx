@@ -17,6 +17,7 @@ import { StrategicAISidebar } from '@/components/ai/StrategicAISidebar';
 import { TrackedAIService } from '@/services/trackedAIService';
 import { AIRiskDiscovery, ProjectContext, ValueEngineering } from '@/types/ai-pm';
 import { AlertCircle, Plus } from 'lucide-react';
+import { ChangeImpactAnalyzerPanel } from '@/components/ai/ChangeImpactAnalyzerPanel';
 
 export default function StrategicDashboardView() {
   const { settings } = useProjectContext();
@@ -97,11 +98,12 @@ export default function StrategicDashboardView() {
         </div>
 
         <Tabs defaultValue="context" className="space-y-4">
-          <TabsList className="grid grid-cols-4 w-full max-w-2xl">
+          <TabsList className="grid grid-cols-5 w-full max-w-3xl">
             <TabsTrigger value="context">Project Context</TabsTrigger>
             <TabsTrigger value="risks">AI Risk Discovery</TabsTrigger>
             <TabsTrigger value="value">Value Engineering</TabsTrigger>
             <TabsTrigger value="stakeholders">Stakeholder Map</TabsTrigger>
+            <TabsTrigger value="change-impact">Change Impact</TabsTrigger>
           </TabsList>
 
           {/* Project Context Tab */}
@@ -713,6 +715,14 @@ export default function StrategicDashboardView() {
                 </CardContent>
               </Card>
             )}
+          </TabsContent>
+
+          {/* Change Impact Analyzer Tab — P2.6 */}
+          <TabsContent value="change-impact" className="space-y-4">
+            <ChangeImpactAnalyzerPanel
+              projectId={settings.id}
+              projectName={settings.name}
+            />
           </TabsContent>
         </Tabs>
       </div>

@@ -710,9 +710,16 @@ export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabP
         }).catch(console.error);
     }, [settings.id]);
 
+    // Snapshot Dialog state
+    const [isSnapshotDialogOpen, setIsSnapshotDialogOpen] = useState(false);
+    const [snapshotName, setSnapshotName] = useState('');
+
     const handleCreateSnapshot = async () => {
-        const name = prompt("Enter snapshot name:");
-        if (!name || !settings.id) return;
+        if (!snapshotName.trim() || !settings.id) {
+            setIsSnapshotDialogOpen(false);
+            return;
+        }
+        const name = snapshotName.trim();
 
         try {
             const snapshotData = {
@@ -737,6 +744,8 @@ export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabP
             };
             setSnapshots([mapped, ...snapshots]);
             toast({ title: "Snapshot Saved", description: "Timeline state preserved." });
+            setSnapshotName('');
+            setIsSnapshotDialogOpen(false);
         } catch (error) {
             console.error("Failed to save snapshot", error);
             toast({ title: "Error", description: "Could not save snapshot.", variant: "destructive" });
@@ -1885,7 +1894,7 @@ export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabP
                                                                                     <Download className="h-4 w-4 mr-1" />
                                                                                     Export
                                                                                 </Button>
-                                                                                <Button variant="outline" size="sm" onClick={handleCreateSnapshot}>
+                                                                                <Button variant="outline" size="sm" onClick={() => setIsSnapshotDialogOpen(true)}>
                                                                                     <Copy className="h-4 w-4 mr-1" />
                                                                                     Snapshot
                                                                                 </Button>
@@ -2261,7 +2270,7 @@ export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabP
                                     <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-muted-foreground">
                                         <Copy className="h-3.5 w-3.5 text-indigo-500" /> Scenario Snapshots
                                     </div>
-                                    <Button size="sm" className="h-8 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[10px] tracking-widest uppercase px-6" onClick={handleCreateSnapshot}>
+                                    <Button size="sm" className="h-8 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[10px] tracking-widest uppercase px-6" onClick={() => setIsSnapshotDialogOpen(true)}>
                                         <Plus size={14} className="mr-2" /> Save Current as Snapshot
                                     </Button>
                                 </div>
@@ -2810,6 +2819,30 @@ export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabP
                     );
                 })()
             }
+
+            {/* Snapshot Name Dialog */}
+            <ShadcnDialog open={isSnapshotDialogOpen} onOpenChange={setIsSnapshotDialogOpen}>
+                <ShadcnDialogContent>
+                    <ShadcnDialogHeader>
+                        <ShadcnDialogTitle>Save Snapshot</ShadcnDialogTitle>
+                    </ShadcnDialogHeader>
+                    <div className="space-y-3 py-2">
+                        <ShadcnLabel htmlFor="snapshot-name">Snapshot Name</ShadcnLabel>
+                        <ShadcnInput
+                            id="snapshot-name"
+                            placeholder="e.g. Q2 Baseline"
+                            value={snapshotName}
+                            onChange={(e) => setSnapshotName(e.target.value)}
+                            autoFocus
+                            onKeyDown={(e) => { if (e.key === 'Enter') handleCreateSnapshot(); }}
+                        />
+                    </div>
+                    <ShadcnDialogFooter>
+                        <Button variant="outline" onClick={() => setIsSnapshotDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleCreateSnapshot} disabled={!snapshotName.trim()}>Save Snapshot</Button>
+                    </ShadcnDialogFooter>
+                </ShadcnDialogContent>
+            </ShadcnDialog>
         </div >
     );
 }

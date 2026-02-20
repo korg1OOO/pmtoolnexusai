@@ -43,7 +43,14 @@ export function AdminProUsers() {
     const activeSubscribers = subscribers.filter(s => s.status === 'active');
     const totalProUsers = activeSubscribers.length;
     const monthlyRevenue = metrics?.total_mrr || 0;
-    const activeUsers7d = Math.floor(totalProUsers * 0.75);
+    const activeUsers7d = subscribers.filter(s => {
+        if (!s.status || s.status !== 'active') return false;
+        // Use updated_at as a proxy for recent activity if available, otherwise created_at
+        const lastSeen = (s as any).updated_at || (s as any).last_sign_in_at || s.created_at;
+        if (!lastSeen) return false;
+        const sevenDaysAgo = new Date(Date.now() - 7 * 86400_000);
+        return new Date(lastSeen) >= sevenDaysAgo;
+    }).length;
 
     const filteredSubscribers = subscribers.filter(sub => {
         const matchesSearch =
@@ -118,9 +125,9 @@ export function AdminProUsers() {
             <div>
                 <h2 className="text-lg font-semibold mb-4">Subscription Tiers</h2>
                 <div className="grid gap-4 md:grid-cols-3">
-                    <UserTierCard tierName="Pro Users" price="$10/mo" userCount={proCount} color="green" trend={{ value: 12, isPositive: true }} icon={<Crown className="h-6 w-6 text-green-500" />} />
-                    <UserTierCard tierName="Business Users" price="$39/mo" userCount={businessCount} color="blue" trend={{ value: 8, isPositive: true }} icon={<Briefcase className="h-6 w-6 text-blue-500" />} />
-                    <UserTierCard tierName="Agency Users" price="$99/mo" userCount={agencyCount} color="purple" trend={{ value: 5, isPositive: true }} icon={<Building2 className="h-6 w-6 text-purple-500" />} />
+                    <UserTierCard tierName="Pro Users" price="$10/mo" userCount={proCount} color="green" icon={<Crown className="h-6 w-6 text-green-500" />} />
+                    <UserTierCard tierName="Business Users" price="$39/mo" userCount={businessCount} color="blue" icon={<Briefcase className="h-6 w-6 text-blue-500" />} />
+                    <UserTierCard tierName="Agency Users" price="$99/mo" userCount={agencyCount} color="purple" icon={<Building2 className="h-6 w-6 text-purple-500" />} />
                 </div>
             </div>
 

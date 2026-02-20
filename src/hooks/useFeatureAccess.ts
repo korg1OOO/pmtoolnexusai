@@ -144,10 +144,14 @@ export const TIER_LIMITS = {
 
 /**
  * Returns live pricing for all tiers from the plan_configs DB table.
- * Falls back to the hardcoded TIER_PRICING until the query resolves.
+ * Falls back to the hardcoded TIER_PRICING if the query has not resolved yet.
+ * Emits a console.error if the DB query fails so the issue is observable.
  */
 export function useTierPricing() {
-    const { data: configs = [] } = usePlanConfigs();
+    const { data: configs = [], isError } = usePlanConfigs();
+    if (isError) {
+        console.error('[useFeatureAccess] useTierPricing: plan_configs query failed — using hardcoded fallback. Check plan_configs RLS policies.');
+    }
     if (configs.length === 0) return TIER_PRICING as Record<string, { monthly: number; annual: number }>;
     return Object.fromEntries(
         configs.map(c => [c.tier, { monthly: c.price_monthly, annual: c.price_annual }])
@@ -156,10 +160,14 @@ export function useTierPricing() {
 
 /**
  * Returns live limits for a specific tier from the plan_configs DB table.
- * Falls back to the hardcoded TIER_LIMITS until the query resolves.
+ * Falls back to the hardcoded TIER_LIMITS if the query has not resolved yet.
+ * Emits a console.error if the DB query fails so the issue is observable.
  */
 export function useTierLimits(tier: SubscriptionTier) {
-    const { data: configs = [] } = usePlanConfigs();
+    const { data: configs = [], isError } = usePlanConfigs();
+    if (isError) {
+        console.error('[useFeatureAccess] useTierLimits: plan_configs query failed — using hardcoded fallback. Check plan_configs RLS policies.');
+    }
     const cfg = configs.find(c => c.tier === tier);
     if (!cfg) return TIER_LIMITS[tier] as { projects: number; teamMembers: number; fileSize: number; storage: number; aiCredits: number };
     return {

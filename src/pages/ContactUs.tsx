@@ -1,26 +1,48 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft, Mail, MapPin, MessageSquare } from 'lucide-react';
 import { ContactFormModal } from '@/components/modals/ContactFormModal';
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { supabase } from "@/integrations/supabase/client";
 
 const ContactUs = () => {
-    const [isLoading, setIsLoading] = React.useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [name, setName] = useState('');
+    const [email, setEmail] = useState('');
+    const [message, setMessage] = useState('');
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         setIsLoading(true);
-        // Simulate network delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        try {
+            // Insert into contact_submissions table for admin visibility
+            const { error: dbError } = await (supabase as any)
+                .from('contact_submissions')
+                .insert({ name, email, message });
 
-        toast.success("Message sent successfully!", {
-            description: "We've received your message at admin@projectoye.com and will get back to you shortly."
-        });
+            if (dbError) {
+                // Table may not exist yet — fall back to Edge Function
+                const { error: fnError } = await supabase.functions.invoke('send-contact-email', {
+                    body: { name, email, message },
+                });
+                if (fnError) throw fnError;
+            }
 
-        setIsLoading(false);
-        (e.target as HTMLFormElement).reset();
+            toast.success("Message sent successfully!", {
+                description: "We've received your message and will get back to you shortly."
+            });
+            setName('');
+            setEmail('');
+            setMessage('');
+        } catch (err: any) {
+            toast.error("Failed to send message", {
+                description: err?.message ?? "Please try again or email us directly.",
+            });
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -93,21 +115,43 @@ const ContactUs = () => {
                         </div>
                     </div>
 
-                    {/* Form Placeholder */}
+                    {/* Contact Form — wired to Supabase */}
                     <div className="p-8 rounded-3xl bg-slate-50 border border-slate-100 shadow-sm">
                         <h3 className="text-xl font-bold mb-6 text-slate-900">Send us a message</h3>
                         <form className="space-y-4" onSubmit={handleSubmit}>
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-slate-700">Name</label>
-                                <Input required placeholder="John Doe" className="bg-white border-slate-200 focus:border-indigo-500" />
+                                <label htmlFor="contact-name" className="text-sm font-medium text-slate-700">Name</label>
+                                <Input
+                                    id="contact-name"
+                                    required
+                                    placeholder="John Doe"
+                                    className="bg-white border-slate-200 focus:border-indigo-500"
+                                    value={name}
+                                    onChange={e => setName(e.target.value)}
+                                />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-slate-700">Email</label>
-                                <Input required type="email" placeholder="john@example.com" className="bg-white border-slate-200 focus:border-indigo-500" />
+                                <label htmlFor="contact-email" className="text-sm font-medium text-slate-700">Email</label>
+                                <Input
+                                    id="contact-email"
+                                    required
+                                    type="email"
+                                    placeholder="john@example.com"
+                                    className="bg-white border-slate-200 focus:border-indigo-500"
+                                    value={email}
+                                    onChange={e => setEmail(e.target.value)}
+                                />
                             </div>
                             <div className="space-y-2">
-                                <label className="text-sm font-medium text-slate-700">Message</label>
-                                <Textarea required placeholder="How can we help?" className="bg-white border-slate-200 focus:border-indigo-500 min-h-[120px]" />
+                                <label htmlFor="contact-message" className="text-sm font-medium text-slate-700">Message</label>
+                                <Textarea
+                                    id="contact-message"
+                                    required
+                                    placeholder="How can we help?"
+                                    className="bg-white border-slate-200 focus:border-indigo-500 min-h-[120px]"
+                                    value={message}
+                                    onChange={e => setMessage(e.target.value)}
+                                />
                             </div>
                             <Button className="w-full bg-indigo-600 hover:bg-indigo-700 font-bold h-12 text-white" disabled={isLoading}>
                                 {isLoading ? "Sending..." : "Send Message"}

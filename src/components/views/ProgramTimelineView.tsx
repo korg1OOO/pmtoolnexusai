@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useQueryClient } from '@tanstack/react-query';
 import { usePortfolios } from '@/hooks/usePortfolios';
 import { usePrograms } from '@/hooks/usePrograms';
 import {
@@ -39,6 +40,12 @@ import {
   Tooltip,
   ResponsiveContainer
 } from 'recharts';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 type TimeScale = 'month' | 'quarter' | 'year';
 
@@ -70,8 +77,39 @@ export default function ProgramTimelineView() {
   const [viewDate, setViewDate] = useState(new Date(2024, 0, 1));
   const { data: portfolios, isLoading: isLoadingPortfolios } = usePortfolios();
   const { data: programsData, isLoading: isLoadingPrograms } = usePrograms();
+  const queryClient = useQueryClient();
   const [expandedPrograms, setExpandedPrograms] = useState<string[]>([]);
   const [selectedProject, setSelectedProject] = useState<ExtendedProject | null>(null);
+
+  // Create Program Dialog
+  const [isCreateProgramOpen, setIsCreateProgramOpen] = useState(false);
+  const [newProgramName, setNewProgramName] = useState('');
+  const [newProgramPortfolioId, setNewProgramPortfolioId] = useState<string>('none');
+  const [isCreatingProgram, setIsCreatingProgram] = useState(false);
+
+  const handleCreateProgram = async () => {
+    if (!newProgramName.trim()) return;
+    setIsCreatingProgram(true);
+    try {
+      const { error } = await (supabase as any).from('programs').insert({
+        name: newProgramName.trim(),
+        description: `Program created on ${new Date().toLocaleDateString()}`,
+        status: 'active',
+        portfolio_id: newProgramPortfolioId === 'none' ? null : newProgramPortfolioId
+      });
+      if (error) throw error;
+      toast.success('Program created successfully!');
+      queryClient.invalidateQueries({ queryKey: ['programs'] });
+      queryClient.invalidateQueries({ queryKey: ['portfolios'] });
+      setNewProgramName('');
+      setNewProgramPortfolioId('none');
+      setIsCreateProgramOpen(false);
+    } catch (err: any) {
+      toast.error('Failed to create program', { description: err.message });
+    } finally {
+      setIsCreatingProgram(false);
+    }
+  };
 
   // Initialize expanded programs once data is loaded
   useMemo(() => {
@@ -268,49 +306,7 @@ export default function ProgramTimelineView() {
           <Button variant="outline" size="sm">
             <Maximize2 className="h-4 w-4" />
           </Button>
-          <Button size="sm" onClick={async () => {
-            try {
-              const programName = prompt('Enter program name:');
-              if (!programName || programName.trim() === '') return;
-
-              const portfolioName = prompt('Assign to portfolio? (leave empty to skip)');
-
-              console.log('[Program] Creating program...');
-              const { supabase } = await import('@/integrations/supabase/client');
-              const { toast } = await import('sonner');
-
-              let portfolioId = null;
-              if (portfolioName && portfolioName.trim()) {
-                const { data: portfolioData } = await supabase
-                  .from('portfolios')
-                  .select('id')
-                  .ilike('name', portfolioName.trim())
-                  .single();
-                portfolioId = portfolioData?.id || null;
-              }
-
-              const { data, error } = await supabase.from('programs').insert({
-                name: programName.trim(),
-                description: `Program created on ${new Date().toLocaleDateString()}`,
-                status: 'active',
-                portfolio_id: portfolioId
-              }).select().single();
-
-              if (error) {
-                console.error('[Program] Creation error:', error);
-                toast.error('Failed to create program', { description: error.message });
-                return;
-              }
-
-              console.log('[Program] Created successfully:', data);
-              toast.success('Program created successfully!');
-              setTimeout(() => window.location.reload(), 1000);
-            } catch (err: any) {
-              console.error('[Program] Unexpected error:', err);
-              const { toast } = await import('sonner');
-              toast.error('Unexpected error', { description: err.message });
-            }
-          }}><Plus className="h-4 w-4 mr-2" />Create Program</Button>
+          <Button size="sm" onClick={() => setIsCreateProgramOpen(true)}><Plus className="h-4 w-4 mr-2" />Create Program</Button>
         </div>
       </div>
 
@@ -909,6 +905,49 @@ export default function ProgramTimelineView() {
           </>
         )}
       </AnimatePresence>
+
+      {/* Create Program Dialog */}
+      <Dialog open={isCreateProgramOpen} onOpenChange={setIsCreateProgramOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Program</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="program-name">Program Name</Label>
+              <Input
+                id="program-name"
+                placeholder="e.g. Digital Transformation"
+                value={newProgramName}
+                onChange={(e) => setNewProgramName(e.target.value)}
+                autoFocus
+                onKeyDown={(e) => { if (e.key === 'Enter') handleCreateProgram(); }}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="program-portfolio">Assign to Portfolio (optional)</Label>
+              <Select value={newProgramPortfolioId} onValueChange={setNewProgramPortfolioId}>
+                <SelectTrigger id="program-portfolio">
+                  <SelectValue placeholder="Select a portfolio..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No portfolio</SelectItem>
+                  {(portfolios || []).map((p: any) => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateProgramOpen(false)}>Cancel</Button>
+            <Button onClick={handleCreateProgram} disabled={isCreatingProgram || !newProgramName.trim()}>
+              {isCreatingProgram ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Create Program
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -7,7 +7,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Skeleton } from '@/components/ui/skeleton';
 import { ArrowLeft, CreditCard, Shield, Zap } from 'lucide-react';
 import { aiCreditsService } from '@/services/aiCreditsService';
-import { stripePaymentService } from '@/services/stripePaymentService';
+
 import { PricingCard } from './PricingCard';
 import { PaymentDialog } from './PaymentDialog';
 import { toast } from 'sonner';

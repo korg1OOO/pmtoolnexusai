@@ -13,7 +13,7 @@ import {
     type Invoice,
     type RevenueReportMetrics,
 } from '@/services/invoiceService';
-import { processRefund } from '@/services/stripeIntegrationService';
+import { processRefund } from '@/services/stripeService';
 
 // ─── Stripe Invoice Sync ───────────────────────────────────────────────────
 

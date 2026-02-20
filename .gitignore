@@ -12,6 +12,17 @@ dist
 dist-ssr
 *.local
 
+# ── Environment / Secrets ─────────────────────────────────────────────────────
+# NEVER commit secrets. Safe values belong in .env (non-secret VITE_ vars only).
+# All secrets (API keys, service role keys, DB passwords) go in .env.local.
+.env
+.env.local
+.env.*.local
+# Example files contain only placeholder values (YOUR_XXX_HERE) — they are safe
+# to commit, but are listed here as a reminder to check before committing.
+# .env.exampleLocal
+# .env.exampleProd
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

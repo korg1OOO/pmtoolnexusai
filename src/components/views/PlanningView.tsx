@@ -428,9 +428,7 @@ export default function PlanningView({ demo = false, scenarioId = null }: Planni
             <>
               {
                 demo ? (
-                  // Demo Grid Placeholder - Replace with actual Mock Grid if needed, or rely on DatabaseTaskGrid handling 'demo' ID gracefully?
-                  // DatabaseTaskGrid likely fetches from DB. We need to mock that too or render a visual placeholder.
-                  // For Landing Page, a visual placeholder is safer than hacking the query hooks deeply.
+                  // Demo mode: shows a static task grid preview for the landing page
                   <div className="p-8">
                     <div className="border rounded-xl shadow-sm overflow-hidden bg-card/60 backdrop-blur-sm">
                       <table className="w-full text-sm">

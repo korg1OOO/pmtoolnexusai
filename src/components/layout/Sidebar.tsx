@@ -128,7 +128,7 @@ const navItems: NavItem[] = [
     icon: Users,
     children: [
       { id: 'collaboration-dashboard', label: 'Collab Dashboard', icon: LayoutDashboard, alwaysShow: true },
-      { id: 'meetings', label: 'AI Meetings', icon: Users, badge: 2, moduleKey: 'meetings' },
+      { id: 'meetings', label: 'AI Meetings', icon: Users, moduleKey: 'meetings' },
       { id: 'meeting-analytics', label: 'Meeting Analytics', icon: BarChart3, moduleKey: 'meetings' },
       { id: 'calendar', label: 'Calendar', icon: Calendar, alwaysShow: true },
       { id: 'collaboration-spaces', label: 'Collaboration Spaces', icon: Users, alwaysShow: true },
@@ -293,7 +293,8 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
       ? item.id === 'actions' ? (badges.actions > 0 ? badges.actions : undefined)
         : item.id === 'risks' ? (badges.risks > 0 ? badges.risks : undefined)
           : item.id === 'issues' ? (badges.issues > 0 ? badges.issues : undefined)
-            : item.badge
+            : item.id === 'meetings' ? (badges.meetings > 0 ? badges.meetings : undefined)
+              : item.badge
       : item.badge;
 
     const itemContent = (

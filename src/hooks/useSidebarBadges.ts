@@ -5,10 +5,12 @@ interface SidebarBadges {
     actions: number;
     risks: number;
     issues: number;
+    meetings: number;
 }
 
 async function fetchSidebarBadges(projectId: string): Promise<SidebarBadges> {
-    const [actionsResult, risksResult, issuesResult] = await Promise.all([
+    const now = new Date().toISOString();
+    const [actionsResult, risksResult, issuesResult, meetingsResult] = await Promise.all([
         supabase
             .from('actions')
             .select('id', { count: 'exact', head: true })
@@ -24,12 +26,19 @@ async function fetchSidebarBadges(projectId: string): Promise<SidebarBadges> {
             .select('id', { count: 'exact', head: true })
             .eq('project_id', projectId)
             .in('status', ['open', 'in-progress']),
+        supabase
+            .from('meetings')
+            .select('id', { count: 'exact', head: true })
+            .eq('project_id', projectId)
+            .gte('scheduled_at', now)
+            .in('status', ['scheduled', 'confirmed']),
     ]);
 
     return {
         actions: actionsResult.count ?? 0,
         risks: risksResult.count ?? 0,
         issues: issuesResult.count ?? 0,
+        meetings: meetingsResult.count ?? 0,
     };
 }
 

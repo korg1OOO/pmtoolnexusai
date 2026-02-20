@@ -126,17 +126,16 @@ export default function UserSettingsView() {
     };
     checkMfa();
 
-    // Fetch active sessions (Mock for now as Supabase doesn't expose session management API easily to client without edge functions)
-    // But we can show current session at least
+    // Fetch current session — displays real auth session info
     const getSession = async () => {
       const { data } = await supabase.auth.getSession();
       if (data.session) {
         setActiveSessions([{
-          id: 'current',
-          created_at: new Date().toISOString(), // approximated
-          updated_at: new Date().toISOString(),
+          id: data.session.access_token.substring(0, 8) + '...', // token prefix as identifier
+          created_at: data.session.user.created_at,
+          updated_at: data.session.user.updated_at ?? data.session.user.created_at,
           user_agent: navigator.userAgent,
-          last_sign_in_at: new Date().toISOString()
+          last_sign_in_at: data.session.user.last_sign_in_at ?? data.session.user.created_at
         }]);
       }
     };

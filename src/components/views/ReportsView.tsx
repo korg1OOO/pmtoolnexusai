@@ -178,12 +178,7 @@ export default function ReportsView({ demo = false }: ReportsViewProps) {
     }
   }
 
-  // Helper to map DB types to UI icons needed for ReportCard (which expects lucide-react icons)
-  // We need to patch ReportCard to accept our Report type, or map it here.
-  // Ideally ReportCard should just take the icon component or name.
-  // For now let's map it dynamically in the render if possible, but ReportCard expects a Report type that acts like the mock one.
-  // We might need to cast or adapt our DB Report to the UI Report interface if they differ significantly.
-  // Looking at previous ReportsView, the mock type had 'icon'. Our DB Type doesn't.
+  // Map report type to a lucide-react icon for display
   const getIconForType = (type: string) => {
     switch (type) {
       case 'status': return Activity;

@@ -66,6 +66,12 @@ const routeToViewMap: Record<string, string> = {
     '/admin/templates': 'admin-templates',
     '/settings': 'settings',
     '/create-project': 'create-project',
+    '/meeting-analytics': 'meeting-analytics',
+    '/timeline-slippage': 'timeline-slippage',
+    '/collaboration-dashboard': 'collaboration-dashboard',
+    '/purchase-credits': 'purchase-credits',
+    '/usage-dashboard': 'usage-dashboard',
+    '/auto-recharge': 'auto-recharge',
 };
 
 // Reverse mapping: view ID to route path
@@ -118,6 +124,12 @@ const viewToRouteMap: Record<string, string> = {
     'admin-templates': '/admin/templates',
     'settings': '/settings',
     'create-project': '/create-project',
+    'meeting-analytics': '/meeting-analytics',
+    'timeline-slippage': '/timeline-slippage',
+    'collaboration-dashboard': '/collaboration-dashboard',
+    'purchase-credits': '/purchase-credits',
+    'usage-dashboard': '/usage-dashboard',
+    'auto-recharge': '/auto-recharge',
 };
 
 export function ProtectedProjectRoute({ children }: ProtectedProjectRouteProps) {

@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { deductCredits, getTenantId } from "../_shared/creditDeduction.ts";
 
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -14,9 +15,21 @@ serve(async (req) => {
     try {
         const { projectId, content } = await req.json();
         const openAiKey = Deno.env.get("OPENAI_API_KEY");
+        const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const supabase = createClient(supabaseUrl, supabaseKey);
 
         if (!openAiKey) {
             throw new Error("OPENAI_API_KEY is not set");
+        }
+
+        // Identify caller for credit billing
+        const authHeader = req.headers.get("Authorization");
+        let userId: string | null = null;
+        if (authHeader) {
+            const token = authHeader.replace("Bearer ", "");
+            const { data: { user } } = await supabase.auth.getUser(token);
+            userId = user?.id ?? null;
         }
 
         const systemPrompt = `You are an expert Project Management AI assistant. 
@@ -37,7 +50,7 @@ Output ONLY valid JSON in this format:
   "budgetPressureSignals": [{"description": "string", "severity": "critical|warning|info", "category": "string", "recommendation": "string"}],
   "actionableItems": [{"title": "string", "owner": "string", "dueDate": "YYYY-MM-DD", "priority": "high|medium|low", "source": "string"}],
   "sentiment": "positive|neutral|negative|urgent",
-  "confidence": 0.0-1.0
+  "confidence": 0.0
 }`;
 
         const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -59,6 +72,17 @@ Output ONLY valid JSON in this format:
 
         const aiData = await response.json();
         const result = JSON.parse(aiData.choices[0].message.content);
+
+        // Deduct AI credits — 2× billing multiplier applied inside helper
+        const usage = aiData.usage ?? {};
+        const tenantId = userId ? await getTenantId(supabase, userId) : null;
+        await deductCredits(supabase, userId, tenantId, {
+            featureType: "process_communication",
+            requestId: `comm-${projectId}-${Date.now()}`,
+            modelName: "gpt-4o",
+            promptTokens: usage.prompt_tokens ?? 0,
+            completionTokens: usage.completion_tokens ?? 0,
+        });
 
         return new Response(JSON.stringify(result), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },

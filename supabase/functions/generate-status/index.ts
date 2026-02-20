@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { deductCredits, getTenantId } from "../_shared/creditDeduction.ts";
 
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
@@ -22,6 +23,15 @@ serve(async (req) => {
             throw new Error("OPENAI_API_KEY is not set");
         }
 
+        // Identify caller for credit billing
+        const authHeader = req.headers.get("Authorization");
+        let userId: string | null = null;
+        if (authHeader) {
+            const token = authHeader.replace("Bearer ", "");
+            const { data: { user } } = await supabase.auth.getUser(token);
+            userId = user?.id ?? null;
+        }
+
         // Fetch project data for reporting
         const { data: project } = await supabase.from("projects").select("*").eq("id", projectId).single();
         const { data: tasks } = await supabase.from("tasks").select("*").eq("project_id", projectId);
@@ -29,8 +39,8 @@ serve(async (req) => {
         const context = {
             project,
             tasks: tasks?.length || 0,
-            completedTasks: tasks?.filter(t => t.status === 'completed').length || 0,
-            milestones: tasks?.filter(t => t.type === 'milestone') || [],
+            completedTasks: tasks?.filter((t: any) => t.status === 'completed').length || 0,
+            milestones: tasks?.filter((t: any) => t.type === 'milestone') || [],
         };
 
         const systemPrompt = `You are an Executive Project Reporter. 
@@ -72,6 +82,17 @@ Output ONLY valid JSON in this format:
         const result = JSON.parse(aiData.choices[0].message.content);
         result.id = `STATUS-${Date.now()}`;
         result.generatedAt = new Date().toISOString();
+
+        // Deduct AI credits — 2× billing multiplier applied inside helper
+        const usage = aiData.usage ?? {};
+        const tenantId = userId ? await getTenantId(supabase, userId) : null;
+        await deductCredits(supabase, userId, tenantId, {
+            featureType: "generate_status",
+            requestId: `status-${projectId}-${Date.now()}`,
+            modelName: "gpt-4o",
+            promptTokens: usage.prompt_tokens ?? 0,
+            completionTokens: usage.completion_tokens ?? 0,
+        });
 
         return new Response(JSON.stringify(result), {
             headers: { ...corsHeaders, "Content-Type": "application/json" },

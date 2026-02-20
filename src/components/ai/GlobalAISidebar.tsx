@@ -38,6 +38,8 @@ import { ContextSelector, formatContextsForAI, type ContextItem } from './Contex
 import { ChatAttachments, AttachmentPreviewBar, VoiceInputButton, type ChatAttachment } from './ChatAttachments';
 import { ROLE_DISPLAY_NAMES, type ProjectRole, type AIAction } from '@/types/ai-agents';
 import { toast } from 'sonner';
+import { AgentConfirmationDialog } from './AgentConfirmationDialog';
+import { useAgentActions } from '@/hooks/useAgentActions';
 
 interface GlobalAISidebarProps {
   isOpen: boolean;
@@ -88,6 +90,13 @@ export function GlobalAISidebar({
     deleteConversation,
     clearClarification,
   } = useAIChat({ projectId, currentView, intentMode });
+
+  // Agentic tool-calling confirmation (real DB writes via make-checker)
+  const {
+    confirmationRequest,
+    executeApprovedAction,
+    dismissConfirmation,
+  } = useAgentActions();
 
   // Fetch active agent config from DB when currentAgent is set
   const { data: activeAgentConfig } = useAIAgent(currentAgent || '');
@@ -600,7 +609,7 @@ export function GlobalAISidebar({
         )}
       </AnimatePresence>
 
-      {/* Action Confirmation Dialog */}
+      {/* Original Action Confirmation Dialog (legacy chat-action pattern) */}
       <ActionConfirmDialog
         action={pendingAction}
         open={!!pendingAction}
@@ -608,6 +617,15 @@ export function GlobalAISidebar({
         isLoading={isActionLoading}
         onConfirm={handleConfirmAction}
         onCancel={handleCancelAction}
+      />
+
+      {/* Agentic Tool-Calling Confirmation Dialog (real DB writes with maker-checker) */}
+      <AgentConfirmationDialog
+        request={confirmationRequest}
+        onClose={dismissConfirmation}
+        onApproved={({ pendingActionId, toolName }) =>
+          executeApprovedAction(pendingActionId as string, toolName as string)
+        }
       />
     </>
   );

@@ -71,6 +71,7 @@ import { EmailTemplateEditor } from '@/components/admin/pages/EmailTemplateEdito
 import { EmailCampaignBuilder } from '@/components/admin/pages/EmailCampaignBuilder';
 import { EmailCampaignDetail } from '@/components/admin/pages/EmailCampaignDetail';
 import { DatabaseMigrationPanel } from '@/components/admin/DatabaseMigrationPanel';
+import { AIProviderAdminPage } from '@/components/admin/AIProviderAdminPage';
 import { TenantDashboard, WorkspaceManagement, TenantSettings, TenantUserManagement, TenantAnalytics, DepartmentManagement, LicenseAllocation } from '@/components/tenant';
 import { WorkspaceDashboard, PortfolioView, TeamAssignment, WorkspaceResourceAllocation, WorkspaceBudgetManagement, WorkspaceAnalytics } from '@/components/workspace';
 import { ProjectPerformanceDetail, PortfolioDistributionDetail, ResourceUtilizationDetail } from '@/components/analytics';
@@ -534,6 +535,7 @@ const App = () => (
                     <Route path="ai-credits" element={<AdminAICredits />} />
                     <Route path="ai-agents" element={<AdminAIAgents />} />
                     <Route path="ai-agents/:agentType" element={<AIAgentDetailPage />} />
+                    <Route path="ai-providers" element={<AIProviderAdminPage />} />
                     <Route path="ml" element={<MLDashboard />} />
                     <Route path="ml/models" element={<MLModelsPage />} />
                     <Route path="ml/alerts" element={<MLAlertsPage />} />

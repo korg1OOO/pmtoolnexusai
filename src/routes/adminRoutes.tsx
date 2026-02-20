@@ -108,6 +108,7 @@ export function AdminRoutes() {
             <Route path="organizations" element={<AdminOrganizations />} />
             <Route path="api-keys" element={<AdminAPIKeys />} />
             <Route path="audit-logs" element={<AdminAuditLogs />} />
+            <Route path="security-settings" element={<AdminSecurity />} />
         </Route>
     );
 }

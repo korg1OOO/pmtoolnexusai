@@ -8,7 +8,7 @@
  * See: src/routes/README.md for the full guard rule documentation.
  */
 
-import { Route } from 'react-router-dom';
+import { Route, Navigate } from 'react-router-dom';
 import { ProtectedProjectRoute } from '@/components/routing';
 import { lazy } from 'react';
 
@@ -38,10 +38,8 @@ const ChildPlansView = lazy(() => import('@/components/views/ChildPlansView'));
 const ChildGanttView = lazy(() => import('@/components/views/ChildGanttView'));
 const UserSettingsView = lazy(() => import('@/components/views/UserSettingsView'));
 const ProjectAdminView = lazy(() => import('@/components/views/ProjectAdminView'));
-const PlatformAdminView = lazy(() => import('@/components/views/PlatformAdminView'));
 const PlanningView = lazy(() => import('@/components/views/PlanningView'));
 const ProjectCreationView = lazy(() => import('@/components/views/ProjectCreationView'));
-const TemplatesAdminView = lazy(() => import('@/components/views/TemplatesAdminView'));
 const MorningBriefingView = lazy(() => import('@/components/views/MorningBriefingView'));
 const ProjectCharterView = lazy(() => import('@/components/views/ProjectCharterView'));
 const StakeholderRegisterView = lazy(() => import('@/components/views/StakeholderRegisterView'));
@@ -145,8 +143,9 @@ export function ProjectRoutes() {
 
             {/* ── Project-scoped Admin & Settings ───────────────────────────── */}
             <Route path="/admin/project" element={<ProtectedProjectRoute><ProjectAdminView /></ProtectedProjectRoute>} />
-            <Route path="/admin/platform" element={<ProtectedProjectRoute><PlatformAdminView /></ProtectedProjectRoute>} />
-            <Route path="/admin/templates" element={<ProtectedProjectRoute><TemplatesAdminView /></ProtectedProjectRoute>} />
+            {/* Legacy admin stubs — redirect to the real admin panel */}
+            <Route path="/admin/platform" element={<Navigate to="/admin" replace />} />
+            <Route path="/admin/templates" element={<Navigate to="/admin" replace />} />
             <Route path="/settings" element={<ProtectedProjectRoute><UserSettingsView /></ProtectedProjectRoute>} />
             <Route path="/create-project" element={<ProtectedProjectRoute><ProjectCreationView /></ProtectedProjectRoute>} />
         </>

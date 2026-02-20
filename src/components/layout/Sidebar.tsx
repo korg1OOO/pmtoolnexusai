@@ -35,6 +35,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useProjectContext, ModuleVisibility } from '@/contexts/ProjectContext';
 import { preloadRoute } from '@/utils/routePreloader';
+import { useSidebarBadges } from '@/hooks/useSidebarBadges';
 
 interface NavItem {
   id: string;
@@ -91,7 +92,7 @@ const navItems: NavItem[] = [
     children: [
       { id: 'sprints', label: 'Sprints', icon: Clock, moduleKey: 'sprints' },
       { id: 'backlog', label: 'Backlog', icon: ListTodo, moduleKey: 'backlog' },
-      { id: 'actions', label: 'Actions', icon: Target, badge: 6, moduleKey: 'actions' },
+      { id: 'actions', label: 'Actions', icon: Target, moduleKey: 'actions' },
     ]
   },
   {
@@ -99,8 +100,8 @@ const navItems: NavItem[] = [
     label: 'Monitoring & Control',
     icon: AlertTriangle,
     children: [
-      { id: 'risks', label: 'Risks', icon: AlertTriangle, badge: 5, moduleKey: 'risks' },
-      { id: 'issues', label: 'Issues', icon: AlertTriangle, badge: 3, moduleKey: 'issues' },
+      { id: 'risks', label: 'Risks', icon: AlertTriangle, moduleKey: 'risks' },
+      { id: 'issues', label: 'Issues', icon: AlertTriangle, moduleKey: 'issues' },
       { id: 'decisions', label: 'Decisions', icon: Target, moduleKey: 'decisions' },
       { id: 'change-requests', label: 'Change Requests', icon: Target, alwaysShow: true },
       { id: 'traceability', label: 'Traceability Matrix', icon: GitBranch, moduleKey: 'traceability' },
@@ -223,8 +224,9 @@ const isRouteBasedItem = (id: string): boolean => {
 
 export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(true);
-  const { isModuleVisible } = useProjectContext();
+  const { isModuleVisible, settings } = useProjectContext();
   const navigate = useNavigate();
+  const { data: badges } = useSidebarBadges(settings?.id);
 
   // Find which group contains the active item
   const findParentGroup = useMemo(() => {
@@ -279,6 +281,14 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
     const isExpanded = expandedGroups.includes(item.id);
     const Icon = item.icon;
 
+    // Resolve dynamic badge count for live items
+    const liveBadge = badges
+      ? item.id === 'actions' ? (badges.actions > 0 ? badges.actions : undefined)
+        : item.id === 'risks' ? (badges.risks > 0 ? badges.risks : undefined)
+          : item.id === 'issues' ? (badges.issues > 0 ? badges.issues : undefined)
+            : item.badge
+      : item.badge;
+
     const itemContent = (
       <motion.button
         whileHover={{ x: 2 }}
@@ -287,8 +297,12 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
           // Preload route on hover
           if (item.id === 'admin-redirect') {
             preloadRoute('/admin');
-          } else if (item.id === 'workspace-select' || item.id === 'portfolio-select' || item.id === 'program-select') {
+          } else if (item.id === 'workspace-select') {
             preloadRoute('/tenant/workspaces');
+          } else if (item.id === 'portfolio-select') {
+            preloadRoute('/portfolio');
+          } else if (item.id === 'program-select') {
+            preloadRoute('/program');
           } else if (isRouteBasedItem(item.id)) {
             preloadRoute('/' + item.id);
           } else {
@@ -299,8 +313,12 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
           // Preload route on focus (keyboard navigation)
           if (item.id === 'admin-redirect') {
             preloadRoute('/admin');
-          } else if (item.id === 'workspace-select' || item.id === 'portfolio-select' || item.id === 'program-select') {
+          } else if (item.id === 'workspace-select') {
             preloadRoute('/tenant/workspaces');
+          } else if (item.id === 'portfolio-select') {
+            preloadRoute('/portfolio');
+          } else if (item.id === 'program-select') {
+            preloadRoute('/program');
           } else if (isRouteBasedItem(item.id)) {
             preloadRoute('/' + item.id);
           } else {
@@ -312,8 +330,12 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
             toggleGroup(item.id);
           } else if (item.id === 'admin-redirect') {
             navigate('/admin');
-          } else if (item.id === 'workspace-select' || item.id === 'portfolio-select' || item.id === 'program-select') {
+          } else if (item.id === 'workspace-select') {
             navigate('/tenant/workspaces');
+          } else if (item.id === 'portfolio-select') {
+            navigate('/portfolio');
+          } else if (item.id === 'program-select') {
+            navigate('/program');
           } else if (isRouteBasedItem(item.id)) {
             navigate('/' + item.id);
           } else {
@@ -333,9 +355,9 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
         {!collapsed && (
           <>
             <span className="flex-1 text-left truncate">{item.label}</span>
-            {item.badge && (
+            {liveBadge !== undefined && liveBadge !== null && (
               <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/20 px-1.5 text-xs font-medium text-primary">
-                {item.badge}
+                {liveBadge}
               </span>
             )}
             {hasVisibleChildren && (
@@ -357,9 +379,9 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
           <TooltipTrigger asChild>{itemContent}</TooltipTrigger>
           <TooltipContent side="right" className="flex items-center gap-2">
             {item.label}
-            {item.badge && (
+            {liveBadge !== undefined && liveBadge !== null && (
               <span className="rounded-full bg-primary/20 px-1.5 py-0.5 text-xs text-primary">
-                {item.badge}
+                {liveBadge}
               </span>
             )}
           </TooltipContent>

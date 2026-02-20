@@ -686,8 +686,8 @@ export default function UserSettingsView() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Active Sessions</CardTitle>
-                <CardDescription>Manage your active login sessions</CardDescription>
+                <CardTitle>Current Session</CardTitle>
+                <CardDescription>Your active login session. To manage sessions across devices, sign out and back in from each device.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {activeSessions.map((session, i) => (

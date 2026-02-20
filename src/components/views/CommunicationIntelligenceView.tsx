@@ -168,9 +168,8 @@ export default function CommunicationIntelligenceView() {
     document.head.removeChild(style);
   };
 
-  const handleExportPPT = () => {
-    toast.info('PowerPoint export is coming soon — use PDF for now');
-  };
+  // PowerPoint export not yet implemented — button hidden until ready
+  // const handleExportPPT = () => { ... };
 
   const [isSendingEmail, setIsSendingEmail] = useState(false);
   const handleSendEmail = async () => {
@@ -821,14 +820,6 @@ export default function CommunicationIntelligenceView() {
                     >
                       <Download className="h-4 w-4" />
                       Download as PDF
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start gap-2"
-                      onClick={handleExportPPT}
-                    >
-                      <FileText className="h-4 w-4" />
-                      Export to PowerPoint
                     </Button>
                     <Button
                       variant="outline"

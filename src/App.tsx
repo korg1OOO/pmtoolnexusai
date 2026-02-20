@@ -128,6 +128,7 @@ const TimelinePlannerTab = lazy(() => import('@/components/views/TimelinePlanner
 const KnowledgeBaseView = lazy(() => import('@/components/views/KnowledgeBaseView'));
 const ProgramDocumentsView = lazy(() => import('@/components/views/ProgramDocumentsView'));
 const CollaborationSpacesView = lazy(() => import('@/components/views/CollaborationSpacesView'));
+const ProgramManagementView = lazy(() => import('@/components/views/ProgramManagementView'));
 import {
   MLModelsPage,
   MLAlertsPage,
@@ -171,6 +172,7 @@ const App = () => (
 
                   {/* Portfolio & Program Routes */}
                   <Route path="/portfolio" element={<ProtectedProjectRoute><PortfolioView /></ProtectedProjectRoute>} />
+                  <Route path="/program" element={<ProtectedRoute><ProjectProvider><PresenceProvider><ProgramManagementView /></PresenceProvider></ProjectProvider></ProtectedRoute>} />
                   <Route path="/program-timeline" element={<ProtectedProjectRoute><ProgramTimelineView /></ProtectedProjectRoute>} />
                   <Route path="/program-documents" element={<ProtectedProjectRoute><ProgramDocumentsView /></ProtectedProjectRoute>} />
 
@@ -265,7 +267,7 @@ const App = () => (
                   <Route path="/blog/:slug" element={<BlogPostView />} />
                   <Route path="/docs" element={<PublicDocs />} />
                   <Route path="/oauth/callback" element={<OAuthCallback />} />
-                  <Route path="/debug" element={<Debug />} />
+                  <Route path="/debug" element={<ProtectedRoute><Debug /></ProtectedRoute>} />
                   <Route path="/ml-analytics/:projectId" element={
                     <ProtectedRoute>
                       <ProjectProvider>

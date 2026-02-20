@@ -18,6 +18,8 @@ import { supabase as _supabase } from '@/integrations/supabase/client';
 import { useApprovals, useApproveApproval, useRejectApproval, useMarkApprovalDelegated } from '@/hooks/useApprovals';
 import { ApprovalWorkflows } from '@/components/analytics/governance/ApprovalWorkflows';
 import DelegationDialog from '@/components/governance/DelegationDialog';
+import DelegationTemplates from '@/components/governance/DelegationTemplates';
+import NotificationBadge from '@/components/governance/NotificationBadge';
 import { useAuth } from '@/hooks/useAuth';
 import { PDFExporter } from '@/components/common/PDFExporter';
 
@@ -155,7 +157,10 @@ export default function GlobalGovernanceDashboard() {
             <p className="text-sm text-muted-foreground">Cross-project health, milestones & budget overview</p>
           </div>
         </div>
-        <PDFExporter title="Governance Dashboard" filename="governance-dashboard" contentRef={contentRef} orientation="landscape" variant="dropdown" />
+        <div className="flex items-center gap-2">
+          <NotificationBadge userId={user?.id ?? ''} onClick={() => { }} />
+          <PDFExporter title="Governance Dashboard" filename="governance-dashboard" contentRef={contentRef} orientation="landscape" variant="dropdown" />
+        </div>
       </div>
 
       {/* KPI Row */}
@@ -169,7 +174,7 @@ export default function GlobalGovernanceDashboard() {
 
       {/* Charts Grid */}
       <Tabs defaultValue="health" className="w-full">
-        <TabsList className="grid w-full grid-cols-5">
+        <TabsList className="grid w-full grid-cols-6">
           <TabsTrigger value="health">Project Health</TabsTrigger>
           <TabsTrigger value="budget">Budget Analysis</TabsTrigger>
           <TabsTrigger value="risk">Risk Heatmap</TabsTrigger>
@@ -183,6 +188,7 @@ export default function GlobalGovernanceDashboard() {
               </Badge>
             )}
           </TabsTrigger>
+          <TabsTrigger value="delegation-templates">Del. Templates</TabsTrigger>
         </TabsList>
 
         <TabsContent value="health" className="mt-4">
@@ -345,6 +351,15 @@ export default function GlobalGovernanceDashboard() {
               <CheckSquare className="h-10 w-10 mx-auto mb-3 opacity-30" />
               <p className="text-sm">No approvals found across all projects</p>
             </div>
+          )}
+        </TabsContent>
+
+        {/* ── Delegation Templates Tab ── */}
+        <TabsContent value="delegation-templates" className="mt-4">
+          {user?.id ? (
+            <DelegationTemplates userId={user.id} />
+          ) : (
+            <p className="text-sm text-muted-foreground text-center py-8">Sign in to manage delegation templates</p>
           )}
         </TabsContent>
       </Tabs>

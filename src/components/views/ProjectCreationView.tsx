@@ -169,13 +169,24 @@ export default function ProjectCreationView() {
 
   const handleCreateProject = async () => {
     try {
+      // Get the real current user ID to use as owner_id
+      const { data: { session } } = await supabase.auth.getSession();
+      const currentUserId = session?.user?.id;
+
+      const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str);
+      const validOwnerId = (formData.owner && isUUID(formData.owner)) ? formData.owner : currentUserId;
+
+      if (!validOwnerId) {
+        throw new Error('You must be logged in to create a project');
+      }
+
       if (creationPath === 'template' && selectedTemplate) {
         // Use RPC for template-based creation
         const data = await createProjectMutation.mutateAsync({
           templateId: selectedTemplate.id,
           name: formData.name || 'New Project',
           description: formData.description || '',
-          ownerId: formData.owner || '', // Should ideally get current user ID
+          ownerId: validOwnerId,
           organizationId: formData.organizationId,
           startDate: new Date(formData.startDate || Date.now()),
         });
@@ -196,10 +207,10 @@ export default function ProjectCreationView() {
           code: formData.code,
           description: formData.description,
           methodology: formData.methodology || 'hybrid',
-          status: 'planning', // Default to planning
-          start_date: formData.startDate,
-          end_date: formData.targetEndDate || null,
-          owner_id: formData.owner || null, // Ensure owner is handled if exists in formData
+          status: 'active', // Must be one of: 'active', 'on-hold', 'completed', 'cancelled'
+          start_date: formData.startDate || new Date().toISOString().split('T')[0],
+          end_date: formData.targetEndDate ? formData.targetEndDate : null,
+          owner_id: validOwnerId,
         }).select().single();
 
         if (error) throw error;
@@ -209,7 +220,7 @@ export default function ProjectCreationView() {
         });
 
         if (data) {
-          localStorage.setItem('projectoye_selected_project', data.id);
+          localStorage.setItem('projectoye_selected_project', (data as any).id);
           navigate('/');
         }
       }

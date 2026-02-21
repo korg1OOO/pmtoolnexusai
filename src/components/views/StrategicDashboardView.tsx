@@ -464,7 +464,7 @@ export default function StrategicDashboardView() {
           {/* Value Engineering Tab */}
           <TabsContent value="value" className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {valueEngineering.options.map((option) => (
+              {valueEngineering?.options?.map((option) => (
                 <Card
                   key={option.id}
                   className={cn(
@@ -580,14 +580,14 @@ export default function StrategicDashboardView() {
                 <CardContent>
                   <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
                     <h4 className="text-sm font-medium mb-2">AI Recommendation</h4>
-                    <p className="text-lg font-semibold text-primary mb-2">{valueEngineering.tradeoffAnalysis.optimalPoint}</p>
-                    <p className="text-sm text-muted-foreground mb-3">{valueEngineering.recommendation.justification}</p>
-                    <Badge variant="outline">{valueEngineering.recommendation.confidence * 100}% confident</Badge>
+                    <p className="text-lg font-semibold text-primary mb-2">{valueEngineering?.tradeoffAnalysis?.optimalPoint}</p>
+                    <p className="text-sm text-muted-foreground mb-3">{valueEngineering?.recommendation?.justification}</p>
+                    <Badge variant="outline">{(valueEngineering?.recommendation?.confidence || 0) * 100}% confident</Badge>
                     <div className="mt-4">
                       <Button
                         className="w-full gap-2"
                         onClick={() => {
-                          const option = valueEngineering.options.find((o) => o.id === selectedOption);
+                          const option = valueEngineering?.options?.find((o) => o.id === selectedOption);
                           toast.success(`Implementing Value Engineering Option: ${option?.name || 'Selected Option'}`);
                         }}
                       >

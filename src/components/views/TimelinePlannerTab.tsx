@@ -35,6 +35,13 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+    Dialog as ShadcnDialog,
+    DialogContent as ShadcnDialogContent,
+    DialogHeader as ShadcnDialogHeader,
+    DialogTitle as ShadcnDialogTitle,
+    DialogFooter as ShadcnDialogFooter,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";

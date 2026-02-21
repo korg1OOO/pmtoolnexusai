@@ -354,12 +354,13 @@ export function useBlogPost(slug: string) {
         queryKey: ['blog-post', slug],
         queryFn: async () => {
             const { data, error } = await supabase
-                .from('blog_posts')
+                .from('published_blog_posts')
                 .select('*')
                 .eq('slug', slug)
-                .single();
+                .maybeSingle();
 
             if (error) throw error;
+            if (!data) return null;
 
             // Increment view count
             await supabase.rpc('increment_content_views', {
@@ -372,6 +373,7 @@ export function useBlogPost(slug: string) {
         enabled: !!slug,
     });
 }
+
 
 export function useCreateBlogPost() {
     const queryClient = useQueryClient();

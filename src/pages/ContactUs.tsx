@@ -1,16 +1,18 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { ArrowLeft, Mail, MapPin, MessageSquare } from 'lucide-react';
+import { ArrowLeft, Mail, MapPin, MessageSquare, Phone } from 'lucide-react';
 import { ContactFormModal } from '@/components/modals/ContactFormModal';
 import { toast } from "sonner";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 
 const ContactUs = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
+    const [subject, setSubject] = useState('General Inquiry');
     const [message, setMessage] = useState('');
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -20,12 +22,12 @@ const ContactUs = () => {
             // Insert into contact_submissions table for admin visibility
             const { error: dbError } = await (supabase as any)
                 .from('contact_submissions')
-                .insert({ name, email, message });
+                .insert({ name, email, subject, message });
 
             if (dbError) {
-                // Table may not exist yet — fall back to Edge Function
+                // Fall back to Edge Function if table insert fails
                 const { error: fnError } = await supabase.functions.invoke('send-contact-email', {
-                    body: { name, email, message },
+                    body: { name, email, subject, message },
                 });
                 if (fnError) throw fnError;
             }
@@ -35,6 +37,7 @@ const ContactUs = () => {
             });
             setName('');
             setEmail('');
+            setSubject('General Inquiry');
             setMessage('');
         } catch (err: any) {
             toast.error("Failed to send message", {
@@ -107,10 +110,24 @@ const ContactUs = () => {
                             <div>
                                 <h3 className="font-bold text-lg mb-1 text-slate-900">Headquarters</h3>
                                 <p className="text-sm text-slate-600">
-                                    123 Innovation Drive<br />
-                                    Tech City, TC 94000<br />
+                                    Tower One, Silicon Wharf<br />
+                                    San Francisco, CA 94105<br />
                                     United States
                                 </p>
+                            </div>
+                        </div>
+
+                        <div className="p-6 rounded-2xl bg-slate-50 border border-slate-100 flex items-start gap-4 hover:border-indigo-200 transition-colors">
+                            <div className="h-10 w-10 rounded-full bg-indigo-100 flex items-center justify-center shrink-0">
+                                <Phone className="text-indigo-600 h-5 w-5" />
+                            </div>
+                            <div>
+                                <h3 className="font-bold text-lg mb-1 text-slate-900">Response Times</h3>
+                                <ul className="text-sm text-slate-600 space-y-1">
+                                    <li>🟢 General — within 24 hours</li>
+                                    <li>🟡 Technical — within 8 hours</li>
+                                    <li>🔴 Critical / Enterprise — within 2 hours</li>
+                                </ul>
                             </div>
                         </div>
                     </div>
@@ -119,28 +136,47 @@ const ContactUs = () => {
                     <div className="p-8 rounded-3xl bg-slate-50 border border-slate-100 shadow-sm">
                         <h3 className="text-xl font-bold mb-6 text-slate-900">Send us a message</h3>
                         <form className="space-y-4" onSubmit={handleSubmit}>
-                            <div className="space-y-2">
-                                <label htmlFor="contact-name" className="text-sm font-medium text-slate-700">Name</label>
-                                <Input
-                                    id="contact-name"
-                                    required
-                                    placeholder="John Doe"
-                                    className="bg-white border-slate-200 focus:border-indigo-500"
-                                    value={name}
-                                    onChange={e => setName(e.target.value)}
-                                />
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="space-y-2">
+                                    <label htmlFor="contact-name" className="text-sm font-medium text-slate-700">Name</label>
+                                    <Input
+                                        id="contact-name"
+                                        required
+                                        placeholder="Jane Doe"
+                                        className="bg-white border-slate-200 focus:border-indigo-500"
+                                        value={name}
+                                        onChange={e => setName(e.target.value)}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <label htmlFor="contact-email" className="text-sm font-medium text-slate-700">Email</label>
+                                    <Input
+                                        id="contact-email"
+                                        required
+                                        type="email"
+                                        placeholder="jane@company.com"
+                                        className="bg-white border-slate-200 focus:border-indigo-500"
+                                        value={email}
+                                        onChange={e => setEmail(e.target.value)}
+                                    />
+                                </div>
                             </div>
                             <div className="space-y-2">
-                                <label htmlFor="contact-email" className="text-sm font-medium text-slate-700">Email</label>
-                                <Input
-                                    id="contact-email"
-                                    required
-                                    type="email"
-                                    placeholder="john@example.com"
-                                    className="bg-white border-slate-200 focus:border-indigo-500"
-                                    value={email}
-                                    onChange={e => setEmail(e.target.value)}
-                                />
+                                <label htmlFor="contact-subject" className="text-sm font-medium text-slate-700">Subject</label>
+                                <Select value={subject} onValueChange={setSubject}>
+                                    <SelectTrigger id="contact-subject" className="bg-white border-slate-200 focus:border-indigo-500">
+                                        <SelectValue placeholder="Select a topic" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="General Inquiry">General Inquiry</SelectItem>
+                                        <SelectItem value="Technical Support">Technical Support</SelectItem>
+                                        <SelectItem value="Sales / Enterprise">Sales / Enterprise</SelectItem>
+                                        <SelectItem value="Billing">Billing</SelectItem>
+                                        <SelectItem value="Privacy / Legal">Privacy / Legal</SelectItem>
+                                        <SelectItem value="Partnership">Partnership</SelectItem>
+                                        <SelectItem value="Other">Other</SelectItem>
+                                    </SelectContent>
+                                </Select>
                             </div>
                             <div className="space-y-2">
                                 <label htmlFor="contact-message" className="text-sm font-medium text-slate-700">Message</label>

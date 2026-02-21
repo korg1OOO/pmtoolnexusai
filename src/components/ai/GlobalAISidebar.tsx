@@ -274,9 +274,14 @@ export function GlobalAISidebar({
                   <Bot className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <h2 className="font-semibold">
-                    {activeAgentConfig ? activeAgentConfig.label : 'AI Assistant'}
-                  </h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-semibold">
+                      {activeAgentConfig ? activeAgentConfig.label : 'AI Assistant'}
+                    </h2>
+                    <Badge variant="secondary" className="capitalize text-[10px] px-1.5 py-0 h-4">
+                      {ROLE_DISPLAY_NAMES[userRole as ProjectRole] || userRole}
+                    </Badge>
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     {activeAgentConfig
                       ? `${activeAgentConfig.model_provider} · ${activeAgentConfig.model_name}`
@@ -307,20 +312,6 @@ export function GlobalAISidebar({
                   <X className="h-4 w-4" />
                 </Button>
               </div>
-            </div>
-
-            {/* Context Banner - Current View */}
-            <div className="px-3 py-2 border-b bg-muted/20 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm">
-                <Badge variant="outline" className="gap-1">
-                  <IconComponent className="h-3 w-3" />
-                  {viewContext.title}
-                </Badge>
-                <span className="text-muted-foreground text-xs">Active context</span>
-              </div>
-              <Badge variant="secondary" className="capitalize text-xs">
-                {ROLE_DISPLAY_NAMES[userRole as ProjectRole] || userRole}
-              </Badge>
             </div>
 
             {/* Intent Mode Toggle */}
@@ -555,7 +546,12 @@ export function GlobalAISidebar({
                         ? "Ask about your project..."
                         : "What would you like to do?"
                     }
-                    className="min-h-[60px] max-h-[120px] resize-none text-sm"
+                    className={cn(
+                      "min-h-[60px] max-h-[120px] resize-none text-sm transition-colors",
+                      intentMode === 'plan'
+                        ? "bg-blue-500/5 border-blue-500/30 focus-visible:ring-blue-500/30"
+                        : "bg-amber-500/5 border-amber-500/30 focus-visible:ring-amber-500/30"
+                    )}
                     disabled={isSending}
                   />
                   {/* Attachment and voice buttons */}
@@ -601,6 +597,25 @@ export function GlobalAISidebar({
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>New chat</TooltipContent>
+                  </Tooltip>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={() => {
+                          if (activeConversationId) {
+                            deleteConversation(activeConversationId);
+                            setInput('');
+                            setAttachments([]);
+                          }
+                        }}
+                        className="h-9 w-9 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Clear chat</TooltipContent>
                   </Tooltip>
                 </div>
               </div>

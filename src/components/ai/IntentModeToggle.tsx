@@ -27,8 +27,8 @@ export function IntentModeToggle({ mode, onChange, disabled }: IntentModeToggleP
             className={cn(
               'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all',
               mode === 'plan'
-                ? 'bg-background shadow-sm text-primary'
-                : 'text-muted-foreground hover:text-foreground',
+                ? 'bg-blue-600 shadow-sm text-white hover:bg-blue-700'
+                : 'text-muted-foreground hover:bg-muted',
               disabled && 'opacity-50 cursor-not-allowed'
             )}
           >
@@ -51,8 +51,8 @@ export function IntentModeToggle({ mode, onChange, disabled }: IntentModeToggleP
             className={cn(
               'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all',
               mode === 'action'
-                ? 'bg-background shadow-sm text-primary'
-                : 'text-muted-foreground hover:text-foreground',
+                ? 'bg-amber-600 shadow-sm text-white hover:bg-amber-700'
+                : 'text-muted-foreground hover:bg-muted',
               disabled && 'opacity-50 cursor-not-allowed'
             )}
           >

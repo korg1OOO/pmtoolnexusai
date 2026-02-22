@@ -76,6 +76,14 @@ export function GlobalAISidebar({
   const viewContext = getViewContext(currentView);
   const suggestedQuestions = getSuggestedQuestions(currentView);
 
+  // Agentic tool-calling confirmation (real DB writes via make-checker)
+  const {
+    confirmationRequest,
+    executeApprovedAction,
+    dismissConfirmation,
+    triggerConfirmation,
+  } = useAgentActions();
+
   const {
     messages,
     conversations,
@@ -89,14 +97,12 @@ export function GlobalAISidebar({
     selectConversation,
     deleteConversation,
     clearClarification,
-  } = useAIChat({ projectId, currentView, intentMode });
-
-  // Agentic tool-calling confirmation (real DB writes via make-checker)
-  const {
-    confirmationRequest,
-    executeApprovedAction,
-    dismissConfirmation,
-  } = useAgentActions();
+  } = useAIChat({
+    projectId,
+    currentView,
+    intentMode,
+    onActionRequest: triggerConfirmation
+  });
 
   // Fetch active agent config from DB when currentAgent is set
   const { data: activeAgentConfig } = useAIAgent(currentAgent || '');

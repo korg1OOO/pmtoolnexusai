@@ -36,6 +36,8 @@ interface AgentInput {
   supabase?: SupabaseClient;
   userId?: string | null;
   tenantId?: string | null;
+  tools?: ToolSchema[];
+  executorCtx?: ExecutorContext;
 }
 
 interface AgentOutput {
@@ -428,7 +430,7 @@ User Role: ${input.userRole}
 Provide specific, actionable insights about the schedule. Reference actual task names and dates from the context.
 If the user wants to modify the schedule, explain the impact but note that changes require confirmation.`;
 
-  return await callOpenAI(systemPrompt, input.query, input.conversationHistory, "scheduler", undefined, input.supabase, input.userId, input.tenantId);
+  return await callOpenAI(systemPrompt, input.query, input.conversationHistory, "scheduler", undefined, input.supabase, input.userId, input.tenantId, input.tools, input.executorCtx);
 }
 
 // --- Finance Agent ---
@@ -457,7 +459,7 @@ User Role: ${input.userRole}
 
 Provide detailed financial analysis with specific numbers. Calculate CPI, SPI, and EAC when relevant.`;
 
-  return await callOpenAI(systemPrompt, input.query, input.conversationHistory, "finance", undefined, input.supabase, input.userId, input.tenantId);
+  return await callOpenAI(systemPrompt, input.query, input.conversationHistory, "finance", undefined, input.supabase, input.userId, input.tenantId, input.tools, input.executorCtx);
 }
 
 // --- Risk Agent ---
@@ -479,7 +481,7 @@ User Role: ${input.userRole}
 Identify specific risks based on the project data. Score risks using a 1-5 scale for impact and probability.
 Provide actionable mitigation strategies.`;
 
-  return await callOpenAI(systemPrompt, input.query, input.conversationHistory, "risk", undefined, input.supabase, input.userId, input.tenantId);
+  return await callOpenAI(systemPrompt, input.query, input.conversationHistory, "risk", undefined, input.supabase, input.userId, input.tenantId, input.tools, input.executorCtx);
 }
 
 // --- Assignment Agent ---
@@ -501,7 +503,7 @@ User Role: ${input.userRole}
 When recommending assignments, consider resource availability, skills, and current workload.
 Provide specific recommendations with resource names and task names from the context.`;
 
-  return await callOpenAI(systemPrompt, input.query, input.conversationHistory, "assignment", undefined, input.supabase, input.userId, input.tenantId);
+  return await callOpenAI(systemPrompt, input.query, input.conversationHistory, "assignment", undefined, input.supabase, input.userId, input.tenantId, input.tools, input.executorCtx);
 }
 
 // --- Meeting Agent ---
@@ -523,7 +525,7 @@ User Role: ${input.userRole}
 Reference specific meetings, decisions, and action items from the context.
 Track overdue actions and highlight follow-up needs.`;
 
-  return await callOpenAI(systemPrompt, input.query, input.conversationHistory, "meeting", undefined, input.supabase, input.userId, input.tenantId);
+  return await callOpenAI(systemPrompt, input.query, input.conversationHistory, "meeting", undefined, input.supabase, input.userId, input.tenantId, input.tools, input.executorCtx);
 }
 
 // --- Document Agent ---
@@ -545,7 +547,7 @@ User Role: ${input.userRole}
 Generate professional, well-structured documents based on actual project data.
 Use appropriate formatting for the document type requested.`;
 
-  return await callOpenAI(systemPrompt, input.query, input.conversationHistory, "document", undefined, input.supabase, input.userId, input.tenantId);
+  return await callOpenAI(systemPrompt, input.query, input.conversationHistory, "document", undefined, input.supabase, input.userId, input.tenantId, input.tools, input.executorCtx);
 }
 
 // --- Insight Agent ---
@@ -567,7 +569,7 @@ User Role: ${input.userRole}
 Provide holistic project insights. Consider schedule, resources, and overall health.
 Give specific recommendations based on the data. Be proactive in identifying potential issues.`;
 
-  return await callOpenAI(systemPrompt, input.query, input.conversationHistory, "insight", undefined, input.supabase, input.userId, input.tenantId);
+  return await callOpenAI(systemPrompt, input.query, input.conversationHistory, "insight", undefined, input.supabase, input.userId, input.tenantId, input.tools, input.executorCtx);
 }
 
 // --- Strategic Agent ---
@@ -588,7 +590,7 @@ User Role: ${input.userRole}
 
 Provide high-level strategic insights. Consider business value, stakeholder interests, and long-term implications.`;
 
-  return await callOpenAI(systemPrompt, input.query, input.conversationHistory, "strategic", undefined, input.supabase, input.userId, input.tenantId);
+  return await callOpenAI(systemPrompt, input.query, input.conversationHistory, "strategic", undefined, input.supabase, input.userId, input.tenantId, input.tools, input.executorCtx);
 }
 
 // --- Communication Agent ---
@@ -609,7 +611,7 @@ User Role: ${input.userRole}
 
 Analyze communication patterns and identify potential issues. Look for delay signals, escalation patterns, and team dynamics.`;
 
-  return await callOpenAI(systemPrompt, input.query, input.conversationHistory, "communication", undefined, input.supabase, input.userId, input.tenantId);
+  return await callOpenAI(systemPrompt, input.query, input.conversationHistory, "communication", undefined, input.supabase, input.userId, input.tenantId, input.tools, input.executorCtx);
 }
 
 // =============================================================================
@@ -929,6 +931,8 @@ serve(async (req) => {
       supabase,
       userId,
       tenantId,
+      tools: ALL_TOOLS,
+      executorCtx,
     };
 
     // If caller specified an explicit agent type (e.g., admin validation page), skip intent classification

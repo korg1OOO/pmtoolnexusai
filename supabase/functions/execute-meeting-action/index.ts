@@ -72,6 +72,29 @@ serve(async (req) => {
 
             result = { tasks_created: data, count: data?.length ?? 0 };
 
+        } else if (tool_name === "create_meeting") {
+            const { data, error } = await supabase.from("meetings").insert({
+                title: params.title,
+                project_id: params.project_id,
+                start_time: params.start_time,
+                end_time: params.end_time ?? null,
+                organizer_id: userId,
+            }).select("id, title").single();
+            if (error) throw error;
+
+            // Optionally insert attendees if attendee_ids provided
+            const attendeeIds = params.attendee_ids as string[] | undefined;
+            if (attendeeIds && attendeeIds.length > 0 && data.id) {
+                const attendees = attendeeIds.map(id => ({
+                    meeting_id: data.id,
+                    user_id: id,
+                    status: "accepted"
+                }));
+                await supabase.from("meeting_attendees").insert(attendees);
+            }
+
+            result = { meeting_created: data };
+
         } else if (tool_name === "send_mom_email") {
             // Delegate to existing send-email edge function
             const res = await fetch(`${supabaseUrl}/functions/v1/send-email`, {

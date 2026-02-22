@@ -221,6 +221,26 @@ export const meetingTools: ToolSchema[] = [
     {
         type: "function",
         function: {
+            name: "create_meeting",
+            description: "Schedule a new project meeting or event.",
+            parameters: {
+                type: "object",
+                required: ["project_id", "title", "start_time"],
+                properties: {
+                    project_id: { type: "string" },
+                    title: { type: "string" },
+                    description: { type: "string" },
+                    start_time: { type: "string", format: "date-time" },
+                    end_time: { type: "string", format: "date-time" },
+                    meeting_type: { type: "string", enum: ["standup", "planning", "review", "retrospective", "other"] },
+                    attendee_ids: { type: "array", items: { type: "string" } },
+                },
+            },
+        },
+    },
+    {
+        type: "function",
+        function: {
             name: "extract_action_items",
             description:
                 "Extract action items, decisions, and owners from meeting notes.",
@@ -356,6 +376,25 @@ export const budgetTools: ToolSchema[] = [
 // ─── P1.3 Sprint Planner ─────────────────────────────────────────────────────
 
 export const sprintTools: ToolSchema[] = [
+    {
+        type: "function",
+        function: {
+            name: "create_sprint",
+            description: "Create a new sprint/iteration for the project.",
+            parameters: {
+                type: "object",
+                required: ["project_id", "name", "start_date", "end_date"],
+                properties: {
+                    project_id: { type: "string" },
+                    name: { type: "string" },
+                    goal: { type: "string" },
+                    start_date: { type: "string", format: "date" },
+                    end_date: { type: "string", format: "date" },
+                    status: { type: "string", enum: ["planning", "active", "completed"] },
+                },
+            },
+        },
+    },
     {
         type: "function",
         function: {

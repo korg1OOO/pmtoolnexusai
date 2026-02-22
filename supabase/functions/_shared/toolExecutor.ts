@@ -60,6 +60,20 @@ async function exec_update_task(ctx: ExecutorContext, params: Record<string, unk
     return storePendingAction(ctx.supabase, ctx.userId, "update_task", params, diff, summary);
 }
 
+async function exec_create_sprint(ctx: ExecutorContext, params: Record<string, unknown>): Promise<ToolResult> {
+    const diff = {
+        action: "CREATE SPRINT",
+        project_id: params.project_id,
+        name: params.name,
+        goal: params.goal ?? null,
+        start_date: params.start_date,
+        end_date: params.end_date,
+        status: params.status ?? "planning",
+    };
+    const summary = `Create sprint: "${params.name}"`;
+    return storePendingAction(ctx.supabase, ctx.userId, "create_sprint", params, diff, summary);
+}
+
 async function exec_bulk_create_tasks(ctx: ExecutorContext, params: Record<string, unknown>): Promise<ToolResult> {
     const tasks = params.tasks as any[];
     const diff = {
@@ -157,6 +171,19 @@ async function exec_escalate_risk(ctx: ExecutorContext, params: Record<string, u
     return storePendingAction(ctx.supabase, ctx.userId, "escalate_risk", params, diff, `Escalate risk to stakeholder`);
 }
 
+async function exec_create_meeting(ctx: ExecutorContext, params: Record<string, unknown>): Promise<ToolResult> {
+    const diff = {
+        action: "CREATE MEETING",
+        title: params.title,
+        project_id: params.project_id,
+        start_time: params.start_time,
+        end_time: params.end_time ?? null,
+        meeting_type: params.meeting_type ?? "standup",
+    };
+    const summary = `Schedule meeting: "${params.title}"`;
+    return storePendingAction(ctx.supabase, ctx.userId, "create_meeting", params, diff, summary);
+}
+
 async function exec_extract_action_items(ctx: ExecutorContext, params: Record<string, unknown>): Promise<ToolResult> {
     // Read-only extraction — call meeting-ai-extract
     const res = await fetch(`${ctx.supabaseUrl}/functions/v1/meeting-ai-extract`, {
@@ -228,11 +255,13 @@ const EXECUTORS: Record<string, ExecutorFn> = {
     update_task: exec_update_task,
     bulk_create_tasks: exec_bulk_create_tasks,
     move_task_to_sprint: exec_move_task_to_sprint,
+    create_sprint: exec_create_sprint,
     generate_pdf_report: exec_generate_pdf_report,
     auto_schedule_project: exec_auto_schedule_project,
     create_risk: exec_create_risk,
     update_risk_status: exec_update_risk_status,
     escalate_risk: exec_escalate_risk,
+    create_meeting: exec_create_meeting,
     extract_action_items: exec_extract_action_items,
     create_tasks_from_action_items: exec_create_tasks_from_action_items,
     send_mom_email: exec_send_mom_email,

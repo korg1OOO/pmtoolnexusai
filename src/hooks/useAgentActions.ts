@@ -210,11 +210,16 @@ export function useAgentActions() {
         setConfirmationRequest(null);
     }, []);
 
+    const triggerConfirmation = useCallback((request: AgentConfirmationRequest) => {
+        setConfirmationRequest(request);
+    }, []);
+
     return {
         loading,
         confirmationRequest,
         callAgent,
         executeApprovedAction,
         dismissConfirmation,
+        triggerConfirmation,
     };
 }

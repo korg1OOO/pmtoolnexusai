@@ -103,6 +103,12 @@ export interface AIOrchestratorResponse {
   needsClarification?: boolean;
   clarifyingQuestion?: ClarifyingQuestion;
   error?: string;
+  requiresConfirmation?: boolean;
+  pendingActionId?: string;
+  toolName?: string;
+  toolResult?: unknown;
+  diff?: Record<string, unknown>;
+  summary?: string;
 }
 
 // Agent display configuration

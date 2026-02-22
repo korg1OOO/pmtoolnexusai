@@ -60,15 +60,28 @@ serve(async (req) => {
         if (tool_name === "create_task") {
             const { data, error } = await supabase.from("tasks").insert({
                 title: params.title,
+                name: params.title,
                 description: params.description ?? null,
                 project_id: params.project_id,
                 priority: params.priority ?? "medium",
-                status: params.status ?? "todo",
+                status: params.status && params.status !== "todo" ? params.status : "not-started",
                 due_date: params.due_date ?? null,
                 assignee_id: params.assignee_id ?? null,
                 sprint_id: params.sprint_id ?? null,
                 created_by: userId,
             }).select("id, title").single();
+            if (error) throw error;
+            result = { created: data };
+
+        } else if (tool_name === "create_sprint") {
+            const { data, error } = await supabase.from("sprints").insert({
+                project_id: params.project_id,
+                name: params.name,
+                goal: params.goal ?? null,
+                start_date: params.start_date,
+                end_date: params.end_date,
+                status: params.status ?? "planning",
+            }).select("id, name").single();
             if (error) throw error;
             result = { created: data };
 
@@ -91,10 +104,11 @@ serve(async (req) => {
             const tasks = params.tasks as any[];
             const rows = tasks.map((t: any) => ({
                 title: t.title,
+                name: t.title,
                 description: t.description ?? null,
                 project_id: params.project_id,
                 priority: t.priority ?? "medium",
-                status: "todo",
+                status: "not-started",
                 due_date: t.due_date ?? null,
                 assignee_id: t.assignee_id ?? null,
                 created_by: userId,

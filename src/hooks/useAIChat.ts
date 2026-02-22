@@ -17,6 +17,7 @@ interface UseAIChatOptions {
   currentView?: string;
   intentMode?: IntentMode;
   onNewMessage?: (message: AIMessage) => void;
+  onActionRequest?: (req: import('@/components/ai/AgentConfirmationDialog').AgentConfirmationRequest) => void;
 }
 
 interface UseAIChatReturn {
@@ -27,7 +28,7 @@ interface UseAIChatReturn {
   isSending: boolean;
   currentAgent: AgentType | null;
   pendingClarification: ClarifyingQuestion | null;
-  
+
   // Actions
   sendMessage: (content: string) => Promise<void>;
   createConversation: () => Promise<string | null>;
@@ -37,11 +38,12 @@ interface UseAIChatReturn {
   clearClarification: () => void;
 }
 
-export function useAIChat({ 
-  projectId, 
-  currentView = 'dashboard', 
+export function useAIChat({
+  projectId,
+  currentView = 'dashboard',
   intentMode = 'plan',
-  onNewMessage 
+  onNewMessage,
+  onActionRequest
 }: UseAIChatOptions): UseAIChatReturn {
   const { user } = useAuth();
   const [messages, setMessages] = useState<AIMessage[]>([]);
@@ -80,7 +82,7 @@ export function useAIChat({
         console.error('Error fetching conversations:', error);
       } else {
         setConversations((data || []) as AIConversation[]);
-        
+
         // Auto-select most recent conversation or create new one
         if (data && data.length > 0 && !activeConversationId) {
           setActiveConversationId(data[0].id);
@@ -179,7 +181,7 @@ export function useAIChat({
     setConversations((prev) => [newConversation, ...prev]);
     setActiveConversationId(newConversation.id);
     setMessages([]);
-    
+
     return newConversation.id;
   }, [projectId]);
 
@@ -202,12 +204,12 @@ export function useAIChat({
     }
 
     setConversations((prev) => prev.filter((c) => c.id !== conversationId));
-    
+
     if (activeConversationId === conversationId) {
       setActiveConversationId(null);
       setMessages([]);
     }
-    
+
     toast.success('Conversation deleted');
   }, [activeConversationId]);
 
@@ -251,7 +253,7 @@ export function useAIChat({
       if (userMsgError) throw userMsgError;
 
       // Replace temp message with real one
-      setMessages((prev) => 
+      setMessages((prev) =>
         prev.map((m) => m.id === tempUserMessage.id ? (userMsgData as AIMessage) : m)
       );
 
@@ -285,6 +287,16 @@ export function useAIChat({
         setPendingClarification(aiResponse.clarifyingQuestion);
       }
 
+      // Trigger confirmation dialog if action is pending
+      if (aiResponse.requiresConfirmation && aiResponse.pendingActionId && onActionRequest) {
+        onActionRequest({
+          pendingActionId: aiResponse.pendingActionId,
+          toolName: aiResponse.toolName ?? 'unknown_tool',
+          diff: aiResponse.diff ?? {},
+          summary: aiResponse.summary ?? `Execute ${aiResponse.toolName}`,
+        });
+      }
+
       // Insert assistant message
       const { error: assistantError } = await supabase
         .from('ai_messages')
@@ -316,7 +328,7 @@ export function useAIChat({
           .from('ai_conversations')
           .update({ title, updated_at: new Date().toISOString() })
           .eq('id', conversationId);
-        
+
         setConversations((prev) =>
           prev.map((c) => c.id === conversationId ? { ...c, title } : c)
         );
@@ -325,7 +337,7 @@ export function useAIChat({
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Failed to get AI response');
-      
+
       // Remove optimistic message on error
       setMessages((prev) => prev.filter((m) => m.id !== tempUserMessage.id));
     } finally {

@@ -423,14 +423,55 @@ export function useMeetings(projectId?: string | null) {
       }
 
       try {
+        // Safe parsing for times
+        let finalEndTime = input.end_time;
+        let durationMins = 60;
+
+        if (!finalEndTime || finalEndTime.trim() === '') {
+          // Default to +1 hour if not provided
+          try {
+            const [hours, mins] = input.start_time.split(':').map(Number);
+            const endDate = new Date();
+            endDate.setHours(hours + 1, mins, 0);
+            finalEndTime = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
+          } catch (e) {
+            finalEndTime = '23:59';
+          }
+        } else {
+          // Calculate duration if both provided
+          try {
+            const [sH, sM] = input.start_time.split(':').map(Number);
+            const [eH, eM] = finalEndTime.split(':').map(Number);
+            durationMins = (eH * 60 + eM) - (sH * 60 + sM);
+            if (durationMins <= 0) durationMins = 60; // fallback
+          } catch (e) { }
+        }
+
+        // Clean up input payload, filtering undefined/empty values that PostgREST rejects
+        const payload: any = {
+          project_id: input.project_id || null,
+          title: input.title,
+          description: input.description || null,
+          meeting_type: input.meeting_type || 'online',
+          date: input.date,
+          start_time: input.start_time,
+          end_time: finalEndTime,
+          duration_minutes: durationMins,
+          status: input.status || 'scheduled',
+          source_type: input.source_type || 'manual',
+          purpose_type: input.purpose_type || 'status-update',
+          recurring_schedule: input.recurring_schedule === 'none' ? null : input.recurring_schedule,
+          created_by: user.id
+        };
+
+        if (input.location) payload.location = input.location;
+        if (input.meeting_link) payload.meeting_link = input.meeting_link;
+        if (input.purpose_description) payload.purpose_description = input.purpose_description;
+
         // Create the parent meeting
         const { data: parentMeeting, error: insertError } = await supabase
           .from('meetings')
-          .insert({
-            ...input,
-            recurring_schedule: input.recurring_schedule === 'none' ? null : input.recurring_schedule,
-            created_by: user.id,
-          })
+          .insert(payload)
           .select()
           .single();
 

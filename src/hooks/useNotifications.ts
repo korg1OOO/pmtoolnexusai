@@ -51,7 +51,7 @@ export function useNotifications(filter?: 'all' | 'unread' | 'sla' | 'actions') 
 
             // Apply filters
             if (filter === 'unread') {
-                query = query.eq('is_read', false);
+                query = query.eq('read', false);
             } else if (filter === 'sla') {
                 query = query.in('type', ['sla_breach', 'sla_warning']);
             } else if (filter === 'actions') {
@@ -61,7 +61,10 @@ export function useNotifications(filter?: 'all' | 'unread' | 'sla' | 'actions') 
             const { data, error } = await query;
 
             if (error) throw error;
-            return data || [];
+            return (data || []).map((n: any) => ({
+                ...n,
+                is_read: n.read !== undefined ? n.read : n.is_read
+            }));
         },
         staleTime: 1000 * 30, // 30 seconds
     });
@@ -77,7 +80,7 @@ export function useUnreadCount() {
             const { count, error } = await supabase
                 .from('notifications')
                 .select('*', { count: 'exact', head: true })
-                .eq('is_read', false);
+                .eq('read', false);
 
             if (error) throw error;
             return count || 0;
@@ -96,7 +99,7 @@ export function useMarkNotificationRead() {
         mutationFn: async (id: string) => {
             const { error } = await supabase
                 .from('notifications')
-                .update({ is_read: true })
+                .update({ read: true } as any)
                 .eq('id', id);
 
             if (error) throw error;
@@ -117,8 +120,8 @@ export function useMarkAllNotificationsRead() {
         mutationFn: async () => {
             const { error } = await supabase
                 .from('notifications')
-                .update({ is_read: true })
-                .eq('is_read', false);
+                .update({ read: true } as any)
+                .eq('read', false);
 
             if (error) throw error;
         },

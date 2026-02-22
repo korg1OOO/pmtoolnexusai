@@ -43,3 +43,6 @@ CREATE POLICY "Enable update access for authenticated users" ON public.scenarios
 
 CREATE POLICY "Enable delete access for authenticated users" ON public.scenarios
     FOR DELETE USING (auth.role() = 'authenticated');
+
+-- Grant permissions to authenticated users to fix 403 Forbidden
+GRANT ALL ON public.scenarios TO authenticated;

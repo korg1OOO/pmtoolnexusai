@@ -1,7 +1,7 @@
 import { useState, useMemo, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  ListTodo, 
+import {
+  ListTodo,
   Plus,
   Filter,
   Search,
@@ -86,7 +86,7 @@ function BacklogItemRow({ item, epic, onUpdate, onDelete }: BacklogItemRowProps)
   return (
     <div className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors group">
       <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 cursor-grab" />
-      
+
       <div className={cn('px-2 py-1 rounded text-xs font-medium', getTypeColor(item.type))}>
         {item.type}
       </div>
@@ -202,10 +202,10 @@ function AddItemDialog({ open, onOpenChange, onSubmit, epics }: AddItemDialogPro
               <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v as ItemType }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="feature">Feature</SelectItem>
+                  <SelectItem value="story">Story</SelectItem>
+                  <SelectItem value="task">Task</SelectItem>
                   <SelectItem value="bug">Bug</SelectItem>
-                  <SelectItem value="enhancement">Enhancement</SelectItem>
-                  <SelectItem value="technical-debt">Tech Debt</SelectItem>
+                  <SelectItem value="tech-debt">Tech Debt</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -264,14 +264,60 @@ function AddItemDialog({ open, onOpenChange, onSubmit, epics }: AddItemDialogPro
   );
 }
 
+export function AddEpicDialog({ open, onOpenChange, onSubmit }: { open: boolean, onOpenChange: (open: boolean) => void, onSubmit: (input: EpicInput) => Promise<Epic | null> }) {
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState<EpicInput>({ name: '', description: '', color: 'blue' });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name.trim()) return;
+    setLoading(true);
+    const result = await onSubmit(form);
+    setLoading(false);
+    if (result) {
+      setForm({ name: '', description: '', color: 'blue' });
+      onOpenChange(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Add Epic</DialogTitle>
+          <DialogDescription>Create a new epic initiative.</DialogDescription>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label>Name *</Label>
+            <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Epic name" />
+          </div>
+          <div className="space-y-2">
+            <Label>Description</Label>
+            <Textarea value={form.description || ''} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Describe the epic" />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="submit" disabled={loading}>
+              {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Add Epic
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function BacklogView() {
-  const { epics, loading: epicsLoading } = useEpics();
+  const { epics, loading: epicsLoading, createEpic } = useEpics();
   const { items, loading: itemsLoading, createItem, updateItem, deleteItem, totalPoints, scheduledItems } = useBacklogItems();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string | null>(null);
   const [expandedEpics, setExpandedEpics] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'flat' | 'epics'>('epics');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [addEpicDialogOpen, setAddEpicDialogOpen] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
   // Initialize expanded epics when epics load
@@ -283,7 +329,7 @@ export default function BacklogView() {
 
   const filteredItems = items.filter(item => {
     const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                          (item.description?.toLowerCase().includes(searchQuery.toLowerCase()));
+      (item.description?.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesType = !filterType || item.type === filterType;
     return matchesSearch && matchesType;
   });
@@ -292,7 +338,7 @@ export default function BacklogView() {
   const itemsByEpic = useMemo(() => {
     const grouped: Record<string, BacklogItem[]> = { unassigned: [] };
     epics.forEach(epic => { grouped[epic.id] = []; });
-    
+
     filteredItems.forEach(item => {
       if (item.epic_id && grouped[item.epic_id]) {
         grouped[item.epic_id].push(item);
@@ -300,7 +346,7 @@ export default function BacklogView() {
         grouped.unassigned.push(item);
       }
     });
-    
+
     return grouped;
   }, [filteredItems, epics]);
 
@@ -373,6 +419,10 @@ export default function BacklogView() {
             <Filter className="h-4 w-4 mr-2" />
             Filter
           </Button>
+          <Button variant="outline" size="sm" onClick={() => setAddEpicDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Epic
+          </Button>
           <Button size="sm" onClick={() => setAddDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-2" />
             Add Item
@@ -382,40 +432,40 @@ export default function BacklogView() {
 
       {/* KPI Cards */}
       <div className="grid grid-cols-5 gap-4">
-        <KPICard 
-          title="Total Items" 
-          value={items.length.toString()} 
+        <KPICard
+          title="Total Items"
+          value={items.length.toString()}
           subtitle={`${totalPoints} story points`}
-          icon={ListTodo} 
-          status="neutral" 
+          icon={ListTodo}
+          status="neutral"
         />
-        <KPICard 
-          title="Epics" 
-          value={epics.length.toString()} 
-          subtitle="Active initiatives" 
-          icon={Layers} 
-          status="neutral" 
+        <KPICard
+          title="Epics"
+          value={epics.length.toString()}
+          subtitle="Active initiatives"
+          icon={Layers}
+          status="neutral"
         />
-        <KPICard 
-          title="Stories" 
-          value={typeCounts.story.toString()} 
-          subtitle="User stories" 
-          icon={Zap} 
-          status="neutral" 
+        <KPICard
+          title="Stories"
+          value={typeCounts.story.toString()}
+          subtitle="User stories"
+          icon={Zap}
+          status="neutral"
         />
-        <KPICard 
-          title="Bugs" 
-          value={typeCounts.bug.toString()} 
-          subtitle="Issues to resolve" 
-          icon={Target} 
-          status={typeCounts.bug > 3 ? 'warning' : 'success'} 
+        <KPICard
+          title="Bugs"
+          value={typeCounts.bug.toString()}
+          subtitle="Issues to resolve"
+          icon={Target}
+          status={typeCounts.bug > 3 ? 'warning' : 'success'}
         />
-        <KPICard 
-          title="Scheduled" 
-          value={scheduledItems.length.toString()} 
+        <KPICard
+          title="Scheduled"
+          value={scheduledItems.length.toString()}
           subtitle="In sprints"
-          icon={Calendar} 
-          status="neutral" 
+          icon={Calendar}
+          status="neutral"
         />
       </div>
 
@@ -431,38 +481,39 @@ export default function BacklogView() {
           />
         </div>
         <div className="flex gap-2">
-          <Badge 
-            variant={filterType === null ? 'default' : 'outline'} 
+          <Badge
+            variant={filterType === null ? 'default' : 'outline'}
             className="cursor-pointer"
             onClick={() => setFilterType(null)}
           >
             All
           </Badge>
-          <Badge 
-            variant={filterType === 'feature' ? 'default' : 'outline'} 
+          <Badge
+            variant={filterType === 'feature' ? 'default' : 'outline'}
             className="cursor-pointer"
-            onClick={() => setFilterType('feature')}
+            onClick={() => setFilterType('story')}
           >
-            Features
+            Stories
           </Badge>
-          <Badge 
-            variant={filterType === 'bug' ? 'destructive' : 'outline'} 
+          <Badge
+            variant={filterType === 'task' ? 'default' : 'outline'}
+            className="cursor-pointer"
+            onClick={() => setFilterType('task')}
+          >
+            Tasks
+          </Badge>
+          <Badge
+            variant={filterType === 'bug' ? 'destructive' : 'outline'}
             className="cursor-pointer"
             onClick={() => setFilterType('bug')}
           >
             Bugs
           </Badge>
-          <Badge 
-            variant={filterType === 'enhancement' ? 'default' : 'outline'} 
+
+          <Badge
+            variant={filterType === 'tech-debt' ? 'warning' : 'outline'}
             className="cursor-pointer"
-            onClick={() => setFilterType('enhancement')}
-          >
-            Enhancements
-          </Badge>
-          <Badge 
-            variant={filterType === 'technical-debt' ? 'warning' : 'outline'} 
-            className="cursor-pointer"
-            onClick={() => setFilterType('technical-debt')}
+            onClick={() => setFilterType('tech-debt')}
           >
             Tech Debt
           </Badge>
@@ -476,10 +527,10 @@ export default function BacklogView() {
             const epicItems = itemsByEpic[epic.id] || [];
             const isExpanded = expandedEpics.has(epic.id);
             const epicPoints = epicItems.reduce((sum, i) => sum + (i.story_points || 0), 0);
-            
+
             return (
               <Card key={epic.id} className="overflow-hidden">
-                <div 
+                <div
                   className="p-4 cursor-pointer hover:bg-muted/30 transition-colors"
                   onClick={() => toggleEpic(epic.id)}
                 >
@@ -510,7 +561,7 @@ export default function BacklogView() {
                     </div>
                   </div>
                 </div>
-                
+
                 <AnimatePresence>
                   {isExpanded && epicItems.length > 0 && (
                     <motion.div
@@ -521,8 +572,8 @@ export default function BacklogView() {
                     >
                       <div className="divide-y divide-border">
                         {epicItems.map((item) => (
-                          <BacklogItemRow 
-                            key={item.id} 
+                          <BacklogItemRow
+                            key={item.id}
                             item={item}
                             epic={epic}
                             onUpdate={updateItem}
@@ -540,7 +591,7 @@ export default function BacklogView() {
           {/* Unassigned Items */}
           {itemsByEpic.unassigned.length > 0 && (
             <Card>
-              <div 
+              <div
                 className="p-4 cursor-pointer hover:bg-muted/30 transition-colors"
                 onClick={() => toggleEpic('unassigned')}
               >
@@ -561,7 +612,7 @@ export default function BacklogView() {
                   </div>
                 </div>
               </div>
-              
+
               <AnimatePresence>
                 {expandedEpics.has('unassigned') && (
                   <motion.div
@@ -572,8 +623,8 @@ export default function BacklogView() {
                   >
                     <div className="divide-y divide-border">
                       {itemsByEpic.unassigned.map((item) => (
-                        <BacklogItemRow 
-                          key={item.id} 
+                        <BacklogItemRow
+                          key={item.id}
                           item={item}
                           onUpdate={updateItem}
                           onDelete={deleteItem}
@@ -604,8 +655,8 @@ export default function BacklogView() {
               </div>
             ) : (
               filteredItems.map((item) => (
-                <BacklogItemRow 
-                  key={item.id} 
+                <BacklogItemRow
+                  key={item.id}
                   item={item}
                   epic={epics.find(e => e.id === item.epic_id)}
                   onUpdate={updateItem}
@@ -618,6 +669,7 @@ export default function BacklogView() {
       )}
 
       <AddItemDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} onSubmit={createItem} epics={epics} />
+      <AddEpicDialog open={addEpicDialogOpen} onOpenChange={setAddEpicDialogOpen} onSubmit={createEpic} />
     </div>
   );
 }

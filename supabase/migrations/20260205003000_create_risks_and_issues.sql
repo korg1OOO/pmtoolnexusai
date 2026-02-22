@@ -144,3 +144,7 @@ CREATE TRIGGER handle_updated_at_issues
     BEFORE UPDATE ON public.issues
     FOR EACH ROW
     EXECUTE PROCEDURE public.handle_updated_at();
+
+-- Grant permissions to authenticated users to fix 403 Forbidden
+GRANT ALL ON public.risks TO authenticated;
+GRANT ALL ON public.issues TO authenticated;

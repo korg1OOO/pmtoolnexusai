@@ -2836,8 +2836,8 @@ export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabP
                         <ShadcnDialogTitle>Save Snapshot</ShadcnDialogTitle>
                     </ShadcnDialogHeader>
                     <div className="space-y-3 py-2">
-                        <ShadcnLabel htmlFor="snapshot-name">Snapshot Name</ShadcnLabel>
-                        <ShadcnInput
+                        <Label htmlFor="snapshot-name">Snapshot Name</Label>
+                        <Input
                             id="snapshot-name"
                             placeholder="e.g. Q2 Baseline"
                             value={snapshotName}

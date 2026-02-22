@@ -15,12 +15,12 @@ async function fetchSidebarBadges(projectId: string): Promise<SidebarBadges> {
             .from('actions')
             .select('id', { count: 'exact', head: true })
             .eq('project_id', projectId)
-            .eq('status', 'open'),
+            .in('status', ['pending', 'in-progress']),
         supabase
             .from('risks')
             .select('id', { count: 'exact', head: true })
             .eq('project_id', projectId)
-            .in('status', ['open', 'active']),
+            .in('status', ['identified', 'analyzing', 'mitigating']),
         supabase
             .from('issues')
             .select('id', { count: 'exact', head: true })
@@ -30,7 +30,7 @@ async function fetchSidebarBadges(projectId: string): Promise<SidebarBadges> {
             .from('meetings')
             .select('id', { count: 'exact', head: true })
             .eq('project_id', projectId)
-            .gte('scheduled_at', now)
+            .gte('date', now)
             .in('status', ['scheduled', 'confirmed']),
     ]);
 

@@ -55,10 +55,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 
 import { useProjectContext } from '@/contexts/ProjectContext';
-import { useStakeholders, Stakeholder } from '@/hooks/useStakeholders';
+import { useStakeholders, useCreateStakeholder, Stakeholder } from '@/hooks/useStakeholders';
 import { useApprovals, useApproveApproval, useRejectApproval, useMarkApprovalDelegated } from '@/hooks/useApprovals';
 import {
   useRACIAssignments,
@@ -137,6 +145,29 @@ export default function StakeholderRegisterView() {
 
   // RBAC permission checks
   const { can } = usePermissions(projectId);
+
+  const createStakeholder = useCreateStakeholder();
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [newStakeholder, setNewStakeholder] = useState<Partial<Stakeholder>>({
+    name: '',
+    role: '',
+    organization: '',
+    influence: 'low',
+    interest: 'low',
+    category: 'internal'
+  });
+
+  const handleCreateStakeholder = async () => {
+    if (!projectId || !newStakeholder.name) return;
+    try {
+      await createStakeholder.mutateAsync({
+        project_id: projectId,
+        ...newStakeholder
+      } as any);
+      setIsCreateOpen(false);
+      setNewStakeholder({ name: '', role: '', organization: '', influence: 'low', interest: 'low', category: 'internal' });
+    } catch (e) { }
+  };
 
   // Realtime subscription — invalidates stakeholders + approvals on any DB change
   useRealtimeTable({
@@ -253,10 +284,84 @@ export default function StakeholderRegisterView() {
                 <p className="text-muted-foreground">Manage stakeholder engagement and communication</p>
               </div>
             </div>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Stakeholder
-            </Button>
+            <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Stakeholder
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[425px]">
+                <DialogHeader>
+                  <DialogTitle>Add New Stakeholder</DialogTitle>
+                </DialogHeader>
+                <div className="grid py-4 gap-4">
+                  <div className="grid gap-2">
+                    <Label>Name *</Label>
+                    <Input
+                      value={newStakeholder.name}
+                      onChange={(e) => setNewStakeholder({ ...newStakeholder, name: e.target.value })}
+                      placeholder="Jane Doe"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label>Role</Label>
+                      <Input
+                        value={newStakeholder.role || ''}
+                        onChange={(e) => setNewStakeholder({ ...newStakeholder, role: e.target.value })}
+                        placeholder="Project Sponsor"
+                      />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Organization</Label>
+                      <Input
+                        value={newStakeholder.organization || ''}
+                        onChange={(e) => setNewStakeholder({ ...newStakeholder, organization: e.target.value })}
+                        placeholder="Acme Corp"
+                      />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="grid gap-2">
+                      <Label>Influence</Label>
+                      <Select
+                        value={newStakeholder.influence || 'low'}
+                        onValueChange={(val) => setNewStakeholder({ ...newStakeholder, influence: val })}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="high">High</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="low">Low</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>Interest</Label>
+                      <Select
+                        value={newStakeholder.interest || 'low'}
+                        onValueChange={(val) => setNewStakeholder({ ...newStakeholder, interest: val })}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="high">High</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="low">Low</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2 mt-4">
+                    <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+                    <Button onClick={handleCreateStakeholder} disabled={!newStakeholder.name || createStakeholder.isPending}>
+                      {createStakeholder.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                      Save
+                    </Button>
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
           </div>
         </div>
 

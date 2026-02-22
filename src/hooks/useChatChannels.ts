@@ -42,13 +42,16 @@ export const useCreateChannel = () => {
     const queryClient = useQueryClient();
     return useMutation({
         mutationFn: async ({ projectId, name, type }: { projectId: string, name: string, type: 'public' | 'private' | 'dm' }) => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) throw new Error("User not authenticated");
+
             const { data, error } = await (supabase as any)
                 .from("chat_channels")
                 .insert({
                     project_id: projectId,
                     name,
                     type,
-                    created_by: (await supabase.auth.getUser()).data.user?.id
+                    created_by: user.id
                 })
                 .select()
                 .single();

@@ -193,7 +193,13 @@ function ChannelSidebar({
                 </button>
                 <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
                   <DialogTrigger asChild>
-                    <Plus className="h-3 w-3 text-muted-foreground hover:text-foreground cursor-pointer" />
+                    <button
+                      type="button"
+                      className="text-muted-foreground hover:text-foreground"
+                      onClick={(e) => { e.stopPropagation(); setIsCreateOpen(true); }}
+                    >
+                      <Plus className="h-3 w-3" />
+                    </button>
                   </DialogTrigger>
                   <CreateChannelDialog projectId={projectId} onOpenChange={setIsCreateOpen} />
                 </Dialog>

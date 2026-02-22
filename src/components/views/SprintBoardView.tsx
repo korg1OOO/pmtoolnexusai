@@ -22,8 +22,9 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { PDFExporter } from '@/components/common/PDFExporter';
-import { useSprints, Sprint } from '@/hooks/useSprints';
+import { useSprints, Sprint, SprintInput } from '@/hooks/useSprints';
 import { useBacklogItems, BacklogItem, BacklogStatus, PriorityLevel } from '@/hooks/useBacklogItems';
+import { Label } from '@/components/ui/label';
 import { SprintBurndownChart } from '@/components/sprint/SprintBurndownChart';
 import {
   DropdownMenu,
@@ -55,6 +56,67 @@ import { Progress } from '@/components/ui/progress';
 
 type SprintStatus = 'todo' | 'in-progress' | 'review' | 'done';
 
+export function AddSprintDialog({ open, onOpenChange, onSubmit }: { open: boolean, onOpenChange: (open: boolean) => void, onSubmit: (input: SprintInput) => Promise<Sprint | null> }) {
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState<SprintInput>({
+    name: '',
+    start_date: new Date().toISOString().split('T')[0],
+    end_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+    goal: '',
+    capacity: 0,
+    status: 'planning'
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.start_date || !form.end_date) return;
+    setLoading(true);
+    const result = await onSubmit(form);
+    setLoading(false);
+    if (result) {
+      setForm({ name: '', start_date: new Date().toISOString().split('T')[0], end_date: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], goal: '', capacity: 0, status: 'planning' });
+      onOpenChange(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Create Sprint</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label>Name *</Label>
+            <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} placeholder="Sprint name" required />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Start Date *</Label>
+              <Input type="date" value={form.start_date} onChange={e => setForm(f => ({ ...f, start_date: e.target.value }))} required />
+            </div>
+            <div className="space-y-2">
+              <Label>End Date *</Label>
+              <Input type="date" value={form.end_date} onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))} required />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Goal</Label>
+            <Input value={form.goal || ''} onChange={e => setForm(f => ({ ...f, goal: e.target.value }))} placeholder="Sprint goal" />
+          </div>
+          <div className="flex justify-end gap-2 pt-4">
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="submit" disabled={loading}>
+              {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Create
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function SprintBoardView() {
   const columns: { id: SprintStatus; label: string; color: string; dbStatus: BacklogStatus }[] = useMemo(() => [
     { id: 'todo', label: 'To Do', color: 'bg-muted', dbStatus: 'todo' },
@@ -70,13 +132,14 @@ export default function SprintBoardView() {
     low: 3,
   }), []);
 
-  const { sprints, activeSprint, loading: sprintsLoading } = useSprints();
+  const { sprints, activeSprint, loading: sprintsLoading, createSprint } = useSprints();
   const { items, loading: itemsLoading, updateItem } = useBacklogItems();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedItem, setSelectedItem] = useState<BacklogItem | null>(null);
   const [showFilters, setShowFilters] = useState(false);
   const [showShortcuts, setShowShortcuts] = useState(false);
   const [showBurndown, setShowBurndown] = useState(false);
+  const [addSprintDialogOpen, setAddSprintDialogOpen] = useState(false);
   const [selectedSprint, setSelectedSprint] = useState<string>('active');
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -320,6 +383,10 @@ export default function SprintBoardView() {
           <Button variant="ghost" size="iconSm" onClick={() => setShowShortcuts(true)}>
             <Keyboard className="h-4 w-4" />
           </Button>
+          <Button size="sm" onClick={() => setAddSprintDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-2" />
+            Create Sprint
+          </Button>
         </div>
       </div>
 
@@ -415,6 +482,8 @@ export default function SprintBoardView() {
           )}
         </DialogContent>
       </Dialog>
+
+      <AddSprintDialog open={addSprintDialogOpen} onOpenChange={setAddSprintDialogOpen} onSubmit={createSprint} />
     </div>
   );
 }

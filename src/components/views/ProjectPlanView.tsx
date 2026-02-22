@@ -19,12 +19,14 @@ import {
   Pause,
   XCircle,
   Loader2,
+  Trash2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useProjectContext } from '@/contexts/ProjectContext';
-import { useTasks, useCreateTask, useSaveProjectBaseline, DbTask } from '@/hooks/useTasks';
+import { useTasks, useCreateTask, useDeleteTask, useBulkUpdateTasks, useSaveProjectBaseline, DbTask } from '@/hooks/useTasks';
+import { recalculateWBS } from './planning/utils/wbs';
 import type { Task, TaskStatus, TaskType, Priority } from '@/types/project';
 import { toast } from 'sonner';
 
@@ -55,9 +57,10 @@ interface TaskRowProps {
   onToggle: () => void;
   selected: boolean;
   onSelect: (selected: boolean) => void;
+  onDelete: () => void;
 }
 
-function TaskRow({ task, expanded, onToggle, selected, onSelect }: TaskRowProps) {
+function TaskRow({ task, expanded, onToggle, selected, onSelect, onDelete }: TaskRowProps) {
   const hasChildren = task.children && task.children.length > 0;
   const indent = task.level * 24;
 
@@ -154,8 +157,8 @@ function TaskRow({ task, expanded, onToggle, selected, onSelect }: TaskRowProps)
 
       {/* Actions */}
       <div className="flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-        <Button variant="ghost" size="icon">
-          <MoreHorizontal className="h-4 w-4" />
+        <Button variant="ghost" size="icon" onClick={onDelete} className="text-destructive hover:bg-destructive/10">
+          <Trash2 className="h-4 w-4" />
         </Button>
       </div>
     </motion.div>
@@ -168,6 +171,8 @@ export default function ProjectPlanView() {
 
   const { data: dbTasks = [], isLoading } = useTasks(projectId);
   const createTask = useCreateTask();
+  const deleteTask = useDeleteTask();
+  const bulkUpdateTasks = useBulkUpdateTasks();
   const saveBaseline = useSaveProjectBaseline();
 
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
@@ -280,12 +285,32 @@ export default function ProjectPlanView() {
     };
 
     try {
-      await createTask.mutateAsync(newTask);
+      const newTaskData = await createTask.mutateAsync(newTask);
       toast.success('Task created successfully');
+
+      const newTasksList = [...dbTasks, newTaskData as any];
+      const wbsUpdates = recalculateWBS(newTasksList);
+      if (wbsUpdates.length > 0) {
+        bulkUpdateTasks.mutate({ tasks: wbsUpdates, projectId });
+      }
     } catch (error) {
       // toast.error handled by mutation
     }
-  }, [projectId, visibleTasks.length, createTask]);
+  }, [projectId, visibleTasks.length, createTask, dbTasks, bulkUpdateTasks]);
+
+  const handleTaskDelete = useCallback(async (taskId: string) => {
+    try {
+      await deleteTask.mutateAsync({ taskId, projectId });
+      const remainingTasks = dbTasks.filter(t => t.id !== taskId);
+      const wbsUpdates = recalculateWBS(remainingTasks);
+      if (wbsUpdates.length > 0) {
+        bulkUpdateTasks.mutate({ tasks: wbsUpdates, projectId });
+      }
+      toast.success('Task deleted successfully');
+    } catch (error) {
+      // toast.error handled by mutation
+    }
+  }, [deleteTask, projectId, dbTasks, bulkUpdateTasks]);
 
   const handleBaseline = useCallback(async () => {
     if (!projectId) return;
@@ -372,6 +397,7 @@ export default function ProjectPlanView() {
               onToggle={() => toggleTask(task.id)}
               selected={selectedTasks.has(task.id)}
               onSelect={(selected) => toggleSelection(task.id, !!selected)}
+              onDelete={() => handleTaskDelete(task.id)}
             />
           ))
         ) : (

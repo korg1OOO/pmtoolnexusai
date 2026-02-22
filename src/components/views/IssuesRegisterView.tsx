@@ -19,6 +19,8 @@ import {
   CheckCircle2,
   History,
   Loader2,
+  Edit2,
+  Save,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -407,6 +409,32 @@ export default function IssuesRegisterView() {
   const [activeTab, setActiveTab] = useState('all');
   const contentRef = useRef<HTMLDivElement>(null);
 
+  // Table View States
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<Partial<IssueInput & { sla_target_resolution: number | null }>>({});
+
+  const handleEditClick = (issue: Issue) => {
+    setEditingId(issue.id);
+    setEditForm({
+      title: issue.title,
+      description: issue.description || '',
+      type: issue.type,
+      severity: issue.severity,
+      priority: issue.priority,
+      status: issue.status,
+      reporter_name: issue.reporter_name || '',
+      assignee_name: issue.assignee_name || '',
+      sla_target_resolution: issue.sla_target_resolution,
+    });
+  };
+
+  const handleSaveInline = async (id: string) => {
+    if (editingId === id && editForm) {
+      await updateIssue(id, editForm);
+      setEditingId(null);
+    }
+  };
+
   const pdfSections: PDFExportSection[] = [
     { id: 'kpis', name: 'KPI Summary', selector: '[data-section="kpis"]' },
     { id: 'list', name: 'Issues List', selector: '[data-section="list"]' },
@@ -486,21 +514,170 @@ export default function IssuesRegisterView() {
             </div>
 
             {/* Issues List */}
-            <div className="space-y-3" data-section="list">
-              {filteredIssues.length === 0 ? (
-                <Card className="p-8 text-center">
-                  <p className="text-muted-foreground">No issues found. Log your first issue to get started.</p>
-                </Card>
-              ) : (
-                filteredIssues.map(issue => (
-                  <IssueCard
-                    key={issue.id}
-                    issue={issue}
-                    isSelected={selectedIssue?.id === issue.id}
-                    onClick={() => setSelectedIssue(issue)}
-                  />
-                ))
-              )}
+            <div data-section="list" className="bg-card rounded-lg border overflow-hidden mt-6">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm text-left">
+                  <thead className="bg-muted/50 text-xs uppercase text-muted-foreground border-b">
+                    <tr>
+                      <th className="px-4 py-3 font-medium">Issue ID</th>
+                      <th className="px-4 py-3 font-medium">Title</th>
+                      <th className="px-4 py-3 font-medium">Type</th>
+                      <th className="px-4 py-3 font-medium">Severity</th>
+                      <th className="px-4 py-3 font-medium">Priority</th>
+                      <th className="px-4 py-3 font-medium">Assignee</th>
+                      <th className="px-4 py-3 font-medium">Status</th>
+                      <th className="px-4 py-3 font-medium text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-border">
+                    {filteredIssues.length === 0 ? (
+                      <tr>
+                        <td colSpan={8} className="px-4 py-8 text-center text-muted-foreground">
+                          No issues found. Log your first issue to get started.
+                        </td>
+                      </tr>
+                    ) : (
+                      filteredIssues.map((issue) => {
+                        const isEditing = editingId === issue.id;
+                        const TypeIcon = getTypeIcon(issue.type);
+
+                        return (
+                          <tr key={issue.id} className="hover:bg-muted/30 transition-colors group">
+                            <td className="px-4 py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">
+                              {issue.key || issue.id.slice(0, 8)}
+                            </td>
+                            <td className="px-4 py-3 font-medium max-w-[200px] truncate">
+                              {isEditing ? (
+                                <Input
+                                  value={editForm.title || ''}
+                                  onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
+                                  className="h-8 text-sm"
+                                />
+                              ) : (
+                                <div
+                                  className="cursor-pointer hover:underline truncate"
+                                  onClick={() => setSelectedIssue(issue)}
+                                >
+                                  {issue.title}
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              {isEditing ? (
+                                <Select value={editForm.type} onValueChange={(v) => setEditForm(prev => ({ ...prev, type: v as IssueType }))}>
+                                  <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="bug">Bug</SelectItem>
+                                    <SelectItem value="blocker">Blocker</SelectItem>
+                                    <SelectItem value="impediment">Impediment</SelectItem>
+                                    <SelectItem value="defect">Defect</SelectItem>
+                                    <SelectItem value="incident">Incident</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <div className="flex items-center gap-1.5 text-muted-foreground capitalize">
+                                  <TypeIcon className="h-3.5 w-3.5" />
+                                  {issue.type}
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              {isEditing ? (
+                                <Select value={editForm.severity} onValueChange={(v) => setEditForm(prev => ({ ...prev, severity: v as IssueSeverity }))}>
+                                  <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="minor">Minor</SelectItem>
+                                    <SelectItem value="moderate">Moderate</SelectItem>
+                                    <SelectItem value="major">Major</SelectItem>
+                                    <SelectItem value="critical">Critical</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <Badge variant={getSeverityColor(issue.severity)} className="capitalize">
+                                  {issue.severity}
+                                </Badge>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              {isEditing ? (
+                                <Select value={editForm.priority} onValueChange={(v) => setEditForm(prev => ({ ...prev, priority: v as IssuePriority }))}>
+                                  <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="low">Low</SelectItem>
+                                    <SelectItem value="medium">Medium</SelectItem>
+                                    <SelectItem value="high">High</SelectItem>
+                                    <SelectItem value="critical">Critical</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <Badge variant={getPriorityColor(issue.priority)} className="capitalize">
+                                  {issue.priority}
+                                </Badge>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              {isEditing ? (
+                                <Input
+                                  value={editForm.assignee_name || ''}
+                                  onChange={(e) => setEditForm(prev => ({ ...prev, assignee_name: e.target.value }))}
+                                  className="h-8 text-sm"
+                                  placeholder="Assignee name"
+                                />
+                              ) : (
+                                <div className="flex items-center gap-1.5 text-muted-foreground">
+                                  <User className="h-3.5 w-3.5" />
+                                  {issue.assignee_name || 'Unassigned'}
+                                </div>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap">
+                              {isEditing ? (
+                                <Select value={editForm.status} onValueChange={(v) => setEditForm(prev => ({ ...prev, status: v as IssueStatus }))}>
+                                  <SelectTrigger className="h-8 w-32"><SelectValue /></SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="open">Open</SelectItem>
+                                    <SelectItem value="investigating">Investigating</SelectItem>
+                                    <SelectItem value="in-progress">In Progress</SelectItem>
+                                    <SelectItem value="blocked">Blocked</SelectItem>
+                                    <SelectItem value="resolved">Resolved</SelectItem>
+                                    <SelectItem value="closed">Closed</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              ) : (
+                                <Badge variant={getStatusColor(issue.status)} className="capitalize">
+                                  {issue.status}
+                                </Badge>
+                              )}
+                            </td>
+                            <td className="px-4 py-3 whitespace-nowrap text-right">
+                              {isEditing ? (
+                                <div className="flex items-center justify-end gap-1">
+                                  <Button size="iconXs" variant="ghost" onClick={() => setEditingId(null)}><X className="h-4 w-4" /></Button>
+                                  <Button size="iconXs" variant="default" onClick={() => handleSaveInline(issue.id)}><Save className="h-3.5 w-3.5" /></Button>
+                                </div>
+                              ) : (
+                                <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <Button size="iconXs" variant="ghost" onClick={() => handleEditClick(issue)}><Edit2 className="h-3.5 w-3.5" /></Button>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button variant="ghost" size="iconXs"><MoreHorizontal className="h-4 w-4" /></Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end">
+                                      <DropdownMenuItem onClick={() => setSelectedIssue(issue)}>View Details</DropdownMenuItem>
+                                      <DropdownMenuSeparator />
+                                      <DropdownMenuItem className="text-destructive" onClick={() => deleteIssue(issue.id)}>Delete</DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         </div>

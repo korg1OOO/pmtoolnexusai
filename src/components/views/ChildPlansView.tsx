@@ -241,12 +241,26 @@ export default function ChildPlansView() {
         const parent = taskMap.get(t.parent_id)!;
         parent.children = parent.children || [];
         parent.children.push(node);
-      } else {
+      } else if (t.parent_id !== null) { // Fallback if parent is missing but it's a child
         rootTasks.push(node);
       }
     });
 
-    return rootTasks.sort((a, b) => a.wbs.localeCompare(b.wbs, undefined, { numeric: true }));
+    // We only want to display actual children (level > 0 or parent_id !== null)
+    // So if the tree root Tasks has tasks that are top-level parents, we should instead
+    // elevate their children to be the roots of this view.
+    const childRoots: ChildTask[] = [];
+    tasks.forEach(t => {
+      if (t.parent_id === null) {
+        // This is a phase / main project task, we only want its children
+        const parentNode = taskMap.get(t.id);
+        if (parentNode && parentNode.children) {
+          childRoots.push(...parentNode.children);
+        }
+      }
+    });
+
+    return childRoots.sort((a, b) => a.wbs.localeCompare(b.wbs, undefined, { numeric: true }));
   }, [tasks]);
 
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
@@ -309,7 +323,7 @@ export default function ChildPlansView() {
 
   // Derive parent task / summary metrics from root tasks or project settings
   const parentSummary = {
-    wbs: hierarchy[0]?.wbs?.split('.')[0] || settings?.project_code || 'P-1',
+    wbs: hierarchy[0]?.wbs?.split('.')[0] || (settings?.id ? `P-${settings.id.slice(0, 4)}` : 'P-1'),
     priority: 'high',
     name: settings?.name || 'Project Plan',
     progress: Math.round(visibleTasks.reduce((acc, t) => acc + (t.progress || 0), 0) / (visibleTasks.length || 1))

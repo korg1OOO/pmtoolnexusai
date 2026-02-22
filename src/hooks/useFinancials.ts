@@ -132,7 +132,7 @@ export function useCreateInvoice() {
                 invoice_number: invoice.invoice_number,
                 amount: invoice.amount,
                 status: invoice.status,
-                due_date: invoice.date,
+                date: invoice.date,
             };
 
             const { data, error } = await supabase

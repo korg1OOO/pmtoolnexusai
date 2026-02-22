@@ -646,11 +646,54 @@ export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabP
                 }));
 
                 if (mappedSwimlanes.length === 0) {
-                    // Fallback to initial seed if DB is empty (optional, or just show empty)
-                    // For now, let's keep it empty or user can "Seed" via a button? 
-                    // The user request said "Replace all mock data", so we should respect DB even if empty.
-                    // But to avoid a blank screen confusion, maybe we insert default swimlanes if empty?
-                    // Let's stick to DB truth.
+                    // Auto-seed initial structure if completely empty so user has a starting point
+                    const defaultPhases = ["Requirements", "Design", "Implementation", "Testing", "Deployment"];
+                    const defaultSwimlanes = defaultPhases.map((phase, i) => ({
+                        id: crypto.randomUUID(),
+                        label: phase,
+                        color: SWIMLANE_COLORS[i % SWIMLANE_COLORS.length],
+                        collapsed: false,
+                        order_index: i,
+                        project_id: settings.id,
+                        activities: []
+                    }));
+
+                    // Save to backend sequentially to establish the base
+                    for (const sw of defaultSwimlanes) {
+                        try {
+                            const savedSw = await timelineService.saveSwimlane(sw);
+                            // Add one default activity per phase
+                            const defaultAct = {
+                                id: crypto.randomUUID(),
+                                swimlane_id: savedSw.id,
+                                name: `${phase} Phase Kickoff`,
+                                start_month: i * 2,
+                                duration_months: 2,
+                                color: COLORS[i % COLORS.length]
+                            };
+                            await timelineService.saveActivity(defaultAct);
+
+                            mappedSwimlanes.push({
+                                ...sw,
+                                id: savedSw.id,
+                                activities: [{
+                                    id: defaultAct.id,
+                                    name: defaultAct.name,
+                                    start: defaultAct.start_month,
+                                    duration: defaultAct.duration_months,
+                                    color: defaultAct.color,
+                                    tags: [],
+                                    notes: ""
+                                }]
+                            });
+                        } catch (e) {
+                            console.error("Auto-seed error for phase", phase, e);
+                        }
+                    }
+                    toast({
+                        title: "Timeline Initialized",
+                        description: "A standard 5-phase framework has been created.",
+                    });
                 }
 
                 dispatch({ type: 'SET_INITIAL_DATA', swimlanes: mappedSwimlanes, milestones: mappedMilestones });

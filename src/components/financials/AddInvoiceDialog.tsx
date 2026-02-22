@@ -33,7 +33,7 @@ import { useProjectContext } from '@/contexts/ProjectContext';
 const formSchema = z.object({
     invoice_number: z.string().min(1, 'Invoice number is required'),
     date: z.string(),
-    amount: z.string().transform((val) => Number(val)),
+    amount: z.coerce.number(),
     status: z.enum(['paid', 'sent', 'pending', 'cancelled']),
     milestone: z.string().optional(),
 });

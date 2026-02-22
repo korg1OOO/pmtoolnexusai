@@ -299,7 +299,10 @@ export function DatabaseGantt({ projectId, scenarioId = null, onSelectionChange 
     const start = new Date(task.start_date);
     const end = new Date(task.end_date);
     const startOffset = Math.ceil((start.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24));
-    const duration = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+
+    // Ensure duration is always at least 1 visual day if start == end or calculated duration is 0
+    let duration = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    if (duration < 1 && task.type !== 'milestone') duration = 1;
 
     const left = (startOffset / totalDays) * 100;
     const width = (duration / totalDays) * 100;
@@ -340,7 +343,8 @@ export function DatabaseGantt({ projectId, scenarioId = null, onSelectionChange 
     start.setDate(start.getDate() - 2);
 
     const startOffset = Math.ceil((start.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24));
-    const duration = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+    let duration = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    if (duration < 1 && task.type !== 'milestone') duration = 1;
 
     const left = (startOffset / totalDays) * 100;
     const width = (duration / totalDays) * 100;

@@ -53,6 +53,7 @@ import {
 } from '@/components/ui/select';
 import { useEpics, Epic, EpicInput } from '@/hooks/useEpics';
 import { useBacklogItems, BacklogItem, BacklogItemInput, ItemType, BacklogStatus, PriorityLevel } from '@/hooks/useBacklogItems';
+import { useSprints, Sprint } from '@/hooks/useSprints';
 import { toast } from 'sonner';
 
 const getTypeColor = (type: ItemType) => {
@@ -78,11 +79,13 @@ const getPriorityVariant = (priority: PriorityLevel) => {
 interface BacklogItemRowProps {
   item: BacklogItem;
   epic?: Epic;
+  sprint?: Sprint;
   onUpdate: (id: string, updates: Partial<BacklogItemInput>) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
+  onEdit: (item: BacklogItem) => void;
 }
 
-function BacklogItemRow({ item, epic, onUpdate, onDelete }: BacklogItemRowProps) {
+function BacklogItemRow({ item, epic, sprint, onUpdate, onDelete, onEdit }: BacklogItemRowProps) {
   return (
     <div className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors group">
       <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 cursor-grab" />
@@ -133,7 +136,7 @@ function BacklogItemRow({ item, epic, onUpdate, onDelete }: BacklogItemRowProps)
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onEdit(item)}>
             <Edit2 className="h-4 w-4 mr-2" />
             Edit
           </DropdownMenuItem>
@@ -264,6 +267,146 @@ function AddItemDialog({ open, onOpenChange, onSubmit, epics }: AddItemDialogPro
   );
 }
 
+interface EditItemDialogProps {
+  item: BacklogItem | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSubmit: (id: string, input: Partial<BacklogItemInput>) => Promise<boolean>;
+  epics: Epic[];
+  sprints: Sprint[];
+}
+
+function EditItemDialog({ item, open, onOpenChange, onSubmit, epics, sprints }: EditItemDialogProps) {
+  const [loading, setLoading] = useState(false);
+  const [form, setForm] = useState<Partial<BacklogItemInput>>({});
+
+  useMemo(() => {
+    if (item) {
+      setForm({
+        title: item.title,
+        description: item.description,
+        type: item.type,
+        priority: item.priority,
+        story_points: item.story_points,
+        epic_id: item.epic_id,
+        assignee_name: item.assignee_name,
+        sprint_id: item.sprint_id,
+      });
+    }
+  }, [item]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!item || !form.title?.trim()) {
+      toast.error('Title is required');
+      return;
+    }
+    setLoading(true);
+    const result = await onSubmit(item.id, form);
+    setLoading(false);
+    if (result) {
+      onOpenChange(false);
+    }
+  };
+
+  if (!item) return null;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Edit Backlog Item</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label>Title *</Label>
+            <Input value={form.title || ''} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Item title" />
+          </div>
+          <div className="space-y-2">
+            <Label>Description</Label>
+            <Textarea value={form.description || ''} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="Describe the item" />
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="space-y-2">
+              <Label>Type</Label>
+              <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v as ItemType }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="story">Story</SelectItem>
+                  <SelectItem value="task">Task</SelectItem>
+                  <SelectItem value="bug">Bug</SelectItem>
+                  <SelectItem value="tech-debt">Tech Debt</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Priority</Label>
+              <Select value={form.priority} onValueChange={v => setForm(f => ({ ...f, priority: v as PriorityLevel }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="critical">Critical</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Story Points</Label>
+              <Select value={form.story_points?.toString() || 'none'} onValueChange={v => setForm(f => ({ ...f, story_points: v === 'none' ? undefined : parseInt(v) }))}>
+                <SelectTrigger><SelectValue placeholder="Est" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">None</SelectItem>
+                  {[1, 2, 3, 5, 8, 13, 21].map(p => (
+                    <SelectItem key={p} value={p.toString()}>{p}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Assignee</Label>
+              <Input value={form.assignee_name || ''} onChange={e => setForm(f => ({ ...f, assignee_name: e.target.value }))} placeholder="Name" />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Epic</Label>
+              <Select value={form.epic_id || 'none'} onValueChange={v => setForm(f => ({ ...f, epic_id: v === 'none' ? undefined : v }))}>
+                <SelectTrigger><SelectValue placeholder="Select epic" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No Epic</SelectItem>
+                  {epics.map(epic => (
+                    <SelectItem key={epic.id} value={epic.id}>{epic.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Sprint</Label>
+              <Select value={form.sprint_id || 'none'} onValueChange={v => setForm(f => ({ ...f, sprint_id: v === 'none' ? undefined : v }))}>
+                <SelectTrigger><SelectValue placeholder="Backlog" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Backlog (No Sprint)</SelectItem>
+                  {sprints.map(s => (
+                    <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="submit" disabled={loading}>
+              {loading && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function AddEpicDialog({ open, onOpenChange, onSubmit }: { open: boolean, onOpenChange: (open: boolean) => void, onSubmit: (input: EpicInput) => Promise<Epic | null> }) {
   const [loading, setLoading] = useState(false);
   const [form, setForm] = useState<EpicInput>({ name: '', description: '', color: 'blue' });
@@ -311,6 +454,7 @@ export function AddEpicDialog({ open, onOpenChange, onSubmit }: { open: boolean,
 
 export default function BacklogView() {
   const { epics, loading: epicsLoading, createEpic } = useEpics();
+  const { sprints, loading: sprintsLoading } = useSprints();
   const { items, loading: itemsLoading, createItem, updateItem, deleteItem, totalPoints, scheduledItems } = useBacklogItems();
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string | null>(null);
@@ -318,7 +462,14 @@ export default function BacklogView() {
   const [viewMode, setViewMode] = useState<'flat' | 'epics'>('epics');
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [addEpicDialogOpen, setAddEpicDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<BacklogItem | null>(null);
   const contentRef = useRef<HTMLDivElement>(null);
+
+  const handleEditItem = (item: BacklogItem) => {
+    setEditingItem(item);
+    setEditDialogOpen(true);
+  };
 
   // Initialize expanded epics when epics load
   useMemo(() => {
@@ -578,6 +729,7 @@ export default function BacklogView() {
                             epic={epic}
                             onUpdate={updateItem}
                             onDelete={deleteItem}
+                            onEdit={handleEditItem}
                           />
                         ))}
                       </div>
@@ -628,6 +780,7 @@ export default function BacklogView() {
                           item={item}
                           onUpdate={updateItem}
                           onDelete={deleteItem}
+                          onEdit={handleEditItem}
                         />
                       ))}
                     </div>
@@ -661,6 +814,7 @@ export default function BacklogView() {
                   epic={epics.find(e => e.id === item.epic_id)}
                   onUpdate={updateItem}
                   onDelete={deleteItem}
+                  onEdit={handleEditItem}
                 />
               ))
             )}
@@ -670,6 +824,14 @@ export default function BacklogView() {
 
       <AddItemDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} onSubmit={createItem} epics={epics} />
       <AddEpicDialog open={addEpicDialogOpen} onOpenChange={setAddEpicDialogOpen} onSubmit={createEpic} />
+      <EditItemDialog
+        item={editingItem}
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        onSubmit={updateItem}
+        epics={epics}
+        sprints={sprints}
+      />
     </div>
   );
 }

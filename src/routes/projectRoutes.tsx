@@ -63,6 +63,7 @@ const CollaborationSpacesView = lazy(() => import('@/components/views/Collaborat
 const CollaborationDashboardView = lazy(() => import('@/components/views/CollaborationDashboardView'));
 const ProgramManagementView = lazy(() => import('@/components/views/ProgramManagementView'));
 const RequirementsMatrixView = lazy(() => import('@/components/views/RequirementsMatrixView'));
+const ProjectsListView = lazy(() => import('@/components/views/ProjectsListView'));
 
 // ── Portfolio view (also used in ProtectedProjectRoute) ───────────────────────
 import { PortfolioView } from '@/components/workspace';
@@ -71,6 +72,7 @@ export function ProjectRoutes() {
     return (
         <>
             {/* ── Dashboard & Overview ──────────────────────────────────────── */}
+            <Route path="/projects" element={<ProtectedProjectRoute><ProjectsListView /></ProtectedProjectRoute>} />
             <Route path="/dashboard" element={<ProtectedProjectRoute><DashboardHub /></ProtectedProjectRoute>} />
             <Route path="/morning-briefing" element={<ProtectedProjectRoute><MorningBriefingView /></ProtectedProjectRoute>} />
             <Route path="/executive-dashboard" element={<ProtectedProjectRoute><ExecutiveDashboardView /></ProtectedProjectRoute>} />

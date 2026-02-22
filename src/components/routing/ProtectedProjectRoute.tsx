@@ -17,6 +17,7 @@ interface ProtectedProjectRouteProps {
 
 // Map routes to view IDs for sidebar active state
 const routeToViewMap: Record<string, string> = {
+    '/projects': 'projects',
     '/dashboard': 'dashboard',
     '/morning-briefing': 'morning-briefing',
     '/executive-dashboard': 'executive-dashboard',
@@ -76,6 +77,7 @@ const routeToViewMap: Record<string, string> = {
 
 // Reverse mapping: view ID to route path
 const viewToRouteMap: Record<string, string> = {
+    'projects': '/projects',
     'dashboard': '/dashboard',
     'morning-briefing': '/morning-briefing',
     'executive-dashboard': '/executive-dashboard',

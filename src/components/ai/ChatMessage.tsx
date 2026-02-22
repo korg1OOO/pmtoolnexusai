@@ -1,6 +1,6 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Bot, User, CheckCircle, XCircle } from 'lucide-react';
+import { Bot, User, CheckCircle, XCircle, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { AgentIndicator } from './AgentIndicator';
@@ -139,6 +139,22 @@ export function ChatMessage({ message, onActionRequest }: ChatMessageProps) {
           <div className="mt-2 flex items-center gap-1 text-xs text-primary">
             <CheckCircle className="h-3 w-3" />
             <span>Action confirmed</span>
+          </div>
+        )}
+
+        {/* Action Link / View Button */}
+        {!isUser && message.metadata?.link && (
+          <div className="mt-3">
+            <Button
+              variant="default"
+              size="sm"
+              className="h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20"
+              onClick={() => {
+                window.open(message.metadata!.link, '_blank');
+              }}
+            >
+              View Record <ArrowRight className="h-3 w-3 ml-1.5" />
+            </Button>
           </div>
         )}
 

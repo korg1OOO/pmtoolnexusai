@@ -134,6 +134,107 @@ serve(async (req) => {
                 break;
             }
 
+            case "create_project": {
+                const { data, error } = await supabase.from("projects").insert({
+                    name: params.title,
+                    type: params.type ?? "enterprise",
+                    description: params.description ?? null,
+                    status: "planning",
+                    tenant_id: pending.tenant_id,
+                }).select("id, name").single();
+                if (error) throw error;
+                // auto-assign creator as project admin
+                await supabase.from("user_roles").insert({
+                    user_id: userId,
+                    project_id: data.id,
+                    role: "admin",
+                    role_name: "Project Admin",
+                });
+                result = { created: data };
+                break;
+            }
+
+            case "assign_team_members": {
+                // Find random N users
+                const { data: users } = await supabase.from("users").select("id").limit(Number(params.count) || 5);
+                const toInsert = (users || []).map((u: any) => ({
+                    user_id: u.id,
+                    project_id: params.project_id,
+                    role: "developer",
+                    role_name: "Developer",
+                }));
+                if (toInsert.length > 0) {
+                    await supabase.from("user_roles").upsert(toInsert, { onConflict: "user_id, project_id" });
+                }
+                result = { assigned: toInsert.length };
+                break;
+            }
+
+            case "log_leave_request": {
+                // Return mock success as leave_requests table is not implemented in MVP schema
+                result = { logged: Number(params.count) || 3, mock: true, message: "Leave requests logged virtually." };
+                break;
+            }
+
+            case "create_phase": {
+                const { data, error } = await supabase.from("project_phases").insert({
+                    project_id: params.project_id,
+                    name: params.name,
+                    status: "planning"
+                }).select("id, name").single();
+                if (error) throw error;
+                result = { created: data };
+                break;
+            }
+
+            case "set_project_budget": {
+                // Insert/upsert into project_budgets
+                const { data, error } = await supabase.from("project_budgets").upsert({
+                    project_id: params.project_id,
+                    total_amount: params.amount,
+                    currency: "USD",
+                }).select("id").single();
+                if (error) throw error;
+                result = { set: data };
+                break;
+            }
+
+            case "log_expense": {
+                const { data, error } = await supabase.from("project_expenses").insert({
+                    project_id: params.project_id,
+                    amount: params.amount,
+                    description: params.description,
+                    date: new Date().toISOString(),
+                }).select("id").single();
+                if (error) throw error;
+                result = { logged: data };
+                break;
+            }
+
+            case "create_milestone": {
+                const { data, error } = await supabase.from("project_milestones").insert({
+                    project_id: params.project_id,
+                    title: params.name,
+                    due_date: params.due_date ?? new Date().toISOString(),
+                    status: "pending",
+                }).select("id").single();
+                if (error) throw error;
+                result = { created: data };
+                break;
+            }
+
+            case "create_requirement": {
+                const { data, error } = await supabase.from("rtm_requirements").insert({
+                    project_id: params.project_id,
+                    req_code: params.code,
+                    description: params.description,
+                    status: params.status ?? "draft",
+                }).select("id").single();
+                if (error) throw error;
+                result = { created: data };
+                break;
+            }
+
             default:
                 throw new Error(`Unsupported tool: ${tool_name}`);
         }

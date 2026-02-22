@@ -16,6 +16,7 @@ export type ActionStatus = "pending" | "approved" | "rejected" | "executed";
 export interface PendingAction {
     id: string;
     user_id: string;
+    tenant_id?: string;
     tool_name: string;
     params: Record<string, unknown>;
     diff: Record<string, unknown>;
@@ -55,12 +56,21 @@ const CONFIRMATION_REQUIRED = new Set<string>([
     "create_issue_from_email",
     "send_stakeholder_briefing",
     "save_document",
+    "create_project",
+    "assign_team_members",
+    "log_leave_request",
+    "create_phase",
+    "set_project_budget",
+    "log_expense",
+    "create_milestone",
+    "create_requirement",
 ]);
 
 // Tools that are safe to execute immediately (reads / generations)
 const IMMEDIATE_TOOLS = new Set<string>([
     "generate_pdf_report",
     "extract_action_items",
+    "validate_requirements",
 ]);
 
 /**

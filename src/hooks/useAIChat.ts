@@ -294,6 +294,7 @@ export function useAIChat({
                 executed: dispatchResult.executed,
                 creditsDeducted: dispatchResult.creditsDeducted,
                 tokensDeducted: dispatchResult.tokensDeducted,
+                link: dispatchResult.link,
               } as unknown as Record<string, unknown>,
             } as any);
 
@@ -315,15 +316,7 @@ export function useAIChat({
               }
             }
 
-            // Add to local state
-            const assistantMsg: AIMessage = {
-              id: `local-${Date.now()}`,
-              conversation_id: conversationId,
-              role: 'assistant',
-              content: dispatchContent,
-              created_at: new Date().toISOString(),
-            };
-            setMessages((prev) => [...prev, assistantMsg]);
+            // Real-time listener will pick up the DB insertion to update the UI
 
             if (dispatchResult.executed) {
               toast.success(`✅ Action executed: ${dispatchResult.actionType.replace(/_/g, ' ')}`);

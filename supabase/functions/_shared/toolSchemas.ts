@@ -14,6 +14,152 @@ export interface ToolSchema {
     };
 }
 
+// ─── Project & HR Core Tools ────────────────────────────────────────────────
+
+export const coreTools: ToolSchema[] = [
+    {
+        type: "function",
+        function: {
+            name: "create_project",
+            description: "Create a new project in the system.",
+            parameters: {
+                type: "object",
+                required: ["title", "type", "description"],
+                properties: {
+                    title: { type: "string", description: "Project title" },
+                    type: { type: "string", description: "e.g. Enterprise, Internal" },
+                    description: { type: "string" },
+                },
+            },
+        },
+    },
+    {
+        type: "function",
+        function: {
+            name: "assign_team_members",
+            description: "Assign multiple team members to a project.",
+            parameters: {
+                type: "object",
+                required: ["project_id", "count"],
+                properties: {
+                    project_id: { type: "string" },
+                    count: { type: "integer", description: "Number of random existing users to assign" },
+                },
+            },
+        },
+    },
+    {
+        type: "function",
+        function: {
+            name: "log_leave_request",
+            description: "Log leave requests for team members.",
+            parameters: {
+                type: "object",
+                required: ["project_id", "count", "types"],
+                properties: {
+                    project_id: { type: "string" },
+                    count: { type: "integer" },
+                    types: { type: "array", items: { type: "string" } },
+                },
+            },
+        },
+    },
+    {
+        type: "function",
+        function: {
+            name: "create_phase",
+            description: "Create a project delivery phase.",
+            parameters: {
+                type: "object",
+                required: ["project_id", "name"],
+                properties: {
+                    project_id: { type: "string" },
+                    name: { type: "string" },
+                    description: { type: "string" },
+                },
+            },
+        },
+    },
+    {
+        type: "function",
+        function: {
+            name: "set_project_budget",
+            description: "Set or update the total project budget.",
+            parameters: {
+                type: "object",
+                required: ["project_id", "amount"],
+                properties: {
+                    project_id: { type: "string" },
+                    amount: { type: "number" },
+                },
+            },
+        },
+    },
+    {
+        type: "function",
+        function: {
+            name: "log_expense",
+            description: "Log an expense against a project budget.",
+            parameters: {
+                type: "object",
+                required: ["project_id", "amount", "description"],
+                properties: {
+                    project_id: { type: "string" },
+                    amount: { type: "number" },
+                    description: { type: "string" },
+                },
+            },
+        },
+    },
+    {
+        type: "function",
+        function: {
+            name: "create_milestone",
+            description: "Create a project milestone.",
+            parameters: {
+                type: "object",
+                required: ["project_id", "name"],
+                properties: {
+                    project_id: { type: "string" },
+                    name: { type: "string" },
+                    due_date: { type: "string" },
+                },
+            },
+        },
+    },
+    {
+        type: "function",
+        function: {
+            name: "create_requirement",
+            description: "Log a requirement in the traceability matrix.",
+            parameters: {
+                type: "object",
+                required: ["project_id", "code", "description"],
+                properties: {
+                    project_id: { type: "string" },
+                    code: { type: "string" },
+                    description: { type: "string" },
+                    status: { type: "string" },
+                },
+            },
+        },
+    },
+    {
+        type: "function",
+        function: {
+            name: "validate_requirements",
+            description: "Check for duplicate requirements.",
+            parameters: {
+                type: "object",
+                required: ["project_id"],
+                properties: {
+                    project_id: { type: "string" },
+                },
+            },
+        },
+    },
+];
+
 // ─── P0.1 Task Orchestrator ──────────────────────────────────────────────────
 
 export const taskTools: ToolSchema[] = [
@@ -748,5 +894,6 @@ export const ALL_TOOLS: ToolSchema[] = [
     ...presentationTools,
     ...sodTools,
     ...complianceTools,
+    ...coreTools,
 ];
 

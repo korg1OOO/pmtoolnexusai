@@ -65,6 +65,7 @@ export interface DispatchResult {
     creditsDeducted: number;
     tokensDeducted: number;
     data?: unknown;
+    link?: string;
     error?: string;
 }
 
@@ -90,7 +91,7 @@ function detectIntent(msg: string): string | null {
     }
 
     // 3. Document / Artifact Generation
-    if ((lower.includes('create') || lower.includes('prepare') || lower.includes('change request') || lower.includes('cr '))) return 'create_change_request';
+    if (lower.includes('change request') || lower.includes('cr ') || (lower.includes('create') && lower.includes('cr '))) return 'create_change_request';
     if ((lower.includes('stakeholder') || lower.includes('load stakeholder'))) return 'create_stakeholder';
     if ((lower.includes('lesson') && lower.includes('learn'))) return 'log_lesson_learned';
     if ((lower.includes('final report') || lower.includes('project report'))) return 'generate_final_report';
@@ -238,6 +239,7 @@ export async function dispatchAIAction(
                     summary: `✅ Project **"${name}"** created successfully with ${isEnterprise ? 'Enterprise' : 'Standard'} type.`,
                     creditsDeducted: creditsUsed, tokensDeducted,
                     data,
+                    link: `/project/${data.id}/dashboard`,
                 };
             }
 
@@ -1246,9 +1248,10 @@ export async function dispatchAIAction(
                 return {
                     executed: true,
                     actionType: 'create_change_request',
-                    summary: `✅ Change Request created: **"${crTitle}"**. ${descriptionPrefix}`,
+                    summary: `✅ Change Request "${crTitle}" created and flagged as priority. Requires PMO review.`,
                     creditsDeducted: creditsUsed, tokensDeducted,
                     data,
+                    link: `/project/${projectId}/change-requests`,
                 };
             }
 

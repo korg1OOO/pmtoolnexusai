@@ -73,7 +73,6 @@ const navItems: NavItem[] = [
       { id: 'project-charter', label: 'Project Charter', icon: BookOpen, alwaysShow: true },
       { id: 'stakeholders', label: 'Stakeholder Register', icon: Users, alwaysShow: true },
       { id: 'timeline-planner', label: 'Timeline Planner', icon: Clock, alwaysShow: true },
-      { id: 'create-project', label: 'Create Project', icon: FolderKanban, alwaysShow: true },
     ]
   },
   {
@@ -125,6 +124,15 @@ const navItems: NavItem[] = [
     ]
   },
   {
+    id: 'closing',
+    label: 'Closing',
+    icon: CheckCircle2,
+    children: [
+      { id: 'final-report', label: 'Final Report', icon: FileText, alwaysShow: true },
+      { id: 'lessons-learned', label: 'Lessons Learned', icon: Lightbulb, alwaysShow: true },
+    ]
+  },
+  {
     id: 'collaboration',
     label: 'Collaboration',
     icon: Users,
@@ -144,25 +152,6 @@ const navItems: NavItem[] = [
       { id: 'team-management', label: 'Team Management', icon: Users, alwaysShow: true },
       { id: 'presentations', label: 'Presentations', icon: Presentation, moduleKey: 'presentations' },
       { id: 'communication-intelligence', label: 'AI Intelligence', icon: BarChart3, alwaysShow: true },
-    ]
-  },
-  {
-    id: 'ai-credits',
-    label: 'AI Credits',
-    icon: Sparkles,
-    children: [
-      { id: 'purchase-credits', label: 'Purchase Credits', icon: DollarSign, alwaysShow: true },
-      { id: 'usage-dashboard', label: 'Usage Dashboard', icon: BarChart3, alwaysShow: true },
-      { id: 'auto-recharge', label: 'Auto-Recharge', icon: Target, alwaysShow: true },
-    ]
-  },
-  {
-    id: 'closing',
-    label: 'Closing',
-    icon: CheckCircle2,
-    children: [
-      { id: 'final-report', label: 'Final Report', icon: FileText, alwaysShow: true },
-      { id: 'lessons-learned', label: 'Lessons Learned', icon: Lightbulb, alwaysShow: true },
     ]
   },
 ];
@@ -214,6 +203,16 @@ const adminItems: NavItem[] = [
     icon: GitBranch,
     children: [
       { id: 'program-select', label: 'Select Program', icon: GitBranch, alwaysShow: true },
+    ]
+  },
+  {
+    id: 'ai-credits',
+    label: 'AI Credits',
+    icon: Sparkles,
+    children: [
+      { id: 'purchase-credits', label: 'Purchase Credits', icon: DollarSign, alwaysShow: true },
+      { id: 'usage-dashboard', label: 'Usage Dashboard', icon: BarChart3, alwaysShow: true },
+      { id: 'auto-recharge', label: 'Auto-Recharge', icon: Target, alwaysShow: true },
     ]
   },
   { id: 'settings', label: 'Settings', icon: User, alwaysShow: true },
@@ -456,6 +455,23 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+        {/* Projects Button */}
+        <div className="mb-4">
+          <Button
+            className={cn(
+              "w-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all",
+              collapsed ? "justify-center px-0 h-10" : "justify-start gap-2 h-10 px-3"
+            )}
+            onClick={() => {
+              if (collapsed) setCollapsed(false);
+              navigate('/projects');
+            }}
+          >
+            <FolderKanban className={cn("shrink-0", collapsed ? "h-5 w-5" : "h-4 w-4")} />
+            {!collapsed && <span className="font-semibold">Projects</span>}
+          </Button>
+        </div>
+
         {navItems.map((item) => renderNavItem(item))}
 
         {/* Separator */}

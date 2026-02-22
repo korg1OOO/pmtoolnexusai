@@ -529,33 +529,7 @@ export function GlobalAISidebar({
 
             {/* Input Area */}
             <div className="border-t bg-muted/20">
-              {/* Context Attachment Bar - Compact inline display */}
-              <div className="px-3 pt-2 pb-1 flex items-center gap-2 flex-wrap">
-                <span className="text-xs text-muted-foreground">Context:</span>
-                {selectedContexts.map((ctx) => (
-                  <Badge
-                    key={ctx.id}
-                    variant="secondary"
-                    className="gap-1 pr-1 text-xs h-5"
-                  >
-                    {ctx.type === 'page' ? ctx.icon : <Lightbulb className="h-3 w-3" />}
-                    <span className="max-w-[60px] truncate">{ctx.label}</span>
-                    <button
-                      onClick={() => setSelectedContexts(selectedContexts.filter(c => c.id !== ctx.id))}
-                      className="ml-0.5 hover:bg-muted rounded p-0.5"
-                      aria-label="Remove context"
-                    >
-                      <X className="h-2.5 w-2.5" />
-                    </button>
-                  </Badge>
-                ))}
-                <ContextSelector
-                  selectedContexts={selectedContexts}
-                  onContextChange={setSelectedContexts}
-                  currentView={currentView}
-                  compact
-                />
-              </div>
+              {/* Context Attachment Bar (Removed) */}
 
               {/* Attachment preview bar */}
               <AttachmentPreviewBar

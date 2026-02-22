@@ -53,6 +53,7 @@ export interface AIMessageMetadata {
   permissionDenied?: boolean;
   creditsDeducted?: number;
   tokensDeducted?: number;
+  link?: string;
 }
 
 export interface IntentClassification {

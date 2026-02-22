@@ -31,6 +31,8 @@ import {
   Shield,
   ReceiptText,
   Cpu,
+  Lock,
+  UserCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -77,6 +79,8 @@ const navItems: NavItem[] = [
   { id: "affiliates", label: "Affiliates", icon: Users2, path: "/admin/affiliates" },
   { id: "backups", label: "Database Backups", icon: Database, path: "/admin/backups" },
   { id: "migration", label: "Database Migration", icon: Database, path: "/admin/migration" },
+  { id: "roles", label: "Roles Management", icon: Lock, path: "/admin/roles" },
+  { id: "user-roles", label: "User Role Assignment", icon: UserCheck, path: "/admin/user-roles" },
 ];
 
 export function AdminSidebar({ collapsed, onCollapse, onBackToApp }: AdminSidebarProps) {

@@ -54,6 +54,8 @@ import {
     IMAPConfigurationManager,
     NotificationAnalyticsDashboard,
     AdminAIAgents,
+    AdminRolesPage,
+    AdminUserRolesPage,
 } from '@/components/admin/pages';
 
 export function AdminRoutes() {
@@ -109,6 +111,8 @@ export function AdminRoutes() {
             <Route path="api-keys" element={<AdminAPIKeys />} />
             <Route path="audit-logs" element={<AdminAuditLogs />} />
             <Route path="security-settings" element={<AdminSecurity />} />
+            <Route path="roles" element={<AdminRolesPage />} />
+            <Route path="user-roles" element={<AdminUserRolesPage />} />
         </Route>
     );
 }

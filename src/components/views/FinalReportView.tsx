@@ -21,12 +21,32 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { PDFExporter, PDFExportSection } from '@/components/common/PDFExporter';
 import { useProjectContext } from '@/contexts/ProjectContext';
-import { useFinalReport, FinalReport } from '@/hooks/useFinalReport';
+import { useFinalReport, useUpdateFinalReport } from '@/hooks/useFinalReport';
 
 export default function FinalReportView() {
   const contentRef = useRef<HTMLDivElement>(null);
   const { settings: project } = useProjectContext();
   const { data: report, isLoading } = useFinalReport(project?.id);
+  const { mutateAsync: generateReport, isPending: isGenerating } = useUpdateFinalReport();
+
+  const handleGenerate = async () => {
+    if (!project?.id) return;
+    try {
+      await generateReport({
+        project_id: project.id,
+        status: 'draft',
+        executive_summary: `Final report for ${project.name}`,
+        objectives_achievement: [],
+        financial_performance: {},
+        schedule_performance: {},
+        deliverables_status: [],
+        team_recognition: [],
+        recommendations: []
+      });
+    } catch (err) {
+      console.error(err);
+    }
+  };
 
   const pdfSections: PDFExportSection[] = [
     { id: 'summary', name: 'Executive Summary', selector: '[data-section="summary"]' },
@@ -56,8 +76,12 @@ export default function FinalReportView() {
           A final report has not been generated for this project yet.
           Generate one after project completion to summarize achievements and performance.
         </p>
-        <Button className="bg-success hover:bg-success/90">
-          <Plus className="h-4 w-4 mr-2" />
+        <Button
+          className="bg-success hover:bg-success/90"
+          onClick={handleGenerate}
+          disabled={isGenerating}
+        >
+          {isGenerating ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
           Generate Final Report
         </Button>
       </div>

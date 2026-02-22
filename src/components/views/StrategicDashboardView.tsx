@@ -463,142 +463,156 @@ export default function StrategicDashboardView() {
 
           {/* Value Engineering Tab */}
           <TabsContent value="value" className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {valueEngineering?.options?.map((option) => (
-                <Card
-                  key={option.id}
-                  className={cn(
-                    "cursor-pointer transition-all border-2",
-                    selectedOption === option.id ? "border-primary bg-primary/5 shadow-md scale-[1.02]" : "hover:border-primary/50"
-                  )}
-                  onClick={() => setSelectedOption(option.id)}
-                >
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-base">{option.name}</CardTitle>
-                      {valueEngineering.recommendation.selectedOption === option.id && (
-                        <Badge variant="success">Recommended</Badge>
+            {!valueEngineering || !valueEngineering.tradeoffAnalysis ? (
+              <Card className="min-h-[400px] flex flex-col items-center justify-center text-center p-6 bg-muted/20 border-dashed">
+                <div className="bg-muted p-4 rounded-full mb-4">
+                  <Target className="h-8 w-8 text-muted-foreground" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">Value Engineering Not Available</h3>
+                <p className="text-muted-foreground max-w-md mb-6">
+                  Run the AI Risk Discovery process to generate value engineering options and trade-off analysis.
+                </p>
+              </Card>
+            ) : (
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {valueEngineering?.options?.map((option) => (
+                    <Card
+                      key={option.id}
+                      className={cn(
+                        "cursor-pointer transition-all border-2",
+                        selectedOption === option.id ? "border-primary bg-primary/5 shadow-md scale-[1.02]" : "hover:border-primary/50"
                       )}
-                    </div>
-                    <CardDescription>{option.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent className="space-y-3">
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div className="p-2 rounded bg-muted/50">
-                        <p className="text-xs text-muted-foreground">Est. Cost</p>
-                        <p className="font-semibold">${(option.cost / 1000000).toFixed(1)}M</p>
-                      </div>
-                      <div className="p-2 rounded bg-muted/50">
-                        <p className="text-xs text-muted-foreground">ROI (2yr)</p>
-                        <p className="font-semibold text-success">+{option.roi * 100}%</p>
-                      </div>
-                      <div className="p-2 rounded bg-muted/50">
-                        <p className="text-xs text-muted-foreground">Risk Score</p>
-                        <p className="font-semibold">{option.riskScore}/10</p>
-                      </div>
-                      <div className="p-2 rounded bg-muted/50">
-                        <p className="text-xs text-muted-foreground">Time Impact</p>
-                        <p className={cn("font-semibold", option.timeImpact <= 0 ? "text-success" : "text-destructive")}>
-                          {option.timeImpact >= 0 ? "+" : ""}{option.timeImpact} days
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <p className="text-xs font-medium">Key Pros:</p>
-                      {option.pros.map((pro, i: number) => (
-                        <p key={i} className="text-xs text-muted-foreground flex items-center gap-1">
-                          <CheckCircle2 className="h-3 w-3 text-success" /> {pro}
-                        </p>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              ))}
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-              <Card className="lg:col-span-2">
-                <CardHeader>
-                  <CardTitle className="text-base">Trade-off Analysis</CardTitle>
-                  <CardDescription>Balanced comparison of cost, risk, and time factors</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    <div>
-                      <div className="flex justify-between items-end mb-4">
-                        <h4 className="text-sm font-medium">Relative Cost vs. Time Advantage</h4>
-                        <span className="text-xs text-muted-foreground">Optimal point marked in blue</span>
-                      </div>
-                      <div className="h-24 flex items-end gap-1 mb-2">
-                        {valueEngineering.tradeoffAnalysis.costVsTime.points.map((p, i: number) => (
-                          <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
-                            <div
-                              className={cn(
-                                "w-full rounded-t transition-all",
-                                p.isOptimal ? "bg-primary shadow-lg shadow-primary/20" : "bg-primary/20"
-                              )}
-                              style={{ height: `${Math.abs(p.y) + 20}%` }}
-                            />
-                            <span className="text-[10px] text-center font-medium opacity-70 group-hover:opacity-100">{p.label}</span>
+                      onClick={() => setSelectedOption(option.id)}
+                    >
+                      <CardHeader className="pb-2">
+                        <div className="flex items-center justify-between">
+                          <CardTitle className="text-base">{option.name}</CardTitle>
+                          {valueEngineering?.recommendation?.selectedOption === option.id && (
+                            <Badge variant="success">Recommended</Badge>
+                          )}
+                        </div>
+                        <CardDescription>{option.description}</CardDescription>
+                      </CardHeader>
+                      <CardContent className="space-y-3">
+                        <div className="grid grid-cols-2 gap-2 text-sm">
+                          <div className="p-2 rounded bg-muted/50">
+                            <p className="text-xs text-muted-foreground">Est. Cost</p>
+                            <p className="font-semibold">${(option.cost / 1000000).toFixed(1)}M</p>
                           </div>
-                        ))}
-                      </div>
-                      <p className="text-xs text-muted-foreground italic mt-2 text-center">
-                        {valueEngineering.tradeoffAnalysis.costVsTime.recommendation}
-                      </p>
-                    </div>
-
-                    <div>
-                      <h4 className="text-sm font-medium mb-4">Risk Profile per Option</h4>
-                      <div className="h-24 flex items-end gap-1 mb-2">
-                        {valueEngineering.tradeoffAnalysis.costVsRisk.points.map((p, i: number) => (
-                          <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
-                            <div
-                              className={cn(
-                                "w-full rounded-t transition-all",
-                                p.isOptimal ? "bg-primary shadow-lg shadow-primary/20" : "bg-primary/20"
-                              )}
-                              style={{ height: `${(p.y / 10) * 100}%` }}
-                            />
-                            <span className="text-[10px] text-center font-medium opacity-70 group-hover:opacity-100">{p.label}</span>
+                          <div className="p-2 rounded bg-muted/50">
+                            <p className="text-xs text-muted-foreground">ROI (2yr)</p>
+                            <p className="font-semibold text-success">+{option.roi * 100}%</p>
                           </div>
-                        ))}
-                      </div>
-                      <p className="text-xs text-muted-foreground italic mt-2 text-center">
-                        {valueEngineering.tradeoffAnalysis.costVsRisk.recommendation}
-                      </p>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+                          <div className="p-2 rounded bg-muted/50">
+                            <p className="text-xs text-muted-foreground">Risk Score</p>
+                            <p className="font-semibold">{option.riskScore}/10</p>
+                          </div>
+                          <div className="p-2 rounded bg-muted/50">
+                            <p className="text-xs text-muted-foreground">Time Impact</p>
+                            <p className={cn("font-semibold", option.timeImpact <= 0 ? "text-success" : "text-destructive")}>
+                              {option.timeImpact >= 0 ? "+" : ""}{option.timeImpact} days
+                            </p>
+                          </div>
+                        </div>
 
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Strategic Recommendation</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
-                    <h4 className="text-sm font-medium mb-2">AI Recommendation</h4>
-                    <p className="text-lg font-semibold text-primary mb-2">{valueEngineering?.tradeoffAnalysis?.optimalPoint}</p>
-                    <p className="text-sm text-muted-foreground mb-3">{valueEngineering?.recommendation?.justification}</p>
-                    <Badge variant="outline">{(valueEngineering?.recommendation?.confidence || 0) * 100}% confident</Badge>
-                    <div className="mt-4">
-                      <Button
-                        className="w-full gap-2"
-                        onClick={() => {
-                          const option = valueEngineering?.options?.find((o) => o.id === selectedOption);
-                          toast.success(`Implementing Value Engineering Option: ${option?.name || 'Selected Option'}`);
-                        }}
-                      >
-                        <CheckCircle2 className="h-4 w-4" />
-                        Implement Recommendation
-                      </Button>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                        <div className="space-y-1">
+                          <p className="text-xs font-medium">Key Pros:</p>
+                          {option.pros.map((pro, i: number) => (
+                            <p key={i} className="text-xs text-muted-foreground flex items-center gap-1">
+                              <CheckCircle2 className="h-3 w-3 text-success" /> {pro}
+                            </p>
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                  <Card className="lg:col-span-2">
+                    <CardHeader>
+                      <CardTitle className="text-base">Trade-off Analysis</CardTitle>
+                      <CardDescription>Balanced comparison of cost, risk, and time factors</CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-6">
+                        <div>
+                          <div className="flex justify-between items-end mb-4">
+                            <h4 className="text-sm font-medium">Relative Cost vs. Time Advantage</h4>
+                            <span className="text-xs text-muted-foreground">Optimal point marked in blue</span>
+                          </div>
+                          <div className="h-24 flex items-end gap-1 mb-2">
+                            {valueEngineering?.tradeoffAnalysis?.costVsTime?.points?.map((p, i: number) => (
+                              <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
+                                <div
+                                  className={cn(
+                                    "w-full rounded-t transition-all",
+                                    p.isOptimal ? "bg-primary shadow-lg shadow-primary/20" : "bg-primary/20"
+                                  )}
+                                  style={{ height: `${Math.abs(p.y) + 20}%` }}
+                                />
+                                <span className="text-[10px] text-center font-medium opacity-70 group-hover:opacity-100">{p.label}</span>
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-xs text-muted-foreground italic mt-2 text-center">
+                            {valueEngineering?.tradeoffAnalysis?.costVsTime?.recommendation}
+                          </p>
+                        </div>
+
+                        <div>
+                          <h4 className="text-sm font-medium mb-4">Risk Profile per Option</h4>
+                          <div className="h-24 flex items-end gap-1 mb-2">
+                            {valueEngineering?.tradeoffAnalysis?.costVsRisk?.points?.map((p, i: number) => (
+                              <div key={i} className="flex-1 flex flex-col items-center gap-2 group">
+                                <div
+                                  className={cn(
+                                    "w-full rounded-t transition-all",
+                                    p.isOptimal ? "bg-primary shadow-lg shadow-primary/20" : "bg-primary/20"
+                                  )}
+                                  style={{ height: `${(p.y / 10) * 100}%` }}
+                                />
+                                <span className="text-[10px] text-center font-medium opacity-70 group-hover:opacity-100">{p.label}</span>
+                              </div>
+                            ))}
+                          </div>
+                          <p className="text-xs text-muted-foreground italic mt-2 text-center">
+                            {valueEngineering?.tradeoffAnalysis?.costVsRisk?.recommendation}
+                          </p>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Strategic Recommendation</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="p-4 rounded-lg bg-primary/5 border border-primary/20">
+                        <h4 className="text-sm font-medium mb-2">AI Recommendation</h4>
+                        <p className="text-lg font-semibold text-primary mb-2">{valueEngineering?.tradeoffAnalysis?.optimalPoint}</p>
+                        <p className="text-sm text-muted-foreground mb-3">{valueEngineering?.recommendation?.justification}</p>
+                        <Badge variant="outline">{(valueEngineering?.recommendation?.confidence || 0) * 100}% confident</Badge>
+                        <div className="mt-4">
+                          <Button
+                            className="w-full gap-2"
+                            onClick={() => {
+                              const option = valueEngineering?.options?.find((o) => o.id === selectedOption);
+                              toast.success(`Implementing Value Engineering Option: ${option?.name || 'Selected Option'}`);
+                            }}
+                          >
+                            <CheckCircle2 className="h-4 w-4" />
+                            Implement Recommendation
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+              </>
+            )}
           </TabsContent>
 
           {/* Stakeholder Map Tab */}

@@ -35,6 +35,8 @@ export { TicketDetail } from './TicketDetail';
 export { EmailTemplateEditor } from './EmailTemplateEditor';
 export { EmailCampaignBuilder } from './EmailCampaignBuilder';
 export { EmailCampaignDetail } from './EmailCampaignDetail';
+export { AdminRolesPage } from './AdminRolesPage';
+export { AdminUserRolesPage } from './AdminUserRolesPage';
 
 // Email Template Management System
 export { EmailTemplateManager } from '../settings/EmailTemplateManager';

@@ -110,6 +110,7 @@ const navItems: NavItem[] = [
       { id: 'decisions', label: 'Decisions', icon: Target, moduleKey: 'decisions' },
       { id: 'change-requests', label: 'Change Requests', icon: Target, alwaysShow: true },
       { id: 'traceability', label: 'Traceability Matrix', icon: GitBranch, moduleKey: 'traceability' },
+      { id: 'requirements', label: 'Requirements Matrix', icon: GitBranch, alwaysShow: true },
     ]
   },
   {

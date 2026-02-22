@@ -58,9 +58,10 @@ import { toast } from 'sonner';
 const getSeverityColor = (severity: IssueSeverity) => {
   switch (severity) {
     case 'critical': return 'destructive';
-    case 'high': return 'warning';
-    case 'medium': return 'info';
-    case 'low': return 'secondary';
+    case 'major': return 'warning';
+    case 'moderate': return 'info';
+    case 'minor': return 'secondary';
+    default: return 'info';
   }
 };
 
@@ -103,9 +104,9 @@ interface IssueCardProps {
 
 function IssueCard({ issue, isSelected, onClick }: IssueCardProps) {
   const TypeIcon = getTypeIcon(issue.type);
-  const hoursRemaining = issue.sla_target_resolution ? 
+  const hoursRemaining = issue.sla_target_resolution ?
     Math.round((issue.sla_target_resolution - Date.now() / 3600000)) : null;
-  
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -128,16 +129,16 @@ function IssueCard({ issue, isSelected, onClick }: IssueCardProps) {
             issue.severity === 'critical' ? 'text-destructive' : 'text-muted-foreground'
           )} />
         </div>
-        
+
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
             <span className="text-xs font-mono text-muted-foreground">{issue.key || issue.id.slice(0, 8)}</span>
             <Badge variant={getSeverityColor(issue.severity)}>{issue.severity}</Badge>
             <Badge variant={getPriorityColor(issue.priority)}>{issue.priority.toUpperCase()}</Badge>
           </div>
-          
+
           <h3 className="font-medium text-sm line-clamp-1 mb-1">{issue.title}</h3>
-          
+
           <div className="flex items-center gap-3 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
               <User className="h-3 w-3" />
@@ -180,7 +181,7 @@ interface IssueDetailPanelProps {
 
 function IssueDetailPanel({ issue, onClose, onUpdate, onDelete }: IssueDetailPanelProps) {
   const TypeIcon = getTypeIcon(issue.type);
-  
+
   const handleStatusChange = async (status: IssueStatus) => {
     await onUpdate(issue.id, { status });
   };
@@ -298,7 +299,7 @@ function AddIssueDialog({ open, onOpenChange, onSubmit }: AddIssueDialogProps) {
     title: '',
     description: '',
     type: 'bug',
-    severity: 'medium',
+    severity: 'moderate',
     priority: 'medium',
     status: 'open',
     reporter_name: '',
@@ -315,7 +316,7 @@ function AddIssueDialog({ open, onOpenChange, onSubmit }: AddIssueDialogProps) {
     const result = await onSubmit(form);
     setLoading(false);
     if (result) {
-      setForm({ title: '', description: '', type: 'bug', severity: 'medium', priority: 'medium', status: 'open', reporter_name: '', assignee_name: '' });
+      setForm({ title: '', description: '', type: 'bug', severity: 'moderate', priority: 'medium', status: 'open', reporter_name: '', assignee_name: '' });
       onOpenChange(false);
     }
   };
@@ -355,9 +356,9 @@ function AddIssueDialog({ open, onOpenChange, onSubmit }: AddIssueDialogProps) {
               <Select value={form.severity} onValueChange={v => setForm(f => ({ ...f, severity: v as IssueSeverity }))}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="low">Low</SelectItem>
-                  <SelectItem value="medium">Medium</SelectItem>
-                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="minor">Minor</SelectItem>
+                  <SelectItem value="moderate">Moderate</SelectItem>
+                  <SelectItem value="major">Major</SelectItem>
                   <SelectItem value="critical">Critical</SelectItem>
                 </SelectContent>
               </Select>
@@ -414,7 +415,7 @@ export default function IssuesRegisterView() {
   const filteredIssues = issues.filter(issue => {
     const matchesSearch = issue.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (issue.description?.toLowerCase().includes(searchQuery.toLowerCase()));
-    
+
     if (activeTab === 'all') return matchesSearch;
     if (activeTab === 'open') return matchesSearch && ['open', 'investigating', 'in-progress'].includes(issue.status);
     if (activeTab === 'critical') return matchesSearch && issue.severity === 'critical';

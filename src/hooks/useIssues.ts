@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { toast } from 'sonner';
 
-export type IssueSeverity = 'minor' | 'moderate' | 'major' | 'critical' | 'high' | 'medium' | 'low';
+export type IssueSeverity = 'minor' | 'moderate' | 'major' | 'critical' | 'low' | 'medium' | 'high';
 export type IssueStatus = 'open' | 'investigating' | 'in-progress' | 'blocked' | 'resolved' | 'closed';
 export type IssuePriority = 'critical' | 'high' | 'medium' | 'low';
 export type IssueType = 'bug' | 'blocker' | 'impediment' | 'defect' | 'incident';
@@ -43,7 +43,7 @@ export function useIssues() {
     if (!projectId) { toast.error('No project selected'); return null; }
     try {
       const key = generateKey();
-      const { data, error: e } = await supabase.from('issues').insert({ project_id: projectId, title: input.title, description: input.description || null, type: input.type || 'bug', severity: input.severity || 'medium', priority: input.priority || 'medium', status: input.status || 'open', reporter_name: input.reporter_name || null, assignee_name: input.assignee_name || null, sla_target_resolution: input.sla_target_resolution || null, affected_areas: input.affected_areas || [] } as any).select().single();
+      const { data, error: e } = await supabase.from('issues').insert({ project_id: projectId, title: input.title, description: input.description || null, type: input.type || 'bug', severity: input.severity || 'moderate', priority: input.priority || 'medium', status: input.status || 'open', reporter_name: input.reporter_name || null, assignee_name: input.assignee_name || null, sla_target_resolution: input.sla_target_resolution || null, affected_areas: input.affected_areas || [] } as any).select().single();
       if (e) throw e;
       const issue: Issue = { ...data, key, severity: data.severity as IssueSeverity, priority: data.priority as IssuePriority, status: data.status as IssueStatus, linked_items: [], affected_areas: (Array.isArray(data.affected_areas) ? data.affected_areas : []).map(String), tags: input.tags || [], comments: [], history: [{ timestamp: new Date().toISOString(), user: input.reporter_name || 'System', action: 'Created issue' }] };
       toast.success('Issue created'); return issue;

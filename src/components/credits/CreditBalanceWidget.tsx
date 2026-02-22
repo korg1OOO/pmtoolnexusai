@@ -76,7 +76,7 @@ export function CreditBalanceWidget({
                             {balance.available_credits.toLocaleString()}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">
-                            ≈ {(balance.available_credits * 1000).toLocaleString()} tokens
+                            Credits available · {Math.round(percentageUsed)}% used
                         </p>
                     </div>
                     {showPurchaseButton && (
@@ -96,8 +96,8 @@ export function CreditBalanceWidget({
                     <div className="h-2 bg-muted rounded-full overflow-hidden">
                         <div
                             className={`h-full transition-all ${percentageUsed > 90 ? 'bg-red-600' :
-                                    percentageUsed > 75 ? 'bg-yellow-600' :
-                                        'bg-primary'
+                                percentageUsed > 75 ? 'bg-yellow-600' :
+                                    'bg-primary'
                                 }`}
                             style={{ width: `${Math.min(percentageUsed, 100)}%` }}
                         />

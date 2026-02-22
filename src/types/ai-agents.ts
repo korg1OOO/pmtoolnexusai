@@ -51,6 +51,8 @@ export interface AIMessageMetadata {
   executionTime?: number;
   agentsUsed?: AgentType[];
   permissionDenied?: boolean;
+  creditsDeducted?: number;
+  tokensDeducted?: number;
 }
 
 export interface IntentClassification {

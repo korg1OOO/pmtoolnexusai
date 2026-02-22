@@ -152,7 +152,8 @@ class AICreditsService {
         }
 
         const totalTokens = params.promptTokens + params.completionTokens;
-        const creditsUsed = Math.ceil(totalTokens / 1000);
+        // Credits = 2 × total tokens (tokens are doubled per billing policy)
+        const creditsUsed = totalTokens / 1000 * 2;
 
         // Call atomic deduction function
         const { data, error } = await supabase.rpc('deduct_ai_credits', {

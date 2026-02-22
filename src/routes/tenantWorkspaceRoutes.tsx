@@ -9,9 +9,8 @@
  */
 
 import { Route } from 'react-router-dom';
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
-import { ProjectProvider } from '@/contexts/ProjectContext';
-import { PresenceProvider } from '@/contexts/PresenceContext';
+import { ProtectedProjectRoute } from '@/components/routing';
+
 import MLAnalyticsHub from '@/components/views/MLAnalyticsHub';
 import {
     TenantDashboard,
@@ -48,57 +47,48 @@ import {
 } from '@/components/program';
 import { BillingPage } from '@/components/subscription/BillingPage';
 
-/** Tiny helper: wraps children in ProtectedRoute + ProjectProvider + PresenceProvider */
-const AuthedPage = ({ children }: { children: React.ReactNode }) => (
-    <ProtectedRoute>
-        <ProjectProvider>
-            <PresenceProvider>
-                {children}
-            </PresenceProvider>
-        </ProjectProvider>
-    </ProtectedRoute>
-);
+
 
 export function TenantWorkspaceRoutes() {
     return (
         <>
             {/* ── Billing (own full-page layout) ───────────────────────────── */}
-            <Route path="/billing" element={<AuthedPage><BillingPage /></AuthedPage>} />
+            <Route path="/billing" element={<ProtectedProjectRoute><BillingPage /></ProtectedProjectRoute>} />
 
             {/* ── ML Analytics (project-scoped, own full-page layout) ───────── */}
-            <Route path="/ml-analytics/:projectId" element={<AuthedPage><MLAnalyticsHub /></AuthedPage>} />
+            <Route path="/ml-analytics/:projectId" element={<ProtectedProjectRoute><MLAnalyticsHub /></ProtectedProjectRoute>} />
 
             {/* ── Tenant Admin ─────────────────────────────────────────────── */}
-            <Route path="/tenant" element={<AuthedPage><TenantDashboard /></AuthedPage>} />
-            <Route path="/tenant/workspaces" element={<AuthedPage><WorkspaceManagement /></AuthedPage>} />
-            <Route path="/tenant/settings" element={<AuthedPage><TenantSettings /></AuthedPage>} />
-            <Route path="/tenant/users" element={<AuthedPage><TenantUserManagement /></AuthedPage>} />
-            <Route path="/tenant/analytics" element={<AuthedPage><TenantAnalytics /></AuthedPage>} />
-            <Route path="/tenant/departments" element={<AuthedPage><DepartmentManagement /></AuthedPage>} />
-            <Route path="/tenant/licenses" element={<AuthedPage><LicenseAllocation /></AuthedPage>} />
+            <Route path="/tenant" element={<ProtectedProjectRoute><TenantDashboard /></ProtectedProjectRoute>} />
+            <Route path="/tenant/workspaces" element={<ProtectedProjectRoute><WorkspaceManagement /></ProtectedProjectRoute>} />
+            <Route path="/tenant/settings" element={<ProtectedProjectRoute><TenantSettings /></ProtectedProjectRoute>} />
+            <Route path="/tenant/users" element={<ProtectedProjectRoute><TenantUserManagement /></ProtectedProjectRoute>} />
+            <Route path="/tenant/analytics" element={<ProtectedProjectRoute><TenantAnalytics /></ProtectedProjectRoute>} />
+            <Route path="/tenant/departments" element={<ProtectedProjectRoute><DepartmentManagement /></ProtectedProjectRoute>} />
+            <Route path="/tenant/licenses" element={<ProtectedProjectRoute><LicenseAllocation /></ProtectedProjectRoute>} />
 
             {/* ── Workspace Admin ───────────────────────────────────────────── */}
-            <Route path="/workspace/:workspaceId" element={<AuthedPage><WorkspaceDashboard /></AuthedPage>} />
-            <Route path="/workspace/:workspaceId/portfolios" element={<AuthedPage><PortfolioView /></AuthedPage>} />
-            <Route path="/workspace/:workspaceId/teams" element={<AuthedPage><TeamAssignment /></AuthedPage>} />
-            <Route path="/workspace/:workspaceId/resources" element={<AuthedPage><WorkspaceResourceAllocation /></AuthedPage>} />
-            <Route path="/workspace/:workspaceId/budget" element={<AuthedPage><WorkspaceBudgetManagement /></AuthedPage>} />
-            <Route path="/workspace/:workspaceId/analytics" element={<AuthedPage><WorkspaceAnalytics /></AuthedPage>} />
-            <Route path="/workspace/:workspaceId/analytics/performance" element={<AuthedPage><ProjectPerformanceDetail /></AuthedPage>} />
-            <Route path="/workspace/:workspaceId/analytics/portfolio" element={<AuthedPage><PortfolioDistributionDetail /></AuthedPage>} />
-            <Route path="/workspace/:workspaceId/analytics/portfolio/:portfolioId" element={<AuthedPage><PortfolioDistributionDetail /></AuthedPage>} />
-            <Route path="/workspace/:workspaceId/analytics/resources" element={<AuthedPage><ResourceUtilizationDetail /></AuthedPage>} />
+            <Route path="/workspace/:workspaceId" element={<ProtectedProjectRoute><WorkspaceDashboard /></ProtectedProjectRoute>} />
+            <Route path="/workspace/:workspaceId/portfolios" element={<ProtectedProjectRoute><PortfolioView /></ProtectedProjectRoute>} />
+            <Route path="/workspace/:workspaceId/teams" element={<ProtectedProjectRoute><TeamAssignment /></ProtectedProjectRoute>} />
+            <Route path="/workspace/:workspaceId/resources" element={<ProtectedProjectRoute><WorkspaceResourceAllocation /></ProtectedProjectRoute>} />
+            <Route path="/workspace/:workspaceId/budget" element={<ProtectedProjectRoute><WorkspaceBudgetManagement /></ProtectedProjectRoute>} />
+            <Route path="/workspace/:workspaceId/analytics" element={<ProtectedProjectRoute><WorkspaceAnalytics /></ProtectedProjectRoute>} />
+            <Route path="/workspace/:workspaceId/analytics/performance" element={<ProtectedProjectRoute><ProjectPerformanceDetail /></ProtectedProjectRoute>} />
+            <Route path="/workspace/:workspaceId/analytics/portfolio" element={<ProtectedProjectRoute><PortfolioDistributionDetail /></ProtectedProjectRoute>} />
+            <Route path="/workspace/:workspaceId/analytics/portfolio/:portfolioId" element={<ProtectedProjectRoute><PortfolioDistributionDetail /></ProtectedProjectRoute>} />
+            <Route path="/workspace/:workspaceId/analytics/resources" element={<ProtectedProjectRoute><ResourceUtilizationDetail /></ProtectedProjectRoute>} />
 
             {/* ── Portfolio Admin ───────────────────────────────────────────── */}
-            <Route path="/portfolio/:portfolioId" element={<AuthedPage><PortfolioDashboard /></AuthedPage>} />
-            <Route path="/portfolio/:portfolioId/resources" element={<AuthedPage><ResourcePlanningView /></AuthedPage>} />
-            <Route path="/portfolio/:portfolioId/budget" element={<AuthedPage><PortfolioBudgetOverview /></AuthedPage>} />
-            <Route path="/portfolio/:portfolioId/roadmap" element={<AuthedPage><StrategicRoadmap /></AuthedPage>} />
+            <Route path="/portfolio/:portfolioId" element={<ProtectedProjectRoute><PortfolioDashboard /></ProtectedProjectRoute>} />
+            <Route path="/portfolio/:portfolioId/resources" element={<ProtectedProjectRoute><ResourcePlanningView /></ProtectedProjectRoute>} />
+            <Route path="/portfolio/:portfolioId/budget" element={<ProtectedProjectRoute><PortfolioBudgetOverview /></ProtectedProjectRoute>} />
+            <Route path="/portfolio/:portfolioId/roadmap" element={<ProtectedProjectRoute><StrategicRoadmap /></ProtectedProjectRoute>} />
 
             {/* ── Program Manager ───────────────────────────────────────────── */}
-            <Route path="/program/:programId/stakeholders" element={<AuthedPage><StakeholderManagement /></AuthedPage>} />
-            <Route path="/program/:programId/resources" element={<AuthedPage><AdvancedResourceAllocation /></AuthedPage>} />
-            <Route path="/program/:programId/budget" element={<AuthedPage><ProgramBudgetManagement /></AuthedPage>} />
+            <Route path="/program/:programId/stakeholders" element={<ProtectedProjectRoute><StakeholderManagement /></ProtectedProjectRoute>} />
+            <Route path="/program/:programId/resources" element={<ProtectedProjectRoute><AdvancedResourceAllocation /></ProtectedProjectRoute>} />
+            <Route path="/program/:programId/budget" element={<ProtectedProjectRoute><ProgramBudgetManagement /></ProtectedProjectRoute>} />
         </>
     );
 }

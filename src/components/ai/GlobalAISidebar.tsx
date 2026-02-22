@@ -199,6 +199,8 @@ export function GlobalAISidebar({
 
   const handleNewChat = async () => {
     await createConversation();
+    setInput('');
+    setAttachments([]);
     setShowHistory(false);
     setShowContext(true);
   };
@@ -309,6 +311,27 @@ export function GlobalAISidebar({
                   </TooltipTrigger>
                   <TooltipContent>History</TooltipContent>
                 </Tooltip>
+                {activeConversationId && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                        onClick={() => {
+                          if (activeConversationId) {
+                            deleteConversation(activeConversationId);
+                            setInput('');
+                            setAttachments([]);
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Clear chat</TooltipContent>
+                  </Tooltip>
+                )}
                 <Button
                   variant="ghost"
                   size="icon"
@@ -545,7 +568,11 @@ export function GlobalAISidebar({
                   <Textarea
                     ref={textareaRef}
                     value={input}
-                    onChange={(e) => setInput(e.target.value)}
+                    onChange={(e) => {
+                      setInput(e.target.value);
+                      e.target.style.height = 'auto';
+                      e.target.style.height = `${Math.min(e.target.scrollHeight, 240)}px`;
+                    }}
                     onKeyDown={handleKeyDown}
                     placeholder={
                       intentMode === 'plan'
@@ -553,7 +580,7 @@ export function GlobalAISidebar({
                         : "What would you like to do?"
                     }
                     className={cn(
-                      "min-h-[60px] max-h-[120px] resize-none text-sm transition-colors",
+                      "min-h-[60px] max-h-[240px] resize-none text-sm transition-colors",
                       intentMode === 'plan'
                         ? "bg-blue-500/5 border-blue-500/30 focus-visible:ring-blue-500/30"
                         : "bg-amber-500/5 border-amber-500/30 focus-visible:ring-amber-500/30"
@@ -603,25 +630,6 @@ export function GlobalAISidebar({
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>New chat</TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        onClick={() => {
-                          if (activeConversationId) {
-                            deleteConversation(activeConversationId);
-                            setInput('');
-                            setAttachments([]);
-                          }
-                        }}
-                        className="h-9 w-9 text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Clear chat</TooltipContent>
                   </Tooltip>
                 </div>
               </div>

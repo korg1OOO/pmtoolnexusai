@@ -21,9 +21,11 @@ import {
   X,
   Share2,
   Loader2,
+  Table as TableIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { DynamicDataGrid, type DynamicColumnDef } from '@/components/ui/DynamicDataGrid';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -64,9 +66,8 @@ import {
 } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-
 import { useProjectContext } from '@/contexts/ProjectContext';
-import { useStakeholders, useCreateStakeholder, Stakeholder } from '@/hooks/useStakeholders';
+import { useStakeholders, useCreateStakeholder, useUpdateStakeholder, Stakeholder } from '@/hooks/useStakeholders';
 import { useApprovals, useApproveApproval, useRejectApproval, useMarkApprovalDelegated } from '@/hooks/useApprovals';
 import {
   useRACIAssignments,
@@ -79,6 +80,15 @@ import { ApprovalWorkflows } from '@/components/analytics/governance/ApprovalWor
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useRealtimeTable } from '@/hooks/useRealtimeTable';
+
+const STANDARD_COLUMNS: DynamicColumnDef<Stakeholder>[] = [
+  { key: 'name', label: 'Name', width: 200, type: 'text', sticky: true },
+  { key: 'role', label: 'Role', width: 180, type: 'text' },
+  { key: 'organization', label: 'Organization', width: 180, type: 'text' },
+  { key: 'influence', label: 'Influence', width: 120, type: 'select', options: ['high', 'medium', 'low'] },
+  { key: 'interest', label: 'Interest', width: 120, type: 'select', options: ['high', 'medium', 'low'] },
+  { key: 'engagement', label: 'Engagement', width: 140, type: 'select', options: ['supportive', 'resistant', 'neutral'] },
+];
 
 // ─── RACI Badge ──────────────────────────────────────────────
 const RACI_COLORS: Record<string, string> = {
@@ -147,6 +157,7 @@ export default function StakeholderRegisterView() {
   const { can } = usePermissions(projectId);
 
   const createStakeholder = useCreateStakeholder();
+  const updateStakeholder = useUpdateStakeholder();
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newStakeholder, setNewStakeholder] = useState<Partial<Stakeholder>>({
     name: '',
@@ -176,11 +187,24 @@ export default function StakeholderRegisterView() {
     queryKeys: [['stakeholders', projectId], ['approvals', projectId]],
     enabled: !!projectId,
   });
-
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list' | 'spreadsheet'>('grid');
+  const [customColumns, setCustomColumns] = useState<DynamicColumnDef<Stakeholder>[]>([]);
   const [editingRACIActivity, setEditingRACIActivity] = useState<string | null>(null);
   const [newActivity, setNewActivity] = useState('');
+
+  const handleCellSave = async (rowId: string, key: string, value: string) => {
+    const isCustom = !STANDARD_COLUMNS.find(c => c.key === key);
+    const item = stakeholders.find(i => i.id === rowId);
+    if (!item) return;
+
+    if (isCustom) {
+      const cf = { ...(item.custom_fields ?? {}), [key]: value };
+      await updateStakeholder.mutateAsync({ id: rowId, custom_fields: cf });
+    } else {
+      await updateStakeholder.mutateAsync({ id: rowId, [key]: value } as any);
+    }
+  };
 
   // Delegation dialog state
   const [delegationOpen, setDelegationOpen] = useState(false);
@@ -398,6 +422,9 @@ export default function StakeholderRegisterView() {
                 <Button variant="outline" size="icon" onClick={() => setViewMode('list')}>
                   <List className={cn('h-4 w-4', viewMode === 'list' && 'text-primary')} />
                 </Button>
+                <Button variant="outline" size="icon" onClick={() => setViewMode('spreadsheet')}>
+                  <TableIcon className={cn('h-4 w-4', viewMode === 'spreadsheet' && 'text-primary')} />
+                </Button>
                 <Button variant="outline">
                   <Filter className="h-4 w-4 mr-2" />
                   Filter
@@ -423,6 +450,32 @@ export default function StakeholderRegisterView() {
                     </div>
                   )}
                 </div>
+              ) : viewMode === 'spreadsheet' ? (
+                <Card className="flex flex-col h-[600px]">
+                  <div className="flex-1 bg-background border rounded-md shadow-sm overflow-hidden min-h-[500px]">
+                    <DynamicDataGrid
+                      data={filteredStakeholders}
+                      baseColumns={STANDARD_COLUMNS}
+                      customColumns={customColumns}
+                      idExtractor={(item) => item.id}
+                      customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
+                      onCellSave={handleCellSave}
+                      onDeleteRows={() => { }}
+                      onAddColumn={(col) => {
+                        if (customColumns.find(c => c.key === col.key)) {
+                          toast.error('Column already exists');
+                          return;
+                        }
+                        setCustomColumns(prev => [...prev, col]);
+                        toast.success(`Column "${col.label}" added`);
+                      }}
+                      onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
+                      onAddRow={() => setIsCreateOpen(true)}
+                      emptyStateMessage={filteredStakeholders.length === 0 ? 'No stakeholders found.' : 'No stakeholders match your filters.'}
+                      containerStyles="h-full border-0"
+                    />
+                  </div>
+                </Card>
               ) : (
                 <Card>
                   <Table>

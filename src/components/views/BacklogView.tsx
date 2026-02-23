@@ -18,6 +18,8 @@ import {
   Edit2,
   Trash2,
   Loader2,
+  List,
+  Table,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -36,6 +38,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DynamicDataGrid, type DynamicColumnDef } from '@/components/ui/DynamicDataGrid';
 import {
   Dialog,
   DialogContent,
@@ -55,6 +59,16 @@ import { useEpics, Epic, EpicInput } from '@/hooks/useEpics';
 import { useBacklogItems, BacklogItem, BacklogItemInput, ItemType, BacklogStatus, PriorityLevel } from '@/hooks/useBacklogItems';
 import { useSprints, Sprint } from '@/hooks/useSprints';
 import { toast } from 'sonner';
+
+const STANDARD_COLUMNS: DynamicColumnDef<BacklogItem>[] = [
+  { key: 'key', label: 'Item Key', width: 100, type: 'text', sticky: true },
+  { key: 'title', label: 'Title', width: 240, type: 'text' },
+  { key: 'type', label: 'Type', width: 120, type: 'select', options: ['story', 'task', 'bug', 'tech-debt'] },
+  { key: 'status', label: 'Status', width: 120, type: 'select', options: ['new', 'refined', 'ready', 'in-sprint', 'done'] },
+  { key: 'priority', label: 'Priority', width: 120, type: 'select', options: ['low', 'medium', 'high', 'critical'] },
+  { key: 'story_points', label: 'Story Points', width: 100, type: 'text' },
+  { key: 'assignee_name', label: 'Assignee', width: 140, type: 'text' },
+];
 
 const getTypeColor = (type: ItemType) => {
   switch (type) {
@@ -459,7 +473,9 @@ export default function BacklogView() {
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string | null>(null);
   const [expandedEpics, setExpandedEpics] = useState<Set<string>>(new Set());
-  const [viewMode, setViewMode] = useState<'flat' | 'epics'>('epics');
+  const [listMode, setListMode] = useState<'flat' | 'epics'>('epics');
+  const [viewMode, setViewMode] = useState<'list' | 'spreadsheet'>('list');
+  const [customColumns, setCustomColumns] = useState<DynamicColumnDef<BacklogItem>[]>([]);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [addEpicDialogOpen, setAddEpicDialogOpen] = useState(false);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
@@ -469,6 +485,24 @@ export default function BacklogView() {
   const handleEditItem = (item: BacklogItem) => {
     setEditingItem(item);
     setEditDialogOpen(true);
+  };
+
+  const handleCellSave = async (rowId: string, key: string, value: string) => {
+    const isCustom = !STANDARD_COLUMNS.find(c => c.key === key);
+    const item = items.find(i => i.id === rowId);
+    if (!item) return;
+
+    if (isCustom) {
+      const cf = { ...(item.custom_fields ?? {}), [key]: value };
+      await updateItem(rowId, { custom_fields: cf });
+    } else {
+      if (key === 'story_points') {
+        const numVal = parseInt(value, 10);
+        await updateItem(rowId, { [key]: isNaN(numVal) ? undefined : numVal });
+      } else {
+        await updateItem(rowId, { [key]: value });
+      }
+    }
   };
 
   // Initialize expanded epics when epics load
@@ -539,27 +573,35 @@ export default function BacklogView() {
           <p className="text-sm text-muted-foreground mt-1">Prioritize and manage upcoming work items</p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex gap-1 p-1 bg-muted rounded-lg">
-            <button
-              onClick={() => setViewMode('flat')}
-              className={cn(
-                'px-3 py-1 rounded text-sm font-medium transition-all',
-                viewMode === 'flat' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              Flat
-            </button>
-            <button
-              onClick={() => setViewMode('epics')}
-              className={cn(
-                'px-3 py-1 rounded text-sm font-medium transition-all',
-                viewMode === 'epics' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'
-              )}
-            >
-              <Layers className="h-3 w-3 inline mr-1" />
-              Epics
-            </button>
-          </div>
+          {viewMode === 'list' && (
+            <div className="flex gap-1 p-1 bg-muted rounded-lg mr-2">
+              <button
+                onClick={() => setListMode('flat')}
+                className={cn(
+                  'px-3 py-1 rounded text-sm font-medium transition-all',
+                  listMode === 'flat' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                Flat
+              </button>
+              <button
+                onClick={() => setListMode('epics')}
+                className={cn(
+                  'px-3 py-1 rounded text-sm font-medium transition-all',
+                  listMode === 'epics' ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <Layers className="h-3 w-3 inline mr-1" />
+                Epics
+              </button>
+            </div>
+          )}
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'list' | 'spreadsheet')} className="w-auto">
+            <TabsList className="h-8">
+              <TabsTrigger value="list" className="h-6 px-2.5 text-xs"><List className="h-3.5 w-3.5 mr-1.5" /> Dashboard & List</TabsTrigger>
+              <TabsTrigger value="spreadsheet" className="h-6 px-2.5 text-xs"><Table className="h-3.5 w-3.5 mr-1.5" /> Spreadsheet</TabsTrigger>
+            </TabsList>
+          </Tabs>
           <PDFExporter
             title="Product Backlog"
             filename="backlog"
@@ -671,155 +713,185 @@ export default function BacklogView() {
         </div>
       </div>
 
-      {/* Epic View */}
-      {viewMode === 'epics' && (
-        <div className="space-y-4">
-          {epics.map((epic) => {
-            const epicItems = itemsByEpic[epic.id] || [];
-            const isExpanded = expandedEpics.has(epic.id);
-            const epicPoints = epicItems.reduce((sum, i) => sum + (i.story_points || 0), 0);
-
-            return (
-              <Card key={epic.id} className="overflow-hidden">
-                <div
-                  className="p-4 cursor-pointer hover:bg-muted/30 transition-colors"
-                  onClick={() => toggleEpic(epic.id)}
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      {isExpanded ? (
-                        <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                      ) : (
-                        <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                      )}
-                      <div className={cn('w-3 h-3 rounded-full', `bg-${epic.color}-500`)} style={{ backgroundColor: epic.color.startsWith('#') ? epic.color : undefined }} />
-                      <div>
-                        <h3 className="font-semibold">{epic.name}</h3>
-                        <p className="text-xs text-muted-foreground">
-                          {epicItems.length} items • {epicPoints} points
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-4">
-                      <div className="w-32">
-                        <div className="flex items-center justify-between text-xs mb-1">
-                          <span className="text-muted-foreground">Progress</span>
-                          <span className="font-medium">{epic.progress}%</span>
-                        </div>
-                        <Progress value={epic.progress} className="h-2" />
-                      </div>
-                      <Badge variant="outline">{epic.completed_points}/{epic.total_points} pts</Badge>
-                    </div>
-                  </div>
-                </div>
-
-                <AnimatePresence>
-                  {isExpanded && epicItems.length > 0 && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="border-t"
-                    >
-                      <div className="divide-y divide-border">
-                        {epicItems.map((item) => (
-                          <BacklogItemRow
-                            key={item.id}
-                            item={item}
-                            epic={epic}
-                            onUpdate={updateItem}
-                            onDelete={deleteItem}
-                            onEdit={handleEditItem}
-                          />
-                        ))}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </Card>
-            );
-          })}
-
-          {/* Unassigned Items */}
-          {itemsByEpic.unassigned.length > 0 && (
-            <Card>
-              <div
-                className="p-4 cursor-pointer hover:bg-muted/30 transition-colors"
-                onClick={() => toggleEpic('unassigned')}
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {expandedEpics.has('unassigned') ? (
-                      <ChevronDown className="h-5 w-5 text-muted-foreground" />
-                    ) : (
-                      <ChevronRight className="h-5 w-5 text-muted-foreground" />
-                    )}
-                    <div className="w-3 h-3 rounded-full bg-muted-foreground/30" />
-                    <div>
-                      <h3 className="font-semibold text-muted-foreground">No Epic</h3>
-                      <p className="text-xs text-muted-foreground">
-                        {itemsByEpic.unassigned.length} items
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <AnimatePresence>
-                {expandedEpics.has('unassigned') && (
-                  <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="border-t"
-                  >
-                    <div className="divide-y divide-border">
-                      {itemsByEpic.unassigned.map((item) => (
-                        <BacklogItemRow
-                          key={item.id}
-                          item={item}
-                          onUpdate={updateItem}
-                          onDelete={deleteItem}
-                          onEdit={handleEditItem}
-                        />
-                      ))}
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </Card>
-          )}
-
-          {items.length === 0 && (
-            <Card className="p-8 text-center">
-              <p className="text-muted-foreground">No backlog items found. Add your first item to get started.</p>
-            </Card>
-          )}
+      {viewMode === 'spreadsheet' ? (
+        <div className="h-[600px] bg-background border rounded-md shadow-sm overflow-hidden mt-6">
+          <DynamicDataGrid
+            data={filteredItems}
+            baseColumns={STANDARD_COLUMNS}
+            customColumns={customColumns}
+            idExtractor={(item) => item.id}
+            customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
+            onCellSave={handleCellSave}
+            onDeleteRows={(ids) => {
+              ids.forEach(id => deleteItem(id));
+            }}
+            onAddColumn={(col) => {
+              if (customColumns.find(c => c.key === col.key)) {
+                toast.error('Column already exists');
+                return;
+              }
+              setCustomColumns(prev => [...prev, col]);
+              toast.success(`Column "${col.label}" added`);
+            }}
+            onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
+            onAddRow={() => setAddDialogOpen(true)}
+            emptyStateMessage={items.length === 0 ? 'No backlog items yet.' : 'No items match filters.'}
+            containerStyles="h-full border-0"
+          />
         </div>
-      )}
+      ) : (
+        <>
+          {/* Epic View */}
+          {listMode === 'epics' && (
+            <div className="space-y-4">
+              {epics.map((epic) => {
+                const epicItems = itemsByEpic[epic.id] || [];
+                const isExpanded = expandedEpics.has(epic.id);
+                const epicPoints = epicItems.reduce((sum, i) => sum + (i.story_points || 0), 0);
 
-      {/* Flat View */}
-      {viewMode === 'flat' && (
-        <Card>
-          <div className="divide-y divide-border">
-            {filteredItems.length === 0 ? (
-              <div className="p-8 text-center">
-                <p className="text-muted-foreground">No backlog items found.</p>
+                return (
+                  <Card key={epic.id} className="overflow-hidden">
+                    <div
+                      className="p-4 cursor-pointer hover:bg-muted/30 transition-colors"
+                      onClick={() => toggleEpic(epic.id)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                          {isExpanded ? (
+                            <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                          ) : (
+                            <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                          )}
+                          <div className={cn('w-3 h-3 rounded-full', `bg-${epic.color}-500`)} style={{ backgroundColor: epic.color.startsWith('#') ? epic.color : undefined }} />
+                          <div>
+                            <h3 className="font-semibold">{epic.name}</h3>
+                            <p className="text-xs text-muted-foreground">
+                              {epicItems.length} items • {epicPoints} points
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="w-32">
+                            <div className="flex items-center justify-between text-xs mb-1">
+                              <span className="text-muted-foreground">Progress</span>
+                              <span className="font-medium">{epic.progress}%</span>
+                            </div>
+                            <Progress value={epic.progress} className="h-2" />
+                          </div>
+                          <Badge variant="outline">{epic.completed_points}/{epic.total_points} pts</Badge>
+                        </div>
+                      </div>
+                    </div>
+
+                    <AnimatePresence>
+                      {isExpanded && epicItems.length > 0 && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          className="border-t"
+                        >
+                          <div className="divide-y divide-border">
+                            {epicItems.map((item) => (
+                              <BacklogItemRow
+                                key={item.id}
+                                item={item}
+                                epic={epic}
+                                onUpdate={updateItem}
+                                onDelete={deleteItem}
+                                onEdit={handleEditItem}
+                              />
+                            ))}
+                          </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </Card>
+                );
+              })}
+
+              {/* Unassigned Items */}
+              {itemsByEpic.unassigned.length > 0 && (
+                <Card>
+                  <div
+                    className="p-4 cursor-pointer hover:bg-muted/30 transition-colors"
+                    onClick={() => toggleEpic('unassigned')}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {expandedEpics.has('unassigned') ? (
+                          <ChevronDown className="h-5 w-5 text-muted-foreground" />
+                        ) : (
+                          <ChevronRight className="h-5 w-5 text-muted-foreground" />
+                        )}
+                        <div className="w-3 h-3 rounded-full bg-muted-foreground/30" />
+                        <div>
+                          <h3 className="font-semibold text-muted-foreground">No Epic</h3>
+                          <p className="text-xs text-muted-foreground">
+                            {itemsByEpic.unassigned.length} items
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <AnimatePresence>
+                    {expandedEpics.has('unassigned') && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="border-t"
+                      >
+                        <div className="divide-y divide-border">
+                          {itemsByEpic.unassigned.map((item) => (
+                            <BacklogItemRow
+                              key={item.id}
+                              item={item}
+                              onUpdate={updateItem}
+                              onDelete={deleteItem}
+                              onEdit={handleEditItem}
+                            />
+                          ))}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </Card>
+              )}
+
+              {items.length === 0 && (
+                <Card className="p-8 text-center">
+                  <p className="text-muted-foreground">No backlog items found. Add your first item to get started.</p>
+                </Card>
+              )}
+            </div>
+          )}
+
+          {/* Flat View */}
+          {listMode === 'flat' && (
+            <Card>
+              <div className="divide-y divide-border">
+                {filteredItems.length === 0 ? (
+                  <div className="p-8 text-center">
+                    <p className="text-muted-foreground">No backlog items found.</p>
+                  </div>
+                ) : (
+                  filteredItems.map((item) => (
+                    <BacklogItemRow
+                      key={item.id}
+                      item={item}
+                      epic={epics.find(e => e.id === item.epic_id)}
+                      onUpdate={updateItem}
+                      onDelete={deleteItem}
+                      onEdit={handleEditItem}
+                    />
+                  ))
+                )}
               </div>
-            ) : (
-              filteredItems.map((item) => (
-                <BacklogItemRow
-                  key={item.id}
-                  item={item}
-                  epic={epics.find(e => e.id === item.epic_id)}
-                  onUpdate={updateItem}
-                  onDelete={deleteItem}
-                  onEdit={handleEditItem}
-                />
-              ))
-            )}
-          </div>
-        </Card>
+            </Card>
+          )}
+        </>
       )}
 
       <AddItemDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} onSubmit={createItem} epics={epics} />

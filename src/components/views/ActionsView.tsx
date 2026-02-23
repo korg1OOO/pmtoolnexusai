@@ -20,6 +20,8 @@ import {
   Timer,
   Bell,
   Loader2,
+  List,
+  Table,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -56,6 +58,19 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useActions, Action, ActionInput, ActionPriority, ActionStatus } from '@/hooks/useActions';
 import { toast } from 'sonner';
+import { DynamicDataGrid, type DynamicColumnDef } from '@/components/ui/DynamicDataGrid';
+
+const STANDARD_COLUMNS: DynamicColumnDef<Action>[] = [
+  { key: 'title', label: 'Title', width: 240, type: 'text', sticky: true },
+  { key: 'description', label: 'Description', width: 300, type: 'text' },
+  { key: 'priority', label: 'Priority', width: 120, type: 'select', options: ['low', 'medium', 'high', 'critical'] },
+  { key: 'status', label: 'Status', width: 130, type: 'select', options: ['pending', 'in-progress', 'completed', 'deferred', 'cancelled'] },
+  { key: 'owner_name', label: 'Owner', width: 140, type: 'text' },
+  { key: 'due_date', label: 'Due Date', width: 130, type: 'date' },
+  { key: 'progress', label: 'Progress (%)', width: 120, type: 'text' },
+  { key: 'sla_target_hours', label: 'SLA Target (h)', width: 130, type: 'text' },
+  { key: 'created_by_name', label: 'Created By', width: 140, type: 'text' },
+];
 
 const getPriorityColor = (priority: ActionPriority) => {
   switch (priority) {
@@ -94,7 +109,7 @@ function SLATimer({ action }: { action: Action }) {
       setTimeRemaining(null);
       return;
     }
-    
+
     const calculateRemaining = () => {
       const startTime = new Date(action.sla_started_at!).getTime();
       const targetTime = startTime + (action.sla_target_hours! * 3600000);
@@ -102,7 +117,7 @@ function SLATimer({ action }: { action: Action }) {
     };
 
     setTimeRemaining(calculateRemaining());
-    
+
     const timer = setInterval(() => {
       setTimeRemaining(calculateRemaining());
     }, 60000);
@@ -121,8 +136,8 @@ function SLATimer({ action }: { action: Action }) {
     <div className={cn(
       'flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium',
       isBreached ? 'bg-destructive/10 text-destructive' :
-      isWarning ? 'bg-warning/10 text-warning' :
-      'bg-muted text-muted-foreground'
+        isWarning ? 'bg-warning/10 text-warning' :
+          'bg-muted text-muted-foreground'
     )}>
       <Timer className="h-3 w-3" />
       {isBreached ? (
@@ -143,7 +158,7 @@ interface ActionCardProps {
 function ActionCard({ action, isSelected, onClick }: ActionCardProps) {
   const StatusIcon = getStatusIcon(action.status);
   const isOverdue = action.due_date && new Date(action.due_date) < new Date() && action.status !== 'completed' && action.status !== 'cancelled';
-  
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -161,18 +176,18 @@ function ActionCard({ action, isSelected, onClick }: ActionCardProps) {
       <div className="flex items-start gap-3">
         <div className={cn(
           'h-10 w-10 rounded-lg flex items-center justify-center shrink-0',
-          action.status === 'completed' ? 'bg-success/10' : 
-          action.status === 'deferred' ? 'bg-warning/10' : 
-          action.sla_breached ? 'bg-destructive/10' : 'bg-muted'
+          action.status === 'completed' ? 'bg-success/10' :
+            action.status === 'deferred' ? 'bg-warning/10' :
+              action.sla_breached ? 'bg-destructive/10' : 'bg-muted'
         )}>
           <StatusIcon className={cn(
             'h-5 w-5',
             action.status === 'completed' ? 'text-success' :
-            action.status === 'deferred' ? 'text-warning' : 
-            action.sla_breached ? 'text-destructive' : 'text-muted-foreground'
+              action.status === 'deferred' ? 'text-warning' :
+                action.sla_breached ? 'text-destructive' : 'text-muted-foreground'
           )} />
         </div>
-        
+
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <Badge variant={getPriorityColor(action.priority)}>{action.priority}</Badge>
@@ -184,9 +199,9 @@ function ActionCard({ action, isSelected, onClick }: ActionCardProps) {
               </Badge>
             )}
           </div>
-          
+
           <h3 className="font-medium text-sm line-clamp-1 mb-1">{action.title}</h3>
-          
+
           <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
             <span className="flex items-center gap-1">
               <User className="h-3 w-3" />
@@ -232,7 +247,7 @@ interface ActionDetailPanelProps {
 function ActionDetailPanel({ action, onClose, onUpdate, onDelete }: ActionDetailPanelProps) {
   const StatusIcon = getStatusIcon(action.status);
   const isOverdue = action.due_date && new Date(action.due_date) < new Date() && action.status !== 'completed' && action.status !== 'cancelled';
-  
+
   const handleStatusChange = async (status: ActionStatus) => {
     await onUpdate(action.id, { status });
   };
@@ -472,7 +487,27 @@ export default function ActionsView() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [ownerFilter, setOwnerFilter] = useState<string>('all');
+  const [viewMode, setViewMode] = useState<'list' | 'spreadsheet'>('list');
+  const [customColumns, setCustomColumns] = useState<DynamicColumnDef<Action>[]>([]);
   const contentRef = useRef<HTMLDivElement>(null);
+
+  const handleCellSave = async (rowId: string, key: string, value: string) => {
+    const isCustom = !STANDARD_COLUMNS.find(c => c.key === key);
+    const item = actions.find(i => i.id === rowId);
+    if (!item) return;
+
+    if (isCustom) {
+      const cf = { ...(item.custom_fields ?? {}), [key]: value };
+      await updateAction(rowId, { custom_fields: cf });
+    } else {
+      if (key === 'progress' || key === 'sla_target_hours') {
+        const numVal = parseInt(value, 10);
+        await updateAction(rowId, { [key]: isNaN(numVal) ? undefined : numVal });
+      } else {
+        await updateAction(rowId, { [key]: value });
+      }
+    }
+  };
 
   const pdfSections: PDFExportSection[] = [
     { id: 'kpis', name: 'KPI Summary', selector: '[data-section="kpis"]' },
@@ -485,9 +520,9 @@ export default function ActionsView() {
     const matchesSearch = action.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (action.description?.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesOwner = ownerFilter === 'all' || action.owner_name === ownerFilter;
-    
+
     if (!matchesSearch || !matchesOwner) return false;
-    
+
     if (activeTab === 'all') return true;
     if (activeTab === 'pending') return action.status === 'pending';
     if (activeTab === 'in-progress') return action.status === 'in-progress';
@@ -513,6 +548,12 @@ export default function ActionsView() {
             <Badge>{actions.length} Actions</Badge>
           </div>
           <div className="flex items-center gap-2">
+            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'list' | 'spreadsheet')} className="w-auto">
+              <TabsList className="h-8">
+                <TabsTrigger value="list" className="h-6 px-2.5 text-xs"><List className="h-3.5 w-3.5 mr-1.5" /> Dashboard & List</TabsTrigger>
+                <TabsTrigger value="spreadsheet" className="h-6 px-2.5 text-xs"><Table className="h-3.5 w-3.5 mr-1.5" /> Spreadsheet</TabsTrigger>
+              </TabsList>
+            </Tabs>
             <PDFExporter
               title="Actions Tracker"
               filename="actions-tracker"
@@ -526,70 +567,100 @@ export default function ActionsView() {
           </div>
         </div>
 
-        <div className="flex-1 overflow-auto">
-          <div className="p-6 space-y-6">
-            {/* KPIs */}
-            <div className="grid grid-cols-5 gap-4" data-section="kpis">
-              <KPICard title="Total Actions" value={actions.length.toString()} subtitle="All time" icon={CheckCircle2} status="neutral" />
-              <KPICard title="Pending" value={pendingActions.length.toString()} subtitle="Not started" icon={CircleDot} status="neutral" />
-              <KPICard title="In Progress" value={inProgressActions.length.toString()} subtitle="Active" icon={PlayCircle} status="success" />
-              <KPICard title="SLA Breached" value={slaBreachedActions.length.toString()} subtitle="Overdue SLA" icon={Bell} status={slaBreachedActions.length > 0 ? 'warning' : 'success'} />
-              <KPICard title="Overdue" value={overdueActions.length.toString()} subtitle="Past due date" icon={Clock} status={overdueActions.length > 0 ? 'warning' : 'success'} />
-            </div>
-
-            {/* Filters */}
-            <div className="flex items-center justify-between">
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList>
-                  <TabsTrigger value="all">All ({actions.length})</TabsTrigger>
-                  <TabsTrigger value="pending">Pending ({pendingActions.length})</TabsTrigger>
-                  <TabsTrigger value="in-progress">In Progress ({inProgressActions.length})</TabsTrigger>
-                  <TabsTrigger value="sla-breached">SLA Breached ({slaBreachedActions.length})</TabsTrigger>
-                </TabsList>
-              </Tabs>
-              <div className="flex items-center gap-3">
-                <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-                  <SelectTrigger className="w-40">
-                    <User className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="Filter by owner" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Owners</SelectItem>
-                    {owners.map(owner => (
-                      <SelectItem key={owner} value={owner!}>{owner}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <div className="relative w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search actions..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
+        <div className={cn("flex-1 overflow-auto", viewMode === 'spreadsheet' ? 'p-0 bg-muted/10' : 'p-6')}>
+          {viewMode === 'spreadsheet' ? (
+            <div className="h-full p-6">
+              <div className="h-full bg-background border rounded-md shadow-sm overflow-hidden">
+                <DynamicDataGrid
+                  data={filteredActions}
+                  baseColumns={STANDARD_COLUMNS}
+                  customColumns={customColumns}
+                  idExtractor={(item) => item.id}
+                  customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
+                  onCellSave={handleCellSave}
+                  onDeleteRows={(ids) => {
+                    ids.forEach(id => deleteAction(id));
+                  }}
+                  onAddColumn={(col) => {
+                    if (customColumns.find(c => c.key === col.key)) {
+                      toast.error('Column already exists');
+                      return;
+                    }
+                    setCustomColumns(prev => [...prev, col]);
+                    toast.success(`Column "${col.label}" added`);
+                  }}
+                  onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
+                  onAddRow={() => setAddDialogOpen(true)}
+                  emptyStateMessage={actions.length === 0 ? 'No actions added yet.' : 'No actions match filters.'}
+                  containerStyles="h-full border-0"
+                />
               </div>
             </div>
+          ) : (
+            <div className="space-y-6">
+              {/* KPIs */}
+              <div className="grid grid-cols-5 gap-4" data-section="kpis">
+                <KPICard title="Total Actions" value={actions.length.toString()} subtitle="All time" icon={CheckCircle2} status="neutral" />
+                <KPICard title="Pending" value={pendingActions.length.toString()} subtitle="Not started" icon={CircleDot} status="neutral" />
+                <KPICard title="In Progress" value={inProgressActions.length.toString()} subtitle="Active" icon={PlayCircle} status="success" />
+                <KPICard title="SLA Breached" value={slaBreachedActions.length.toString()} subtitle="Overdue SLA" icon={Bell} status={slaBreachedActions.length > 0 ? 'warning' : 'success'} />
+                <KPICard title="Overdue" value={overdueActions.length.toString()} subtitle="Past due date" icon={Clock} status={overdueActions.length > 0 ? 'warning' : 'success'} />
+              </div>
 
-            {/* Actions List */}
-            <div className="space-y-3" data-section="list">
-              {filteredActions.length === 0 ? (
-                <Card className="p-8 text-center">
-                  <p className="text-muted-foreground">No actions found. Create your first action to get started.</p>
-                </Card>
-              ) : (
-                filteredActions.map(action => (
-                  <ActionCard
-                    key={action.id}
-                    action={action}
-                    isSelected={selectedAction?.id === action.id}
-                    onClick={() => setSelectedAction(action)}
-                  />
-                ))
-              )}
+              {/* Filters */}
+              <div className="flex items-center justify-between">
+                <Tabs value={activeTab} onValueChange={setActiveTab}>
+                  <TabsList>
+                    <TabsTrigger value="all">All ({actions.length})</TabsTrigger>
+                    <TabsTrigger value="pending">Pending ({pendingActions.length})</TabsTrigger>
+                    <TabsTrigger value="in-progress">In Progress ({inProgressActions.length})</TabsTrigger>
+                    <TabsTrigger value="sla-breached">SLA Breached ({slaBreachedActions.length})</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+                <div className="flex items-center gap-3">
+                  <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+                    <SelectTrigger className="w-40">
+                      <User className="h-4 w-4 mr-2" />
+                      <SelectValue placeholder="Filter by owner" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Owners</SelectItem>
+                      {owners.map(owner => (
+                        <SelectItem key={owner} value={owner!}>{owner}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="relative w-64">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Search actions..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="pl-9"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Actions List */}
+              <div className="space-y-3" data-section="list">
+                {filteredActions.length === 0 ? (
+                  <Card className="p-8 text-center">
+                    <p className="text-muted-foreground">No actions found. Create your first action to get started.</p>
+                  </Card>
+                ) : (
+                  filteredActions.map(action => (
+                    <ActionCard
+                      key={action.id}
+                      action={action}
+                      isSelected={selectedAction?.id === action.id}
+                      onClick={() => setSelectedAction(action)}
+                    />
+                  ))
+                )}
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
 

@@ -14,11 +14,15 @@ import {
   X,
   Keyboard,
   ChevronDown,
-  Loader2,
   TrendingDown,
+  List,
+  Table,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DynamicDataGrid, type DynamicColumnDef } from '@/components/ui/DynamicDataGrid';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { PDFExporter } from '@/components/common/PDFExporter';
@@ -55,6 +59,17 @@ import { KeyboardShortcutsDialog } from '@/components/sprint/KeyboardShortcutsDi
 import { Progress } from '@/components/ui/progress';
 
 type SprintStatus = 'todo' | 'in-progress' | 'review' | 'done';
+import { toast } from 'sonner';
+
+const STANDARD_COLUMNS: DynamicColumnDef<BacklogItem>[] = [
+  { key: 'key', label: 'Item Key', width: 100, type: 'text', sticky: true },
+  { key: 'title', label: 'Title', width: 240, type: 'text' },
+  { key: 'type', label: 'Type', width: 120, type: 'select', options: ['story', 'task', 'bug', 'tech-debt'] },
+  { key: 'status', label: 'Status', width: 120, type: 'select', options: ['new', 'refined', 'ready', 'in-sprint', 'done'] },
+  { key: 'priority', label: 'Priority', width: 120, type: 'select', options: ['low', 'medium', 'high', 'critical'] },
+  { key: 'story_points', label: 'Story Points', width: 100, type: 'text' },
+  { key: 'assignee_name', label: 'Assignee', width: 140, type: 'text' },
+];
 
 export function AddSprintDialog({ open, onOpenChange, onSubmit }: { open: boolean, onOpenChange: (open: boolean) => void, onSubmit: (input: SprintInput) => Promise<Sprint | null> }) {
   const [loading, setLoading] = useState(false);
@@ -141,7 +156,27 @@ export default function SprintBoardView() {
   const [showBurndown, setShowBurndown] = useState(false);
   const [addSprintDialogOpen, setAddSprintDialogOpen] = useState(false);
   const [selectedSprint, setSelectedSprint] = useState<string>('active');
+  const [viewMode, setViewMode] = useState<'board' | 'spreadsheet'>('board');
+  const [customColumns, setCustomColumns] = useState<DynamicColumnDef<BacklogItem>[]>([]);
   const contentRef = useRef<HTMLDivElement>(null);
+
+  const handleCellSave = async (rowId: string, key: string, value: string) => {
+    const isCustom = !STANDARD_COLUMNS.find(c => c.key === key);
+    const item = items.find(i => i.id === rowId);
+    if (!item) return;
+
+    if (isCustom) {
+      const cf = { ...(item.custom_fields ?? {}), [key]: value };
+      await updateItem(rowId, { custom_fields: cf });
+    } else {
+      if (key === 'story_points') {
+        const numVal = parseInt(value, 10);
+        await updateItem(rowId, { [key]: isNaN(numVal) ? undefined : numVal });
+      } else {
+        await updateItem(rowId, { [key]: value });
+      }
+    }
+  };
 
   // Filter state
   const [filters, setFilters] = useState({
@@ -286,6 +321,12 @@ export default function SprintBoardView() {
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b bg-card">
         <div className="flex items-center gap-4">
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'board' | 'spreadsheet')} className="w-auto">
+            <TabsList className="h-8">
+              <TabsTrigger value="board" className="h-6 px-2.5 text-xs"><List className="h-3.5 w-3.5 mr-1.5" /> Board</TabsTrigger>
+              <TabsTrigger value="spreadsheet" className="h-6 px-2.5 text-xs"><Table className="h-3.5 w-3.5 mr-1.5" /> Spreadsheet</TabsTrigger>
+            </TabsList>
+          </Tabs>
           <Select value={selectedSprint} onValueChange={setSelectedSprint}>
             <SelectTrigger className="w-48">
               <SelectValue placeholder="Select sprint" />
@@ -419,6 +460,30 @@ export default function SprintBoardView() {
         {!currentSprint ? (
           <div className="flex items-center justify-center h-full">
             <p className="text-muted-foreground">No sprint selected. Create or select a sprint to view the board.</p>
+          </div>
+        ) : viewMode === 'spreadsheet' ? (
+          <div className="h-full bg-background border rounded-md shadow-sm overflow-hidden min-h-[500px]">
+            <DynamicDataGrid
+              data={sprintItems}
+              baseColumns={STANDARD_COLUMNS}
+              customColumns={customColumns}
+              idExtractor={(item) => item.id}
+              customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
+              onCellSave={handleCellSave}
+              onDeleteRows={() => { }}
+              onAddColumn={(col) => {
+                if (customColumns.find(c => c.key === col.key)) {
+                  toast.error('Column already exists');
+                  return;
+                }
+                setCustomColumns(prev => [...prev, col]);
+                toast.success(`Column "${col.label}" added`);
+              }}
+              onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
+              onAddRow={() => toast.info('To add items to sprint, go to backlog.')}
+              emptyStateMessage={sprintItems.length === 0 ? 'No items in this sprint.' : 'No items match filters.'}
+              containerStyles="h-full border-0"
+            />
           </div>
         ) : (
           <div className="grid grid-cols-4 gap-4 min-h-full">

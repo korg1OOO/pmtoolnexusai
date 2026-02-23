@@ -20,15 +20,31 @@ import {
   XCircle,
   Loader2,
   Trash2,
+  List,
+  Table,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DynamicDataGrid, type DynamicColumnDef } from '@/components/ui/DynamicDataGrid';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { useTasks, useCreateTask, useDeleteTask, useBulkUpdateTasks, useSaveProjectBaseline, DbTask } from '@/hooks/useTasks';
 import { recalculateWBS } from './planning/utils/wbs';
 import type { Task, TaskStatus, TaskType, Priority } from '@/types/project';
 import { toast } from 'sonner';
+
+const STANDARD_COLUMNS: DynamicColumnDef<Task>[] = [
+  { key: 'wbs', label: 'WBS', width: 80, type: 'text', sticky: true },
+  { key: 'name', label: 'Task Name', width: 300, type: 'text' },
+  { key: 'type', label: 'Type', width: 120, type: 'select', options: ['task', 'milestone', 'summary'] },
+  { key: 'status', label: 'Status', width: 120, type: 'select', options: ['not-started', 'in-progress', 'completed', 'blocked', 'on-hold'] },
+  { key: 'priority', label: 'Priority', width: 120, type: 'select', options: ['low', 'medium', 'high', 'critical'] },
+  { key: 'startDate', label: 'Start Date', width: 130, type: 'date' },
+  { key: 'endDate', label: 'End Date', width: 130, type: 'date' },
+  { key: 'duration', label: 'Duration (d)', width: 100, type: 'text' },
+  { key: 'progress', label: 'Progress (%)', width: 100, type: 'text' },
+];
 
 const statusIcons: Record<TaskStatus, React.ReactNode> = {
   'not-started': <Circle className="h-4 w-4 text-muted-foreground" />,
@@ -177,6 +193,32 @@ export default function ProjectPlanView() {
 
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
+  const [viewMode, setViewMode] = useState<'list' | 'spreadsheet'>('list');
+  const [customColumns, setCustomColumns] = useState<DynamicColumnDef<Task>[]>([]);
+
+  const handleCellSave = async (rowId: string, key: string, value: string) => {
+    if (!projectId) return;
+    const isCustom = !STANDARD_COLUMNS.find(c => c.key === key);
+    const dbTask = dbTasks.find(t => t.id === rowId);
+    if (!dbTask) return;
+
+    if (isCustom) {
+      const cf = { ...(dbTask.custom_fields ?? {}), [key]: value };
+      bulkUpdateTasks.mutate({ tasks: [{ id: rowId, custom_fields: cf }], projectId });
+    } else {
+      let dbKey = key as keyof DbTask;
+      if (key === 'startDate') dbKey = 'start_date';
+      else if (key === 'endDate') dbKey = 'end_date';
+      else if (key === 'isCritical') dbKey = 'is_critical';
+
+      if (key === 'duration' || key === 'progress') {
+        const numVal = parseInt(value, 10);
+        bulkUpdateTasks.mutate({ tasks: [{ id: rowId, [dbKey]: isNaN(numVal) ? undefined : numVal }], projectId });
+      } else {
+        bulkUpdateTasks.mutate({ tasks: [{ id: rowId, [dbKey]: value }], projectId });
+      }
+    }
+  };
 
   const taskTree = useMemo(() => {
     const taskMap = new Map<string, Task>();
@@ -337,6 +379,12 @@ export default function ProjectPlanView() {
       {/* Toolbar */}
       <div className="flex items-center justify-between p-4 border-b bg-card">
         <div className="flex items-center gap-2">
+          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'list' | 'spreadsheet')} className="w-auto mr-2">
+            <TabsList className="h-8">
+              <TabsTrigger value="list" className="h-6 px-2.5 text-xs"><List className="h-3.5 w-3.5 mr-1.5" /> Gantt & List</TabsTrigger>
+              <TabsTrigger value="spreadsheet" className="h-6 px-2.5 text-xs"><Table className="h-3.5 w-3.5 mr-1.5" /> Spreadsheet</TabsTrigger>
+            </TabsList>
+          </Tabs>
           <Button size="sm" onClick={handleAddTask} disabled={createTask.isPending}>
             {createTask.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Plus className="h-4 w-4 mr-1" />}
             Add Task
@@ -365,51 +413,86 @@ export default function ProjectPlanView() {
         </div>
       </div>
 
-      {/* Table Header */}
-      <div className="grid grid-cols-[40px_minmax(300px,2fr)_100px_100px_120px_120px_100px_80px_60px] items-center border-b border-border bg-muted/50 text-xs font-medium text-muted-foreground">
-        <div className="flex items-center justify-center h-9">
-          <Checkbox />
-        </div>
-        <div className="py-2 px-2">Task Name</div>
-        <div className="py-2">Status</div>
-        <div className="py-2">Priority</div>
-        <div className="py-2 flex items-center gap-1">
-          <Calendar className="h-3 w-3" />
-          Start
-        </div>
-        <div className="py-2 flex items-center gap-1">
-          <Calendar className="h-3 w-3" />
-          End
-        </div>
-        <div className="py-2">Duration</div>
-        <div className="py-2">Progress</div>
-        <div className="py-2"></div>
-      </div>
-
-      {/* Task List */}
-      <div className="flex-1 overflow-auto">
-        {visibleTasks.length > 0 ? (
-          visibleTasks.map((task) => (
-            <TaskRow
-              key={task.id}
-              task={task}
-              expanded={expandedTasks.has(task.id)}
-              onToggle={() => toggleTask(task.id)}
-              selected={selectedTasks.has(task.id)}
-              onSelect={(selected) => toggleSelection(task.id, !!selected)}
-              onDelete={() => handleTaskDelete(task.id)}
+      {viewMode === 'spreadsheet' ? (
+        <div className="flex-1 overflow-auto bg-muted/10 h-full p-6">
+          <div className="h-full bg-background border rounded-md shadow-sm overflow-hidden min-h-[500px]">
+            <DynamicDataGrid
+              data={visibleTasks}
+              baseColumns={STANDARD_COLUMNS}
+              customColumns={customColumns}
+              idExtractor={(item) => item.id}
+              customFieldExtractor={(item, key) => {
+                const t = dbTasks.find(x => x.id === item.id);
+                return String(t?.custom_fields?.[key] ?? '');
+              }}
+              onCellSave={handleCellSave}
+              onDeleteRows={(ids) => {
+                ids.forEach(id => deleteTask.mutateAsync({ taskId: id, projectId }));
+              }}
+              onAddColumn={(col) => {
+                if (customColumns.find(c => c.key === col.key)) {
+                  toast.error('Column already exists');
+                  return;
+                }
+                setCustomColumns(prev => [...prev, col]);
+                toast.success(`Column "${col.label}" added`);
+              }}
+              onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
+              onAddRow={handleAddTask}
+              emptyStateMessage={visibleTasks.length === 0 ? 'No tasks found for this project.' : 'No tasks match filters.'}
+              containerStyles="h-full border-0"
             />
-          ))
-        ) : (
-          <div className="flex flex-col items-center justify-center h-full p-12 text-center text-muted-foreground">
-            <AlertCircle className="h-12 w-12 mb-4 opacity-20" />
-            <p className="text-sm">No tasks found for this project.</p>
-            <Button variant="outline" size="sm" className="mt-4" onClick={handleAddTask}>
-              Create your first task
-            </Button>
           </div>
-        )}
-      </div>
+        </div>
+      ) : (
+        <>
+          {/* Table Header */}
+          <div className="grid grid-cols-[40px_minmax(300px,2fr)_100px_100px_120px_120px_100px_80px_60px] items-center border-b border-border bg-muted/50 text-xs font-medium text-muted-foreground">
+            <div className="flex items-center justify-center h-9">
+              <Checkbox />
+            </div>
+            <div className="py-2 px-2">Task Name</div>
+            <div className="py-2">Status</div>
+            <div className="py-2">Priority</div>
+            <div className="py-2 flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              Start
+            </div>
+            <div className="py-2 flex items-center gap-1">
+              <Calendar className="h-3 w-3" />
+              End
+            </div>
+            <div className="py-2">Duration</div>
+            <div className="py-2">Progress</div>
+            <div className="py-2"></div>
+          </div>
+
+          {/* Task List */}
+          <div className="flex-1 overflow-auto">
+            {visibleTasks.length > 0 ? (
+              visibleTasks.map((task) => (
+                <TaskRow
+                  key={task.id}
+                  task={task}
+                  expanded={expandedTasks.has(task.id)}
+                  onToggle={() => toggleTask(task.id)}
+                  selected={selectedTasks.has(task.id)}
+                  onSelect={(selected) => toggleSelection(task.id, !!selected)}
+                  onDelete={() => handleTaskDelete(task.id)}
+                />
+              ))
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full p-12 text-center text-muted-foreground">
+                <AlertCircle className="h-12 w-12 mb-4 opacity-20" />
+                <p className="text-sm">No tasks found for this project.</p>
+                <Button variant="outline" size="sm" className="mt-4" onClick={handleAddTask}>
+                  Create your first task
+                </Button>
+              </div>
+            )}
+          </div>
+        </>
+      )}
 
       {/* Footer */}
       <div className="flex items-center justify-between p-3 border-t bg-muted/30 text-xs text-muted-foreground">

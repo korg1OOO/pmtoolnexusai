@@ -25,11 +25,14 @@ import {
   Edit2,
   Link2,
   Loader2,
-  Trash2
+  Trash2,
+  List,
+  Table
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { DynamicDataGrid, type DynamicColumnDef } from '@/components/ui/DynamicDataGrid';
 import { Progress } from '@/components/ui/progress';
 import { KPICard } from '@/components/enterprise/KPICard';
 import { StatusIndicator } from '@/components/enterprise/StatusIndicator';
@@ -58,6 +61,13 @@ import { useProjectContext } from '@/contexts/ProjectContext';
 import { useMilestones, Milestone } from '@/hooks/useMilestones';
 import { useStageGates, StageGate, GateCriteria } from '@/hooks/useStageGates';
 import { toast } from 'sonner';
+
+const STANDARD_COLUMNS: DynamicColumnDef<Milestone>[] = [
+  { key: 'name', label: 'Milestone Name', width: 300, type: 'text', sticky: true },
+  { key: 'status', label: 'Status', width: 140, type: 'select', options: ['on-track', 'at-risk', 'overdue', 'completed'] },
+  { key: 'due_date', label: 'Due Date', width: 140, type: 'date' },
+  { key: 'progress', label: 'Progress (%)', width: 120, type: 'text' },
+];
 
 // Removed local interfaces in favor of hook types
 
@@ -108,8 +118,9 @@ export default function MilestonesView() {
   const { gates, isLoading: gatesLoading, approveGate } = useStageGates(settings.id);
   const isLoading = milestonesLoading || gatesLoading;
 
-  const [viewMode, setViewMode] = useState<'timeline' | 'list' | 'gates'>('timeline');
+  const [viewMode, setViewMode] = useState<'timeline' | 'list' | 'spreadsheet' | 'gates'>('timeline');
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
+  const [customColumns, setCustomColumns] = useState<DynamicColumnDef<Milestone>[]>([]);
   const [selectedGate, setSelectedGate] = useState<StageGate | null>(null);
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
   const [approvalComment, setApprovalComment] = useState('');
@@ -134,6 +145,24 @@ export default function MilestonesView() {
     onTrack: milestones?.filter(m => m.status === 'on-track').length || 0,
     atRisk: milestones?.filter(m => m.status === 'at-risk').length || 0,
     overdue: milestones?.filter(m => m.status === 'overdue').length || 0,
+  };
+
+  const handleCellSave = async (rowId: string, key: string, value: string) => {
+    const isCustom = !STANDARD_COLUMNS.find(c => c.key === key);
+    const item = milestones?.find(i => i.id === rowId);
+    if (!item) return;
+
+    if (isCustom) {
+      const cf = { ...(item.custom_fields ?? {}), [key]: value };
+      await updateMilestone.mutateAsync({ id: rowId, updates: { custom_fields: cf } });
+    } else {
+      if (key === 'progress') {
+        const numVal = parseInt(value, 10);
+        await updateMilestone.mutateAsync({ id: rowId, updates: { [key]: isNaN(numVal) ? undefined : numVal } });
+      } else {
+        await updateMilestone.mutateAsync({ id: rowId, updates: { [key]: value } });
+      }
+    }
   };
 
   const handleCreate = async () => {
@@ -286,7 +315,7 @@ export default function MilestonesView() {
 
       {/* View Toggle */}
       <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">
-        {(['timeline', 'list', 'gates'] as const).map((mode) => (
+        {(['timeline', 'list', 'spreadsheet', 'gates'] as const).map((mode) => (
           <button
             key={mode}
             onClick={() => setViewMode(mode)}
@@ -299,6 +328,37 @@ export default function MilestonesView() {
           </button>
         ))}
       </div>
+
+      {/* Spreadsheet View */}
+      {viewMode === 'spreadsheet' && (
+        <Card className="flex flex-col p-6 h-[600px]">
+          <div className="flex-1 bg-background border rounded-md shadow-sm overflow-hidden min-h-[500px]">
+            <DynamicDataGrid
+              data={filteredMilestones}
+              baseColumns={STANDARD_COLUMNS}
+              customColumns={customColumns}
+              idExtractor={(item) => item.id}
+              customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
+              onCellSave={handleCellSave}
+              onDeleteRows={(ids) => {
+                ids.forEach(id => deleteMilestone.mutateAsync(id));
+              }}
+              onAddColumn={(col) => {
+                if (customColumns.find(c => c.key === col.key)) {
+                  toast.error('Column already exists');
+                  return;
+                }
+                setCustomColumns(prev => [...prev, col]);
+                toast.success(`Column "${col.label}" added`);
+              }}
+              onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
+              onAddRow={() => setIsCreateOpen(true)}
+              emptyStateMessage={filteredMilestones.length === 0 ? 'No milestones found.' : 'No milestones match your filters.'}
+              containerStyles="h-full border-0"
+            />
+          </div>
+        </Card>
+      )}
 
       {/* Status Filters */}
       {viewMode !== 'gates' && (
@@ -409,8 +469,8 @@ export default function MilestonesView() {
                         <div className="flex flex-wrap gap-2">
                           {gate.approvers.map((a, i) => (
                             <span key={i} className={`text-xs px-2 py-1 rounded-full border ${a.status === 'approved' ? 'bg-green-50 border-green-200 text-green-700' :
-                                a.status === 'rejected' ? 'bg-red-50 border-red-200 text-red-700' :
-                                  'bg-muted border-muted-foreground/20'
+                              a.status === 'rejected' ? 'bg-red-50 border-red-200 text-red-700' :
+                                'bg-muted border-muted-foreground/20'
                               }`}>
                               {a.user?.full_name || a.user?.email || a.role || 'Approver'} · {a.status}
                             </span>

@@ -43,6 +43,9 @@ import {
     Loader2,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { EntityFormDialog } from '@/components/ui/EntityFormDialog';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -88,6 +91,15 @@ export default function RequirementsMatrixView() {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState<string>('all');
     const [customColumns, setCustomColumns] = useState<DynamicColumnDef<RequirementItem>[]>([]);
+    const [isAddOpen, setIsAddOpen] = useState(false);
+    const [newRequirement, setNewRequirement] = useState({
+        requirement: '',
+        description: '',
+        process: '',
+        module: '',
+        owner: '',
+    });
+
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const allColumns = useMemo(() => [...STANDARD_COLUMNS, ...customColumns], [customColumns]);
@@ -104,7 +116,7 @@ export default function RequirementsMatrixView() {
 
     // ─── Cell save handler ───
 
-    const handleCellSave = useCallback((rowId: string, key: string, value: string) => {
+    const handleCellSave = useCallback(async (rowId: string, key: string, value: string) => {
         if (!projectId) return;
         const isCustom = !STANDARD_COLUMNS.find(c => c.key === key);
         const item = items.find(i => i.id === rowId);
@@ -112,23 +124,32 @@ export default function RequirementsMatrixView() {
 
         if (isCustom) {
             const cf = { ...(item.custom_fields ?? {}), [key]: value };
-            updateReq.mutate({ id: rowId, project_id: projectId, custom_fields: cf });
+            await updateReq.mutateAsync({ id: rowId, project_id: projectId, custom_fields: cf });
         } else {
-            updateReq.mutate({ id: rowId, project_id: projectId, [key]: value } as any);
+            await updateReq.mutateAsync({ id: rowId, project_id: projectId, [key]: value } as any);
         }
     }, [items, projectId, updateReq]);
 
     // ─── Add Row ─────────────────────────────────────────────────────────────
 
-    const handleAddRow = () => {
+    const handleAddRow = async () => {
         if (!projectId) return;
         const code = `REQ-${String(items.length + 1).padStart(3, '0')}`;
-        createReq.mutate({
+        await createReq.mutateAsync({
             project_id: projectId,
             code,
+            requirement: newRequirement.requirement,
+            description: newRequirement.description,
+            process: newRequirement.process,
+            module: newRequirement.module,
+            owner: newRequirement.owner,
             status: 'Open',
             sort_order: items.length,
         });
+
+        setIsAddOpen(false);
+        setNewRequirement({ requirement: '', description: '', process: '', module: '', owner: '' });
+        toast.success('Requirement added');
     };
 
     // ─── Excel Export ─────────────────────────────────────────────────────────
@@ -337,7 +358,7 @@ export default function RequirementsMatrixView() {
                     onSearchChange={setSearchTerm}
                     toolbarFilters={toolbarFilters}
                     listModeControls={listModeControls}
-                    onAddRow={handleAddRow}
+                    onAddRow={() => setIsAddOpen(true)}
                     addLabel="Add Requirement"
                     data={filteredItems}
                     baseColumns={STANDARD_COLUMNS}
@@ -373,6 +394,61 @@ export default function RequirementsMatrixView() {
                     <span>·</span>
                     <span>{items.filter(i => i.status === 'Implemented').length} implemented</span>
                 </div>
+
+                <EntityFormDialog
+                    open={isAddOpen}
+                    onOpenChange={setIsAddOpen}
+                    title="Add Requirement"
+                    description="Create a new system requirement."
+                    onSubmit={handleAddRow}
+                    loading={createReq.isPending}
+                >
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label>Requirement Title *</Label>
+                            <Input
+                                required
+                                value={newRequirement.requirement}
+                                onChange={e => setNewRequirement({ ...newRequirement, requirement: e.target.value })}
+                                placeholder="e.g. Single Sign-On Authentication"
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Description</Label>
+                            <Textarea
+                                value={newRequirement.description}
+                                onChange={e => setNewRequirement({ ...newRequirement, description: e.target.value })}
+                                placeholder="Detailed description of the requirement"
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div className="space-y-2">
+                                <Label>Module</Label>
+                                <Input
+                                    value={newRequirement.module}
+                                    onChange={e => setNewRequirement({ ...newRequirement, module: e.target.value })}
+                                    placeholder="e.g. Security"
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label>Process</Label>
+                                <Input
+                                    value={newRequirement.process}
+                                    onChange={e => setNewRequirement({ ...newRequirement, process: e.target.value })}
+                                    placeholder="e.g. User Login"
+                                />
+                            </div>
+                        </div>
+                        <div className="space-y-2">
+                            <Label>Owner</Label>
+                            <Input
+                                value={newRequirement.owner}
+                                onChange={e => setNewRequirement({ ...newRequirement, owner: e.target.value })}
+                                placeholder="e.g. John Doe"
+                            />
+                        </div>
+                    </div>
+                </EntityFormDialog>
             </div>
         </TooltipProvider>
     );

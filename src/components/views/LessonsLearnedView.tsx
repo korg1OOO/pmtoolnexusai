@@ -20,6 +20,17 @@ import { Badge } from '@/components/ui/badge';
 import { type DynamicColumnDef } from '@/components/ui/DynamicDataGrid';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { EntityFormDialog } from '@/components/ui/EntityFormDialog';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useLessonsLearned, LessonLearned, useUpdateLessonLearned, useCreateLessonLearned } from '@/hooks/useLessonsLearned';
@@ -44,6 +55,15 @@ export default function LessonsLearnedView() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedLesson, setSelectedLesson] = useState<LessonLearned | null>(null);
   const [customColumns, setCustomColumns] = useState<DynamicColumnDef<LessonLearned>[]>([]);
+  const [isAddOpen, setIsAddOpen] = useState(false);
+  const [newLesson, setNewLesson] = useState({
+    title: '',
+    description: '',
+    type: 'success' as 'success' | 'improvement' | 'issue',
+    category: 'General',
+    impact_level: 'medium' as 'low' | 'medium' | 'high' | 'critical',
+    phase: 'Execution',
+  });
 
   const handleCellSave = async (rowId: string, key: string, value: string) => {
     const isCustom = !STANDARD_COLUMNS.find(c => c.key === key);
@@ -74,21 +94,25 @@ export default function LessonsLearnedView() {
   };
 
   const handleAddLesson = async () => {
-    if (!settings.id) return;
+    if (!settings.id || !newLesson.title) return;
     await createLesson.mutateAsync({
       project_id: settings.id,
-      title: 'New Lesson Learned',
-      description: 'Describe the lesson learned here...',
-      type: 'success',
-      category: 'General',
-      impact_level: 'medium',
-      phase: 'Execution',
+      title: newLesson.title,
+      description: newLesson.description,
+      type: newLesson.type,
+      category: newLesson.category || 'General',
+      impact_level: newLesson.impact_level,
+      phase: newLesson.phase || 'Execution',
       submitted_by: user?.id ?? '',
-      submitted_by_name: 'Project Team Member',
+      submitted_by_name: user?.user_metadata?.full_name || 'Project Team Member',
       votes: 0,
       tags: ['new'],
       recommendations: []
     });
+
+    setIsAddOpen(false);
+    setNewLesson({ title: '', description: '', type: 'success', category: 'General', impact_level: 'medium', phase: 'Execution' });
+    toast.success('Lesson learned added');
   };
 
   const filteredLessons = lessons.filter(l =>
@@ -317,36 +341,114 @@ export default function LessonsLearnedView() {
   );
 
   return (
-    <DataRegisterPage
-      title="Lessons Learned"
-      description="Capture and share project insights for future success"
-      icon={Lightbulb}
-      iconBgClass="bg-primary/20"
-      iconColorClass="text-primary"
-      searchQuery={searchQuery}
-      onSearchChange={setSearchQuery}
-      onAddRow={handleAddLesson}
-      addLabel="Add Lesson"
-      pdfFilename="lessons_learned"
-      data={filteredLessons}
-      baseColumns={STANDARD_COLUMNS}
-      customColumns={customColumns}
-      idExtractor={(item) => item.id}
-      customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
-      onCellSave={handleCellSave}
-      onAddColumn={(col) => {
-        if (customColumns.find(c => c.key === col.key)) {
-          toast.error('Column already exists');
-          return;
-        }
-        setCustomColumns(prev => [...prev, col]);
-        toast.success(`Column "${col.label}" added`);
-      }}
-      onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
-      onDeleteRows={() => { }}
-      emptyStateMessage={filteredLessons.length === 0 ? 'No lessons found.' : 'No lessons match your filters.'}
-      kpiCards={kpiCards}
-      listContent={listContent}
-    />
+    <>
+      <DataRegisterPage
+        title="Lessons Learned"
+        description="Capture and share project insights for future success"
+        icon={Lightbulb}
+        iconBgClass="bg-primary/20"
+        iconColorClass="text-primary"
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        onAddRow={() => setIsAddOpen(true)}
+        addLabel="Add Lesson"
+        pdfFilename="lessons_learned"
+        data={filteredLessons}
+        baseColumns={STANDARD_COLUMNS}
+        customColumns={customColumns}
+        idExtractor={(item) => item.id}
+        customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
+        onCellSave={handleCellSave}
+        onAddColumn={(col) => {
+          if (customColumns.find(c => c.key === col.key)) {
+            toast.error('Column already exists');
+            return;
+          }
+          setCustomColumns(prev => [...prev, col]);
+          toast.success(`Column "${col.label}" added`);
+        }}
+        onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
+        onDeleteRows={() => { }}
+        emptyStateMessage={filteredLessons.length === 0 ? 'No lessons found.' : 'No lessons match your filters.'}
+        kpiCards={kpiCards}
+        listContent={listContent}
+      />
+
+      <EntityFormDialog
+        open={isAddOpen}
+        onOpenChange={setIsAddOpen}
+        title="Add Lesson Learned"
+        description="Capture a new lesson learned from the project."
+        onSubmit={handleAddLesson}
+        loading={createLesson.isPending}
+      >
+        <div className="space-y-4">
+          <div className="space-y-2">
+            <Label>Title *</Label>
+            <Input
+              required
+              value={newLesson.title}
+              onChange={e => setNewLesson({ ...newLesson, title: e.target.value })}
+              placeholder="e.g. Early stakeholder engagement is crucial"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Type</Label>
+              <Select value={newLesson.type} onValueChange={(v: any) => setNewLesson({ ...newLesson, type: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="success">Success</SelectItem>
+                  <SelectItem value="improvement">Improvement</SelectItem>
+                  <SelectItem value="issue">Issue</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Impact Level</Label>
+              <Select value={newLesson.impact_level} onValueChange={(v: any) => setNewLesson({ ...newLesson, impact_level: v })}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="critical">Critical</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Category</Label>
+              <Input
+                value={newLesson.category}
+                onChange={e => setNewLesson({ ...newLesson, category: e.target.value })}
+                placeholder="e.g. Communication, Technical"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Phase</Label>
+              <Input
+                value={newLesson.phase}
+                onChange={e => setNewLesson({ ...newLesson, phase: e.target.value })}
+                placeholder="e.g. Planning, Execution"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Description</Label>
+            <Textarea
+              value={newLesson.description}
+              onChange={e => setNewLesson({ ...newLesson, description: e.target.value })}
+              placeholder="Detailed description of the lesson learned"
+              className="h-24"
+            />
+          </div>
+        </div>
+      </EntityFormDialog>
+    </>
   );
 }

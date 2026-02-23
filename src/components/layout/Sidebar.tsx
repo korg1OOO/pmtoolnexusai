@@ -32,6 +32,7 @@ import {
   Folder,
   TrendingUp,
   Brain,
+  ClipboardCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -110,6 +111,7 @@ const navItems: NavItem[] = [
       { id: 'change-requests', label: 'Change Requests', icon: Target, alwaysShow: true },
       { id: 'traceability', label: 'Traceability Matrix', icon: GitBranch, moduleKey: 'traceability' },
       { id: 'requirements', label: 'Requirements Matrix', icon: GitBranch, alwaysShow: true },
+      { id: 'quality', label: 'Quality Register', icon: ClipboardCheck, alwaysShow: true },
     ]
   },
   {

@@ -63,6 +63,7 @@ const CollaborationSpacesView = lazy(() => import('@/components/views/Collaborat
 const CollaborationDashboardView = lazy(() => import('@/components/views/CollaborationDashboardView'));
 const ProgramManagementView = lazy(() => import('@/components/views/ProgramManagementView'));
 const RequirementsMatrixView = lazy(() => import('@/components/views/RequirementsMatrixView'));
+const QualityRegisterView = lazy(() => import('@/components/views/QualityRegisterView'));
 const ProjectsListView = lazy(() => import('@/components/views/ProjectsListView'));
 
 // ── Portfolio view (also used in ProtectedProjectRoute) ───────────────────────
@@ -108,6 +109,7 @@ export function ProjectRoutes() {
             <Route path="/stakeholders" element={<ProtectedProjectRoute><StakeholderRegisterView /></ProtectedProjectRoute>} />
             <Route path="/traceability" element={<ProtectedProjectRoute><TraceabilityMatrixView /></ProtectedProjectRoute>} />
             <Route path="/requirements" element={<ProtectedProjectRoute><RequirementsMatrixView /></ProtectedProjectRoute>} />
+            <Route path="/quality" element={<ProtectedProjectRoute><QualityRegisterView /></ProtectedProjectRoute>} />
 
             {/* ── Issues & Risks ────────────────────────────────────────────── */}
             <Route path="/actions" element={<ProtectedProjectRoute><ActionsView /></ProtectedProjectRoute>} />

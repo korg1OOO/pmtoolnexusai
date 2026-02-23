@@ -155,16 +155,20 @@ class AICreditsService {
         // Credits = 2 × total tokens (tokens are doubled per billing policy)
         const creditsUsed = totalTokens / 1000 * 2;
 
-        // Call atomic deduction function
-        const { data, error } = await supabase.rpc('deduct_ai_credits', {
-            p_tenant_id: effectiveTenantId,
-            p_user_id: effectiveUserId,
-            p_feature_type: params.featureType,
-            p_request_id: params.requestId,
-            p_model_name: params.modelName,
-            p_prompt_tokens: params.promptTokens,
-            p_completion_tokens: params.completionTokens,
-            p_credits_used: creditsUsed
+        const { data, error } = await supabase.from('ai_usage_logs').insert({
+            user_id: effectiveUserId,
+            operation: params.featureType,
+            model: params.modelName,
+            input_tokens: params.promptTokens,
+            output_tokens: params.completionTokens,
+            provider: 'openai', // or extracted from model
+            success: true,
+            cost: (totalTokens / 1000) * 0.002, // dummy cost calculation
+            metadata: {
+                credits_used: creditsUsed,
+                request_id: params.requestId,
+                tenant_id: effectiveTenantId
+            }
         });
 
         if (error) {

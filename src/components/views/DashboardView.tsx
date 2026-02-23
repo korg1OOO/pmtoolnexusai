@@ -1,10 +1,13 @@
 
 import React, { useMemo, useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import GridLayout, { Layout } from 'react-grid-layout';
+import { Responsive, WidthProvider, Layout } from 'react-grid-layout';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const ResponsiveGridLayout = WidthProvider(Responsive);
+
 import {
   TrendingUp,
   Calendar,
@@ -41,14 +44,15 @@ import { cn } from '@/lib/utils';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useUserPreferences } from '@/hooks/useUserPreferences';
+import { useNavigate } from 'react-router-dom';
 
 const WIDGET_TYPES = [
-  { id: 'kpi-schedule', name: 'Schedule Variance (KPI)', icon: Calendar, defaultW: 2, defaultH: 2 },
-  { id: 'kpi-cost', name: 'Cost Variance (KPI)', icon: DollarSign, defaultW: 2, defaultH: 2 },
-  { id: 'kpi-velocity', name: 'Sprint Velocity (KPI)', icon: TrendingUp, defaultW: 2, defaultH: 2 },
-  { id: 'kpi-risks', name: 'Open Risks (KPI)', icon: AlertTriangle, defaultW: 2, defaultH: 2 },
-  { id: 'kpi-util', name: 'Team Utilization (KPI)', icon: Users, defaultW: 2, defaultH: 2 },
-  { id: 'kpi-actions', name: 'Actions Due (KPI)', icon: CheckCircle2, defaultW: 2, defaultH: 2 },
+  { id: 'kpi-schedule', name: 'Schedule Variance (KPI)', icon: Calendar, defaultW: 2, defaultH: 4 },
+  { id: 'kpi-cost', name: 'Cost Variance (KPI)', icon: DollarSign, defaultW: 2, defaultH: 4 },
+  { id: 'kpi-velocity', name: 'Sprint Velocity (KPI)', icon: TrendingUp, defaultW: 2, defaultH: 4 },
+  { id: 'kpi-risks', name: 'Open Risks (KPI)', icon: AlertTriangle, defaultW: 2, defaultH: 4 },
+  { id: 'kpi-util', name: 'Team Utilization (KPI)', icon: Users, defaultW: 2, defaultH: 4 },
+  { id: 'kpi-actions', name: 'Actions Due (KPI)', icon: CheckCircle2, defaultW: 2, defaultH: 4 },
   { id: 'project-progress', name: 'Project Progress Ring', icon: BarChart3, defaultW: 4, defaultH: 8 },
   { id: 'budget-overview', name: 'Budget Overview', icon: DollarSign, defaultW: 4, defaultH: 8 },
   { id: 'active-risks', name: 'Active Risks List', icon: AlertTriangle, defaultW: 4, defaultH: 8 },
@@ -70,23 +74,24 @@ interface DashboardWidget {
 }
 
 const DEFAULT_LAYOUT: DashboardWidget[] = [
-  { i: '1', x: 0, y: 0, w: 2, h: 2, type: 'kpi-schedule' },
-  { i: '2', x: 2, y: 0, w: 2, h: 2, type: 'kpi-cost' },
-  { i: '3', x: 4, y: 0, w: 2, h: 2, type: 'kpi-velocity' },
-  { i: '4', x: 6, y: 0, w: 2, h: 2, type: 'kpi-risks' },
-  { i: '5', x: 8, y: 0, w: 2, h: 2, type: 'kpi-util' },
-  { i: '6', x: 10, y: 0, w: 2, h: 2, type: 'kpi-actions' },
-  { i: '7', x: 0, y: 2, w: 4, h: 8, type: 'project-progress' },
-  { i: '8', x: 4, y: 2, w: 4, h: 8, type: 'budget-overview' },
-  { i: '9', x: 8, y: 2, w: 4, h: 8, type: 'active-risks' },
-  { i: '10', x: 0, y: 10, w: 6, h: 8, type: 'in-progress' },
-  { i: '11', x: 6, y: 10, w: 6, h: 8, type: 'upcoming-meetings' },
+  { i: '1', x: 0, y: 0, w: 2, h: 4, type: 'kpi-schedule' },
+  { i: '2', x: 2, y: 0, w: 2, h: 4, type: 'kpi-cost' },
+  { i: '3', x: 4, y: 0, w: 2, h: 4, type: 'kpi-velocity' },
+  { i: '4', x: 6, y: 0, w: 2, h: 4, type: 'kpi-risks' },
+  { i: '5', x: 8, y: 0, w: 2, h: 4, type: 'kpi-util' },
+  { i: '6', x: 10, y: 0, w: 2, h: 4, type: 'kpi-actions' },
+  { i: '7', x: 0, y: 4, w: 4, h: 8, type: 'project-progress' },
+  { i: '8', x: 4, y: 4, w: 4, h: 8, type: 'budget-overview' },
+  { i: '9', x: 8, y: 4, w: 4, h: 8, type: 'active-risks' },
+  { i: '10', x: 0, y: 12, w: 6, h: 8, type: 'in-progress' },
+  { i: '11', x: 6, y: 12, w: 6, h: 8, type: 'upcoming-meetings' },
 ];
 
 export default function DashboardView({ onViewChange }: DashboardViewProps) {
   const { settings } = useProjectContext();
   const projectId = settings.id;
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // --- Data Fetching ---
   const { data: project, isLoading: loadingProject } = useProject(projectId);
@@ -104,6 +109,15 @@ export default function DashboardView({ onViewChange }: DashboardViewProps) {
   const [layout, setLayout] = useState<DashboardWidget[]>(DEFAULT_LAYOUT);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isAddWidgetOpen, setIsAddWidgetOpen] = useState(false);
+
+  // Track window resizing for grid responsiveness
+  const [windowWidth, setWindowWidth] = useState(typeof window !== 'undefined' ? window.innerWidth : 1200);
+
+  useEffect(() => {
+    const handleResize = () => setWindowWidth(window.innerWidth);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // Initialize layout from prefs when loaded
   useEffect(() => {
@@ -155,6 +169,11 @@ export default function DashboardView({ onViewChange }: DashboardViewProps) {
     updatePreference.mutate({ key: 'dashboard_layout', value: newLayout });
   };
 
+
+  const handleResetLayout = () => {
+    setLayout(DEFAULT_LAYOUT);
+    updatePreference.mutate({ key: 'dashboard_layout', value: DEFAULT_LAYOUT });
+  };
 
   // --- Derived Data ---
   const { data: sprints = [] } = useQuery({
@@ -439,6 +458,11 @@ export default function DashboardView({ onViewChange }: DashboardViewProps) {
           <p className="text-muted-foreground max-w-2xl">{activeProject.description}</p>
         </div>
         <div className="flex items-center gap-2">
+          {isEditMode && (
+            <Button variant="ghost" className="text-muted-foreground mr-2" onClick={handleResetLayout}>
+              Reset Layout
+            </Button>
+          )}
           <Button variant={isEditMode ? "secondary" : "outline"} onClick={() => setIsEditMode(!isEditMode)}>
             {isEditMode ? "Done Editing" : "Edit Layout"}
           </Button>
@@ -476,19 +500,21 @@ export default function DashboardView({ onViewChange }: DashboardViewProps) {
       </div>
 
       {/* Grid Layout */}
-      <GridLayout
+      <ResponsiveGridLayout
         className="layout"
-        layout={layout}
-        cols={12}
+        layouts={{ lg: layout }}
+        breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+        cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
         rowHeight={30}
-        width={typeof window !== 'undefined' ? window.innerWidth - 280 : 1200} // Responsive: subtract sidebar width
         margin={[16, 16]} // 16px margin between widgets
         containerPadding={[0, 0]}
-        compactType={null} // Disable auto-compaction to prevent overlap
-        preventCollision={true} // Prevent widgets from overlapping
+        compactType="vertical" // Stack widgets vertically instead of absolute positioning to prevent overlaps
+        preventCollision={false} // Allow collision so widgets flow naturally
+        useCSSTransforms={true} // Strict GPU-accelerated absolute transforms for precise rendering
+        measureBeforeMount={false}
         isDraggable={isEditMode}
         isResizable={isEditMode}
-        onLayoutChange={handleLayoutChange}
+        onLayoutChange={(currentLayout, allLayouts) => handleLayoutChange(currentLayout)}
         draggableHandle=".drag-handle"
         resizeHandles={['se', 'sw', 'ne', 'nw', 's', 'e', 'w', 'n']} // All 8 resize handles
         // Min/Max constraints per widget type
@@ -509,7 +535,7 @@ export default function DashboardView({ onViewChange }: DashboardViewProps) {
             <div
               key={widget.i}
               className={cn(
-                "bg-background/50 rounded-lg transition-all duration-200",
+                "bg-background/50 rounded-lg",
                 isEditMode && "ring-2 ring-primary/20 border-dashed hover:ring-primary/40",
                 "relative" // Ensure proper positioning context
               )}
@@ -552,12 +578,7 @@ export default function DashboardView({ onViewChange }: DashboardViewProps) {
             </div>
           );
         })}
-      </GridLayout>
-
-      {/* Manual Full Report Link (If needed) */}
-      <div className="flex justify-center mt-8">
-        <Button variant="link" onClick={() => onViewChange?.('final-report')}>View Full Project Report <ArrowRight className="h-4 w-4 ml-1" /></Button>
-      </div>
+      </ResponsiveGridLayout>
     </div>
   );
 }

@@ -626,13 +626,12 @@ export async function dispatchAIAction(
                 if (phases && phases.length > 0) {
                     const milestones = phases.map(p => ({
                         project_id: projectId,
-                        title: `${p.title} Completion`,
+                        name: `${p.title} Completion`,
                         description: `Milestone marking end of ${p.title}`,
-                        target_date: p.end_date || new Date().toISOString(),
+                        due_date: p.end_date || new Date().toISOString(),
                         status: 'pending',
-                        associated_task_id: p.id,
                     }));
-                    await supabase.from('project_milestones').insert(milestones);
+                    await supabase.from('deliverables').insert(milestones);
                 }
 
                 return {
@@ -733,10 +732,9 @@ export async function dispatchAIAction(
                 const today = new Date();
                 const milestones = (phases || []).slice(0, count).map((p: any, i: number) => ({
                     project_id: projectId,
-                    phase_id: p.id,
-                    title: `${p.name} Completion`,
+                    name: `${p.name} Completion`,
                     description: `Milestone marking end of ${p.name}`,
-                    target_date: new Date(today.getTime() + (i + 1) * 30 * 86400000).toISOString().split('T')[0],
+                    due_date: new Date(today.getTime() + (i + 1) * 30 * 86400000).toISOString().split('T')[0],
                     status: 'pending',
                 }));
 
@@ -746,15 +744,15 @@ export async function dispatchAIAction(
                     for (let i = 0; i < count; i++) {
                         milestones.push({
                             project_id: projectId,
-                            title: names[i] || `Milestone ${i + 1}`,
+                            name: names[i] || `Milestone ${i + 1}`,
                             description: `AI Agent milestone`,
-                            target_date: new Date(today.getTime() + (i + 1) * 30 * 86400000).toISOString().split('T')[0],
+                            due_date: new Date(today.getTime() + (i + 1) * 30 * 86400000).toISOString().split('T')[0],
                             status: 'pending',
                         });
                     }
                 }
 
-                const { data, error } = await supabase.from('project_milestones').insert(milestones).select();
+                const { data, error } = await supabase.from('deliverables').insert(milestones).select();
                 if (error) {
                     // Try timeline_milestones
                     const { data: d2, error: e2 } = await supabase.from('timeline_milestones').insert(milestones).select();
@@ -787,7 +785,7 @@ export async function dispatchAIAction(
                     project_id: projectId,
                     name: `Sprint ${i + 1}`,
                     goal: `Deliver sprint ${i + 1} deliverables`,
-                    status: i === 0 ? 'active' : 'planned',
+                    status: i === 0 ? 'active' : 'planning',
                     start_date: new Date(today.getTime() + i * 14 * 86400000).toISOString().split('T')[0],
                     end_date: new Date(today.getTime() + (i + 1) * 14 * 86400000).toISOString().split('T')[0],
                     capacity: 40,
@@ -850,11 +848,11 @@ export async function dispatchAIAction(
                         name: `Sprint ${i}`,
                         start_date: start.toISOString().split('T')[0],
                         end_date: end.toISOString().split('T')[0],
-                        status: i === 1 ? 'active' : 'planned',
+                        status: i === 1 ? 'active' : 'planning',
                         goal: `Deliver key features for Sprint ${i}`,
                     });
                 }
-                const { data: insertedSprints, error: sprintErr } = await supabase.from('project_sprints').insert(sprints).select();
+                const { data: insertedSprints, error: sprintErr } = await supabase.from('sprints').insert(sprints).select();
                 if (sprintErr) throw sprintErr;
 
                 // Assign stories to sprints (distribute evenly)
@@ -889,10 +887,11 @@ export async function dispatchAIAction(
                         project_id: projectId,
                         title: t.title,
                         meeting_type: t.type,
-                        date: d.toISOString(),
+                        date: d.toISOString().split('T')[0],
+                        start_time: d.toISOString(),
                         status: i < 2 ? 'completed' : 'scheduled',
-                        agenda: `1. Welcome & Intros\n2. Review Status\n3. Next Steps`,
-                        minutes: i < 2 ? `Discussed all items on agenda successfully.` : null
+                        description: `Agenda: 1. Welcome & Intros\n2. Review Status\n3. Next Steps`,
+                        mom_content: i < 2 ? `Discussed all items on agenda successfully.` : null
                     };
                 });
                 const { data: insertedMeetings, error: meetErr } = await supabase.from('meetings').insert(meetings).select();
@@ -1044,21 +1043,20 @@ export async function dispatchAIAction(
                     { title: 'Steering Committee', type: 'governance' },
                 ];
 
-                const meetings = meetingTemplates.slice(0, count).map((t, i) => ({
-                    project_id: projectId,
-                    title: t.title,
-                    description: `AI Agent scheduled: ${t.title}`,
-                    meeting_type: t.type,
-                    status: 'scheduled',
-                    scheduled_date: new Date(today.getTime() + i * 7 * 86400000).toISOString(),
-                    duration_minutes: 60,
-                    organizer_id: userId,
-                    agenda: JSON.stringify([
-                        { item: 'Opening and Introductions', duration: 10 },
-                        { item: 'Main Discussion', duration: 40 },
-                        { item: 'Action Items and Close', duration: 10 },
-                    ]),
-                }));
+                const meetings = meetingTemplates.slice(0, count).map((t, i) => {
+                    const d = new Date(today.getTime() + i * 7 * 86400000);
+                    return {
+                        project_id: projectId,
+                        title: t.title,
+                        description: `AI Agent scheduled: ${t.title}\nAgenda: Opening, Main Discussion, Action Items.`,
+                        meeting_type: t.type,
+                        status: 'scheduled',
+                        date: d.toISOString().split('T')[0],
+                        start_time: d.toISOString(),
+                        duration_minutes: 60,
+                        created_by: userId,
+                    };
+                });
 
                 const { data, error } = await supabase.from('meetings').insert(meetings).select();
                 if (error) throw error;
@@ -1271,8 +1269,8 @@ export async function dispatchAIAction(
                 // Fetch live project data for content
                 const [issuesRes, risksRes, milestonesRes] = await Promise.all([
                     supabase.from('issues').select('title, status, severity').eq('project_id', projectId).limit(5),
-                    supabase.from('risks').select('title, likelihood, impact').eq('project_id', projectId).limit(3),
-                    supabase.from('project_milestones').select('title, target_date, status').eq('project_id', projectId).limit(5),
+                    supabase.from('risks').select('title, probability, impact').eq('project_id', projectId).limit(3),
+                    supabase.from('deliverables').select('name, due_date, status').eq('project_id', projectId).limit(5),
                 ]);
 
                 const slides = [
@@ -1335,9 +1333,7 @@ export async function dispatchAIAction(
                     role: s.role,
                     influence_level: s.influence,
                     interest_level: s.interest,
-                    engagement_strategy: s.engagement,
-                    communication_preference: 'weekly',
-                    created_by_id: userId,
+                    engagement_strategy: s.engagement
                 }));
 
                 const { data, error } = await supabase.from('stakeholders').insert(rows).select();
@@ -1439,13 +1435,13 @@ export async function dispatchAIAction(
                 for (let i = 1; i <= 10; i++) {
                     deliverables.push({
                         project_id: projectId,
-                        title: `Deliverable ${i}: Phase Output`,
+                        name: `Deliverable ${i}: Phase Output`,
                         description: `Auto-generated deliverable detailing the outputs of project phases.`,
                         status: i <= 3 ? 'completed' : 'pending',
-                        target_date: new Date().toISOString().split('T')[0],
+                        due_date: new Date().toISOString().split('T')[0],
                     });
                 }
-                const { error: delErr } = await supabase.from('project_milestones').insert(deliverables);
+                const { error: delErr } = await supabase.from('deliverables').insert(deliverables);
                 if (delErr) throw delErr;
 
                 return {

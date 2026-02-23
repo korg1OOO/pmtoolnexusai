@@ -68,6 +68,39 @@ export function TopBar({ projectName, projectCode, className, onCreateProject, o
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  // Cmd+K hotkey for search
+  useEffect(() => {
+    const down = (e: KeyboardEvent) => {
+      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        document.getElementById('global-search')?.focus();
+      }
+    };
+    document.addEventListener('keydown', down);
+    return () => document.removeEventListener('keydown', down);
+  }, []);
+
+  const toggleFullscreen = () => {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(err => {
+        console.error(`Error attempting to enable fullscreen: ${err.message}`);
+      });
+    } else {
+      if (document.exitFullscreen) {
+        document.exitFullscreen();
+      }
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      await supabase.auth.signOut();
+      navigate('/login');
+    } catch (error) {
+      console.error('Error signing out:', error);
+    }
+  };
+
   // Execute search when debounced query changes
   useEffect(() => {
     if (!debouncedSearch.trim() || debouncedSearch.length < 2) {
@@ -177,11 +210,10 @@ export function TopBar({ projectName, projectCode, className, onCreateProject, o
         {/* Presence Indicator */}
         <PresenceIndicator users={users} className="mr-2" />
 
-        <Button variant="ghost" size="iconSm"><LayoutGrid className="h-4 w-4" /></Button>
+        <Button variant="ghost" size="iconSm" onClick={() => navigate('/projects')} title="Projects & Apps"><LayoutGrid className="h-4 w-4" /></Button>
         <ThemeToggle />
         <NotificationCenter />
         <Button variant="ghost" size="iconSm" onClick={onOpenChat} title="Team Chat"><MessageSquare className="h-4 w-4" /></Button>
-        <Button variant="ghost" size="iconSm"><HelpCircle className="h-4 w-4" /></Button>
         <div className="w-px h-6 bg-border mx-2" />
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -194,10 +226,10 @@ export function TopBar({ projectName, projectCode, className, onCreateProject, o
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel><div className="flex flex-col"><span>{userName}</span><span className="text-xs font-normal text-muted-foreground">{userEmail}</span></div></DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem><User className="mr-2 h-4 w-4" />Profile</DropdownMenuItem>
-            <DropdownMenuItem><Maximize2 className="mr-2 h-4 w-4" />Fullscreen</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => navigate('/settings')}><User className="mr-2 h-4 w-4" />Profile</DropdownMenuItem>
+            <DropdownMenuItem onClick={toggleFullscreen}><Maximize2 className="mr-2 h-4 w-4" />Fullscreen</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-destructive">Sign out</DropdownMenuItem>
+            <DropdownMenuItem className="text-destructive" onClick={handleSignOut}>Sign out</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

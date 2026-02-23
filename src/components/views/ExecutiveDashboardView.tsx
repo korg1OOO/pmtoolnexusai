@@ -324,6 +324,7 @@ export default function ExecutiveDashboardView() {
                   value={projects.length > 0 ? Math.round((metrics.healthCounts.green / projects.length) * 100) : 0}
                   size={150}
                   strokeWidth={12}
+                  showValue={false}
                 />
                 <div className="absolute inset-0 flex flex-col items-center justify-center">
                   <span className="text-3xl font-bold">{metrics.healthCounts.green}</span>

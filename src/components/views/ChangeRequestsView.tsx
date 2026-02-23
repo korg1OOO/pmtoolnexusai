@@ -23,14 +23,23 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { useAuth } from '@/hooks/useAuth';
 import { useChangeRequests, ChangeRequest, useUpdateChangeRequest, useCreateChangeRequest } from '@/hooks/useChangeRequests';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Progress } from '@/components/ui/progress';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { EntityFormDialog } from '@/components/ui/EntityFormDialog';
 import { toast } from 'sonner';
 import { DynamicDataGrid, type DynamicColumnDef } from '@/components/ui/DynamicDataGrid';
 import { DataRegisterPage } from '@/components/ui/DataRegisterPage';
@@ -54,7 +63,17 @@ export default function ChangeRequestsView() {
   const createCR = useCreateChangeRequest();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCR, setSelectedCR] = useState<ChangeRequest | null>(null);
+  const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [customColumns, setCustomColumns] = useState<DynamicColumnDef<ChangeRequest>[]>([]);
+
+  // Form State
+  const [form, setForm] = useState({
+    title: '',
+    description: '',
+    type: 'scope' as 'scope' | 'schedule' | 'cost' | 'resource' | 'other',
+    priority: 'medium' as 'low' | 'medium' | 'high' | 'critical',
+    justification: '',
+  });
 
   const handleCellSave = async (rowId: string, key: string, value: string) => {
     const isCustom = !STANDARD_COLUMNS.find(c => c.key === key);
@@ -75,19 +94,25 @@ export default function ChangeRequestsView() {
     setSelectedCR(prev => prev ? { ...prev, status } : null);
   };
 
-  const handleCreateCR = async () => {
-    if (!settings.id) return;
+  const handleCreateCR = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!settings.id || !form.title) return;
+
     await createCR.mutateAsync({
       project_id: settings.id,
-      title: 'New Scope Change',
-      description: 'Description of the proposed change...',
-      type: 'scope',
-      priority: 'medium',
+      title: form.title,
+      description: form.description,
+      type: form.type,
+      priority: form.priority,
       status: 'pending',
       requested_by_id: user?.id ?? '',
-      requested_by_name: 'Project Manager',
+      requested_by_name: user?.user_metadata?.full_name || 'Project Manager',
       requested_at: new Date().toISOString(),
+      justification: form.justification,
     });
+
+    setAddDialogOpen(false);
+    setForm({ title: '', description: '', type: 'scope', priority: 'medium', justification: '' });
   };
 
   const filteredCRs = changeRequests.filter(cr =>
@@ -418,7 +443,7 @@ export default function ChangeRequestsView() {
     </div>
   );
 
-  return (
+  <>
     <DataRegisterPage
       title="Change Requests"
       description="Manage scope, schedule, and cost change requests"
@@ -431,8 +456,8 @@ export default function ChangeRequestsView() {
           Filter
         </Button>
       }
-      onAddRow={handleCreateCR}
-      addLabel={createCR.isPending ? "Creating..." : "New Change Request"}
+      onAddRow={() => setAddDialogOpen(true)}
+      addLabel="New Change Request"
       pdfFilename="change-requests"
       data={changeRequests}
       baseColumns={STANDARD_COLUMNS}
@@ -454,5 +479,70 @@ export default function ChangeRequestsView() {
       kpiCards={kpiCards}
       listContent={listContent}
     />
+
+    <EntityFormDialog
+      open={addDialogOpen}
+      onOpenChange={setAddDialogOpen}
+      title="Create Change Request"
+      description="Submit a new change request for approval."
+      onSubmit={handleCreateCR}
+      loading={createCR.isPending}
+    >
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label>Title *</Label>
+          <Input
+            required
+            value={form.title}
+            onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+            placeholder="e.g., Increase API rate limits"
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Type</Label>
+            <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v as any }))}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="scope">Scope</SelectItem>
+                <SelectItem value="schedule">Schedule</SelectItem>
+                <SelectItem value="cost">Cost</SelectItem>
+                <SelectItem value="resource">Resource</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Priority</Label>
+            <Select value={form.priority} onValueChange={v => setForm(f => ({ ...f, priority: v as any }))}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="low">Low</SelectItem>
+                <SelectItem value="medium">Medium</SelectItem>
+                <SelectItem value="high">High</SelectItem>
+                <SelectItem value="critical">Critical</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="space-y-2">
+          <Label>Description</Label>
+          <Textarea
+            value={form.description}
+            onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+            placeholder="Detailed description of the proposed change"
+          />
+        </div>
+        <div className="space-y-2">
+          <Label>Justification</Label>
+          <Textarea
+            value={form.justification}
+            onChange={e => setForm(f => ({ ...f, justification: e.target.value }))}
+            placeholder="Why is this change necessary?"
+          />
+        </div>
+      </div>
+    </EntityFormDialog>
+  </>
   );
 }

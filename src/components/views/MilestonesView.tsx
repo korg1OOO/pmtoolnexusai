@@ -168,7 +168,7 @@ export default function MilestonesView() {
 
   const handleCreate = async () => {
     try {
-      await createMilestone.mutateAsync({ ...newMilestone, project_id: settings.id });
+      await createMilestone.mutateAsync({ ...newMilestone, project_id: settings.id } as any);
       setIsCreateOpen(false);
       setNewMilestone({
         name: '',

@@ -226,26 +226,26 @@ export function PDFExporter({
       <>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="outline" size="sm" disabled={isExporting}>
+            <Button variant="outline" size="sm" disabled={isExporting} className="h-8">
               {isExporting ? (
-                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />
               ) : (
-                <Download className="h-4 w-4 mr-2" />
+                <Download className="h-3.5 w-3.5 mr-1.5" />
               )}
               Export
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => exportToPDF('full')}>
-              <FileText className="h-4 w-4 mr-2" />
-              Export Full Page
+            <DropdownMenuItem onClick={() => exportToPDF('full')} className="text-xs">
+              <FileText className="h-3.5 w-3.5 mr-2" />
+              Export Full Page (PDF)
             </DropdownMenuItem>
             {showSectionPicker && sections.length > 0 && (
               <>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => setShowDialog(true)}>
-                  <FileText className="h-4 w-4 mr-2" />
-                  Export Selected Sections...
+                <DropdownMenuItem onClick={() => setShowDialog(true)} className="text-xs text-muted-foreground">
+                  <FileText className="h-3.5 w-3.5 mr-2" />
+                  Custom PDF Sections...
                 </DropdownMenuItem>
               </>
             )}

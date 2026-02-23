@@ -20,9 +20,10 @@ import {
   Timer,
   Bell,
   Loader2,
-  List,
   Table,
+  List,
 } from 'lucide-react';
+import { DataRegisterPage } from '@/components/ui/DataRegisterPage';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -487,7 +488,6 @@ export default function ActionsView() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [ownerFilter, setOwnerFilter] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'list' | 'spreadsheet'>('list');
   const [customColumns, setCustomColumns] = useState<DynamicColumnDef<Action>[]>([]);
   const contentRef = useRef<HTMLDivElement>(null);
 
@@ -538,156 +538,116 @@ export default function ActionsView() {
     );
   }
 
-  return (
-    <div className="flex h-full">
-      <div className="flex-1 flex flex-col" ref={contentRef}>
-        <div className="flex items-center justify-between p-4 border-b bg-card">
-          <div className="flex items-center gap-3">
-            <CheckCircle2 className="h-6 w-6 text-primary" />
-            <h2 className="text-lg font-semibold">Actions Tracker</h2>
-            <Badge>{actions.length} Actions</Badge>
-          </div>
-          <div className="flex items-center gap-2">
-            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'list' | 'spreadsheet')} className="w-auto">
-              <TabsList className="h-8">
-                <TabsTrigger value="list" className="h-6 px-2.5 text-xs"><List className="h-3.5 w-3.5 mr-1.5" /> Dashboard & List</TabsTrigger>
-                <TabsTrigger value="spreadsheet" className="h-6 px-2.5 text-xs"><Table className="h-3.5 w-3.5 mr-1.5" /> Spreadsheet</TabsTrigger>
-              </TabsList>
-            </Tabs>
-            <PDFExporter
-              title="Actions Tracker"
-              filename="actions-tracker"
-              contentRef={contentRef}
-              sections={pdfSections}
-              showSectionPicker
-              variant="dropdown"
+  const kpiCards = (
+    <>
+      <KPICard title="Total Actions" value={actions.length.toString()} subtitle="All time" icon={CheckCircle2} status="neutral" />
+      <KPICard title="Pending" value={pendingActions.length.toString()} subtitle="Not started" icon={CircleDot} status="neutral" />
+      <KPICard title="In Progress" value={inProgressActions.length.toString()} subtitle="Active" icon={PlayCircle} status="success" />
+      <KPICard title="SLA Breached" value={slaBreachedActions.length.toString()} subtitle="Overdue SLA" icon={Bell} status={slaBreachedActions.length > 0 ? 'warning' : 'success'} />
+      <KPICard title="Overdue" value={overdueActions.length.toString()} subtitle="Past due date" icon={Clock} status={overdueActions.length > 0 ? 'warning' : 'success'} />
+    </>
+  );
+
+  const toolbarFilters = (
+    <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+      <SelectTrigger className="w-40 h-8 text-xs">
+        <User className="h-3.5 w-3.5 mr-2" />
+        <SelectValue placeholder="Filter by owner" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">All Owners</SelectItem>
+        {owners.map(owner => (
+          <SelectItem key={owner} value={owner!}>{owner}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+
+  const listModeControls = (
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
+      <TabsList className="h-full bg-transparent p-0">
+        <TabsTrigger value="all" className="h-full text-xs px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md">All ({actions.length})</TabsTrigger>
+        <TabsTrigger value="pending" className="h-full text-xs px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md">Pending ({pendingActions.length})</TabsTrigger>
+        <TabsTrigger value="in-progress" className="h-full text-xs px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md">In Progress ({inProgressActions.length})</TabsTrigger>
+        <TabsTrigger value="sla-breached" className="h-full text-xs px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md">SLA Breached ({slaBreachedActions.length})</TabsTrigger>
+      </TabsList>
+    </Tabs>
+  );
+
+  const listContent = (
+    <>
+      <div className="space-y-3" data-section="list">
+        {filteredActions.length === 0 ? (
+          <Card className="p-8 text-center">
+            <p className="text-muted-foreground">No actions found. Create your first action to get started.</p>
+          </Card>
+        ) : (
+          filteredActions.map(action => (
+            <ActionCard
+              key={action.id}
+              action={action}
+              isSelected={selectedAction?.id === action.id}
+              onClick={() => setSelectedAction(action)}
             />
-            {viewMode !== 'spreadsheet' && (
-              <Button size="sm" onClick={() => setAddDialogOpen(true)}><Plus className="h-4 w-4 mr-1" />New Action</Button>
-            )}
-          </div>
-        </div>
-
-        {/* Toolbar */}
-        {viewMode !== 'spreadsheet' && (
-          <div className="flex items-center gap-3 px-6 py-2.5 border-b bg-muted/30 shrink-0">
-            <Button variant="outline" size="sm" className="h-7 text-xs border-border/60"><Filter className="h-3.5 w-3.5 mr-1.5" />Filter</Button>
-          </div>
+          ))
         )}
-
-        <div className={cn("flex-1 overflow-auto", viewMode === 'spreadsheet' ? 'p-0 bg-muted/10' : 'p-6')}>
-          {viewMode === 'spreadsheet' ? (
-            <div className="h-full p-6">
-              <div className="h-full bg-background border rounded-md shadow-sm overflow-hidden">
-                <DynamicDataGrid
-                  data={filteredActions}
-                  baseColumns={STANDARD_COLUMNS}
-                  customColumns={customColumns}
-                  idExtractor={(item) => item.id}
-                  customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
-                  onCellSave={handleCellSave}
-                  onDeleteRows={(ids) => {
-                    ids.forEach(id => deleteAction(id));
-                  }}
-                  onAddColumn={(col) => {
-                    if (customColumns.find(c => c.key === col.key)) {
-                      toast.error('Column already exists');
-                      return;
-                    }
-                    setCustomColumns(prev => [...prev, col]);
-                    toast.success(`Column "${col.label}" added`);
-                  }}
-                  onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
-                  onAddRow={() => setAddDialogOpen(true)}
-                  emptyStateMessage={actions.length === 0 ? 'No actions added yet.' : 'No actions match filters.'}
-                  containerStyles="h-full border-0"
-                />
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-6">
-              {/* KPIs */}
-              <div className="grid grid-cols-5 gap-4" data-section="kpis">
-                <KPICard title="Total Actions" value={actions.length.toString()} subtitle="All time" icon={CheckCircle2} status="neutral" />
-                <KPICard title="Pending" value={pendingActions.length.toString()} subtitle="Not started" icon={CircleDot} status="neutral" />
-                <KPICard title="In Progress" value={inProgressActions.length.toString()} subtitle="Active" icon={PlayCircle} status="success" />
-                <KPICard title="SLA Breached" value={slaBreachedActions.length.toString()} subtitle="Overdue SLA" icon={Bell} status={slaBreachedActions.length > 0 ? 'warning' : 'success'} />
-                <KPICard title="Overdue" value={overdueActions.length.toString()} subtitle="Past due date" icon={Clock} status={overdueActions.length > 0 ? 'warning' : 'success'} />
-              </div>
-
-              {/* Filters */}
-              <div className="flex items-center justify-between">
-                <Tabs value={activeTab} onValueChange={setActiveTab}>
-                  <TabsList>
-                    <TabsTrigger value="all">All ({actions.length})</TabsTrigger>
-                    <TabsTrigger value="pending">Pending ({pendingActions.length})</TabsTrigger>
-                    <TabsTrigger value="in-progress">In Progress ({inProgressActions.length})</TabsTrigger>
-                    <TabsTrigger value="sla-breached">SLA Breached ({slaBreachedActions.length})</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-                <div className="flex items-center gap-3">
-                  <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-                    <SelectTrigger className="w-40">
-                      <User className="h-4 w-4 mr-2" />
-                      <SelectValue placeholder="Filter by owner" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">All Owners</SelectItem>
-                      {owners.map(owner => (
-                        <SelectItem key={owner} value={owner!}>{owner}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <div className="relative w-64">
-                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Search actions..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-9"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Actions List */}
-              <div className="space-y-3" data-section="list">
-                {filteredActions.length === 0 ? (
-                  <Card className="p-8 text-center">
-                    <p className="text-muted-foreground">No actions found. Create your first action to get started.</p>
-                  </Card>
-                ) : (
-                  filteredActions.map(action => (
-                    <ActionCard
-                      key={action.id}
-                      action={action}
-                      isSelected={selectedAction?.id === action.id}
-                      onClick={() => setSelectedAction(action)}
-                    />
-                  ))
-                )}
-              </div>
-            </div>
-          )}
-        </div>
       </div>
 
       <AnimatePresence>
         {selectedAction && (
-          <ActionDetailPanel
-            action={selectedAction}
-            onClose={() => setSelectedAction(null)}
-            onUpdate={updateAction}
-            onDelete={async (id) => {
-              const result = await deleteAction(id);
-              if (result) setSelectedAction(null);
-              return result;
-            }}
-          />
+          <div className="fixed inset-y-0 right-0 z-50 shadow-2xl">
+            <ActionDetailPanel
+              action={selectedAction}
+              onClose={() => setSelectedAction(null)}
+              onUpdate={updateAction}
+              onDelete={async (id) => {
+                const result = await deleteAction(id);
+                if (result) setSelectedAction(null);
+                return result;
+              }}
+            />
+          </div>
         )}
       </AnimatePresence>
 
       <AddActionDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} onSubmit={createAction} />
-    </div>
+    </>
+  );
+
+  return (
+    <DataRegisterPage
+      title="Actions Tracker"
+      description="Manage, track, and close project actions"
+      icon={CheckCircle2}
+      iconBgClass="bg-primary/20"
+      iconColorClass="text-primary"
+      searchQuery={searchQuery}
+      onSearchChange={setSearchQuery}
+      toolbarFilters={toolbarFilters}
+      listModeControls={listModeControls}
+      onAddRow={() => setAddDialogOpen(true)}
+      addLabel="New Action"
+      pdfFilename="actions-tracker"
+      pdfSections={pdfSections}
+      data={filteredActions}
+      baseColumns={STANDARD_COLUMNS}
+      customColumns={customColumns}
+      idExtractor={(item) => item.id}
+      customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
+      onCellSave={handleCellSave}
+      onAddColumn={(col) => {
+        if (customColumns.find(c => c.key === col.key)) {
+          toast.error('Column already exists');
+          return;
+        }
+        setCustomColumns(prev => [...prev, col]);
+        toast.success(`Column "${col.label}" added`);
+      }}
+      onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
+      onDeleteRows={(ids) => Array.from(ids).forEach(id => deleteAction(id))}
+      emptyStateMessage={actions.length === 0 ? 'No actions added yet.' : 'No actions match filters.'}
+      kpiCards={kpiCards}
+      listContent={listContent}
+    />
   );
 }

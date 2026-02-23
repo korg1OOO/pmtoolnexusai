@@ -20,14 +20,15 @@ import {
   XCircle,
   Loader2,
   Trash2,
-  List,
-  ListTodo,
+  Trash2,
   Table,
+  List,
 } from 'lucide-react';
+import { DataRegisterPage } from '@/components/ui/DataRegisterPage';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Checkbox } from '@/components/ui/checkbox';
 import { DynamicDataGrid, type DynamicColumnDef } from '@/components/ui/DynamicDataGrid';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { useTasks, useCreateTask, useDeleteTask, useBulkUpdateTasks, useSaveProjectBaseline, DbTask } from '@/hooks/useTasks';
@@ -79,7 +80,10 @@ interface TaskRowProps {
 
 function TaskRow({ task, expanded, onToggle, selected, onSelect, onDelete }: TaskRowProps) {
   const hasChildren = task.children && task.children.length > 0;
-  const indent = task.level * 24;
+
+  const indentClass = [
+    'pl-0', 'pl-6', 'pl-12', 'pl-[72px]', 'pl-[96px]', 'pl-[120px]'
+  ][Math.min(task.level, 5)];
 
   return (
     <motion.div
@@ -97,7 +101,7 @@ function TaskRow({ task, expanded, onToggle, selected, onSelect, onDelete }: Tas
       </div>
 
       {/* Task Name */}
-      <div className="flex items-center gap-2 py-2 pr-4" style={{ paddingLeft: indent }}>
+      <div className={cn("flex items-center gap-2 py-2 pr-4", indentClass)}>
         {hasChildren ? (
           <button
             onClick={onToggle}
@@ -198,7 +202,6 @@ export default function ProjectPlanView() {
 
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
-  const [viewMode, setViewMode] = useState<'list' | 'spreadsheet'>('list');
   const [customColumns, setCustomColumns] = useState<DynamicColumnDef<Task>[]>([]);
 
   const handleCellSave = async (rowId: string, key: string, value: string) => {
@@ -379,143 +382,87 @@ export default function ProjectPlanView() {
     );
   }
 
-  return (
-    <div className="flex flex-col h-full">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between p-4 border-b bg-card shrink-0">
-        <div className="flex items-center gap-3">
-          <ListTodo className="h-6 w-6 text-primary" />
-          <h2 className="text-lg font-semibold">Project Plan</h2>
-          <Badge>{visibleTasks.length} Tasks</Badge>
+  const listModeControls = (
+    <div className="flex items-center gap-2 shrink-0">
+      <Button variant="outline" size="sm" className="h-8 text-xs border-border/60">
+        <Link2 className="h-3.5 w-3.5 mr-1.5" />
+        Link
+      </Button>
+      <div className="w-px h-5 bg-border mx-2" />
+      <Button variant="ghost" size="sm" className="h-8 text-xs">
+        Indent
+      </Button>
+      <Button variant="ghost" size="sm" className="h-8 text-xs">
+        Outdent
+      </Button>
+    </div>
+  );
+
+  const toolbarFilters = (
+    <div className="flex items-center gap-2 h-8">
+      <Badge variant="outline" className="gap-1 h-full hidden sm:flex items-center">
+        <Flag className="h-3 w-3 text-destructive" />
+        Critical Path
+      </Badge>
+      <Button variant="outline" size="sm" className="hidden sm:flex h-full" onClick={handleBaseline} disabled={saveBaseline.isPending}>
+        {saveBaseline.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
+        Baseline
+      </Button>
+    </div>
+  );
+
+  const listContent = (
+    <div className="flex flex-col h-full space-y-4">
+      <div className="flex-1 overflow-auto rounded-md border bg-background">
+        {/* Table Header */}
+        <div className="grid grid-cols-[40px_minmax(300px,2fr)_100px_100px_120px_120px_100px_80px_60px] items-center border-b border-border bg-muted/50 text-xs font-medium text-muted-foreground sticky top-0 z-10 shadow-sm">
+          <div className="flex items-center justify-center h-9">
+            <Checkbox />
+          </div>
+          <div className="py-2 px-2">Task Name</div>
+          <div className="py-2">Status</div>
+          <div className="py-2">Priority</div>
+          <div className="py-2 flex items-center gap-1">
+            <Calendar className="h-3 w-3" />
+            Start
+          </div>
+          <div className="py-2 flex items-center gap-1">
+            <Calendar className="h-3 w-3" />
+            End
+          </div>
+          <div className="py-2">Duration</div>
+          <div className="py-2">Progress</div>
+          <div className="py-2"></div>
         </div>
-        <div className="flex items-center gap-2">
-          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'list' | 'spreadsheet')} className="w-auto mr-2">
-            <TabsList className="h-8">
-              <TabsTrigger value="list" className="h-6 px-2.5 text-xs"><List className="h-3.5 w-3.5 mr-1.5" /> Gantt & List</TabsTrigger>
-              <TabsTrigger value="spreadsheet" className="h-6 px-2.5 text-xs"><Table className="h-3.5 w-3.5 mr-1.5" /> Spreadsheet</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          {viewMode !== 'spreadsheet' && (
-            <>
-              <Badge variant="outline" className="gap-1">
-                <Flag className="h-3 w-3 text-destructive" />
-                Critical Path
-              </Badge>
-              <Button variant="outline" size="sm" onClick={handleBaseline} disabled={saveBaseline.isPending}>
-                {saveBaseline.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
-                Baseline
+
+        {/* Task List */}
+        <div>
+          {visibleTasks.length > 0 ? (
+            visibleTasks.map((task) => (
+              <TaskRow
+                key={task.id}
+                task={task}
+                expanded={expandedTasks.has(task.id)}
+                onToggle={() => toggleTask(task.id)}
+                selected={selectedTasks.has(task.id)}
+                onSelect={(selected) => toggleSelection(task.id, !!selected)}
+                onDelete={() => handleTaskDelete(task.id)}
+              />
+            ))
+          ) : (
+            <div className="flex flex-col items-center justify-center h-64 text-center text-muted-foreground">
+              <AlertCircle className="h-12 w-12 mb-4 opacity-20" />
+              <p className="text-sm">No tasks found for this project.</p>
+              <Button variant="outline" size="sm" className="mt-4" onClick={handleAddTask}>
+                Create your first task
               </Button>
-            </>
-          )}
-          {viewMode !== 'spreadsheet' && (
-            <>
-              <Button size="sm" onClick={handleAddTask} disabled={createTask.isPending}>
-                {createTask.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Plus className="h-4 w-4 mr-1" />}
-                Add Task
-              </Button>
-            </>
+            </div>
           )}
         </div>
       </div>
-      {viewMode !== 'spreadsheet' && (
-        <div className="flex items-center gap-2 px-6 py-2.5 border-b bg-muted/30 shrink-0">
-          <Button variant="outline" size="sm" className="h-7 text-xs border-border/60">
-            <Link2 className="h-3.5 w-3.5 mr-1.5" />
-            Link
-          </Button>
-          <div className="w-px h-5 bg-border mx-2" />
-          <Button variant="ghost" size="sm" className="h-7 text-xs">
-            Indent
-          </Button>
-          <Button variant="ghost" size="sm" className="h-7 text-xs">
-            Outdent
-          </Button>
-        </div>
-      )}
-
-      {viewMode === 'spreadsheet' ? (
-        <div className="flex-1 overflow-auto bg-muted/10 h-full p-6">
-          <div className="h-full bg-background border rounded-md shadow-sm overflow-hidden min-h-[500px]">
-            <DynamicDataGrid
-              data={visibleTasks}
-              baseColumns={STANDARD_COLUMNS}
-              customColumns={customColumns}
-              idExtractor={(item) => item.id}
-              customFieldExtractor={(item, key) => {
-                const t = dbTasks.find(x => x.id === item.id);
-                return String(t?.custom_fields?.[key] ?? '');
-              }}
-              onCellSave={handleCellSave}
-              onDeleteRows={(ids) => {
-                ids.forEach(id => deleteTask.mutateAsync({ taskId: id, projectId }));
-              }}
-              onAddColumn={(col) => {
-                if (customColumns.find(c => c.key === col.key)) {
-                  toast.error('Column already exists');
-                  return;
-                }
-                setCustomColumns(prev => [...prev, col]);
-                toast.success(`Column "${col.label}" added`);
-              }}
-              onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
-              onAddRow={handleAddTask}
-              emptyStateMessage={visibleTasks.length === 0 ? 'No tasks found for this project.' : 'No tasks match filters.'}
-              containerStyles="h-full border-0"
-            />
-          </div>
-        </div>
-      ) : (
-        <>
-          {/* Table Header */}
-          <div className="grid grid-cols-[40px_minmax(300px,2fr)_100px_100px_120px_120px_100px_80px_60px] items-center border-b border-border bg-muted/50 text-xs font-medium text-muted-foreground">
-            <div className="flex items-center justify-center h-9">
-              <Checkbox />
-            </div>
-            <div className="py-2 px-2">Task Name</div>
-            <div className="py-2">Status</div>
-            <div className="py-2">Priority</div>
-            <div className="py-2 flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              Start
-            </div>
-            <div className="py-2 flex items-center gap-1">
-              <Calendar className="h-3 w-3" />
-              End
-            </div>
-            <div className="py-2">Duration</div>
-            <div className="py-2">Progress</div>
-            <div className="py-2"></div>
-          </div>
-
-          {/* Task List */}
-          <div className="flex-1 overflow-auto">
-            {visibleTasks.length > 0 ? (
-              visibleTasks.map((task) => (
-                <TaskRow
-                  key={task.id}
-                  task={task}
-                  expanded={expandedTasks.has(task.id)}
-                  onToggle={() => toggleTask(task.id)}
-                  selected={selectedTasks.has(task.id)}
-                  onSelect={(selected) => toggleSelection(task.id, !!selected)}
-                  onDelete={() => handleTaskDelete(task.id)}
-                />
-              ))
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full p-12 text-center text-muted-foreground">
-                <AlertCircle className="h-12 w-12 mb-4 opacity-20" />
-                <p className="text-sm">No tasks found for this project.</p>
-                <Button variant="outline" size="sm" className="mt-4" onClick={handleAddTask}>
-                  Create your first task
-                </Button>
-              </div>
-            )}
-          </div>
-        </>
-      )}
 
       {/* Footer */}
-      <div className="flex items-center justify-between p-3 border-t bg-muted/30 text-xs text-muted-foreground">
+      <div className="flex items-center justify-between p-3 border rounded-md bg-muted/30 text-xs text-muted-foreground">
         <div className="flex items-center gap-4">
           <span>{visibleTasks.length} tasks</span>
           <span>{selectedTasks.size} selected</span>
@@ -536,5 +483,43 @@ export default function ProjectPlanView() {
         </div>
       </div>
     </div>
+  );
+
+  return (
+    <DataRegisterPage
+      title="Project Plan"
+      description="Manage project tasks and schedule"
+      icon={ListTodo}
+      iconBgClass="bg-primary/20"
+      iconColorClass="text-primary"
+      toolbarFilters={toolbarFilters}
+      listModeControls={listModeControls}
+      onAddRow={handleAddTask}
+      addLabel="Add Task"
+      pdfFilename="project-plan"
+      data={visibleTasks}
+      baseColumns={STANDARD_COLUMNS}
+      customColumns={customColumns}
+      idExtractor={(item) => item.id}
+      customFieldExtractor={(item, key) => {
+        const t = dbTasks.find(x => x.id === item.id);
+        return String(t?.custom_fields?.[key] ?? '');
+      }}
+      onCellSave={handleCellSave}
+      onAddColumn={(col) => {
+        if (customColumns.find(c => c.key === col.key)) {
+          toast.error('Column already exists');
+          return;
+        }
+        setCustomColumns(prev => [...prev, col]);
+        toast.success(`Column "${col.label}" added`);
+      }}
+      onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
+      onDeleteRows={(ids) => {
+        ids.forEach(id => deleteTask.mutateAsync({ taskId: id, projectId }));
+      }}
+      emptyStateMessage={visibleTasks.length === 0 ? 'No tasks found for this project.' : 'No tasks match filters.'}
+      listContent={listContent}
+    />
   );
 }

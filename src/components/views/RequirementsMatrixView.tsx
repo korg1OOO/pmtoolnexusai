@@ -24,7 +24,8 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
-import { DynamicDataGrid, type DynamicColumnDef } from '@/components/ui/DynamicDataGrid';
+import { DataRegisterPage } from '@/components/ui/DataRegisterPage';
+import { type DynamicColumnDef } from '@/components/ui/DynamicDataGrid';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     DropdownMenu,
@@ -40,14 +41,7 @@ import {
     Settings2,
     ClipboardList,
     Loader2,
-    Search,
-    ChevronDown,
-    GripVertical,
-    X,
-    List,
-    Table,
 } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
@@ -63,15 +57,6 @@ const STATUS_COLORS: Record<string, string> = {
     Rejected: 'bg-red-100 text-red-700 border-red-200',
     Deferred: 'bg-gray-100 text-gray-600 border-gray-200',
     Implemented: 'bg-purple-100 text-purple-700 border-purple-200',
-};
-
-type ColumnDef = {
-    key: string;
-    label: string;
-    width: number;
-    type: 'text' | 'select' | 'date' | 'custom';
-    sticky?: boolean;
-    options?: string[]; // Adding options for generic select
 };
 
 const STANDARD_COLUMNS: DynamicColumnDef<RequirementItem>[] = [
@@ -102,7 +87,6 @@ export default function RequirementsMatrixView() {
 
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState<string>('all');
-    const [viewMode, setViewMode] = useState<'list' | 'spreadsheet'>('list');
     const [customColumns, setCustomColumns] = useState<DynamicColumnDef<RequirementItem>[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -187,7 +171,7 @@ export default function RequirementsMatrixView() {
             const colMap: Record<string, string> = {};
             allColumns.forEach(c => { colMap[c.label.toLowerCase()] = c.key; });
 
-            const items: Partial<RequirementItem>[] = rows.map((row, i) => {
+            const itemsPayload: Partial<RequirementItem>[] = rows.map((row, i) => {
                 const mapped: any = { sort_order: i, custom_fields: {} };
                 Object.entries(row).forEach(([header, val]) => {
                     const key = colMap[header.toLowerCase().trim()];
@@ -201,15 +185,13 @@ export default function RequirementsMatrixView() {
                 return mapped;
             });
 
-            await bulkUpsert.mutateAsync({ projectId, items });
+            await bulkUpsert.mutateAsync({ projectId, items: itemsPayload });
             e.target.value = '';
         } catch (err: any) {
             toast.error('Import failed: ' + err.message);
             e.target.value = '';
         }
     };
-
-    // ─── Excel Import ─────────────────────────────────────────────────────────
 
     if (!projectId) {
         return (
@@ -221,215 +203,168 @@ export default function RequirementsMatrixView() {
         );
     }
 
-    return (
-        <TooltipProvider>
-            <div className="flex flex-col h-full bg-background">
-                {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b shrink-0">
-                    <div>
-                        <h1 className="text-xl font-bold flex items-center gap-2">
-                            <ClipboardList className="h-5 w-5 text-primary" />
-                            Requirements Traceability Matrix
-                        </h1>
-                        <p className="text-xs text-muted-foreground mt-0.5">
-                            {filteredItems.length} of {items.length} requirements · Click any cell to edit inline
-                        </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'list' | 'spreadsheet')} className="w-auto">
-                            <TabsList className="h-8">
-                                <TabsTrigger value="list" className="h-6 px-2.5 text-xs"><List className="h-3.5 w-3.5 mr-1.5" /> List</TabsTrigger>
-                                <TabsTrigger value="spreadsheet" className="h-6 px-2.5 text-xs"><Table className="h-3.5 w-3.5 mr-1.5" /> Spreadsheet</TabsTrigger>
-                            </TabsList>
-                        </Tabs>
-                        <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleImport} aria-label="Import requirements from file" title="Import requirements from file" />
-                        <Tooltip>
-                            <TooltipTrigger asChild>
-                                <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={bulkUpsert.isPending}>
-                                    {bulkUpsert.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Upload className="h-4 w-4 mr-1.5" />}
-                                    Import
-                                </Button>
-                            </TooltipTrigger>
-                            <TooltipContent>Import from Excel (.xlsx / .xls / .csv)</TooltipContent>
-                        </Tooltip>
-                        <Button variant="outline" size="sm" onClick={handleExport}>
-                            <Download className="h-4 w-4 mr-1.5" />
-                            Export
-                        </Button>
-                        {viewMode !== 'spreadsheet' && (
-                            <Button size="sm" onClick={handleAddRow}>
-                                <Plus className="h-4 w-4 mr-1.5" /> Add Requirement
-                            </Button>
-                        )}
-                    </div>
-                </div>
+    if (isLoading) {
+        return (
+            <div className="flex items-center justify-center h-full">
+                <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+            </div>
+        );
+    }
 
-                {/* Toolbar */}
-                <div className="flex items-center gap-3 px-6 py-2.5 border-b bg-muted/30 shrink-0">
-                    <div className="relative">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                        <Input
-                            className="pl-8 h-7 text-xs w-56 border-border/60"
-                            placeholder="Search requirements..."
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                    <Select value={filterStatus} onValueChange={setFilterStatus}>
-                        <SelectTrigger className="h-7 text-xs w-36 border-border/60">
-                            <SelectValue placeholder="All statuses" />
-                        </SelectTrigger>
-                        <SelectContent>
-                            <SelectItem value="all">All Statuses</SelectItem>
-                            {STATUS_OPTIONS.map(s => (
-                                <SelectItem key={s} value={s}>{s}</SelectItem>
-                            ))}
-                        </SelectContent>
-                    </Select>
-                    {/* Custom column pills */}
-                    {customColumns.map(col => (
-                        <Badge key={col.key} variant="secondary" className="gap-1 pr-1 text-xs">
-                            {col.label}
-                            <button
-                                onClick={() => setCustomColumns(prev => prev.filter(c => c.key !== col.key))}
-                                className="text-muted-foreground hover:text-destructive ml-0.5"
-                                aria-label={`Remove column ${col.label}`}
-                                title={`Remove column ${col.label}`}
-                            >
-                                <X className="h-3 w-3" />
-                            </button>
-                        </Badge>
-                    ))}
-                </div>
+    const toolbarFilters = (
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="h-8 text-xs w-36 border-border/60">
+                <SelectValue placeholder="All statuses" />
+            </SelectTrigger>
+            <SelectContent>
+                <SelectItem value="all">All Statuses</SelectItem>
+                {STATUS_OPTIONS.map(s => (
+                    <SelectItem key={s} value={s}>{s}</SelectItem>
+                ))}
+            </SelectContent>
+        </Select>
+    );
 
-                {/* Main Content Area */}
-                <div className="flex-1 overflow-hidden p-6 pb-20 bg-muted/10">
-                    {isLoading ? (
-                        <div className="flex items-center justify-center h-full">
-                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-                        </div>
-                    ) : viewMode === 'spreadsheet' ? (
-                        <div className="h-full bg-background border rounded-md shadow-sm overflow-hidden">
-                            <DynamicDataGrid
-                                data={filteredItems}
-                                baseColumns={STANDARD_COLUMNS}
-                                customColumns={customColumns}
-                                idExtractor={(item) => item.id}
-                                customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
-                                onCellSave={handleCellSave}
-                                onDeleteRows={(ids) => {
-                                    if (projectId) {
-                                        ids.forEach(id => deleteReq.mutate({ id, project_id: projectId }));
-                                    }
-                                }}
-                                onAddColumn={(col) => {
-                                    if (customColumns.find(c => c.key === col.key)) {
-                                        toast.error('Column already exists');
-                                        return;
-                                    }
-                                    setCustomColumns(prev => [...prev, col]);
-                                    toast.success(`Column "${col.label}" added`);
-                                }}
-                                onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
-                                onAddRow={handleAddRow}
-                                emptyStateMessage={searchTerm || filterStatus !== 'all' ? 'No requirements match your filters.' : 'No requirements added yet.'}
-                                containerStyles="h-full border-0"
-                            />
-                        </div>
-                    ) : (
-                        <ScrollArea className="h-full pr-4">
-                            {filteredItems.length === 0 ? (
-                                <div className="text-center py-12 border border-dashed rounded-lg bg-background">
-                                    <ClipboardList className="h-8 w-8 text-muted-foreground mx-auto mb-3 opacity-50" />
-                                    <h3 className="text-base font-medium">No requirements found</h3>
-                                    <p className="text-sm text-muted-foreground mt-1">Adjust your filters or add a new requirement.</p>
-                                    <Button variant="outline" className="mt-4" onClick={handleAddRow}>
-                                        <Plus className="h-4 w-4 mr-2" /> Add Requirement
-                                    </Button>
+    const listModeControls = (
+        <div className="flex items-center gap-2">
+            <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleImport} aria-label="Import requirements from file" title="Import requirements from file" />
+            <Tooltip>
+                <TooltipTrigger asChild>
+                    <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={bulkUpsert.isPending}>
+                        {bulkUpsert.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Upload className="h-4 w-4 mr-1.5" />}
+                        Import
+                    </Button>
+                </TooltipTrigger>
+                <TooltipContent>Import from Excel (.xlsx / .xls / .csv)</TooltipContent>
+            </Tooltip>
+            <Button variant="outline" size="sm" onClick={handleExport}>
+                <Download className="h-4 w-4 mr-1.5" />
+                Export
+            </Button>
+        </div>
+    );
+
+    const listContent = (
+        <ScrollArea className="flex-1 pr-4 bg-background border rounded-md shadow-sm p-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                {filteredItems.map(req => (
+                    <Card key={req.id} className="group hover:border-primary/30 transition-colors shadow-sm">
+                        <CardContent className="p-4">
+                            <div className="flex items-start justify-between gap-2 mb-3">
+                                <div>
+                                    <div className="flex items-center gap-2 mb-1">
+                                        <span className="font-mono text-xs font-semibold text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{req.code}</span>
+                                        <Badge variant="outline" className={cn("text-[10px] h-5", STATUS_COLORS[req.status] || "bg-gray-100 text-gray-700")}>
+                                            {req.status}
+                                        </Badge>
+                                    </div>
+                                    <h3 className="font-semibold text-sm leading-tight group-hover:text-primary transition-colors">{req.requirement || 'Untitled Requirement'}</h3>
                                 </div>
-                            ) : (
-                                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
-                                    {filteredItems.map(req => (
-                                        <Card key={req.id} className="group hover:border-primary/30 transition-colors shadow-sm">
-                                            <CardContent className="p-4">
-                                                <div className="flex items-start justify-between gap-2 mb-3">
-                                                    <div>
-                                                        <div className="flex items-center gap-2 mb-1">
-                                                            <span className="font-mono text-xs font-semibold text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{req.code}</span>
-                                                            <Badge variant="outline" className={cn("text-[10px] h-5", STATUS_COLORS[req.status] || "bg-gray-100 text-gray-700")}>
-                                                                {req.status}
-                                                            </Badge>
-                                                        </div>
-                                                        <h3 className="font-semibold text-sm leading-tight group-hover:text-primary transition-colors">{req.requirement || 'Untitled Requirement'}</h3>
-                                                    </div>
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity -mr-1 -mt-1">
-                                                                <Settings2 className="h-3.5 w-3.5 text-muted-foreground" />
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end" className="w-40">
-                                                            <DropdownMenuItem onClick={() => {
-                                                                if (projectId) deleteReq.mutate({ id: req.id, project_id: projectId });
-                                                            }} className="text-destructive focus:text-destructive">
-                                                                <Trash2 className="h-4 w-4 mr-2" /> Delete
-                                                            </DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </div>
-                                                <p className="text-xs text-muted-foreground line-clamp-2 mb-4 h-8">
-                                                    {req.description || 'No description provided.'}
-                                                </p>
-                                                <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-xs bg-muted/30 p-2.5 rounded-md">
-                                                    <div>
-                                                        <span className="text-muted-foreground block mb-0.5">Module</span>
-                                                        <span className="font-medium truncate block" title={req.module || '-'}>{req.module || '-'}</span>
-                                                    </div>
-                                                    <div>
-                                                        <span className="text-muted-foreground block mb-0.5">Process</span>
-                                                        <span className="font-medium truncate block" title={req.process || '-'}>{req.process || '-'}</span>
-                                                    </div>
-                                                    <div>
-                                                        <span className="text-muted-foreground block mb-0.5">Owner</span>
-                                                        <span className="font-medium truncate block" title={req.owner || '-'}>{req.owner || '-'}</span>
-                                                    </div>
-                                                    <div>
-                                                        <span className="text-muted-foreground block mb-0.5">Date</span>
-                                                        <span className="font-medium truncate block">
-                                                            {req.date ? format(new Date(req.date), 'MMM d, yyyy') : '-'}
-                                                        </span>
-                                                    </div>
-                                                </div>
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity -mr-1 -mt-1">
+                                            <Settings2 className="h-3.5 w-3.5 text-muted-foreground" />
+                                        </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-40">
+                                        <DropdownMenuItem onClick={() => {
+                                            if (projectId) deleteReq.mutate({ id: req.id, project_id: projectId });
+                                        }} className="text-destructive focus:text-destructive">
+                                            <Trash2 className="h-4 w-4 mr-2" /> Delete
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            </div>
+                            <p className="text-xs text-muted-foreground line-clamp-2 mb-4 h-8">
+                                {req.description || 'No description provided.'}
+                            </p>
+                            <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-xs bg-muted/30 p-2.5 rounded-md">
+                                <div>
+                                    <span className="text-muted-foreground block mb-0.5">Module</span>
+                                    <span className="font-medium truncate block" title={req.module || '-'}>{req.module || '-'}</span>
+                                </div>
+                                <div>
+                                    <span className="text-muted-foreground block mb-0.5">Process</span>
+                                    <span className="font-medium truncate block" title={req.process || '-'}>{req.process || '-'}</span>
+                                </div>
+                                <div>
+                                    <span className="text-muted-foreground block mb-0.5">Owner</span>
+                                    <span className="font-medium truncate block" title={req.owner || '-'}>{req.owner || '-'}</span>
+                                </div>
+                                <div>
+                                    <span className="text-muted-foreground block mb-0.5">Date</span>
+                                    <span className="font-medium truncate block">
+                                        {req.date ? format(new Date(req.date), 'MMM d, yyyy') : '-'}
+                                    </span>
+                                </div>
+                            </div>
 
-                                                {/* Render custom fields safely */}
-                                                {customColumns.length > 0 && (
-                                                    <div className="mt-3 pt-3 border-t border-dashed space-y-2">
-                                                        <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Custom Fields</span>
-                                                        <div className="flex flex-wrap gap-2">
-                                                            {customColumns.map(c => {
-                                                                const val = req.custom_fields?.[c.key];
-                                                                if (!val) return null;
-                                                                return (
-                                                                    <div key={c.key} className="text-[10px] bg-muted px-2 py-1 rounded inline-flex items-center gap-1.5 border border-border/50">
-                                                                        <span className="text-muted-foreground">{c.label}:</span>
-                                                                        <span className="font-medium max-w-[120px] truncate">{String(val)}</span>
-                                                                    </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </div>
-                                                )}
-                                            </CardContent>
-                                        </Card>
-                                    ))}
+                            {/* Render custom fields safely */}
+                            {customColumns.length > 0 && (
+                                <div className="mt-3 pt-3 border-t border-dashed space-y-2">
+                                    <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Custom Fields</span>
+                                    <div className="flex flex-wrap gap-2">
+                                        {customColumns.map(c => {
+                                            const val = req.custom_fields?.[c.key];
+                                            if (!val) return null;
+                                            return (
+                                                <div key={c.key} className="text-[10px] bg-muted px-2 py-1 rounded inline-flex items-center gap-1.5 border border-border/50">
+                                                    <span className="text-muted-foreground">{c.label}:</span>
+                                                    <span className="font-medium max-w-[120px] truncate">{String(val)}</span>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
                                 </div>
                             )}
-                        </ScrollArea>
-                    )}
-                </div>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        </ScrollArea>
+    );
+
+    return (
+        <TooltipProvider>
+            <div className="flex flex-col h-full bg-background overflow-hidden">
+                <DataRegisterPage
+                    title="Requirements Matrix"
+                    description="Traceability matrix for project requirements"
+                    icon={ClipboardList}
+                    iconBgClass="bg-primary/20"
+                    iconColorClass="text-primary"
+                    searchQuery={searchTerm}
+                    onSearchChange={setSearchTerm}
+                    toolbarFilters={toolbarFilters}
+                    listModeControls={listModeControls}
+                    onAddRow={handleAddRow}
+                    addLabel="Add Requirement"
+                    data={filteredItems}
+                    baseColumns={STANDARD_COLUMNS}
+                    customColumns={customColumns}
+                    idExtractor={(item) => item.id}
+                    customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
+                    onCellSave={handleCellSave}
+                    onAddColumn={(col) => {
+                        if (customColumns.find(c => c.key === col.key)) {
+                            toast.error('Column already exists');
+                            return;
+                        }
+                        setCustomColumns(prev => [...prev, col]);
+                        toast.success(`Column "${col.label}" added`);
+                    }}
+                    onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
+                    onDeleteRows={(ids) => {
+                        if (projectId) {
+                            ids.forEach(id => deleteReq.mutate({ id, project_id: projectId }));
+                        }
+                    }}
+                    emptyStateMessage={searchTerm || filterStatus !== 'all' ? 'No requirements match your filters.' : 'No requirements added yet.'}
+                    listContent={listContent}
+                />
 
                 {/* Footer bar */}
-                <div className="flex items-center gap-4 px-6 py-2 border-t bg-muted/30 text-xs text-muted-foreground shrink-0">
+                <div className="flex items-center gap-4 px-6 py-2 border-t bg-muted/30 text-xs text-muted-foreground shrink-0 mt-auto">
                     <span>{items.length} total requirements</span>
                     <span>·</span>
                     <span>{items.filter(i => i.status === 'Approved').length} approved</span>

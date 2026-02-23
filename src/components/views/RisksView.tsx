@@ -34,8 +34,7 @@ import {
 import { PDFExporter, PDFExportSection } from '@/components/common/PDFExporter';
 import { useRisks, RiskInput, Risk, RiskLevel, RiskStatus } from '@/hooks/useRisks';
 import { DynamicDataGrid, type DynamicColumnDef } from '@/components/ui/DynamicDataGrid';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { List, Table } from 'lucide-react';
+import { DataRegisterPage } from '@/components/ui/DataRegisterPage';
 import { toast } from 'sonner';
 
 // Optional icon imports for table headers
@@ -315,7 +314,6 @@ export default function RisksView() {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  const [viewMode, setViewMode] = useState<'list' | 'spreadsheet'>('list');
   const [customColumns, setCustomColumns] = useState<DynamicColumnDef<Risk>[]>([]);
 
   // Table View States
@@ -370,281 +368,250 @@ export default function RisksView() {
     );
   }
 
-  return (
-    <div className="flex h-full">
-      <div className="flex-1 flex flex-col" ref={contentRef}>
-        <div className="flex items-center justify-between p-4 border-b bg-card">
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="h-6 w-6 text-destructive" />
-            <h2 className="text-lg font-semibold">Risk Register</h2>
-            <Badge variant="destructive">{risks.length} Risks</Badge>
-          </div>
-          <div className="flex items-center gap-2">
-            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'list' | 'spreadsheet')} className="w-auto">
-              <TabsList className="h-8">
-                <TabsTrigger value="list" className="h-6 px-2.5 text-xs"><List className="h-3.5 w-3.5 mr-1.5" /> Dashboard & List</TabsTrigger>
-                <TabsTrigger value="spreadsheet" className="h-6 px-2.5 text-xs"><Table className="h-3.5 w-3.5 mr-1.5" /> Spreadsheet</TabsTrigger>
-              </TabsList>
-            </Tabs>
-            <PDFExporter
-              title="Risk Register"
-              filename="risk-register"
-              contentRef={contentRef}
-              sections={pdfSections}
-              showSectionPicker
-              variant="dropdown"
-            />
-            {viewMode !== 'spreadsheet' && (
-              <Button size="sm" onClick={() => setAddDialogOpen(true)}><Plus className="h-4 w-4 mr-1" />Add Risk</Button>
-            )}
-          </div>
-        </div>
+  const kpiCards = (
+    <>
+      <Card>
+        <CardHeader className="pb-2"><CardTitle className="text-base">Risk Summary</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Total Risks</span><span className="font-semibold">{risks.length}</span></div>
+          <div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Critical</span><Badge variant="destructive">{criticalRisks.length}</Badge></div>
+          <div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Open</span><span className="font-semibold">{openRisks.length}</span></div>
+          <div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Being Mitigated</span><span className="font-semibold">{risks.filter(r => r.status === 'mitigating').length}</span></div>
+        </CardContent>
+      </Card>
+      <Card className="lg:col-span-3 xl:col-span-4" data-section="matrix">
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Shield className="h-5 w-5 text-primary" />Risk Matrix</CardTitle></CardHeader>
+        <CardContent><RiskMatrix risks={risks} /></CardContent>
+      </Card>
+    </>
+  );
 
-        {/* Toolbar */}
-        {viewMode !== 'spreadsheet' && (
-          <div className="flex items-center gap-3 px-6 py-2.5 border-b bg-muted/30 shrink-0">
-            <Button variant="outline" size="sm" className="h-7 text-xs border-border/60"><Filter className="h-3.5 w-3.5 mr-1.5" />Filter</Button>
-          </div>
-        )}
-
-        <div className={cn("flex-1 overflow-auto", viewMode === 'spreadsheet' ? 'p-0 bg-muted/10' : 'p-6')}>
-          {viewMode === 'spreadsheet' ? (
-            <div className="h-full p-6">
-              <div className="h-full bg-background border rounded-md shadow-sm overflow-hidden">
-                <DynamicDataGrid
-                  data={risks}
-                  baseColumns={STANDARD_COLUMNS}
-                  customColumns={customColumns}
-                  idExtractor={(item) => item.id}
-                  customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
-                  onCellSave={handleCellSave}
-                  onDeleteRows={(ids) => {
-                    ids.forEach(id => deleteRisk(id));
-                  }}
-                  onAddColumn={(col) => {
-                    if (customColumns.find(c => c.key === col.key)) {
-                      toast.error('Column already exists');
-                      return;
-                    }
-                    setCustomColumns(prev => [...prev, col]);
-                    toast.success(`Column "${col.label}" added`);
-                  }}
-                  onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
-                  onAddRow={() => setAddDialogOpen(true)}
-                  emptyStateMessage={risks.length === 0 ? 'No risks added yet.' : 'No risks match.'}
-                  containerStyles="h-full border-0"
-                />
-              </div>
-            </div>
-          ) : (
-            <>
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="lg:col-span-2" data-section="matrix">
-                  <Card>
-                    <CardHeader><CardTitle className="text-base flex items-center gap-2"><Shield className="h-5 w-5 text-primary" />Risk Matrix</CardTitle></CardHeader>
-                    <CardContent><RiskMatrix risks={risks} /></CardContent>
-                  </Card>
-                </div>
-                <div className="space-y-4" data-section="summary">
-                  <Card>
-                    <CardHeader className="pb-2"><CardTitle className="text-base">Risk Summary</CardTitle></CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Total Risks</span><span className="font-semibold">{risks.length}</span></div>
-                      <div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Critical</span><Badge variant="destructive">{criticalRisks.length}</Badge></div>
-                      <div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Open</span><span className="font-semibold">{openRisks.length}</span></div>
-                      <div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Being Mitigated</span><span className="font-semibold">{risks.filter(r => r.status === 'mitigating').length}</span></div>
-                    </CardContent>
-                  </Card>
-                </div>
-              </div>
-
-              <h3 className="text-lg font-semibold mt-8 mb-4" data-section="list">All Risks</h3>
-              <div className="bg-card rounded-lg border overflow-hidden">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm text-left">
-                    <thead className="bg-muted/50 text-xs uppercase text-muted-foreground border-b">
-                      <tr>
-                        <th className="px-4 py-3 font-medium">Risk ID</th>
-                        <th className="px-4 py-3 font-medium">Title</th>
-                        <th className="px-4 py-3 font-medium">Category</th>
-                        <th className="px-4 py-3 font-medium">Impact</th>
-                        <th className="px-4 py-3 font-medium">Probability</th>
-                        <th className="px-4 py-3 font-medium">Owner</th>
-                        <th className="px-4 py-3 font-medium">Due Date</th>
-                        <th className="px-4 py-3 font-medium">Status</th>
-                        <th className="px-4 py-3 font-medium text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {risks.length === 0 ? (
-                        <tr>
-                          <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
-                            No risks found. Add your first risk to get started.
-                          </td>
-                        </tr>
-                      ) : (
-                        risks.map((risk) => {
-                          const isEditing = editingId === risk.id;
-                          return (
-                            <tr key={risk.id} className="hover:bg-muted/30 transition-colors group">
-                              <td className="px-4 py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">
-                                {risk.id.slice(-6).toUpperCase()}
-                              </td>
-                              <td className="px-4 py-3 font-medium max-w-[200px] truncate">
-                                {isEditing ? (
-                                  <Input
-                                    value={editForm.title || ''}
-                                    onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
-                                    className="h-8 text-sm"
-                                  />
-                                ) : (
-                                  <div
-                                    className="cursor-pointer hover:underline truncate"
-                                    onClick={() => setSelectedRisk(risk)}
-                                  >
-                                    {risk.title}
-                                  </div>
-                                )}
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap">
-                                {isEditing ? (
-                                  <Input
-                                    value={editForm.category || ''}
-                                    onChange={(e) => setEditForm(prev => ({ ...prev, category: e.target.value }))}
-                                    className="h-8 text-sm"
-                                  />
-                                ) : (
-                                  <span className="text-muted-foreground">{risk.category || '-'}</span>
-                                )}
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap">
-                                {isEditing ? (
-                                  <Select value={editForm.impact} onValueChange={(v) => setEditForm(prev => ({ ...prev, impact: v as RiskLevel }))}>
-                                    <SelectTrigger className="h-8 w-24"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="low">Low</SelectItem>
-                                      <SelectItem value="medium">Medium</SelectItem>
-                                      <SelectItem value="high">High</SelectItem>
-                                      <SelectItem value="critical">Critical</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                ) : (
-                                  <div className="flex items-center gap-1.5">
-                                    <div className={cn('h-2 w-2 rounded-full', riskColors[risk.impact])} />
-                                    <span className="capitalize">{risk.impact}</span>
-                                  </div>
-                                )}
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap">
-                                {isEditing ? (
-                                  <Select value={editForm.probability} onValueChange={(v) => setEditForm(prev => ({ ...prev, probability: v as RiskLevel }))}>
-                                    <SelectTrigger className="h-8 w-24"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="low">Low</SelectItem>
-                                      <SelectItem value="medium">Medium</SelectItem>
-                                      <SelectItem value="high">High</SelectItem>
-                                      <SelectItem value="critical">Critical</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                ) : (
-                                  <span className="capitalize">{risk.probability}</span>
-                                )}
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap">
-                                {isEditing ? (
-                                  <Input
-                                    value={editForm.owner_name || ''}
-                                    onChange={(e) => setEditForm(prev => ({ ...prev, owner_name: e.target.value }))}
-                                    className="h-8 text-sm"
-                                  />
-                                ) : (
-                                  <div className="flex items-center gap-1.5 text-muted-foreground">
-                                    <User className="h-3.5 w-3.5" />
-                                    {risk.owner_name || 'Unassigned'}
-                                  </div>
-                                )}
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap">
-                                {isEditing ? (
-                                  <Input
-                                    type="date"
-                                    value={editForm.due_date ? new Date(editForm.due_date).toISOString().split('T')[0] : ''}
-                                    onChange={(e) => setEditForm(prev => ({ ...prev, due_date: e.target.value }))}
-                                    className="h-8 text-sm w-36"
-                                  />
-                                ) : (
-                                  <span className="text-muted-foreground">{risk.due_date ? new Date(risk.due_date).toLocaleDateString() : '-'}</span>
-                                )}
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap">
-                                {isEditing ? (
-                                  <Select value={editForm.status} onValueChange={(v) => setEditForm(prev => ({ ...prev, status: v as RiskStatus }))}>
-                                    <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
-                                    <SelectContent>
-                                      <SelectItem value="identified">Identified</SelectItem>
-                                      <SelectItem value="analyzing">Analyzing</SelectItem>
-                                      <SelectItem value="mitigating">Mitigating</SelectItem>
-                                      <SelectItem value="monitoring">Monitoring</SelectItem>
-                                      <SelectItem value="closed">Closed</SelectItem>
-                                    </SelectContent>
-                                  </Select>
-                                ) : (
-                                  <Badge variant={risk.status === 'mitigating' ? 'info' : risk.status === 'closed' ? 'success' : 'secondary'}>
-                                    {risk.status}
-                                  </Badge>
-                                )}
-                              </td>
-                              <td className="px-4 py-3 whitespace-nowrap text-right">
-                                {isEditing ? (
-                                  <div className="flex items-center justify-end gap-1">
-                                    <Button size="iconXs" variant="ghost" onClick={() => setEditingId(null)}><X className="h-4 w-4" /></Button>
-                                    <Button size="iconXs" variant="default" onClick={() => handleSaveInline(risk.id)}><Save className="h-3.5 w-3.5" /></Button>
-                                  </div>
-                                ) : (
-                                  <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                    <Button size="iconXs" variant="ghost" onClick={() => handleEditClick(risk)}><Edit2 className="h-3.5 w-3.5" /></Button>
-                                    <DropdownMenu>
-                                      <DropdownMenuTrigger asChild>
-                                        <Button variant="ghost" size="iconXs"><MoreHorizontal className="h-4 w-4" /></Button>
-                                      </DropdownMenuTrigger>
-                                      <DropdownMenuContent align="end">
-                                        <DropdownMenuItem onClick={() => setSelectedRisk(risk)}>View Details</DropdownMenuItem>
-                                        <DropdownMenuSeparator />
-                                        <DropdownMenuItem className="text-destructive" onClick={() => deleteRisk(risk.id)}>Delete</DropdownMenuItem>
-                                      </DropdownMenuContent>
-                                    </DropdownMenu>
-                                  </div>
-                                )}
-                              </td>
-                            </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </>
-          )}
+  const listContent = (
+    <>
+      <h3 className="text-lg font-semibold mt-4 mb-4" data-section="list">All Risks</h3>
+      <div className="bg-card rounded-lg border overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-muted/50 text-xs uppercase text-muted-foreground border-b">
+              <tr>
+                <th className="px-4 py-3 font-medium">Risk ID</th>
+                <th className="px-4 py-3 font-medium">Title</th>
+                <th className="px-4 py-3 font-medium">Category</th>
+                <th className="px-4 py-3 font-medium">Impact</th>
+                <th className="px-4 py-3 font-medium">Probability</th>
+                <th className="px-4 py-3 font-medium">Owner</th>
+                <th className="px-4 py-3 font-medium">Due Date</th>
+                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {risks.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
+                    No risks found. Add your first risk to get started.
+                  </td>
+                </tr>
+              ) : (
+                risks.map((risk) => {
+                  const isEditing = editingId === risk.id;
+                  return (
+                    <tr key={risk.id} className="hover:bg-muted/30 transition-colors group">
+                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">
+                        {risk.id.slice(-6).toUpperCase()}
+                      </td>
+                      <td className="px-4 py-3 font-medium max-w-[200px] truncate">
+                        {isEditing ? (
+                          <Input
+                            value={editForm.title || ''}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
+                            className="h-8 text-sm"
+                          />
+                        ) : (
+                          <div
+                            className="cursor-pointer hover:underline truncate"
+                            onClick={() => setSelectedRisk(risk)}
+                          >
+                            {risk.title}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {isEditing ? (
+                          <Input
+                            value={editForm.category || ''}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, category: e.target.value }))}
+                            className="h-8 text-sm"
+                          />
+                        ) : (
+                          <span className="text-muted-foreground">{risk.category || '-'}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {isEditing ? (
+                          <Select value={editForm.impact} onValueChange={(v) => setEditForm(prev => ({ ...prev, impact: v as RiskLevel }))}>
+                            <SelectTrigger className="h-8 w-24"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="low">Low</SelectItem>
+                              <SelectItem value="medium">Medium</SelectItem>
+                              <SelectItem value="high">High</SelectItem>
+                              <SelectItem value="critical">Critical</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <div className="flex items-center gap-1.5">
+                            <div className={cn('h-2 w-2 rounded-full', riskColors[risk.impact])} />
+                            <span className="capitalize">{risk.impact}</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {isEditing ? (
+                          <Select value={editForm.probability} onValueChange={(v) => setEditForm(prev => ({ ...prev, probability: v as RiskLevel }))}>
+                            <SelectTrigger className="h-8 w-24"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="low">Low</SelectItem>
+                              <SelectItem value="medium">Medium</SelectItem>
+                              <SelectItem value="high">High</SelectItem>
+                              <SelectItem value="critical">Critical</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <span className="capitalize">{risk.probability}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {isEditing ? (
+                          <Input
+                            value={editForm.owner_name || ''}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, owner_name: e.target.value }))}
+                            className="h-8 text-sm"
+                          />
+                        ) : (
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <User className="h-3.5 w-3.5" />
+                            {risk.owner_name || 'Unassigned'}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {isEditing ? (
+                          <Input
+                            type="date"
+                            value={editForm.due_date ? new Date(editForm.due_date).toISOString().split('T')[0] : ''}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, due_date: e.target.value }))}
+                            className="h-8 text-sm w-36"
+                          />
+                        ) : (
+                          <span className="text-muted-foreground">{risk.due_date ? new Date(risk.due_date).toLocaleDateString() : '-'}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {isEditing ? (
+                          <Select value={editForm.status} onValueChange={(v) => setEditForm(prev => ({ ...prev, status: v as RiskStatus }))}>
+                            <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="identified">Identified</SelectItem>
+                              <SelectItem value="analyzing">Analyzing</SelectItem>
+                              <SelectItem value="mitigating">Mitigating</SelectItem>
+                              <SelectItem value="monitoring">Monitoring</SelectItem>
+                              <SelectItem value="closed">Closed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge variant={risk.status === 'mitigating' ? 'info' : risk.status === 'closed' ? 'success' : 'secondary'}>
+                            {risk.status}
+                          </Badge>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-right">
+                        {isEditing ? (
+                          <div className="flex items-center justify-end gap-1">
+                            <Button size="iconXs" variant="ghost" onClick={() => setEditingId(null)}><X className="h-4 w-4" /></Button>
+                            <Button size="iconXs" variant="default" onClick={() => handleSaveInline(risk.id)}><Save className="h-3.5 w-3.5" /></Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button size="iconXs" variant="ghost" onClick={() => handleEditClick(risk)}><Edit2 className="h-3.5 w-3.5" /></Button>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="iconXs"><MoreHorizontal className="h-4 w-4" /></Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => setSelectedRisk(risk)}>View Details</DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem className="text-destructive" onClick={() => deleteRisk(risk.id)}>Delete</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
       <AnimatePresence>
         {selectedRisk && (
-          <RiskDetailPanel
-            risk={selectedRisk}
-            onClose={() => setSelectedRisk(null)}
-            onUpdate={updateRisk}
-            onDelete={async (id) => {
-              const result = await deleteRisk(id);
-              if (result) setSelectedRisk(null);
-              return result;
-            }}
-          />
+          <div className="fixed inset-y-0 right-0 z-50 shadow-2xl">
+            <RiskDetailPanel
+              risk={selectedRisk}
+              onClose={() => setSelectedRisk(null)}
+              onUpdate={updateRisk}
+              onDelete={async (id) => {
+                const result = await deleteRisk(id);
+                if (result) setSelectedRisk(null);
+                return result;
+              }}
+            />
+          </div>
         )}
       </AnimatePresence>
 
       <AddRiskDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} onSubmit={createRisk} />
-    </div>
+    </>
+  );
+
+  return (
+    <DataRegisterPage
+      title="Risk Register"
+      description="Identify and track project risks"
+      icon={AlertTriangle}
+      iconBgClass="bg-destructive/20"
+      iconColorClass="text-destructive"
+      toolbarFilters={
+        <Button variant="outline" size="sm" className="h-8 text-xs border-border/60">
+          <Filter className="h-3.5 w-3.5 mr-1.5" />
+          Filter
+        </Button>
+      }
+      onAddRow={() => setAddDialogOpen(true)}
+      addLabel="Add Risk"
+      pdfFilename="risk-register"
+      pdfSections={pdfSections}
+      data={risks}
+      baseColumns={STANDARD_COLUMNS}
+      customColumns={customColumns}
+      idExtractor={(item) => item.id}
+      customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
+      onCellSave={handleCellSave}
+      onAddColumn={(col) => {
+        if (customColumns.find(c => c.key === col.key)) {
+          toast.error('Column already exists');
+          return;
+        }
+        setCustomColumns(prev => [...prev, col]);
+        toast.success(`Column "${col.label}" added`);
+      }}
+      onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
+      onDeleteRows={(ids) => Array.from(ids).forEach(id => deleteRisk(id))}
+      emptyStateMessage={risks.length === 0 ? 'No risks added yet.' : 'No risks match.'}
+      kpiCards={kpiCards}
+      listContent={listContent}
+    />
   );
 }

@@ -11,7 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useDecisions, Decision, DecisionInput, DecisionStatus } from '@/hooks/useDecisions';
 import { DynamicDataGrid, type DynamicColumnDef } from '@/components/ui/DynamicDataGrid';
-import { List, Table } from 'lucide-react';
+import { DataRegisterPage } from '@/components/ui/DataRegisterPage';
 import { toast } from 'sonner';
 
 const STANDARD_COLUMNS: DynamicColumnDef<Decision>[] = [
@@ -401,7 +401,6 @@ export default function DecisionsView() {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [viewMode, setViewMode] = useState<'list' | 'spreadsheet'>('list');
   const [customColumns, setCustomColumns] = useState<DynamicColumnDef<Decision>[]>([]);
 
   const filteredDecisions = decisions.filter(d => {
@@ -446,147 +445,146 @@ export default function DecisionsView() {
     );
   }
 
-  return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between p-4 border-b bg-card">
-        <div className="flex items-center gap-3">
-          <Target className="h-6 w-6 text-primary" />
-          <h2 className="text-lg font-semibold">Decision Register</h2>
-          <Badge>{decisions.length} Decisions</Badge>
-        </div>
-        className="capitalize"
-            >
-        {status}
-      </Button>
-          ))}
+  const kpiCards = (
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8 shrink-0 w-full">
+      <Card>
+        <CardContent className="p-4">
+          <div className="text-3xl font-bold text-primary">{decisions.length}</div>
+          <p className="text-sm text-muted-foreground">Total Decisions</p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="p-4">
+          <div className="text-3xl font-bold text-success">{activeDecisions.length}</div>
+          <p className="text-sm text-muted-foreground">Active</p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="p-4">
+          <div className="text-3xl font-bold text-warning">{pendingDecisions.length}</div>
+          <p className="text-sm text-muted-foreground">Pending</p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="p-4">
+          <div className="text-3xl font-bold text-muted-foreground">{supersededDecisions.length}</div>
+          <p className="text-sm text-muted-foreground">Superseded</p>
+        </CardContent>
+      </Card>
     </div>
-      </div >
+  );
 
-    <div className={cn("flex-1 overflow-auto", viewMode === 'spreadsheet' ? 'p-0 bg-muted/10' : 'p-6')}>
-      {viewMode === 'spreadsheet' ? (
-        <div className="h-full p-6">
-          <div className="h-full bg-background border rounded-md shadow-sm overflow-hidden">
-            <DynamicDataGrid
-              data={decisions}
-              baseColumns={STANDARD_COLUMNS}
-              customColumns={customColumns}
-              idExtractor={(item) => item.id}
-              customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
-              onCellSave={handleCellSave}
-              onDeleteRows={() => {
-                toast.error("Bulk deletion not supported for decisions yet.");
-              }}
-              onAddColumn={(col) => {
-                if (customColumns.find(c => c.key === col.key)) {
-                  toast.error('Column already exists');
-                  return;
-                }
-                setCustomColumns(prev => [...prev, col]);
-                toast.success(`Column "${col.label}" added`);
-              }}
-              onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
-              onAddRow={() => setCreateDialogOpen(true)}
-              emptyStateMessage={decisions.length === 0 ? 'No decisions added yet.' : 'No decisions match.'}
-              containerStyles="h-full border-0"
-            />
-          </div>
+  const toolbarFilters = (
+    <Select value={statusFilter} onValueChange={setStatusFilter}>
+      <SelectTrigger className="w-40 h-8 text-xs">
+        <SelectValue placeholder="Filter by status" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">All Statuses</SelectItem>
+        <SelectItem value="pending">Pending</SelectItem>
+        <SelectItem value="active">Active</SelectItem>
+        <SelectItem value="superseded">Superseded</SelectItem>
+        <SelectItem value="rejected">Rejected</SelectItem>
+      </SelectContent>
+    </Select>
+  );
+
+  const listContent = (
+    <>
+      <h3 className="text-lg font-semibold mb-4">
+        {statusFilter === 'all' ? 'All Decisions' : `${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)} Decisions`}
+        <span className="text-muted-foreground font-normal ml-2">({filteredDecisions.length})</span>
+      </h3>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {filteredDecisions.map(decision => (
+          <DecisionCard
+            key={decision.id}
+            decision={decision}
+            onSelect={() => setSelectedDecision(decision)}
+            isSelected={selectedDecision?.id === decision.id}
+          />
+        ))}
+      </div>
+
+      {filteredDecisions.length === 0 && (
+        <div className="text-center py-12 text-muted-foreground w-full">
+          <Target className="h-12 w-12 mx-auto mb-4 opacity-30" />
+          <p>No decisions found</p>
+          <Button size="sm" className="mt-4" onClick={() => setCreateDialogOpen(true)}>
+            <Plus className="h-4 w-4 mr-1" />
+            Add First Decision
+          </Button>
         </div>
-      ) : (
-        <>
-          {/* Stats Cards */}
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-3xl font-bold text-primary">{decisions.length}</div>
-                <p className="text-sm text-muted-foreground">Total Decisions</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-3xl font-bold text-success">{activeDecisions.length}</div>
-                <p className="text-sm text-muted-foreground">Active</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-3xl font-bold text-warning">{pendingDecisions.length}</div>
-                <p className="text-sm text-muted-foreground">Pending</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="p-4">
-                <div className="text-3xl font-bold text-muted-foreground">{supersededDecisions.length}</div>
-                <p className="text-sm text-muted-foreground">Superseded</p>
-              </CardContent>
-            </Card>
-          </div>
-
-          <h3 className="text-lg font-semibold mb-4">
-            {statusFilter === 'all' ? 'All Decisions' : `${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)} Decisions`}
-            <span className="text-muted-foreground font-normal ml-2">({filteredDecisions.length})</span>
-          </h3>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredDecisions.map(decision => (
-              <DecisionCard
-                key={decision.id}
-                decision={decision}
-                onSelect={() => setSelectedDecision(decision)}
-                isSelected={selectedDecision?.id === decision.id}
-              />
-            ))}
-          </div>
-
-          {filteredDecisions.length === 0 && (
-            <div className="text-center py-12 text-muted-foreground">
-              <Target className="h-12 w-12 mx-auto mb-4 opacity-30" />
-              <p>No decisions found</p>
-              <Button size="sm" className="mt-4" onClick={() => setCreateDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-1" />
-                Add First Decision
-              </Button>
-            </div>
-          )}
-        </>
       )}
-    </div>
 
-  {/* Decision Detail Panel */ }
-  {
-    selectedDecision && (
-      <DecisionDetailPanel
-        decision={selectedDecision}
-        onClose={() => setSelectedDecision(null)}
-        onOpenLinkDialog={() => setLinkDialogOpen(true)}
-        onUpdate={updateDecision}
+      {/* Decision Detail Panel */}
+      {selectedDecision && (
+        <DecisionDetailPanel
+          decision={selectedDecision}
+          onClose={() => setSelectedDecision(null)}
+          onOpenLinkDialog={() => setLinkDialogOpen(true)}
+          onUpdate={updateDecision}
+        />
+      )}
+
+      {/* Link Dialog */}
+      {selectedDecision && (
+        <LinkDialog
+          open={linkDialogOpen}
+          onOpenChange={setLinkDialogOpen}
+          sourceItem={{ id: selectedDecision.id, title: selectedDecision.title, type: 'decision' }}
+          onLink={handleLinkItems}
+          allowedTypes={['task', 'meeting', 'action', 'risk']}
+          existingLinks={[
+            ...selectedDecision.linked_tasks.map(id => ({ type: 'task' as const, id })),
+            ...selectedDecision.linked_risks.map(id => ({ type: 'risk' as const, id })),
+            ...selectedDecision.linked_meetings.map(id => ({ type: 'meeting' as const, id })),
+          ]}
+        />
+      )}
+
+      {/* Create Dialog */}
+      <CreateDecisionDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+        onCreate={createDecision}
       />
-    )
-  }
+    </>
+  );
 
-  {/* Link Dialog */ }
-  {
-    selectedDecision && (
-      <LinkDialog
-        open={linkDialogOpen}
-        onOpenChange={setLinkDialogOpen}
-        sourceItem={{ id: selectedDecision.id, title: selectedDecision.title, type: 'decision' }}
-        onLink={handleLinkItems}
-        allowedTypes={['task', 'meeting', 'action', 'risk']}
-        existingLinks={[
-          ...selectedDecision.linked_tasks.map(id => ({ type: 'task' as const, id })),
-          ...selectedDecision.linked_risks.map(id => ({ type: 'risk' as const, id })),
-          ...selectedDecision.linked_meetings.map(id => ({ type: 'meeting' as const, id })),
-        ]}
-      />
-    )
-  }
-
-  {/* Create Dialog */ }
-  <CreateDecisionDialog
-    open={createDialogOpen}
-    onOpenChange={setCreateDialogOpen}
-    onCreate={createDecision}
-  />
-    </div >
+  return (
+    <DataRegisterPage
+      title="Decision Register"
+      description="Track and manage project decisions"
+      icon={Target}
+      iconBgClass="bg-primary/20"
+      iconColorClass="text-primary"
+      searchQuery={searchQuery}
+      onSearchChange={setSearchQuery}
+      toolbarFilters={toolbarFilters}
+      onAddRow={() => setCreateDialogOpen(true)}
+      addLabel="Add Decision"
+      pdfFilename="decision-register"
+      data={filteredDecisions}
+      baseColumns={STANDARD_COLUMNS}
+      customColumns={customColumns}
+      idExtractor={(item) => item.id}
+      customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
+      onCellSave={handleCellSave}
+      onAddColumn={(col) => {
+        if (customColumns.find(c => c.key === col.key)) {
+          toast.error('Column already exists');
+          return;
+        }
+        setCustomColumns(prev => [...prev, col]);
+        toast.success(`Column "${col.label}" added`);
+      }}
+      onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
+      onDeleteRows={() => toast.error("Bulk deletion not supported for decisions yet.")}
+      emptyStateMessage={decisions.length === 0 ? 'No decisions added yet.' : 'No decisions match filters.'}
+      kpiCards={kpiCards}
+      listContent={listContent}
+    />
   );
 }

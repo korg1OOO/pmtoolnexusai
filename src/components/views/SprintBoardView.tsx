@@ -19,11 +19,11 @@ import {
   Table,
   Loader2,
 } from 'lucide-react';
+import { DataRegisterPage } from '@/components/ui/DataRegisterPage';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { DynamicDataGrid, type DynamicColumnDef } from '@/components/ui/DynamicDataGrid';
 import { Input } from '@/components/ui/input';
+import { DynamicDataGrid, type DynamicColumnDef } from '@/components/ui/DynamicDataGrid';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { PDFExporter } from '@/components/common/PDFExporter';
 import { useSprints, Sprint, SprintInput } from '@/hooks/useSprints';
@@ -156,9 +156,7 @@ export default function SprintBoardView() {
   const [showBurndown, setShowBurndown] = useState(false);
   const [addSprintDialogOpen, setAddSprintDialogOpen] = useState(false);
   const [selectedSprint, setSelectedSprint] = useState<string>('active');
-  const [viewMode, setViewMode] = useState<'board' | 'spreadsheet'>('board');
   const [customColumns, setCustomColumns] = useState<DynamicColumnDef<BacklogItem>[]>([]);
-  const contentRef = useRef<HTMLDivElement>(null);
 
   const handleCellSave = async (rowId: string, key: string, value: string) => {
     const isCustom = !STANDARD_COLUMNS.find(c => c.key === key);
@@ -277,7 +275,8 @@ export default function SprintBoardView() {
           break;
         case '/':
           e.preventDefault();
-          document.querySelector<HTMLInputElement>('[data-search-input]')?.focus();
+          const searchInput = document.querySelector<HTMLInputElement>('input[placeholder*="search" i]');
+          if (searchInput) searchInput.focus();
           break;
         case 'escape':
           setSelectedItem(null);
@@ -316,204 +315,143 @@ export default function SprintBoardView() {
 
   const currentSprint = selectedSprint === 'active' ? activeSprint : sprints.find(s => s.id === selectedSprint);
 
-  return (
-    <div className="flex flex-col h-full" ref={contentRef}>
-      {/* Header */}
-      <div className="flex items-center justify-between p-4 border-b bg-card">
-        <div className="flex items-center gap-4">
-          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'board' | 'spreadsheet')} className="w-auto">
-            <TabsList className="h-8">
-              <TabsTrigger value="board" className="h-6 px-2.5 text-xs"><List className="h-3.5 w-3.5 mr-1.5" /> Board</TabsTrigger>
-              <TabsTrigger value="spreadsheet" className="h-6 px-2.5 text-xs"><Table className="h-3.5 w-3.5 mr-1.5" /> Spreadsheet</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          <Select value={selectedSprint} onValueChange={setSelectedSprint}>
-            <SelectTrigger className="w-48">
-              <SelectValue placeholder="Select sprint" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="active">Active Sprint</SelectItem>
-              {sprints.map(sprint => (
-                <SelectItem key={sprint.id} value={sprint.id}>{sprint.name}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+  const toolbarFilters = (
+    <div className="flex items-center gap-3 w-full">
+      <Select value={selectedSprint} onValueChange={setSelectedSprint}>
+        <SelectTrigger className="w-48 h-8 text-xs bg-background">
+          <SelectValue placeholder="Select sprint" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="active">Active Sprint</SelectItem>
+          {sprints.map(sprint => (
+            <SelectItem key={sprint.id} value={sprint.id}>{sprint.name}</SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
 
-          {currentSprint && (
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <Clock className="h-4 w-4" />
-              <span>{new Date(currentSprint.start_date).toLocaleDateString()} - {new Date(currentSprint.end_date).toLocaleDateString()}</span>
-            </div>
-          )}
+      {currentSprint && (
+        <div className="flex items-center gap-2 text-[11px] text-muted-foreground border-l border-border/50 pl-3 ml-1 mr-auto hidden sm:flex">
+          <Clock className="h-3 w-3" />
+          <span>{new Date(currentSprint.start_date).toLocaleDateString()} - {new Date(currentSprint.end_date).toLocaleDateString()}</span>
         </div>
+      )}
 
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search items..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-48 pl-9"
-              data-search-input
-            />
-          </div>
+      <DropdownMenu open={showFilters} onOpenChange={setShowFilters}>
+        <DropdownMenuTrigger asChild>
+          <Button variant="outline" size="sm" className="h-8 text-xs border-border/60 bg-background">
+            <Filter className="h-3.5 w-3.5 mr-2" />
+            Filter
+            {activeFiltersCount > 0 && (
+              <Badge variant="secondary" className="ml-2 h-4 px-1 rounded-sm text-[10px]">{activeFiltersCount}</Badge>
+            )}
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuLabel className="text-xs">Assignees</DropdownMenuLabel>
+          {allAssignees.map(assignee => (
+            <DropdownMenuCheckboxItem
+              key={assignee}
+              checked={filters.assignees.includes(assignee)}
+              onCheckedChange={(checked) => {
+                setFilters(prev => ({
+                  ...prev,
+                  assignees: checked
+                    ? [...prev.assignees, assignee]
+                    : prev.assignees.filter(a => a !== assignee)
+                }));
+              }}
+              className="text-xs"
+            >
+              {assignee}
+            </DropdownMenuCheckboxItem>
+          ))}
+          <DropdownMenuSeparator />
+          <DropdownMenuLabel className="text-xs">Priority</DropdownMenuLabel>
+          {allPriorities.map(priority => (
+            <DropdownMenuCheckboxItem
+              key={priority}
+              checked={filters.priorities.includes(priority)}
+              onCheckedChange={(checked) => {
+                setFilters(prev => ({
+                  ...prev,
+                  priorities: checked
+                    ? [...prev.priorities, priority]
+                    : prev.priorities.filter(p => p !== priority)
+                }));
+              }}
+              className="text-xs capitalize"
+            >
+              {priority}
+            </DropdownMenuCheckboxItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
 
-          {viewMode !== 'spreadsheet' && (
-            <>
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    <Filter className="h-4 w-4 mr-2" />
-                    Filter
-                    {activeFiltersCount > 0 && (
-                      <Badge variant="secondary" className="ml-2">{activeFiltersCount}</Badge>
-                    )}
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>Assignees</DropdownMenuLabel>
-                  {allAssignees.map(assignee => (
-                    <DropdownMenuCheckboxItem
-                      key={assignee}
-                      checked={filters.assignees.includes(assignee)}
-                      onCheckedChange={(checked) => {
-                        setFilters(prev => ({
-                          ...prev,
-                          assignees: checked
-                            ? [...prev.assignees, assignee]
-                            : prev.assignees.filter(a => a !== assignee)
-                        }));
-                      }}
-                    >
-                      {assignee}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                  <DropdownMenuSeparator />
-                  <DropdownMenuLabel>Priority</DropdownMenuLabel>
-                  {allPriorities.map(priority => (
-                    <DropdownMenuCheckboxItem
-                      key={priority}
-                      checked={filters.priorities.includes(priority)}
-                      onCheckedChange={(checked) => {
-                        setFilters(prev => ({
-                          ...prev,
-                          priorities: checked
-                            ? [...prev.priorities, priority]
-                            : prev.priorities.filter(p => p !== priority)
-                        }));
-                      }}
-                    >
-                      {priority}
-                    </DropdownMenuCheckboxItem>
-                  ))}
-                </DropdownMenuContent>
-              </DropdownMenu>
+      <Button variant="outline" size="sm" className="h-8 text-xs border-border/60 bg-background" onClick={() => setShowBurndown(true)}>
+        <TrendingDown className="h-3.5 w-3.5 mr-2" />
+        Burndown
+      </Button>
 
-              <Button variant="outline" size="sm" onClick={() => setShowBurndown(true)}>
-                <TrendingDown className="h-4 w-4 mr-2" />
-                Burndown
-              </Button>
-            </>
-          )}
+      <Button variant="ghost" size="icon" className="h-8 w-8 ml-1 text-muted-foreground hover:text-foreground" onClick={() => setShowShortcuts(true)}>
+        <Keyboard className="h-4 w-4" />
+      </Button>
+    </div>
+  );
 
-          <PDFExporter
-            title={currentSprint?.name || 'Sprint Board'}
-            filename="sprint-board"
-            contentRef={contentRef}
-            orientation="landscape"
-            variant="dropdown"
-          />
-
-          {viewMode !== 'spreadsheet' && (
-            <>
-              <Button variant="ghost" size="iconSm" onClick={() => setShowShortcuts(true)}>
-                <Keyboard className="h-4 w-4" />
-              </Button>
-              <Button size="sm" onClick={() => setAddSprintDialogOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Create Sprint
-              </Button>
-            </>
-          )}
-        </div>
-      </div>
-
+  const listContent = (
+    <div className="flex flex-col h-full space-y-4">
       {/* Sprint Progress */}
-      {viewMode !== 'spreadsheet' && currentSprint && (
-        <div className="p-4 bg-muted/30 border-b">
-          <div className="flex items-center justify-between mb-2">
-            <div className="flex items-center gap-4">
-              <span className="font-medium">{currentSprint.name}</span>
-              <Badge variant={currentSprint.status === 'active' ? 'success' : 'secondary'}>
+      {currentSprint && (
+        <div className="p-4 bg-background border rounded-lg shadow-sm">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-3">
+              <span className="font-semibold text-sm">{currentSprint.name}</span>
+              <Badge variant={currentSprint.status === 'active' ? 'success' : 'secondary'} className="text-[10px] uppercase">
                 {currentSprint.status}
               </Badge>
               {currentSprint.goal && (
-                <span className="text-sm text-muted-foreground">Goal: {currentSprint.goal}</span>
+                <span className="text-xs text-muted-foreground hidden md:inline ml-2"><span className="font-medium">Goal:</span> {currentSprint.goal}</span>
               )}
             </div>
-            <div className="flex items-center gap-4">
-              <span className="text-sm">{donePoints} / {totalPoints} points</span>
-              <span className="text-sm font-medium">{progressPercent}%</span>
+            <div className="flex items-center gap-4 text-xs">
+              <span className="text-muted-foreground"><span className="font-medium text-foreground">{donePoints}</span> / {totalPoints} pts</span>
+              <span className="font-bold text-primary">{progressPercent}%</span>
             </div>
           </div>
-          <div className="h-2 bg-muted rounded-full overflow-hidden">
-            <Progress value={progressPercent} className="h-full bg-success" />
+          <div className="h-2 bg-muted/50 rounded-full overflow-hidden">
+            <Progress value={progressPercent} className="h-full bg-primary transition-all duration-500" />
           </div>
         </div>
       )}
 
       {/* Board */}
-      <div className="flex-1 overflow-auto p-4">
+      <div className="flex-1 min-h-[500px]">
         {!currentSprint ? (
-          <div className="flex items-center justify-center h-full">
-            <p className="text-muted-foreground">No sprint selected. Create or select a sprint to view the board.</p>
-          </div>
-        ) : viewMode === 'spreadsheet' ? (
-          <div className="h-full bg-background border rounded-md shadow-sm overflow-hidden min-h-[500px]">
-            <DynamicDataGrid
-              data={sprintItems}
-              baseColumns={STANDARD_COLUMNS}
-              customColumns={customColumns}
-              idExtractor={(item) => item.id}
-              customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
-              onCellSave={handleCellSave}
-              onDeleteRows={() => { }}
-              onAddColumn={(col) => {
-                if (customColumns.find(c => c.key === col.key)) {
-                  toast.error('Column already exists');
-                  return;
-                }
-                setCustomColumns(prev => [...prev, col]);
-                toast.success(`Column "${col.label}" added`);
-              }}
-              onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
-              onAddRow={() => toast.info('To add items to sprint, go to backlog.')}
-              emptyStateMessage={sprintItems.length === 0 ? 'No items in this sprint.' : 'No items match filters.'}
-              containerStyles="h-full border-0"
-            />
+          <div className="flex flex-col items-center justify-center h-full border rounded-lg bg-muted/10 border-dashed">
+            <List className="h-10 w-10 text-muted-foreground/30 mb-3" />
+            <p className="text-sm text-muted-foreground">No sprint selected. Create or select a sprint to view the board.</p>
           </div>
         ) : (
-          <div className="grid grid-cols-4 gap-4 min-h-full">
+          <div className="grid grid-cols-4 gap-4 h-full">
             {columns.map((column) => {
               const columnItems = getColumnItems(column.id);
               const columnPoints = getColumnPoints(column.id);
 
               return (
-                <div key={column.id} className="flex flex-col min-h-0">
-                  <div className="flex items-center justify-between p-3 rounded-t-lg bg-muted/50">
+                <div key={column.id} className="flex flex-col h-full bg-muted/30 border rounded-lg overflow-hidden shadow-sm">
+                  <div className="flex items-center justify-between p-3 border-b bg-background/50 backdrop-blur-sm">
                     <div className="flex items-center gap-2">
                       <div className={cn('w-2 h-2 rounded-full', column.color)} />
-                      <span className="font-medium text-sm">{column.label}</span>
-                      <Badge variant="secondary" className="text-xs">
+                      <span className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">{column.label}</span>
+                      <Badge variant="secondary" className="text-[10px] px-1.5 min-w-[20px] justify-center ml-1">
                         {columnItems.length}
                       </Badge>
                     </div>
-                    <span className="text-xs text-muted-foreground">{columnPoints} pts</span>
+                    <span className="text-[10px] font-medium text-muted-foreground">{columnPoints} pts</span>
                   </div>
 
-                  <ScrollArea className="flex-1 p-2 bg-muted/20 rounded-b-lg">
-                    <div className="space-y-2">
+                  <ScrollArea className="flex-1 p-2">
+                    <div className="space-y-2 pb-2">
                       {columnItems.map((item) => (
                         <SprintCard
                           key={item.id}
@@ -525,8 +463,8 @@ export default function SprintBoardView() {
                         />
                       ))}
                       {columnItems.length === 0 && (
-                        <div className="p-4 text-center text-sm text-muted-foreground">
-                          No items
+                        <div className="p-4 text-center text-xs text-muted-foreground/60 flex flex-col items-center justify-center h-24 border border-dashed rounded-md mx-1 mt-1 bg-background/30">
+                          Empty
                         </div>
                       )}
                     </div>
@@ -558,5 +496,39 @@ export default function SprintBoardView() {
 
       <AddSprintDialog open={addSprintDialogOpen} onOpenChange={setAddSprintDialogOpen} onSubmit={createSprint} />
     </div>
+  );
+
+  return (
+    <DataRegisterPage
+      title="Sprint Board"
+      description="Manage tasks and track sprint progress"
+      icon={List}
+      iconBgClass="bg-primary/20"
+      iconColorClass="text-primary"
+      searchQuery={searchQuery}
+      onSearchChange={setSearchQuery}
+      toolbarFilters={toolbarFilters}
+      onAddRow={() => setAddSprintDialogOpen(true)}
+      addLabel="Create Sprint"
+      pdfFilename="sprint-board"
+      data={sprintItems}
+      baseColumns={STANDARD_COLUMNS}
+      customColumns={customColumns}
+      idExtractor={(item) => item.id}
+      customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
+      onCellSave={handleCellSave}
+      onAddColumn={(col) => {
+        if (customColumns.find(c => c.key === col.key)) {
+          toast.error('Column already exists');
+          return;
+        }
+        setCustomColumns(prev => [...prev, col]);
+        toast.success(`Column "${col.label}" added`);
+      }}
+      onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
+      onDeleteRows={() => toast.error("Bulk deletion not supported in sprint board")}
+      emptyStateMessage={sprintItems.length === 0 ? 'No items in this sprint.' : 'No items match filters.'}
+      listContent={listContent}
+    />
   );
 }

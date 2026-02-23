@@ -359,59 +359,63 @@ export default function SprintBoardView() {
             />
           </div>
 
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm">
-                <Filter className="h-4 w-4 mr-2" />
-                Filter
-                {activeFiltersCount > 0 && (
-                  <Badge variant="secondary" className="ml-2">{activeFiltersCount}</Badge>
-                )}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-56">
-              <DropdownMenuLabel>Assignees</DropdownMenuLabel>
-              {allAssignees.map(assignee => (
-                <DropdownMenuCheckboxItem
-                  key={assignee}
-                  checked={filters.assignees.includes(assignee)}
-                  onCheckedChange={(checked) => {
-                    setFilters(prev => ({
-                      ...prev,
-                      assignees: checked
-                        ? [...prev.assignees, assignee]
-                        : prev.assignees.filter(a => a !== assignee)
-                    }));
-                  }}
-                >
-                  {assignee}
-                </DropdownMenuCheckboxItem>
-              ))}
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel>Priority</DropdownMenuLabel>
-              {allPriorities.map(priority => (
-                <DropdownMenuCheckboxItem
-                  key={priority}
-                  checked={filters.priorities.includes(priority)}
-                  onCheckedChange={(checked) => {
-                    setFilters(prev => ({
-                      ...prev,
-                      priorities: checked
-                        ? [...prev.priorities, priority]
-                        : prev.priorities.filter(p => p !== priority)
-                    }));
-                  }}
-                >
-                  {priority}
-                </DropdownMenuCheckboxItem>
-              ))}
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {viewMode !== 'spreadsheet' && (
+            <>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Filter className="h-4 w-4 mr-2" />
+                    Filter
+                    {activeFiltersCount > 0 && (
+                      <Badge variant="secondary" className="ml-2">{activeFiltersCount}</Badge>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>Assignees</DropdownMenuLabel>
+                  {allAssignees.map(assignee => (
+                    <DropdownMenuCheckboxItem
+                      key={assignee}
+                      checked={filters.assignees.includes(assignee)}
+                      onCheckedChange={(checked) => {
+                        setFilters(prev => ({
+                          ...prev,
+                          assignees: checked
+                            ? [...prev.assignees, assignee]
+                            : prev.assignees.filter(a => a !== assignee)
+                        }));
+                      }}
+                    >
+                      {assignee}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Priority</DropdownMenuLabel>
+                  {allPriorities.map(priority => (
+                    <DropdownMenuCheckboxItem
+                      key={priority}
+                      checked={filters.priorities.includes(priority)}
+                      onCheckedChange={(checked) => {
+                        setFilters(prev => ({
+                          ...prev,
+                          priorities: checked
+                            ? [...prev.priorities, priority]
+                            : prev.priorities.filter(p => p !== priority)
+                        }));
+                      }}
+                    >
+                      {priority}
+                    </DropdownMenuCheckboxItem>
+                  ))}
+                </DropdownMenuContent>
+              </DropdownMenu>
 
-          <Button variant="outline" size="sm" onClick={() => setShowBurndown(true)}>
-            <TrendingDown className="h-4 w-4 mr-2" />
-            Burndown
-          </Button>
+              <Button variant="outline" size="sm" onClick={() => setShowBurndown(true)}>
+                <TrendingDown className="h-4 w-4 mr-2" />
+                Burndown
+              </Button>
+            </>
+          )}
 
           <PDFExporter
             title={currentSprint?.name || 'Sprint Board'}
@@ -421,18 +425,22 @@ export default function SprintBoardView() {
             variant="dropdown"
           />
 
-          <Button variant="ghost" size="iconSm" onClick={() => setShowShortcuts(true)}>
-            <Keyboard className="h-4 w-4" />
-          </Button>
-          <Button size="sm" onClick={() => setAddSprintDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Create Sprint
-          </Button>
+          {viewMode !== 'spreadsheet' && (
+            <>
+              <Button variant="ghost" size="iconSm" onClick={() => setShowShortcuts(true)}>
+                <Keyboard className="h-4 w-4" />
+              </Button>
+              <Button size="sm" onClick={() => setAddSprintDialogOpen(true)}>
+                <Plus className="h-4 w-4 mr-2" />
+                Create Sprint
+              </Button>
+            </>
+          )}
         </div>
       </div>
 
       {/* Sprint Progress */}
-      {currentSprint && (
+      {viewMode !== 'spreadsheet' && currentSprint && (
         <div className="p-4 bg-muted/30 border-b">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-4">

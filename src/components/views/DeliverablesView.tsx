@@ -143,7 +143,7 @@ export default function DeliverablesView() {
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (await confirm('Are you sure you want to delete this deliverable?', { confirmText: 'Delete', destructive: true })) {
+    if (await confirm('Are you sure you want to delete this deliverable?', { confirmLabel: 'Delete', variant: 'destructive' })) {
       await deleteDeliverable.mutateAsync(id);
       if (selectedDeliverable?.id === id) setSelectedDeliverable(null);
     }
@@ -197,12 +197,14 @@ export default function DeliverablesView() {
             </div>
           </div>
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Deliverable
-              </Button>
-            </DialogTrigger>
+            {viewMode !== 'spreadsheet' && (
+              <DialogTrigger asChild>
+                <Button>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Deliverable
+                </Button>
+              </DialogTrigger>
+            )}
             <DialogContent className="max-w-md">
               <DialogHeader>
                 <DialogTitle>New Deliverable</DialogTitle>
@@ -272,32 +274,34 @@ export default function DeliverablesView() {
       </div>
 
       {/* Stats */}
-      <div className="p-6 border-b grid grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-sm text-muted-foreground">Total Deliverables</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-success">{stats.approved}</div>
-            <p className="text-sm text-muted-foreground">Approved</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-primary">{stats.inProgress}</div>
-            <p className="text-sm text-muted-foreground">In Progress</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-warning">{stats.review}</div>
-            <p className="text-sm text-muted-foreground">In Review</p>
-          </CardContent>
-        </Card>
-      </div>
+      {viewMode !== 'spreadsheet' && (
+        <div className="p-6 border-b grid grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold">{stats.total}</div>
+              <p className="text-sm text-muted-foreground">Total Deliverables</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-success">{stats.approved}</div>
+              <p className="text-sm text-muted-foreground">Approved</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-primary">{stats.inProgress}</div>
+              <p className="text-sm text-muted-foreground">In Progress</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-warning">{stats.review}</div>
+              <p className="text-sm text-muted-foreground">In Review</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Search & Filters */}
       <div className="p-4 border-b flex items-center justify-between gap-4">

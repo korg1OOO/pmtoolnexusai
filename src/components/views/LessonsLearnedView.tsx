@@ -145,40 +145,44 @@ export default function LessonsLearnedView() {
               <p className="text-muted-foreground">Capture and share project insights for future success</p>
             </div>
           </div>
-          <Button onClick={handleAddLesson} disabled={createLesson.isPending}>
-            {createLesson.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
-            Add Lesson
-          </Button>
+          {viewMode !== 'spreadsheet' && (
+            <Button onClick={handleAddLesson} disabled={createLesson.isPending}>
+              {createLesson.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+              Add Lesson
+            </Button>
+          )}
         </div>
       </div>
 
       {/* Stats */}
-      <div className="p-6 border-b grid grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-sm text-muted-foreground">Total Lessons</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-success">{stats.successes}</div>
-            <p className="text-sm text-muted-foreground">What Went Well</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-warning">{stats.improvements}</div>
-            <p className="text-sm text-muted-foreground">Areas for Improvement</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-primary">{stats.highImpact}</div>
-            <p className="text-sm text-muted-foreground">High Impact</p>
-          </CardContent>
-        </Card>
-      </div>
+      {viewMode !== 'spreadsheet' && (
+        <div className="p-6 border-b grid grid-cols-4 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold">{stats.total}</div>
+              <p className="text-sm text-muted-foreground">Total Lessons</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-success">{stats.successes}</div>
+              <p className="text-sm text-muted-foreground">What Went Well</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-warning">{stats.improvements}</div>
+              <p className="text-sm text-muted-foreground">Areas for Improvement</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-primary">{stats.highImpact}</div>
+              <p className="text-sm text-muted-foreground">High Impact</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Search & Filters */}
       <div className="p-4 border-b flex items-center justify-between gap-4">
@@ -199,10 +203,12 @@ export default function LessonsLearnedView() {
             />
           </div>
         </div>
-        <Button variant="outline">
-          <Filter className="h-4 w-4 mr-2" />
-          Filter
-        </Button>
+        {viewMode !== 'spreadsheet' && (
+          <Button variant="outline">
+            <Filter className="h-4 w-4 mr-2" />
+            Filter
+          </Button>
+        )}
       </div>
 
       <div className="flex-1 flex overflow-hidden">

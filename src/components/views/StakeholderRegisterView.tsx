@@ -309,12 +309,14 @@ export default function StakeholderRegisterView() {
               </div>
             </div>
             <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-              <DialogTrigger asChild>
-                <Button>
-                  <Plus className="h-4 w-4 mr-2" />
-                  Add Stakeholder
-                </Button>
-              </DialogTrigger>
+              {viewMode !== 'spreadsheet' && (
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add Stakeholder
+                  </Button>
+                </DialogTrigger>
+              )}
               <DialogContent className="sm:max-w-[425px]">
                 <DialogHeader>
                   <DialogTitle>Add New Stakeholder</DialogTitle>
@@ -425,10 +427,12 @@ export default function StakeholderRegisterView() {
                 <Button variant="outline" size="icon" onClick={() => setViewMode('spreadsheet')}>
                   <TableIcon className={cn('h-4 w-4', viewMode === 'spreadsheet' && 'text-primary')} />
                 </Button>
-                <Button variant="outline">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filter
-                </Button>
+                {viewMode !== 'spreadsheet' && (
+                  <Button variant="outline">
+                    <Filter className="h-4 w-4 mr-2" />
+                    Filter
+                  </Button>
+                )}
               </div>
             </div>
 

@@ -160,81 +160,89 @@ export default function ChangeRequestsView() {
               <p className="text-muted-foreground">Manage scope, schedule, and cost change requests</p>
             </div>
           </div>
-          <Button onClick={handleCreateCR} disabled={createCR.isPending}>
-            {createCR.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
-            New Change Request
-          </Button>
+          <div className="flex items-center gap-2">
+            <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'list' | 'spreadsheet')} className="w-auto">
+              <TabsList className="h-8">
+                <TabsTrigger value="list" className="h-6 px-2.5 text-xs"><List className="h-3.5 w-3.5 mr-1.5" /> Dashboard & List</TabsTrigger>
+                <TabsTrigger value="spreadsheet" className="h-6 px-2.5 text-xs"><Table className="h-3.5 w-3.5 mr-1.5" /> Spreadsheet</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            {viewMode !== 'spreadsheet' && (
+              <Button onClick={handleCreateCR} disabled={createCR.isPending}>
+                {createCR.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Plus className="h-4 w-4 mr-2" />}
+                New Change Request
+              </Button>
+            )}
+          </div>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="p-6 border-b grid grid-cols-5 gap-4">
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-sm text-muted-foreground">Total Requests</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-warning">{stats.pending}</div>
-            <p className="text-sm text-muted-foreground">Pending Approval</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className="text-2xl font-bold text-success">{stats.approved}</div>
-            <p className="text-sm text-muted-foreground">Approved</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className={cn(
-              "text-2xl font-bold",
-              stats.totalCostImpact > 0 ? 'text-destructive' : 'text-success'
-            )}>
-              {stats.totalCostImpact > 0 ? '+' : ''}${(stats.totalCostImpact / 1000).toFixed(0)}K
-            </div>
-            <p className="text-sm text-muted-foreground">Cost Impact</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="p-4">
-            <div className={cn(
-              "text-2xl font-bold",
-              stats.totalScheduleImpact > 0 ? 'text-destructive' : 'text-success'
-            )}>
-              {stats.totalScheduleImpact > 0 ? '+' : ''}{stats.totalScheduleImpact} days
-            </div>
-            <p className="text-sm text-muted-foreground">Schedule Impact</p>
-          </CardContent>
-        </Card>
-      </div>
+      {viewMode !== 'spreadsheet' && (
+        <div className="p-6 border-b grid grid-cols-5 gap-4">
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold">{stats.total}</div>
+              <p className="text-sm text-muted-foreground">Total Requests</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-warning">{stats.pending}</div>
+              <p className="text-sm text-muted-foreground">Pending Approval</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className="text-2xl font-bold text-success">{stats.approved}</div>
+              <p className="text-sm text-muted-foreground">Approved</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className={cn(
+                "text-2xl font-bold",
+                stats.totalCostImpact > 0 ? 'text-destructive' : 'text-success'
+              )}>
+                {stats.totalCostImpact > 0 ? '+' : ''}${(stats.totalCostImpact / 1000).toFixed(0)}K
+              </div>
+              <p className="text-sm text-muted-foreground">Cost Impact</p>
+            </CardContent>
+          </Card>
+          <Card>
+            <CardContent className="p-4">
+              <div className={cn(
+                "text-2xl font-bold",
+                stats.totalScheduleImpact > 0 ? 'text-destructive' : 'text-success'
+              )}>
+                {stats.totalScheduleImpact > 0 ? '+' : ''}{stats.totalScheduleImpact} days
+              </div>
+              <p className="text-sm text-muted-foreground">Schedule Impact</p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Search & Filters */}
-      <div className="p-4 border-b flex items-center gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search change requests..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
+      {viewMode !== 'spreadsheet' && (
+        <div className="flex items-center justify-between gap-3 px-6 py-2.5 border-b bg-muted/30 shrink-0">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              className="pl-8 h-7 text-xs w-56 border-border/60"
+              placeholder="Search change requests..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+          <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" className="h-7 text-xs border-border/60">
+              <Filter className="h-3.5 w-3.5 mr-1.5" />
+              Filter
+            </Button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'list' | 'spreadsheet')} className="w-auto">
-            <TabsList className="h-8">
-              <TabsTrigger value="list" className="h-6 px-2.5 text-xs"><List className="h-3.5 w-3.5 mr-1.5" /> Dashboard & List</TabsTrigger>
-              <TabsTrigger value="spreadsheet" className="h-6 px-2.5 text-xs"><Table className="h-3.5 w-3.5 mr-1.5" /> Spreadsheet</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          <Button variant="outline">
-            <Filter className="h-4 w-4 mr-2" />
-            Filter
-          </Button>
-        </div>
-      </div>
+      )}
 
       {/* Content */}
       <div className={cn("flex-1 overflow-auto", viewMode === 'spreadsheet' ? 'p-0 bg-muted/10' : 'flex')}>

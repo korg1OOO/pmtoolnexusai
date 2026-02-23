@@ -234,17 +234,21 @@ export default function MilestonesView() {
           <p className="text-sm text-muted-foreground mt-1">Track key deliverables and approval checkpoints</p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Filter className="h-4 w-4 mr-2" />
-            Filter
-          </Button>
+          {viewMode !== 'spreadsheet' && (
+            <Button variant="outline" size="sm">
+              <Filter className="h-4 w-4 mr-2" />
+              Filter
+            </Button>
+          )}
           <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Milestone
-              </Button>
-            </DialogTrigger>
+            {viewMode !== 'spreadsheet' && (
+              <DialogTrigger asChild>
+                <Button size="sm">
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Milestone
+                </Button>
+              </DialogTrigger>
+            )}
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>New Milestone</DialogTitle>
@@ -282,36 +286,38 @@ export default function MilestonesView() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-4 gap-4">
-        <KPICard
-          title="Total Milestones"
-          value={(milestones?.length || 0).toString()}
-          subtitle="Project milestones"
-          icon={Target}
-          status="neutral"
-        />
-        <KPICard
-          title="Completed"
-          value={statusCounts.completed.toString()}
-          subtitle={`${milestones?.length ? Math.round((statusCounts.completed / (milestones.length || 1)) * 100) : 0}% completion`}
-          icon={CheckCircle2}
-          status="success"
-        />
-        <KPICard
-          title="Stage Gates"
-          value={(gates?.length || 0).toString()}
-          subtitle={`${gates?.filter(g => g.status === 'in-review').length || 0} awaiting approval`}
-          icon={Shield}
-          status="neutral"
-        />
-        <KPICard
-          title="At Risk / Overdue"
-          value={(statusCounts.atRisk + statusCounts.overdue).toString()}
-          subtitle={`${statusCounts.overdue} overdue`}
-          icon={AlertTriangle}
-          status={statusCounts.overdue > 0 ? 'error' : 'warning'}
-        />
-      </div>
+      {viewMode !== 'spreadsheet' && (
+        <div className="grid grid-cols-4 gap-4">
+          <KPICard
+            title="Total Milestones"
+            value={(milestones?.length || 0).toString()}
+            subtitle="Project milestones"
+            icon={Target}
+            status="neutral"
+          />
+          <KPICard
+            title="Completed"
+            value={statusCounts.completed.toString()}
+            subtitle={`${milestones?.length ? Math.round((statusCounts.completed / (milestones.length || 1)) * 100) : 0}% completion`}
+            icon={CheckCircle2}
+            status="success"
+          />
+          <KPICard
+            title="Stage Gates"
+            value={(gates?.length || 0).toString()}
+            subtitle={`${gates?.filter(g => g.status === 'in-review').length || 0} awaiting approval`}
+            icon={Shield}
+            status="neutral"
+          />
+          <KPICard
+            title="At Risk / Overdue"
+            value={(statusCounts.atRisk + statusCounts.overdue).toString()}
+            subtitle={`${statusCounts.overdue} overdue`}
+            icon={AlertTriangle}
+            status={statusCounts.overdue > 0 ? 'error' : 'warning'}
+          />
+        </div>
+      )}
 
       {/* View Toggle */}
       <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">
@@ -361,7 +367,7 @@ export default function MilestonesView() {
       )}
 
       {/* Status Filters */}
-      {viewMode !== 'gates' && (
+      {viewMode !== 'gates' && viewMode !== 'spreadsheet' && (
         <div className="flex gap-2">
           <Badge
             variant={filterStatus === null ? 'default' : 'outline'}

@@ -394,10 +394,18 @@ export default function RisksView() {
               showSectionPicker
               variant="dropdown"
             />
-            <Button variant="outline" size="sm"><Filter className="h-4 w-4 mr-1" />Filter</Button>
-            <Button size="sm" onClick={() => setAddDialogOpen(true)}><Plus className="h-4 w-4 mr-1" />Add Risk</Button>
+            {viewMode !== 'spreadsheet' && (
+              <Button size="sm" onClick={() => setAddDialogOpen(true)}><Plus className="h-4 w-4 mr-1" />Add Risk</Button>
+            )}
           </div>
         </div>
+
+        {/* Toolbar */}
+        {viewMode !== 'spreadsheet' && (
+          <div className="flex items-center gap-3 px-6 py-2.5 border-b bg-muted/30 shrink-0">
+            <Button variant="outline" size="sm" className="h-7 text-xs border-border/60"><Filter className="h-3.5 w-3.5 mr-1.5" />Filter</Button>
+          </div>
+        )}
 
         <div className={cn("flex-1 overflow-auto", viewMode === 'spreadsheet' ? 'p-0 bg-muted/10' : 'p-6')}>
           {viewMode === 'spreadsheet' ? (

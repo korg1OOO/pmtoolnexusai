@@ -242,7 +242,7 @@ export default function RequirementsMatrixView() {
                                 <TabsTrigger value="spreadsheet" className="h-6 px-2.5 text-xs"><Table className="h-3.5 w-3.5 mr-1.5" /> Spreadsheet</TabsTrigger>
                             </TabsList>
                         </Tabs>
-                        <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleImport} />
+                        <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleImport} aria-label="Import requirements from file" title="Import requirements from file" />
                         <Tooltip>
                             <TooltipTrigger asChild>
                                 <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={bulkUpsert.isPending}>
@@ -256,9 +256,11 @@ export default function RequirementsMatrixView() {
                             <Download className="h-4 w-4 mr-1.5" />
                             Export
                         </Button>
-                        <Button size="sm" onClick={handleAddRow}>
-                            <Plus className="h-4 w-4 mr-1.5" /> Add Requirement
-                        </Button>
+                        {viewMode !== 'spreadsheet' && (
+                            <Button size="sm" onClick={handleAddRow}>
+                                <Plus className="h-4 w-4 mr-1.5" /> Add Requirement
+                            </Button>
+                        )}
                     </div>
                 </div>
 
@@ -291,6 +293,8 @@ export default function RequirementsMatrixView() {
                             <button
                                 onClick={() => setCustomColumns(prev => prev.filter(c => c.key !== col.key))}
                                 className="text-muted-foreground hover:text-destructive ml-0.5"
+                                aria-label={`Remove column ${col.label}`}
+                                title={`Remove column ${col.label}`}
                             >
                                 <X className="h-3 w-3" />
                             </button>

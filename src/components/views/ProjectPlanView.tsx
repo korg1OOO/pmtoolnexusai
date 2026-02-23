@@ -21,6 +21,7 @@ import {
   Loader2,
   Trash2,
   List,
+  ListTodo,
   Table,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -30,7 +31,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DynamicDataGrid, type DynamicColumnDef } from '@/components/ui/DynamicDataGrid';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { useTasks, useCreateTask, useDeleteTask, useBulkUpdateTasks, useSaveProjectBaseline, DbTask } from '@/hooks/useTasks';
-import { recalculateWBS } from './planning/utils/wbs';
+import { recalculateWBS } from '../planning/utils/wbs';
 import type { Task, TaskStatus, TaskType, Priority } from '@/types/project';
 import { toast } from 'sonner';
 
@@ -100,8 +101,12 @@ function TaskRow({ task, expanded, onToggle, selected, onSelect, onDelete }: Tas
         {hasChildren ? (
           <button
             onClick={onToggle}
-            className="p-0.5 rounded hover:bg-muted transition-colors transition-transform duration-200"
-            style={{ transform: expanded ? 'rotate(0deg)' : 'rotate(-90deg)' }}
+            aria-label="Toggle children"
+            title="Toggle children"
+            className={cn(
+              "p-0.5 rounded hover:bg-muted transition-colors transition-transform duration-200",
+              expanded ? "rotate-0" : "-rotate-90"
+            )}
           >
             <ChevronDown className="h-4 w-4 text-muted-foreground" />
           </button>
@@ -377,7 +382,12 @@ export default function ProjectPlanView() {
   return (
     <div className="flex flex-col h-full">
       {/* Toolbar */}
-      <div className="flex items-center justify-between p-4 border-b bg-card">
+      <div className="flex items-center justify-between p-4 border-b bg-card shrink-0">
+        <div className="flex items-center gap-3">
+          <ListTodo className="h-6 w-6 text-primary" />
+          <h2 className="text-lg font-semibold">Project Plan</h2>
+          <Badge>{visibleTasks.length} Tasks</Badge>
+        </div>
         <div className="flex items-center gap-2">
           <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'list' | 'spreadsheet')} className="w-auto mr-2">
             <TabsList className="h-8">
@@ -385,33 +395,43 @@ export default function ProjectPlanView() {
               <TabsTrigger value="spreadsheet" className="h-6 px-2.5 text-xs"><Table className="h-3.5 w-3.5 mr-1.5" /> Spreadsheet</TabsTrigger>
             </TabsList>
           </Tabs>
-          <Button size="sm" onClick={handleAddTask} disabled={createTask.isPending}>
-            {createTask.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Plus className="h-4 w-4 mr-1" />}
-            Add Task
-          </Button>
-          <Button variant="outline" size="sm">
-            <Link2 className="h-4 w-4 mr-1" />
+          {viewMode !== 'spreadsheet' && (
+            <>
+              <Badge variant="outline" className="gap-1">
+                <Flag className="h-3 w-3 text-destructive" />
+                Critical Path
+              </Badge>
+              <Button variant="outline" size="sm" onClick={handleBaseline} disabled={saveBaseline.isPending}>
+                {saveBaseline.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
+                Baseline
+              </Button>
+            </>
+          )}
+          {viewMode !== 'spreadsheet' && (
+            <>
+              <Button size="sm" onClick={handleAddTask} disabled={createTask.isPending}>
+                {createTask.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Plus className="h-4 w-4 mr-1" />}
+                Add Task
+              </Button>
+            </>
+          )}
+        </div>
+      </div>
+      {viewMode !== 'spreadsheet' && (
+        <div className="flex items-center gap-2 px-6 py-2.5 border-b bg-muted/30 shrink-0">
+          <Button variant="outline" size="sm" className="h-7 text-xs border-border/60">
+            <Link2 className="h-3.5 w-3.5 mr-1.5" />
             Link
           </Button>
-          <div className="w-px h-6 bg-border mx-2" />
-          <Button variant="ghost" size="sm">
+          <div className="w-px h-5 bg-border mx-2" />
+          <Button variant="ghost" size="sm" className="h-7 text-xs">
             Indent
           </Button>
-          <Button variant="ghost" size="sm">
+          <Button variant="ghost" size="sm" className="h-7 text-xs">
             Outdent
           </Button>
         </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="gap-1">
-            <Flag className="h-3 w-3 text-destructive" />
-            Critical Path
-          </Badge>
-          <Button variant="outline" size="sm" onClick={handleBaseline} disabled={saveBaseline.isPending}>
-            {saveBaseline.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
-            Baseline
-          </Button>
-        </div>
-      </div>
+      )}
 
       {viewMode === 'spreadsheet' ? (
         <div className="flex-1 overflow-auto bg-muted/10 h-full p-6">

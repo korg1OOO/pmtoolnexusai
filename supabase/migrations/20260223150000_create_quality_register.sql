@@ -37,7 +37,7 @@ CREATE POLICY "Users can delete quality items in their tenant"
 -- Trigger for updated_at
 CREATE TRIGGER set_project_quality_register_updated_at
 BEFORE UPDATE ON public.project_quality_register
-FOR EACH ROW EXECUTE FUNCTION notify_updated_at();
+FOR EACH ROW EXECUTE FUNCTION public.handle_updated_at();
 
 -- Additional policy specific to project access
 CREATE POLICY "Project access controls quality items"

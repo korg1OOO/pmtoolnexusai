@@ -730,6 +730,7 @@ export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabP
     const [isExporting, setIsExporting] = useState(false);
     const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
     const [snapGuide, setSnapGuide] = useState<number | null>(null);
+    const [pendingImportData, setPendingImportData] = useState<any[] | null>(null);
 
     // Load Snapshots
     useEffect(() => {
@@ -863,12 +864,61 @@ export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabP
         toast({ title: "Gate Added", description: `Added ${newMonthLabel} to the timeline.` });
     };
 
+    const processImportData = (data: any[], replace: boolean) => {
+        // Map excel rows to Swimlanes and Activities
+        const newSwimlanes: Swimlane[] = [];
+        const phaseMap = new Map<string, Swimlane>();
+
+        data.forEach(row => {
+            const phaseName = row.Phase || row.Swimlane || "Uncategorized";
+            if (!phaseMap.has(phaseName)) {
+                const newPhase: Swimlane = {
+                    id: uid(),
+                    label: phaseName,
+                    color: SWIMLANE_COLORS[phaseMap.size % SWIMLANE_COLORS.length],
+                    collapsed: false,
+                    activities: []
+                };
+                phaseMap.set(phaseName, newPhase);
+                newSwimlanes.push(newPhase);
+            }
+
+            const phase = phaseMap.get(phaseName);
+            if (phase) {
+                const startMonthLabel = row["Start Month"] || row.Start || "Mar 2025";
+                const startIndex = months.findIndex(m => m.label === startMonthLabel);
+
+                phase.activities.push({
+                    id: uid(),
+                    name: row.Activity || row.Task || "New Activity",
+                    start: startIndex !== -1 ? startIndex : 0,
+                    duration: parseInt(row.Duration) || 2,
+                    color: row.Color || COLORS[phase.activities.length % COLORS.length],
+                    tags: row.Tags ? String(row.Tags).split(",").map(t => t.trim()) : [],
+                    notes: row.Notes || ""
+                });
+            }
+        });
+
+        if (replace) {
+            console.log("Replacing (MVP: Append to fresh state simulated)");
+            dispatch({ type: 'SET_INITIAL_DATA', swimlanes: newSwimlanes, milestones: state.milestones });
+        } else {
+            console.log("Appending (MVP Simulation)");
+            // In a full implementation, merge newSwimlanes onto existing state.swimlanes
+        }
+
+        console.log("Importing", data.length, "activities");
+        toast({ title: "Import Successful", description: `Added ${data.length} tasks from Excel.` });
+        setPendingImportData(null);
+    };
+
     const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = (evt) => {
+        reader.onload = async (evt) => {
             const bstr = evt.target?.result;
             const wb = XLSX.read(bstr, { type: 'binary' });
             const wsname = wb.SheetNames[0];
@@ -876,53 +926,22 @@ export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabP
             const data: Record<string, any>[] = XLSX.utils.sheet_to_json(ws);
 
             if (data.length > 0) {
-                const choice = window.confirm("Do you want to REPLACE the entire plan? (OK for Replace, Cancel for Append)");
+                const isReplace = await confirm(
+                    "Do you want to REPLACE the entire plan? (Click Replace to overwrite, Cancel to append)",
+                    { title: "Import Plan", confirmLabel: "Replace Entire Plan", cancelLabel: "Append Only" }
+                );
 
-                // Map excel rows to Swimlanes and Activities
-                const newSwimlanes: Swimlane[] = [];
-                const phaseMap = new Map<string, Swimlane>();
-
-                data.forEach(row => {
-                    const phaseName = row.Phase || row.Swimlane || "Uncategorized";
-                    if (!phaseMap.has(phaseName)) {
-                        const newPhase: Swimlane = {
-                            id: uid(),
-                            label: phaseName,
-                            color: SWIMLANE_COLORS[phaseMap.size % SWIMLANE_COLORS.length],
-                            collapsed: false,
-                            activities: []
-                        };
-                        phaseMap.set(phaseName, newPhase);
-                        newSwimlanes.push(newPhase);
-                    }
-
-                    const phase = phaseMap.get(phaseName);
-                    if (phase) {
-                        const startMonthLabel = row["Start Month"] || row.Start || "Mar 2025";
-                        const startIndex = months.findIndex(m => m.label === startMonthLabel);
-
-                        phase.activities.push({
-                            id: uid(),
-                            name: row.Activity || row.Task || "New Activity",
-                            start: startIndex !== -1 ? startIndex : 0,
-                            duration: parseInt(row.Duration) || 2,
-                            color: row.Color || COLORS[phase.activities.length % COLORS.length],
-                            tags: row.Tags ? String(row.Tags).split(",").map(t => t.trim()) : [],
-                            notes: row.Notes || ""
-                        });
-                    }
-                });
-
-                if (choice) {
-                    console.log("Replacing (MVP: Append to fresh state simulated)");
-                }
-
-                // Implement append logic properly via dispatch if needed, but for now we'll just log
-                console.log("Importing", data.length, "activities");
-                toast({ title: "Import Successful", description: `Added ${data.length} tasks from Excel.` });
+                // Note: since our confirm returns a boolean based on the primary action,
+                // `isReplace` being true means Replace, `false` means they clicked Append (Cancel in standard confirm terms).
+                processImportData(data, isReplace);
             }
         };
         reader.readAsBinaryString(file);
+
+        // Clear the input value so the same file can be uploaded again if needed
+        if (importFileRef.current) {
+            importFileRef.current.value = "";
+        }
     };
 
     const handleExportCSV = () => {

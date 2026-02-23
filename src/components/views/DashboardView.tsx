@@ -492,7 +492,7 @@ export default function DashboardView({ onViewChange }: DashboardViewProps) {
               </DialogContent>
             </Dialog>
           )}
-          <Button size="sm" onClick={() => onViewChange?.('morning-briefing')}>
+          <Button size="sm" onClick={() => navigate('/morning-briefing')}>
             <Zap className="h-4 w-4 mr-2" />
             AI Insights
           </Button>

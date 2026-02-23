@@ -21,6 +21,7 @@ export interface Deliverable {
         full_name: string | null;
         avatar_url: string | null;
     } | null;
+    custom_fields?: Record<string, any>;
 }
 
 export function useDeliverables(projectId: string | null) {
@@ -51,7 +52,8 @@ export function useDeliverables(projectId: string | null) {
                     ...d,
                     acceptance_criteria: typeof d.acceptance_criteria === 'string'
                         ? JSON.parse(d.acceptance_criteria)
-                        : (d.acceptance_criteria as any[] || [])
+                        : (d.acceptance_criteria as any[] || []),
+                    custom_fields: d.custom_fields || {}
                 }));
             } catch (e) {
                 console.warn('Error fetching deliverables:', e);

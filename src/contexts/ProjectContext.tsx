@@ -63,6 +63,7 @@ interface ProjectContextType {
   getDefaultModules: (methodology: Methodology) => ModuleVisibility;
   loading: boolean;
   selectProject: (projectId: string) => void;
+  clearProject: () => void;
   activeGlobalPanel: GlobalPanelType;
   setActiveGlobalPanel: (panel: GlobalPanelType) => void;
 }
@@ -257,6 +258,11 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const clearProject = () => {
+    localStorage.removeItem(SELECTED_PROJECT_KEY);
+    setSettings(defaultSettings);
+  };
+
   const updateMethodology = (methodology: Methodology) => {
     const newModules = getDefaultModulesInternal(methodology);
     setSettings((prev) => ({
@@ -299,6 +305,7 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
         getDefaultModules,
         loading,
         selectProject,
+        clearProject,
         activeGlobalPanel,
         setActiveGlobalPanel,
       }}

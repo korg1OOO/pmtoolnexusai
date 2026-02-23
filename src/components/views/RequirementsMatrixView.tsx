@@ -2,15 +2,7 @@ import React, { useState, useRef, useCallback, useMemo } from 'react';
 import { useRequirements, useCreateRequirement, useUpdateRequirement, useDeleteRequirement, useBulkUpsertRequirements, RequirementItem } from '@/hooks/useRequirements';
 import { useProjectContext } from '@/contexts/ProjectContext';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import {
-    Select,
-    SelectContent,
-    SelectItem,
-    SelectTrigger,
-    SelectValue,
-} from '@/components/ui/select';
 import {
     Dialog,
     DialogContent,
@@ -24,6 +16,15 @@ import {
     TooltipProvider,
     TooltipTrigger,
 } from '@/components/ui/tooltip';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { DynamicDataGrid, type DynamicColumnDef } from '@/components/ui/DynamicDataGrid';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     DropdownMenu,
@@ -43,7 +44,12 @@ import {
     ChevronDown,
     GripVertical,
     X,
+    List,
+    Table,
 } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/card';
+import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -63,11 +69,12 @@ type ColumnDef = {
     key: string;
     label: string;
     width: number;
-    type: 'text' | 'status' | 'date' | 'custom';
+    type: 'text' | 'select' | 'date' | 'custom';
     sticky?: boolean;
+    options?: string[]; // Adding options for generic select
 };
 
-const STANDARD_COLUMNS: ColumnDef[] = [
+const STANDARD_COLUMNS: DynamicColumnDef<RequirementItem>[] = [
     { key: 'code', label: 'Code', width: 100, type: 'text', sticky: true },
     { key: 'requirement', label: 'Requirement', width: 240, type: 'text' },
     { key: 'description', label: 'Description', width: 300, type: 'text' },
@@ -78,83 +85,8 @@ const STANDARD_COLUMNS: ColumnDef[] = [
     { key: 'consultant', label: 'Consultant', width: 140, type: 'text' },
     { key: 'date', label: 'Date', width: 130, type: 'date' },
     { key: 'meeting_reference', label: 'Meeting Ref.', width: 160, type: 'text' },
-    { key: 'status', label: 'Status', width: 130, type: 'status' },
+    { key: 'status', label: 'Status', width: 130, type: 'select', options: STATUS_OPTIONS },
 ];
-
-// ─── Inline Cell ──────────────────────────────────────────────────────────────
-
-interface CellProps {
-    value: string;
-    columnKey: string;
-    rowId: string;
-    type: 'text' | 'status' | 'date' | 'custom';
-    onSave: (rowId: string, key: string, value: string) => void;
-    isCustom?: boolean;
-}
-
-function EditableCell({ value, columnKey, rowId, type, onSave, isCustom }: CellProps) {
-    const [editing, setEditing] = useState(false);
-    const [draft, setDraft] = useState(value);
-    const inputRef = useRef<HTMLInputElement>(null);
-
-    const handleStart = () => {
-        if (type === 'status') return;
-        setDraft(value);
-        setEditing(true);
-        setTimeout(() => inputRef.current?.focus(), 0);
-    };
-
-    const handleCommit = () => {
-        setEditing(false);
-        if (draft !== value) onSave(rowId, columnKey, draft);
-    };
-
-    if (type === 'status') {
-        return (
-            <Select value={value || 'Open'} onValueChange={v => onSave(rowId, columnKey, v)}>
-                <SelectTrigger className="h-7 border-0 bg-transparent shadow-none text-xs focus:ring-0 px-2">
-                    <span className={cn('px-1.5 py-0.5 rounded text-[11px] border', STATUS_COLORS[value] ?? STATUS_COLORS.Open)}>
-                        {value || 'Open'}
-                    </span>
-                </SelectTrigger>
-                <SelectContent>
-                    {STATUS_OPTIONS.map(s => (
-                        <SelectItem key={s} value={s}>
-                            <span className={cn('px-1.5 py-0.5 rounded text-[11px] border', STATUS_COLORS[s])}>{s}</span>
-                        </SelectItem>
-                    ))}
-                </SelectContent>
-            </Select>
-        );
-    }
-
-    if (editing) {
-        return (
-            <Input
-                ref={inputRef}
-                type={type === 'date' ? 'date' : 'text'}
-                value={draft}
-                onChange={e => setDraft(e.target.value)}
-                onBlur={handleCommit}
-                onKeyDown={e => {
-                    if (e.key === 'Enter') handleCommit();
-                    if (e.key === 'Escape') setEditing(false);
-                }}
-                className="h-7 px-2 py-0 text-xs border-primary shadow-sm focus-visible:ring-1 rounded-none"
-            />
-        );
-    }
-
-    return (
-        <div
-            onClick={handleStart}
-            className="px-2 py-1.5 min-h-[28px] text-xs cursor-text hover:bg-primary/5 rounded truncate"
-            title={value}
-        >
-            {type === 'date' && value ? new Date(value).toLocaleDateString() : (value || <span className="text-muted-foreground/50 italic">—</span>)}
-        </div>
-    );
-}
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
@@ -170,10 +102,8 @@ export default function RequirementsMatrixView() {
 
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState<string>('all');
-    const [customColumns, setCustomColumns] = useState<ColumnDef[]>([]);
-    const [isAddColOpen, setIsAddColOpen] = useState(false);
-    const [newColName, setNewColName] = useState('');
-    const [selectedRows, setSelectedRows] = useState<Set<string>>(new Set());
+    const [viewMode, setViewMode] = useState<'list' | 'spreadsheet'>('list');
+    const [customColumns, setCustomColumns] = useState<DynamicColumnDef<RequirementItem>[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     const allColumns = useMemo(() => [...STANDARD_COLUMNS, ...customColumns], [customColumns]);
@@ -215,14 +145,6 @@ export default function RequirementsMatrixView() {
             status: 'Open',
             sort_order: items.length,
         });
-    };
-
-    // ─── Delete selected rows ─────────────────────────────────────────────────
-
-    const handleDeleteSelected = () => {
-        if (!projectId) return;
-        selectedRows.forEach(id => deleteReq.mutate({ id, project_id: projectId }));
-        setSelectedRows(new Set());
     };
 
     // ─── Excel Export ─────────────────────────────────────────────────────────
@@ -287,23 +209,7 @@ export default function RequirementsMatrixView() {
         }
     };
 
-    // ─── Add Custom Column ────────────────────────────────────────────────────
-
-    const handleAddColumn = () => {
-        if (!newColName.trim()) return;
-        const key = newColName.toLowerCase().replace(/\s+/g, '_');
-        if (customColumns.find(c => c.key === key)) {
-            toast.error('Column already exists');
-            return;
-        }
-        setCustomColumns(prev => [
-            ...prev,
-            { key, label: newColName.trim(), width: 160, type: 'custom' },
-        ]);
-        setIsAddColOpen(false);
-        setNewColName('');
-        toast.success(`Column "${newColName}" added`);
-    };
+    // ─── Excel Import ─────────────────────────────────────────────────────────
 
     if (!projectId) {
         return (
@@ -330,12 +236,12 @@ export default function RequirementsMatrixView() {
                         </p>
                     </div>
                     <div className="flex items-center gap-2">
-                        {selectedRows.size > 0 && (
-                            <Button variant="destructive" size="sm" onClick={handleDeleteSelected}>
-                                <Trash2 className="h-4 w-4 mr-1.5" />
-                                Delete ({selectedRows.size})
-                            </Button>
-                        )}
+                        <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as 'list' | 'spreadsheet')} className="w-auto">
+                            <TabsList className="h-8">
+                                <TabsTrigger value="list" className="h-6 px-2.5 text-xs"><List className="h-3.5 w-3.5 mr-1.5" /> List</TabsTrigger>
+                                <TabsTrigger value="spreadsheet" className="h-6 px-2.5 text-xs"><Table className="h-3.5 w-3.5 mr-1.5" /> Spreadsheet</TabsTrigger>
+                            </TabsList>
+                        </Tabs>
                         <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleImport} />
                         <Tooltip>
                             <TooltipTrigger asChild>
@@ -350,13 +256,8 @@ export default function RequirementsMatrixView() {
                             <Download className="h-4 w-4 mr-1.5" />
                             Export
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => setIsAddColOpen(true)}>
-                            <Settings2 className="h-4 w-4 mr-1.5" />
-                            Add Column
-                        </Button>
-                        <Button size="sm" onClick={handleAddRow} disabled={createReq.isPending}>
-                            {createReq.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Plus className="h-4 w-4 mr-1.5" />}
-                            Add Row
+                        <Button size="sm" onClick={handleAddRow}>
+                            <Plus className="h-4 w-4 mr-1.5" /> Add Requirement
                         </Button>
                     </div>
                 </div>
@@ -397,138 +298,131 @@ export default function RequirementsMatrixView() {
                     ))}
                 </div>
 
-                {/* Spreadsheet */}
-                {isLoading ? (
-                    <div className="flex items-center justify-center flex-1">
-                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    </div>
-                ) : (
-                    <div className="flex-1 overflow-auto">
-                        <table className="text-sm border-collapse w-max min-w-full">
-                            {/* Header */}
-                            <thead className="sticky top-0 z-30">
-                                <tr className="bg-muted/80 backdrop-blur border-b-2 border-border">
-                                    {/* Checkbox col */}
-                                    <th className="sticky left-0 z-40 bg-muted/90 backdrop-blur w-8 px-2 border-r text-center">
-                                        <input
-                                            type="checkbox"
-                                            className="accent-primary"
-                                            checked={selectedRows.size === filteredItems.length && filteredItems.length > 0}
-                                            onChange={e => {
-                                                if (e.target.checked) setSelectedRows(new Set(filteredItems.map(i => i.id)));
-                                                else setSelectedRows(new Set());
-                                            }}
-                                        />
-                                    </th>
-                                    {/* Row # */}
-                                    <th className="sticky left-8 z-40 bg-muted/90 backdrop-blur w-10 px-2 py-2 text-xs font-semibold text-muted-foreground border-r text-center">
-                                        #
-                                    </th>
-                                    {allColumns.map((col, ci) => (
-                                        <th
-                                            key={col.key}
-                                            className={cn(
-                                                'px-3 py-2 text-left text-xs font-semibold whitespace-nowrap border-r',
-                                                col.sticky && 'sticky left-[72px] z-40 bg-muted/90 backdrop-blur',
-                                                !col.sticky && ci === 0 && 'sticky left-[72px] z-40 bg-muted/90'
-                                            )}
-                                            style={{ minWidth: col.width }}
-                                        >
-                                            {col.label}
-                                            {col.type === 'custom' && (
-                                                <span className="ml-1 text-[9px] text-muted-foreground/60 uppercase">custom</span>
-                                            )}
-                                        </th>
+                {/* Main Content Area */}
+                <div className="flex-1 overflow-hidden p-6 pb-20 bg-muted/10">
+                    {isLoading ? (
+                        <div className="flex items-center justify-center h-full">
+                            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                        </div>
+                    ) : viewMode === 'spreadsheet' ? (
+                        <div className="h-full bg-background border rounded-md shadow-sm overflow-hidden">
+                            <DynamicDataGrid
+                                data={filteredItems}
+                                baseColumns={STANDARD_COLUMNS}
+                                customColumns={customColumns}
+                                idExtractor={(item) => item.id}
+                                customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
+                                onCellSave={handleCellSave}
+                                onDeleteRows={(ids) => {
+                                    if (projectId) {
+                                        ids.forEach(id => deleteReq.mutate({ id, project_id: projectId }));
+                                    }
+                                }}
+                                onAddColumn={(col) => {
+                                    if (customColumns.find(c => c.key === col.key)) {
+                                        toast.error('Column already exists');
+                                        return;
+                                    }
+                                    setCustomColumns(prev => [...prev, col]);
+                                    toast.success(`Column "${col.label}" added`);
+                                }}
+                                onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
+                                onAddRow={handleAddRow}
+                                emptyStateMessage={searchTerm || filterStatus !== 'all' ? 'No requirements match your filters.' : 'No requirements added yet.'}
+                                containerStyles="h-full border-0"
+                            />
+                        </div>
+                    ) : (
+                        <ScrollArea className="h-full pr-4">
+                            {filteredItems.length === 0 ? (
+                                <div className="text-center py-12 border border-dashed rounded-lg bg-background">
+                                    <ClipboardList className="h-8 w-8 text-muted-foreground mx-auto mb-3 opacity-50" />
+                                    <h3 className="text-base font-medium">No requirements found</h3>
+                                    <p className="text-sm text-muted-foreground mt-1">Adjust your filters or add a new requirement.</p>
+                                    <Button variant="outline" className="mt-4" onClick={handleAddRow}>
+                                        <Plus className="h-4 w-4 mr-2" /> Add Requirement
+                                    </Button>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
+                                    {filteredItems.map(req => (
+                                        <Card key={req.id} className="group hover:border-primary/30 transition-colors shadow-sm">
+                                            <CardContent className="p-4">
+                                                <div className="flex items-start justify-between gap-2 mb-3">
+                                                    <div>
+                                                        <div className="flex items-center gap-2 mb-1">
+                                                            <span className="font-mono text-xs font-semibold text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{req.code}</span>
+                                                            <Badge variant="outline" className={cn("text-[10px] h-5", STATUS_COLORS[req.status] || "bg-gray-100 text-gray-700")}>
+                                                                {req.status}
+                                                            </Badge>
+                                                        </div>
+                                                        <h3 className="font-semibold text-sm leading-tight group-hover:text-primary transition-colors">{req.requirement || 'Untitled Requirement'}</h3>
+                                                    </div>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger asChild>
+                                                            <Button variant="ghost" size="icon" className="h-7 w-7 opacity-0 group-hover:opacity-100 transition-opacity -mr-1 -mt-1">
+                                                                <Settings2 className="h-3.5 w-3.5 text-muted-foreground" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end" className="w-40">
+                                                            <DropdownMenuItem onClick={() => {
+                                                                if (projectId) deleteReq.mutate({ id: req.id, project_id: projectId });
+                                                            }} className="text-destructive focus:text-destructive">
+                                                                <Trash2 className="h-4 w-4 mr-2" /> Delete
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
+                                                <p className="text-xs text-muted-foreground line-clamp-2 mb-4 h-8">
+                                                    {req.description || 'No description provided.'}
+                                                </p>
+                                                <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-xs bg-muted/30 p-2.5 rounded-md">
+                                                    <div>
+                                                        <span className="text-muted-foreground block mb-0.5">Module</span>
+                                                        <span className="font-medium truncate block" title={req.module || '-'}>{req.module || '-'}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-muted-foreground block mb-0.5">Process</span>
+                                                        <span className="font-medium truncate block" title={req.process || '-'}>{req.process || '-'}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-muted-foreground block mb-0.5">Owner</span>
+                                                        <span className="font-medium truncate block" title={req.owner || '-'}>{req.owner || '-'}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span className="text-muted-foreground block mb-0.5">Date</span>
+                                                        <span className="font-medium truncate block">
+                                                            {req.date ? format(new Date(req.date), 'MMM d, yyyy') : '-'}
+                                                        </span>
+                                                    </div>
+                                                </div>
+
+                                                {/* Render custom fields safely */}
+                                                {customColumns.length > 0 && (
+                                                    <div className="mt-3 pt-3 border-t border-dashed space-y-2">
+                                                        <span className="text-[10px] font-semibold tracking-wider text-muted-foreground uppercase">Custom Fields</span>
+                                                        <div className="flex flex-wrap gap-2">
+                                                            {customColumns.map(c => {
+                                                                const val = req.custom_fields?.[c.key];
+                                                                if (!val) return null;
+                                                                return (
+                                                                    <div key={c.key} className="text-[10px] bg-muted px-2 py-1 rounded inline-flex items-center gap-1.5 border border-border/50">
+                                                                        <span className="text-muted-foreground">{c.label}:</span>
+                                                                        <span className="font-medium max-w-[120px] truncate">{String(val)}</span>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </CardContent>
+                                        </Card>
                                     ))}
-                                    {/* Actions col */}
-                                    <th className="px-2 py-2 text-xs font-semibold text-muted-foreground w-10 border-r" />
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {filteredItems.length === 0 ? (
-                                    <tr>
-                                        <td colSpan={allColumns.length + 3} className="h-40 text-center text-muted-foreground text-sm">
-                                            {searchTerm || filterStatus !== 'all'
-                                                ? 'No requirements match your filters.'
-                                                : 'No requirements yet. Click "Add Row" to start.'}
-                                        </td>
-                                    </tr>
-                                ) : (
-                                    filteredItems.map((item, rowIdx) => (
-                                        <tr
-                                            key={item.id}
-                                            className={cn(
-                                                'border-b hover:bg-amber-50/30 transition-colors group',
-                                                selectedRows.has(item.id) && 'bg-primary/5',
-                                                rowIdx % 2 === 1 && 'bg-muted/10'
-                                            )}
-                                        >
-                                            {/* Checkbox */}
-                                            <td className="sticky left-0 z-10 bg-inherit border-r w-8 px-2 text-center">
-                                                <input
-                                                    type="checkbox"
-                                                    className="accent-primary"
-                                                    checked={selectedRows.has(item.id)}
-                                                    onChange={e => {
-                                                        setSelectedRows(prev => {
-                                                            const next = new Set(prev);
-                                                            if (e.target.checked) next.add(item.id);
-                                                            else next.delete(item.id);
-                                                            return next;
-                                                        });
-                                                    }}
-                                                />
-                                            </td>
-                                            {/* Row number */}
-                                            <td className="sticky left-8 z-10 bg-inherit border-r w-10 px-2 text-center text-xs text-muted-foreground">
-                                                {rowIdx + 1}
-                                            </td>
-                                            {/* Data cells */}
-                                            {allColumns.map((col, ci) => {
-                                                const cellVal = col.type === 'custom'
-                                                    ? (item.custom_fields?.[col.key] ?? '')
-                                                    : (String((item as any)[col.key] ?? ''));
-                                                return (
-                                                    <td
-                                                        key={col.key}
-                                                        className={cn(
-                                                            'border-r p-0',
-                                                            col.sticky && 'sticky left-[72px] z-10 bg-inherit',
-                                                        )}
-                                                        style={{ minWidth: col.width }}
-                                                    >
-                                                        <EditableCell
-                                                            value={cellVal}
-                                                            columnKey={col.key}
-                                                            rowId={item.id}
-                                                            type={col.type}
-                                                            onSave={handleCellSave}
-                                                            isCustom={col.type === 'custom'}
-                                                        />
-                                                    </td>
-                                                );
-                                            })}
-                                            {/* Delete row (visible on hover) */}
-                                            <td className="w-10 px-1 text-center border-r">
-                                                <Tooltip>
-                                                    <TooltipTrigger asChild>
-                                                        <button
-                                                            onClick={() => deleteReq.mutate({ id: item.id, project_id: projectId! })}
-                                                            className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive transition-all p-1 rounded"
-                                                        >
-                                                            <Trash2 className="h-3.5 w-3.5" />
-                                                        </button>
-                                                    </TooltipTrigger>
-                                                    <TooltipContent>Delete row</TooltipContent>
-                                                </Tooltip>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                )}
+                                </div>
+                            )}
+                        </ScrollArea>
+                    )}
+                </div>
 
                 {/* Footer bar */}
                 <div className="flex items-center gap-4 px-6 py-2 border-t bg-muted/30 text-xs text-muted-foreground shrink-0">
@@ -540,31 +434,6 @@ export default function RequirementsMatrixView() {
                     <span>·</span>
                     <span>{items.filter(i => i.status === 'Implemented').length} implemented</span>
                 </div>
-
-                {/* Add Column Dialog */}
-                <Dialog open={isAddColOpen} onOpenChange={setIsAddColOpen}>
-                    <DialogContent className="max-w-sm">
-                        <DialogHeader>
-                            <DialogTitle>Add Custom Column</DialogTitle>
-                        </DialogHeader>
-                        <div className="space-y-3 py-2">
-                            <Input
-                                placeholder="Column name, e.g. Priority"
-                                value={newColName}
-                                onChange={e => setNewColName(e.target.value)}
-                                autoFocus
-                                onKeyDown={e => { if (e.key === 'Enter') handleAddColumn(); }}
-                            />
-                            <p className="text-xs text-muted-foreground">
-                                Custom columns are stored in the database as JSON fields and exported to Excel.
-                            </p>
-                        </div>
-                        <DialogFooter>
-                            <Button variant="outline" onClick={() => setIsAddColOpen(false)}>Cancel</Button>
-                            <Button onClick={handleAddColumn} disabled={!newColName.trim()}>Add Column</Button>
-                        </DialogFooter>
-                    </DialogContent>
-                </Dialog>
             </div>
         </TooltipProvider>
     );

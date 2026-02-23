@@ -336,7 +336,14 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
         }}
         onClick={() => {
           if (hasVisibleChildren) {
-            toggleGroup(item.id);
+            if (collapsed) {
+              setCollapsed(false);
+              if (!expandedGroups.includes(item.id)) {
+                setExpandedGroups((prev) => [...prev, item.id]);
+              }
+            } else {
+              toggleGroup(item.id);
+            }
           } else if (item.id === 'admin-redirect') {
             navigate('/admin');
           } else if (item.id === 'workspace-select') {
@@ -421,7 +428,7 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
       animate={{ width: collapsed ? 64 : 256 }}
       transition={{ duration: 0.2, ease: 'easeInOut' }}
       className={cn(
-        'flex flex-col h-full bg-sidebar border-r border-sidebar-border',
+        'flex flex-col h-full bg-sidebar border-r border-sidebar-border z-20 relative',
         className
       )}
     >

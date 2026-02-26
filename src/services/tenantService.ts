@@ -157,11 +157,11 @@ export async function getTenantOverview(tenantId: string): Promise<TenantOvervie
         .select('*', { count: 'exact', head: true })
         .eq('tenant_id', tenantId);
 
-    // Get users count
+    // Get users count (from user_tenants — direct tenant membership, not workspace_members)
     const { count: usersCount } = await supabase
-        .from('workspace_members')
+        .from('user_tenants')
         .select('user_id', { count: 'exact', head: true })
-        .eq('workspace.tenant_id', tenantId);
+        .eq('tenant_id', tenantId);
 
     // Get projects count
     const { count: projectsCount } = await supabase

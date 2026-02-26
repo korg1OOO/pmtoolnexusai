@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import { usePermissions } from '@/hooks/usePermissions';
 import { cn } from '@/lib/utils';
 import { FolderOpen, ChevronRight, Home, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -36,6 +37,10 @@ export default function DocumentCenterView() {
   const { settings } = useProjectContext();
   const { toast } = useToast();
   const projectId = settings?.id || undefined;
+  const { can } = usePermissions(projectId);
+  const canCreate = can('document.create');
+  const canEdit = can('document.edit');
+  const canDelete = can('document.delete');
 
   // Data hooks
   const {
@@ -309,12 +314,12 @@ export default function DocumentCenterView() {
         showDetailsPanel={showDetailsPanel}
         onToggleDetailsPanel={() => setShowDetailsPanel(!showDetailsPanel)}
         selectedCount={selectedIds.length}
-        onUpload={() => setShowUploadDialog(true)}
-        onNewFolder={() => {
+        onUpload={canCreate ? () => setShowUploadDialog(true) : undefined}
+        onNewFolder={canCreate ? () => {
           setNewFolderParentId(currentFolderId);
           setShowFolderDialog(true);
-        }}
-        onDelete={() => setShowDeleteConfirm(true)}
+        } : undefined}
+        onDelete={canDelete ? () => setShowDeleteConfirm(true) : undefined}
         onDownload={() => {
           const doc = documents.find((d) => d.id === selectedIds[0]);
           if (doc) window.open(doc.file_url, '_blank');
@@ -328,10 +333,10 @@ export default function DocumentCenterView() {
         }}
         onCopy={() => setShowMoveDialog(true)}
         onMove={() => setShowMoveDialog(true)}
-        onRename={() => {
+        onRename={canEdit ? () => {
           const doc = documents.find((d) => d.id === selectedIds[0]);
           if (doc) openRenameDialog(doc);
-        }}
+        } : undefined}
       />
 
       {/* Breadcrumb */}

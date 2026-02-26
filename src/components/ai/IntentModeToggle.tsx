@@ -14,9 +14,11 @@ interface IntentModeToggleProps {
   mode: IntentMode;
   onChange: (mode: IntentMode) => void;
   disabled?: boolean;
+  /** If true, only the Action button is disabled (e.g. viewer role) */
+  actionDisabled?: boolean;
 }
 
-export function IntentModeToggle({ mode, onChange, disabled }: IntentModeToggleProps) {
+export function IntentModeToggle({ mode, onChange, disabled, actionDisabled }: IntentModeToggleProps) {
   return (
     <div className="flex items-center gap-2 p-1 rounded-lg bg-muted/50 border">
       <Tooltip>
@@ -46,14 +48,14 @@ export function IntentModeToggle({ mode, onChange, disabled }: IntentModeToggleP
       <Tooltip>
         <TooltipTrigger asChild>
           <button
-            onClick={() => onChange('action')}
-            disabled={disabled}
+            onClick={() => !actionDisabled && onChange('action')}
+            disabled={disabled || actionDisabled}
             className={cn(
               'flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium transition-all',
               mode === 'action'
                 ? 'bg-amber-600 shadow-sm text-white hover:bg-amber-700'
                 : 'text-muted-foreground hover:bg-muted',
-              disabled && 'opacity-50 cursor-not-allowed'
+              (disabled || actionDisabled) && 'opacity-50 cursor-not-allowed'
             )}
           >
             <Zap className="h-3.5 w-3.5" />
@@ -62,7 +64,9 @@ export function IntentModeToggle({ mode, onChange, disabled }: IntentModeToggleP
         </TooltipTrigger>
         <TooltipContent side="bottom" className="max-w-[200px]">
           <p className="text-xs">
-            <strong>Action Mode:</strong> AI will propose and execute changes after confirmation. Use when you're ready to make modifications.
+            {actionDisabled
+              ? <><strong>Action Mode Restricted:</strong> Your current role does not have write permissions. Contact a project admin to upgrade your role.</>
+              : <><strong>Action Mode:</strong> AI will propose and execute changes after confirmation. Use when you're ready to make modifications.</>}
           </p>
         </TooltipContent>
       </Tooltip>

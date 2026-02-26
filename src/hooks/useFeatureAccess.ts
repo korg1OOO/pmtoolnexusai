@@ -18,7 +18,11 @@ export interface FeatureAccess {
 }
 
 /**
- * Get current user's subscription tier
+ * Get current user's subscription tier.
+ *
+ * Reads from the `subscriptions` table (source of truth — matches billing/admin pages).
+ * Falls back to `profiles.subscription_tier` if no subscription record found,
+ * then falls back to 'free'.
  */
 export function useUserTier() {
     return useQuery({
@@ -27,17 +31,30 @@ export function useUserTier() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return 'free';
 
-            const { data, error } = await supabase
+            // Primary: look up the user's active subscription
+            const { data: sub } = await supabase
+                .from('subscriptions')
+                .select('tier')
+                .eq('user_id', user.id)
+                .eq('status', 'active')
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            if (sub?.tier) return sub.tier as SubscriptionTier;
+
+            // Fallback: profiles.subscription_tier (legacy column)
+            const { data: profile } = await supabase
                 .from('profiles')
                 .select('subscription_tier')
                 .eq('id', user.id)
                 .single();
 
-            if (error || !data) return 'free';
-            return (data.subscription_tier as SubscriptionTier) || 'free';
+            return (profile?.subscription_tier as SubscriptionTier) || 'free';
         },
     });
 }
+
 
 /**
  * Get all features available to current user

@@ -1,4 +1,6 @@
 import React, { useState, useCallback, useMemo, useEffect, useRef } from 'react';
+import { usePermissions } from '@/hooks/usePermissions';
+import { useProjectContext } from '@/contexts/ProjectContext';
 import { motion, useDragControls } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
@@ -157,6 +159,10 @@ export default function SprintBoardView() {
   const [addSprintDialogOpen, setAddSprintDialogOpen] = useState(false);
   const [selectedSprint, setSelectedSprint] = useState<string>('active');
   const [customColumns, setCustomColumns] = useState<DynamicColumnDef<BacklogItem>[]>([]);
+  const { settings } = useProjectContext();
+  const { can } = usePermissions(settings?.id);
+  const canCreate = can('task.create');
+  const canEdit = can('task.edit');
 
   const handleCellSave = async (rowId: string, key: string, value: string) => {
     const isCustom = !STANDARD_COLUMNS.find(c => c.key === key);
@@ -508,7 +514,7 @@ export default function SprintBoardView() {
       searchQuery={searchQuery}
       onSearchChange={setSearchQuery}
       toolbarFilters={toolbarFilters}
-      onAddRow={() => setAddSprintDialogOpen(true)}
+      onAddRow={canCreate ? () => setAddSprintDialogOpen(true) : undefined}
       addLabel="Create Sprint"
       pdfFilename="sprint-board"
       data={sprintItems}
@@ -516,7 +522,7 @@ export default function SprintBoardView() {
       customColumns={customColumns}
       idExtractor={(item) => item.id}
       customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
-      onCellSave={handleCellSave}
+      onCellSave={canEdit ? handleCellSave : undefined}
       onAddColumn={(col) => {
         if (customColumns.find(c => c.key === col.key)) {
           toast.error('Column already exists');

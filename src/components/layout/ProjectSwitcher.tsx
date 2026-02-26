@@ -62,8 +62,8 @@ export function ProjectSwitcher({ className }: ProjectSwitcherProps) {
                         <CommandInput placeholder="Search project..." />
                         <CommandList>
                             <CommandEmpty>No project found.</CommandEmpty>
-                            <CommandGroup heading="Recent Projects">
-                                {projects.slice(0, 5).map((project) => (
+                            <CommandGroup heading="Projects">
+                                {projects.map((project) => (
                                     <CommandItem
                                         key={project.id}
                                         value={project.name} // Search by name

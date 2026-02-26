@@ -328,6 +328,19 @@ export function useAIChat({
         }
       }
 
+      // ── Credit pre-check: block if no credits ────────────────────────
+      try {
+        const hasCredits = await aiCreditsService.hasCredits(1);
+        if (!hasCredits) {
+          toast.error('Insufficient AI credits. Please purchase more to continue.');
+          setIsSending(false);
+          return;
+        }
+      } catch (creditErr) {
+        // Non-blocking: if credit check fails (e.g. no subscription row), allow through
+        console.warn('Credit check failed (non-blocking):', creditErr);
+      }
+
       // ── Fallback: Call the ai-orchestrator edge function ────────────────
       const response = await supabase.functions.invoke('ai-orchestrator', {
         body: {

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { usePermissions } from '@/hooks/usePermissions';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
@@ -61,6 +62,9 @@ export default function ChangeRequestsView() {
   const { data: changeRequests = [], isLoading } = useChangeRequests(settings.id);
   const updateCR = useUpdateChangeRequest();
   const createCR = useCreateChangeRequest();
+  const { can } = usePermissions(settings?.id);
+  const canCreate = can('task.create');
+  const canEdit = can('task.edit');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCR, setSelectedCR] = useState<ChangeRequest | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
@@ -417,7 +421,7 @@ export default function ChangeRequestsView() {
             </TabsContent>
           </Tabs>
 
-          {selectedCR.status === 'pending' && (
+          {selectedCR.status === 'pending' && canEdit && (
             <div className="mt-6 pt-4 border-t flex gap-2">
               <Button
                 variant="outline"
@@ -443,106 +447,107 @@ export default function ChangeRequestsView() {
     </div>
   );
 
-  <>
-    <DataRegisterPage
-      title="Change Requests"
-      description="Manage scope, schedule, and cost change requests"
-      icon={FileEdit}
-      searchQuery={searchQuery}
-      onSearchChange={setSearchQuery}
-      toolbarFilters={
-        <Button variant="outline" size="sm" className="h-8 text-xs border-border/60">
-          <Filter className="h-3.5 w-3.5 mr-1.5" />
-          Filter
-        </Button>
-      }
-      onAddRow={() => setAddDialogOpen(true)}
-      addLabel="New Change Request"
-      pdfFilename="change-requests"
-      data={changeRequests}
-      baseColumns={STANDARD_COLUMNS}
-      customColumns={customColumns}
-      idExtractor={(item) => item.id}
-      customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
-      onCellSave={handleCellSave}
-      onAddColumn={(col) => {
-        if (customColumns.find(c => c.key === col.key)) {
-          toast.error('Column already exists');
-          return;
+  return (
+    <>
+      <DataRegisterPage
+        title="Change Requests"
+        description="Manage scope, schedule, and cost change requests"
+        icon={FileEdit}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+        toolbarFilters={
+          <Button variant="outline" size="sm" className="h-8 text-xs border-border/60">
+            <Filter className="h-3.5 w-3.5 mr-1.5" />
+            Filter
+          </Button>
         }
-        setCustomColumns(prev => [...prev, col]);
-        toast.success(`Column "${col.label}" added`);
-      }}
-      onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
-      onDeleteRows={() => toast.error("Bulk deletion not supported for change requests yet.")}
-      emptyStateMessage={changeRequests.length === 0 ? "No change requests added yet." : "No requests match."}
-      kpiCards={kpiCards}
-      listContent={listContent}
-    />
+        onAddRow={canCreate ? () => setAddDialogOpen(true) : undefined}
+        addLabel="New Change Request"
+        pdfFilename="change-requests"
+        data={changeRequests}
+        baseColumns={STANDARD_COLUMNS}
+        customColumns={customColumns}
+        idExtractor={(item) => item.id}
+        customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
+        onCellSave={canEdit ? handleCellSave : undefined}
+        onAddColumn={(col) => {
+          if (customColumns.find(c => c.key === col.key)) {
+            toast.error('Column already exists');
+            return;
+          }
+          setCustomColumns(prev => [...prev, col]);
+          toast.success(`Column "${col.label}" added`);
+        }}
+        onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
+        onDeleteRows={() => toast.error("Bulk deletion not supported for change requests yet.")}
+        emptyStateMessage={changeRequests.length === 0 ? "No change requests added yet." : "No requests match."}
+        kpiCards={kpiCards}
+        listContent={listContent}
+      />
 
-    <EntityFormDialog
-      open={addDialogOpen}
-      onOpenChange={setAddDialogOpen}
-      title="Create Change Request"
-      description="Submit a new change request for approval."
-      onSubmit={handleCreateCR}
-      loading={createCR.isPending}
-    >
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <Label>Title *</Label>
-          <Input
-            required
-            value={form.title}
-            onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
-            placeholder="e.g., Increase API rate limits"
-          />
-        </div>
-        <div className="grid grid-cols-2 gap-4">
+      <EntityFormDialog
+        open={addDialogOpen}
+        onOpenChange={setAddDialogOpen}
+        title="Create Change Request"
+        description="Submit a new change request for approval."
+        onSubmit={handleCreateCR}
+        loading={createCR.isPending}
+      >
+        <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Type</Label>
-            <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v as any }))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="scope">Scope</SelectItem>
-                <SelectItem value="schedule">Schedule</SelectItem>
-                <SelectItem value="cost">Cost</SelectItem>
-                <SelectItem value="resource">Resource</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label>Title *</Label>
+            <Input
+              required
+              value={form.title}
+              onChange={e => setForm(f => ({ ...f, title: e.target.value }))}
+              placeholder="e.g., Increase API rate limits"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label>Type</Label>
+              <Select value={form.type} onValueChange={v => setForm(f => ({ ...f, type: v as any }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="scope">Scope</SelectItem>
+                  <SelectItem value="schedule">Schedule</SelectItem>
+                  <SelectItem value="cost">Cost</SelectItem>
+                  <SelectItem value="resource">Resource</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Priority</Label>
+              <Select value={form.priority} onValueChange={v => setForm(f => ({ ...f, priority: v as any }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="low">Low</SelectItem>
+                  <SelectItem value="medium">Medium</SelectItem>
+                  <SelectItem value="high">High</SelectItem>
+                  <SelectItem value="critical">Critical</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="space-y-2">
-            <Label>Priority</Label>
-            <Select value={form.priority} onValueChange={v => setForm(f => ({ ...f, priority: v as any }))}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="low">Low</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="high">High</SelectItem>
-                <SelectItem value="critical">Critical</SelectItem>
-              </SelectContent>
-            </Select>
+            <Label>Description</Label>
+            <Textarea
+              value={form.description}
+              onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+              placeholder="Detailed description of the proposed change"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label>Justification</Label>
+            <Textarea
+              value={form.justification}
+              onChange={e => setForm(f => ({ ...f, justification: e.target.value }))}
+              placeholder="Why is this change necessary?"
+            />
           </div>
         </div>
-        <div className="space-y-2">
-          <Label>Description</Label>
-          <Textarea
-            value={form.description}
-            onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
-            placeholder="Detailed description of the proposed change"
-          />
-        </div>
-        <div className="space-y-2">
-          <Label>Justification</Label>
-          <Textarea
-            value={form.justification}
-            onChange={e => setForm(f => ({ ...f, justification: e.target.value }))}
-            placeholder="Why is this change necessary?"
-          />
-        </div>
-      </div>
-    </EntityFormDialog>
-  </>
+      </EntityFormDialog>
+    </>
   );
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { usePermissions } from '@/hooks/usePermissions';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Target,
@@ -117,6 +118,10 @@ export default function MilestonesView() {
   const { settings } = useProjectContext();
   const { data: milestones, isLoading: milestonesLoading, createMilestone, updateMilestone, deleteMilestone } = useMilestones(settings.id);
   const { gates, isLoading: gatesLoading, approveGate } = useStageGates(settings.id);
+  const { can } = usePermissions(settings?.id);
+  const canCreate = can('milestone.create');
+  const canEdit = can('milestone.edit');
+  const canDelete = can('milestone.delete');
   const isLoading = milestonesLoading || gatesLoading;
 
   const [subViewMode, setSubViewMode] = useState<'timeline' | 'list' | 'gates'>('timeline');
@@ -450,10 +455,10 @@ export default function MilestonesView() {
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleDelete(milestone.id)} className="text-destructive">
+                          {canDelete && <DropdownMenuItem onClick={() => handleDelete(milestone.id)} className="text-destructive">
                             <Trash2 className="h-4 w-4 mr-2" />
                             Delete
-                          </DropdownMenuItem>
+                          </DropdownMenuItem>}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>
@@ -622,7 +627,7 @@ export default function MilestonesView() {
       iconColorClass="text-primary"
       toolbarFilters={toolbarFilters}
       listModeControls={listModeControls}
-      onAddRow={() => setIsCreateOpen(true)}
+      onAddRow={canCreate ? () => setIsCreateOpen(true) : undefined}
       addLabel="Add Milestone"
       pdfFilename="milestones"
       data={filteredMilestones}
@@ -630,7 +635,7 @@ export default function MilestonesView() {
       customColumns={customColumns}
       idExtractor={(item) => item.id}
       customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
-      onCellSave={handleCellSave}
+      onCellSave={canEdit ? handleCellSave : undefined}
       onAddColumn={(col) => {
         if (customColumns.find(c => c.key === col.key)) {
           toast.error('Column already exists');
@@ -640,9 +645,9 @@ export default function MilestonesView() {
         toast.success(`Column "${col.label}" added`);
       }}
       onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
-      onDeleteRows={(ids) => {
+      onDeleteRows={canDelete ? (ids) => {
         ids.forEach(id => deleteMilestone.mutateAsync(id));
-      }}
+      } : undefined}
       emptyStateMessage={filteredMilestones.length === 0 ? 'No milestones found.' : 'No milestones match filters.'}
       kpiCards={kpiCards}
       listContent={listContent}

@@ -1,0 +1,101 @@
+=== 10A: ROLE x USER INVENTORY ===
+
+--- PLATFORM ROLES ---
+
+
+--- PROJECT ROLES ---
+
+  admin (6 users, 8 memberships):
+    (unknown) | (unnamed) | 3a6889fe
+    (unknown) | (unnamed) | d85baa06
+    (unknown) | (unnamed) | 028ce0a2
+    (unknown) | (unnamed) | be816e1b
+    (unknown) | (unnamed) | 78f245cc
+    ... and 1 more
+
+
+--- TENANT ROLES ---
+
+  owner (4):
+    (unknown) | (unnamed) | tenant=1ce6918b
+    (unknown) | (unnamed) | tenant=7d7055d2
+    (unknown) | (unnamed) | tenant=98a455a4
+    (unknown) | (unnamed) | tenant=8c96f19a
+
+  admin (1):
+    (unknown) | (unnamed) | tenant=0afbec77
+
+  member (1):
+    (unknown) | (unnamed) | tenant=0afbec77
+
+
+--- WORKSPACE ROLES ---
+
+  admin (1):
+    (unknown) | workspace=b87ec119
+
+  manager (1):
+    (unknown) | workspace=b87ec119
+
+  member (1):
+    (unknown) | workspace=b87ec119
+
+
+--- PROGRAM ROLES ---
+
+  manager (2):
+    (unknown) | program=e47ac10b
+    (unknown) | program=e47ac10b
+
+  lead (1):
+    (unknown) | program=e47ac10b
+
+  member (1):
+    (unknown) | program=e47ac10b
+
+  viewer (1):
+    (unknown) | program=e47ac10b
+
+
+=== SUBSCRIPTIONS BY TIER ===
+
+
+=== ENTITY IDS FOR NAVIGATION ===
+
+  Tenants:
+    Default Company -> 0afbec77-2816-4d7c-87f2-1a3f97d56db8
+    admin's Organization -> 1ce6918b-f51d-441a-937f-077b570df7bc
+    user7_1771513626820's Organization -> 7d7055d2-ed74-436d-b3c3-cc875b2faf30
+    user4_1771513625568's Organization -> 98a455a4-c937-4f82-bf6b-bbfb8ad67c4d
+    user9_1771513627802's Organization -> 8c96f19a-ada8-4d47-a390-24b6288fd147
+
+  Workspaces:
+    Default Workspace -> b87ec119-7652-4e27-8d16-5c61003ab47b (tenant: 0afbec77)
+
+  Portfolios:
+    Infrastructure Modernization -> f47ac10b-58cc-4372-a567-0e02b2c3d480 (workspace: undefined)
+    Digital Transformation -> d47ac10b-58cc-4372-a567-0e02b2c3d479 (workspace: undefined)
+
+  Programs:
+    Cloud Migration -> e47ac10b-58cc-4372-a567-0e02b2c3d483 (portfolio: f47ac10b)
+    Customer Experience Platform -> e47ac10b-58cc-4372-a567-0e02b2c3d481 (portfolio: d47ac10b)
+    Data Analytics Initiative -> e47ac10b-58cc-4372-a567-0e02b2c3d482 (portfolio: d47ac10b)
+
+  Projects (first 5):
+    TP-Alpha Software Delivery - Updated -> 04eed42d-90c3-4d05-9738-faf5b49508ff
+    Monolith Infrastructure Upgrade (E2E) -> 81675c53-554e-4384-8092-212d05b79425
+    Agile Software Transformation (E2E) -> 01a92453-58b6-4dee-920c-467a3bd8b21e
+    Regulatory Compliance Rollout (E2E) -> eb018624-595e-4059-9a13-234f311aff6a
+    React UI Test Project 3 -> 898f9d74-89a0-4539-bafd-d705f100d9ce
+
+
+=== RECOMMENDED TEST USERS (per project role) ===
+  owner: [!] NO USER FOUND - need to create
+  admin: undefined | tier=none | uid=3a6889fe
+  manager: [!] NO USER FOUND - need to create
+  member: [!] NO USER FOUND - need to create
+  viewer: [!] NO USER FOUND - need to create
+
+
+=== SUBSCRIPTION FEATURES TABLE ===
+  Total rows: 0

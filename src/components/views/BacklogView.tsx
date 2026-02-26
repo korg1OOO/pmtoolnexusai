@@ -58,6 +58,8 @@ import {
 import { useEpics, Epic, EpicInput } from '@/hooks/useEpics';
 import { useBacklogItems, BacklogItem, BacklogItemInput, ItemType, BacklogStatus, PriorityLevel } from '@/hooks/useBacklogItems';
 import { useSprints, Sprint } from '@/hooks/useSprints';
+import { usePermissions } from '@/hooks/usePermissions';
+import { useProjectContext } from '@/contexts/ProjectContext';
 import { toast } from 'sonner';
 
 const STANDARD_COLUMNS: DynamicColumnDef<BacklogItem>[] = [
@@ -97,9 +99,11 @@ interface BacklogItemRowProps {
   onUpdate: (id: string, updates: Partial<BacklogItemInput>) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
   onEdit: (item: BacklogItem) => void;
+  canEdit?: boolean;
+  canDelete?: boolean;
 }
 
-function BacklogItemRow({ item, epic, sprint, onUpdate, onDelete, onEdit }: BacklogItemRowProps) {
+function BacklogItemRow({ item, epic, sprint, onUpdate, onDelete, onEdit, canEdit = true, canDelete = true }: BacklogItemRowProps) {
   return (
     <div className="flex items-center gap-4 p-4 hover:bg-muted/30 transition-colors group">
       <GripVertical className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 cursor-grab" />
@@ -143,24 +147,30 @@ function BacklogItemRow({ item, epic, sprint, onUpdate, onDelete, onEdit }: Back
         <Badge variant="secondary" className="text-xs">Sprint</Badge>
       )}
 
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="iconXs" className="opacity-0 group-hover:opacity-100">
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={() => onEdit(item)}>
-            <Edit2 className="h-4 w-4 mr-2" />
-            Edit
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem className="text-destructive" onClick={() => onDelete(item.id)}>
-            <Trash2 className="h-4 w-4 mr-2" />
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+      {(canEdit || canDelete) && (
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="iconXs" className="opacity-0 group-hover:opacity-100">
+              <MoreHorizontal className="h-4 w-4" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            {canEdit && (
+              <DropdownMenuItem onClick={() => onEdit(item)}>
+                <Edit2 className="h-4 w-4 mr-2" />
+                Edit
+              </DropdownMenuItem>
+            )}
+            {canEdit && canDelete && <DropdownMenuSeparator />}
+            {canDelete && (
+              <DropdownMenuItem className="text-destructive" onClick={() => onDelete(item.id)}>
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
+      )}
     </div>
   );
 }
@@ -470,6 +480,11 @@ export default function BacklogView() {
   const { epics, loading: epicsLoading, createEpic } = useEpics();
   const { sprints, loading: sprintsLoading } = useSprints();
   const { items, loading: itemsLoading, createItem, updateItem, deleteItem, totalPoints, scheduledItems } = useBacklogItems();
+  const { settings } = useProjectContext();
+  const { can } = usePermissions(settings?.id);
+  const canCreate = can('task.create');
+  const canEdit = can('task.edit');
+  const canDelete = can('task.delete');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string | null>(null);
   const [expandedEpics, setExpandedEpics] = useState<Set<string>>(new Set());
@@ -626,7 +641,7 @@ export default function BacklogView() {
                     <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="border-t">
                       <div className="divide-y divide-border">
                         {epicItems.map((item) => (
-                          <BacklogItemRow key={item.id} item={item} epic={epic} onUpdate={updateItem} onDelete={deleteItem} onEdit={handleEditItem} />
+                          <BacklogItemRow key={item.id} item={item} epic={epic} onUpdate={updateItem} onDelete={deleteItem} onEdit={handleEditItem} canEdit={canEdit} canDelete={canDelete} />
                         ))}
                       </div>
                     </motion.div>
@@ -654,7 +669,7 @@ export default function BacklogView() {
                   <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className="border-t">
                     <div className="divide-y divide-border">
                       {itemsByEpic.unassigned.map((item) => (
-                        <BacklogItemRow key={item.id} item={item} onUpdate={updateItem} onDelete={deleteItem} onEdit={handleEditItem} />
+                        <BacklogItemRow key={item.id} item={item} onUpdate={updateItem} onDelete={deleteItem} onEdit={handleEditItem} canEdit={canEdit} canDelete={canDelete} />
                       ))}
                     </div>
                   </motion.div>
@@ -675,7 +690,7 @@ export default function BacklogView() {
               <div className="p-8 text-center"><p className="text-muted-foreground">No backlog items found.</p></div>
             ) : (
               filteredItems.map((item) => (
-                <BacklogItemRow key={item.id} item={item} epic={epics.find(e => e.id === item.epic_id)} onUpdate={updateItem} onDelete={deleteItem} onEdit={handleEditItem} />
+                <BacklogItemRow key={item.id} item={item} epic={epics.find(e => e.id === item.epic_id)} onUpdate={updateItem} onDelete={deleteItem} onEdit={handleEditItem} canEdit={canEdit} canDelete={canDelete} />
               ))
             )}
           </div>
@@ -699,7 +714,7 @@ export default function BacklogView() {
       onSearchChange={setSearchQuery}
       toolbarFilters={toolbarFilters}
       listModeControls={listModeControls}
-      onAddRow={() => setAddDialogOpen(true)}
+      onAddRow={canCreate ? () => setAddDialogOpen(true) : undefined}
       addLabel="Add Item"
       pdfFilename="product-backlog"
       data={filteredItems}
@@ -707,7 +722,7 @@ export default function BacklogView() {
       customColumns={customColumns}
       idExtractor={(item) => item.id}
       customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
-      onCellSave={handleCellSave}
+      onCellSave={canEdit ? handleCellSave : undefined}
       onAddColumn={(col) => {
         if (customColumns.find(c => c.key === col.key)) {
           toast.error('Column already exists');
@@ -717,7 +732,7 @@ export default function BacklogView() {
         toast.success(`Column "${col.label}" added`);
       }}
       onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
-      onDeleteRows={(ids) => Array.from(ids).forEach(id => deleteItem(id))}
+      onDeleteRows={canDelete ? (ids) => Array.from(ids).forEach(id => deleteItem(id)) : undefined}
       emptyStateMessage={items.length === 0 ? 'No backlog items yet.' : 'No items match filters.'}
       kpiCards={kpiCards}
       listContent={listContent}

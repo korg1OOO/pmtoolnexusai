@@ -143,7 +143,16 @@ const STORAGE_KEY = 'projectoye-settings';
 const SELECTED_PROJECT_KEY = 'projectoye-selected-project';
 
 export function ProjectProvider({ children }: { children: ReactNode }) {
-  const [settings, setSettings] = useState<ProjectSettings>(defaultSettings);
+  // Synchronously restore project ID from localStorage to prevent "No Project Selected" flash
+  const [settings, setSettings] = useState<ProjectSettings>(() => {
+    try {
+      const storedId = localStorage.getItem(SELECTED_PROJECT_KEY);
+      if (storedId) {
+        return { ...defaultSettings, id: storedId, name: 'Loading...' };
+      }
+    } catch { }
+    return defaultSettings;
+  });
   const [loading, setLoading] = useState(true);
   const [activeGlobalPanel, setActiveGlobalPanel] = useState<GlobalPanelType>(null);
 

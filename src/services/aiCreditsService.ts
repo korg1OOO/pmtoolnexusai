@@ -93,10 +93,10 @@ class AICreditsService {
         const { data: { user } } = await supabase.auth.getUser();
 
         const effectiveUserId = userId || user?.id;
-        const effectiveTenantId = tenantId || await this.getCurrentTenantId();
+        const effectiveTenantId = tenantId || await this.getCurrentTenantId().catch(() => 'default');
 
-        if (!effectiveUserId || !effectiveTenantId) {
-            throw new Error('User or tenant not found');
+        if (!effectiveUserId) {
+            return this.defaultBalance(effectiveTenantId, 'unknown');
         }
 
         const { data, error } = await supabase
@@ -107,14 +107,46 @@ class AICreditsService {
             .single();
 
         if (error) {
-            // If no record exists, initialize with 10 free credits
-            if (error.code === 'PGRST116') {
-                return await this.initializeCredits(effectiveTenantId, effectiveUserId, 10);
+            // 406 = table doesn't exist (missing migration), PGRST116 = no rows
+            if (error.code === '42P01' || error.message?.includes('Not Acceptable') || String(error.code) === '406') {
+                // Table doesn't exist yet — return safe defaults silently
+                return this.defaultBalance(effectiveTenantId, effectiveUserId);
             }
-            throw error;
+            if (error.code === 'PGRST116') {
+                try {
+                    return await this.initializeCredits(effectiveTenantId, effectiveUserId, 10);
+                } catch {
+                    // RPC also missing — return defaults
+                    return this.defaultBalance(effectiveTenantId, effectiveUserId);
+                }
+            }
+            // Unknown error — return defaults rather than crashing
+            console.warn('[AI Credits] getBalance error:', error.message);
+            return this.defaultBalance(effectiveTenantId, effectiveUserId);
         }
 
         return data;
+    }
+
+    /**
+     * Return a safe default balance when the ai_credits table is missing
+     */
+    private defaultBalance(tenantId: string, userId: string): CreditBalance {
+        return {
+            id: 'default',
+            tenant_id: tenantId,
+            user_id: userId,
+            total_credits: 0,
+            used_credits: 0,
+            available_credits: 0,
+            low_balance_threshold: 5,
+            auto_recharge_enabled: false,
+            auto_recharge_amount: 100,
+            auto_recharge_threshold: 10,
+            last_recharged_at: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+        };
     }
 
     /**

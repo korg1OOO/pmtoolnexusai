@@ -197,6 +197,14 @@ export default function ProjectCreationView() {
           startDate: new Date(formData.startDate || Date.now()),
         });
 
+        // BUG-006 fix: Auto-assign creator as admin
+        if (data?.id && currentUserId) {
+          await supabase.rpc('assign_project_creator_role' as any, {
+            p_user_id: currentUserId,
+            p_project_id: data.id,
+          }).then(({ error: roleErr }) => { if (roleErr) console.error('Role assign failed:', roleErr); });
+        }
+
         toast.success('Project Created Successfully!', {
           description: `${data.name} has been created from template.`,
         });
@@ -220,6 +228,14 @@ export default function ProjectCreationView() {
         }).select().single();
 
         if (error) throw error;
+
+        // BUG-006 fix: Auto-assign creator as admin
+        if ((data as any)?.id && currentUserId) {
+          await supabase.rpc('assign_project_creator_role' as any, {
+            p_user_id: currentUserId,
+            p_project_id: (data as any).id,
+          }).then(({ error: roleErr }) => { if (roleErr) console.error('Role assign failed:', roleErr); });
+        }
 
         toast.success('Project Created Successfully!', {
           description: `${formData.name} has been created.`,

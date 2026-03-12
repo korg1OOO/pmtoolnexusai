@@ -46,22 +46,28 @@ export function AdminAICredits() {
     const { data: stats } = useQuery({
         queryKey: ['admin-ai-credits-stats'],
         queryFn: async (): Promise<UsageStats> => {
-            const [creditsRes, purchasesRes] = await Promise.all([
-                (supabase as any).from('ai_credits').select('total_credits, used_credits, auto_recharge_enabled'),
-                (supabase as any).from('ai_credit_purchases').select('amount_paid').eq('payment_status', 'completed'),
-            ]);
+            try {
+                const [creditsRes, purchasesRes] = await Promise.all([
+                    (supabase as any).from('ai_credits').select('total_credits, used_credits, auto_recharge_enabled'),
+                    (supabase as any).from('ai_credit_purchases').select('amount_paid').eq('payment_status', 'completed'),
+                ]);
 
-            const credits = creditsRes.data || [];
-            const purchases = purchasesRes.data || [];
+                const credits = creditsRes.data || [];
+                const purchases = purchasesRes.data || [];
 
-            return {
-                total_users: credits.length,
-                total_credits_issued: credits.reduce((sum: number, c: any) => sum + (parseFloat(c.total_credits) || 0), 0),
-                total_credits_used: credits.reduce((sum: number, c: any) => sum + (parseFloat(c.used_credits) || 0), 0),
-                total_revenue: purchases.reduce((sum: number, p: any) => sum + (parseFloat(p.amount_paid) || 0), 0),
-                active_auto_recharge: credits.filter((c: any) => c.auto_recharge_enabled).length,
-            };
-        }
+                return {
+                    total_users: credits.length,
+                    total_credits_issued: credits.reduce((sum: number, c: any) => sum + (parseFloat(c.total_credits) || 0), 0),
+                    total_credits_used: credits.reduce((sum: number, c: any) => sum + (parseFloat(c.used_credits) || 0), 0),
+                    total_revenue: purchases.reduce((sum: number, p: any) => sum + (parseFloat(p.amount_paid) || 0), 0),
+                    active_auto_recharge: credits.filter((c: any) => c.auto_recharge_enabled).length,
+                };
+            } catch {
+                // Tables may not exist yet (pending migration)
+                return { total_users: 0, total_credits_issued: 0, total_credits_used: 0, total_revenue: 0, active_auto_recharge: 0 };
+            }
+        },
+        retry: false
     });
 
     // Fetch all user balances — joined with profiles for real name/email
@@ -74,7 +80,7 @@ export function AdminAICredits() {
                 .order('available_credits', { ascending: false })
                 .limit(100);
 
-            if (error) throw error;
+            if (error) return [] as CreditBalance[]; // Table may not exist
 
             return (data || [])
                 .map((item: any) => ({
@@ -92,53 +98,59 @@ export function AdminAICredits() {
                     b.user_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                     b.user_email.toLowerCase().includes(searchTerm.toLowerCase())
                 ) as CreditBalance[];
-        }
+        },
+        retry: false
     });
 
     // Fetch recent transactions (purchases + manual adjustments)
     const { data: recentTransactions, refetch: refetchTransactions } = useQuery({
         queryKey: ['admin-ai-credits-transactions'],
         queryFn: async () => {
-            const [purchasesRes, adjustmentsRes] = await Promise.all([
-                (supabase as any)
-                    .from('ai_credit_purchases')
-                    .select('*, profiles(full_name, email)')
-                    .order('purchased_at', { ascending: false })
-                    .limit(15),
-                (supabase as any)
-                    .from('ai_credit_adjustments')
-                    .select('*, profiles(full_name, email)')
-                    .order('created_at', { ascending: false })
-                    .limit(15),
-            ]);
+            try {
+                const [purchasesRes, adjustmentsRes] = await Promise.all([
+                    (supabase as any)
+                        .from('ai_credit_purchases')
+                        .select('*, profiles(full_name, email)')
+                        .order('purchased_at', { ascending: false })
+                        .limit(15),
+                    (supabase as any)
+                        .from('ai_credit_adjustments')
+                        .select('*, profiles(full_name, email)')
+                        .order('created_at', { ascending: false })
+                        .limit(15),
+                ]);
 
-            const purchases = (purchasesRes.data || []).map((p: any) => ({
-                id: p.id,
-                type: 'purchase' as const,
-                user_name: p.profiles?.full_name || p.user_id,
-                user_email: p.profiles?.email || p.user_id,
-                amount: parseFloat(p.credits_purchased),
-                amount_paid: parseFloat(p.amount_paid),
-                status: p.payment_status,
-                date: p.purchased_at,
-            }));
+                const purchases = (purchasesRes.data || []).map((p: any) => ({
+                    id: p.id,
+                    type: 'purchase' as const,
+                    user_name: p.profiles?.full_name || p.user_id,
+                    user_email: p.profiles?.email || p.user_id,
+                    amount: parseFloat(p.credits_purchased),
+                    amount_paid: parseFloat(p.amount_paid),
+                    status: p.payment_status,
+                    date: p.purchased_at,
+                }));
 
-            const adjustments = (adjustmentsRes.data || []).map((a: any) => ({
-                id: a.id,
-                type: 'adjustment' as const,
-                user_name: a.profiles?.full_name || a.user_id,
-                user_email: a.profiles?.email || a.user_id,
-                amount: parseFloat(a.amount),
-                amount_paid: null,
-                status: a.amount > 0 ? 'credited' : 'deducted',
-                date: a.created_at,
-                reason: a.reason,
-            }));
+                const adjustments = (adjustmentsRes.data || []).map((a: any) => ({
+                    id: a.id,
+                    type: 'adjustment' as const,
+                    user_name: a.profiles?.full_name || a.user_id,
+                    user_email: a.profiles?.email || a.user_id,
+                    amount: parseFloat(a.amount),
+                    amount_paid: null,
+                    status: a.amount > 0 ? 'credited' : 'deducted',
+                    date: a.created_at,
+                    reason: a.reason,
+                }));
 
-            return [...purchases, ...adjustments]
-                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
-                .slice(0, 20);
-        }
+                return [...purchases, ...adjustments]
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                    .slice(0, 20);
+            } catch {
+                return []; // Tables may not exist
+            }
+        },
+        retry: false
     });
 
     const handleAdjustCredits = async () => {

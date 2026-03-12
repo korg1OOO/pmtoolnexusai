@@ -64,23 +64,20 @@ export default function NotesView({ demo = false }: NotesViewProps) {
   const [pageListCollapsed, setPageListCollapsed] = useState(savedState.pageListCollapsed || false);
   const [backlinksSidebarCollapsed, setBacklinksSidebarCollapsed] = useState(savedState.backlinksSidebarCollapsed || false);
 
-  const { notebooks: realNotebooks, loading: notebooksLoading } = useNotebooks();
+  const {
+    notebooks: realNotebooks,
+    loading: notebooksLoading,
+    createNotebook,
+    updateNotebook,
+    deleteNotebook,
+  } = useNotebooks();
   const { sections: realSections, loading: sectionsLoading } = useSections(selectedNotebookId);
   const { pages: realPages, loading: pagesLoading } = usePages(selectedSectionId);
-  //  Use mocks if demo is true
-  // Use mocks if demo is true
   // Demo mode disabled - always use real data
   const notebooks = realNotebooks;
   const sections = realSections;
   const pages = realPages;
   const allPages: any[] = [];
-
-  // Wire up real mutation functions from proper hooks
-  const {
-    createNotebook,
-    updateNotebook,
-    deleteNotebook
-  } = useNotebooks();
 
   const {
     createSection,

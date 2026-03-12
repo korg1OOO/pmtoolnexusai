@@ -37,6 +37,7 @@ import {
 } from '@/hooks/useResources';
 import { useProjectCalendars } from '@/hooks/useCalendars';
 import { toast } from 'sonner';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 interface ResourceSheetProps {
   projectId: string;
@@ -48,6 +49,7 @@ export function ResourceSheet({ projectId }: ResourceSheetProps) {
   const createResource = useCreateResource();
   const updateResource = useUpdateResource();
   const deleteResource = useDeleteResource();
+  const { confirm, ConfirmDialog } = useConfirmDialog();
 
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -140,7 +142,7 @@ export function ResourceSheet({ projectId }: ResourceSheetProps) {
   };
 
   const handleDelete = async (resource: Resource) => {
-    if (confirm(`Delete resource "${resource.name}"?`)) {
+    if (await confirm(`Delete resource "${resource.name}"?`, { confirmLabel: 'Delete', variant: 'destructive' })) {
       await deleteResource.mutateAsync({ id: resource.id, projectId });
     }
   };
@@ -519,6 +521,7 @@ export function ResourceSheet({ projectId }: ResourceSheetProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <ConfirmDialog />
     </div>
   );
 }

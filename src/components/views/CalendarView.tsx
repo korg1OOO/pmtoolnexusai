@@ -595,7 +595,7 @@ function MeetingDetailsPanel({
   );
 }
 
-export function CalendarView() {
+export default function CalendarView() {
   const { settings } = useProjectContext();
   const projectId = settings.id;
   const { meetings, isLoading, createMeeting, addParticipant, addAgendaItem, updateMeeting } = useMeetings(projectId);

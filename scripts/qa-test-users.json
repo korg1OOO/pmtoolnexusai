@@ -1,0 +1,55 @@
+{
+  "testUsers": {
+    "free": {
+      "userId": "54ade06c-3620-41ca-bb41-6074c0b3ddee",
+      "email": "user4_1771513625568@example.com",
+      "role": "viewer",
+      "name": "User 4 Name",
+      "subId": "b197b485-a769-4846-8f8e-6c589e7707d6"
+    },
+    "pro": {
+      "userId": "bc754335-d145-4ef9-a536-1b9bcb33f312",
+      "email": "user9_1771513627802@example.com",
+      "role": "manager",
+      "name": "User 9 Name",
+      "subId": "7ffef85a-37e2-4d98-a25a-0c8b13e0ae81"
+    },
+    "business": {
+      "userId": "73c0787b-9eeb-4e86-bdb5-e999513100fe",
+      "email": "user7_1771513626820@example.com",
+      "role": "admin",
+      "name": "User 7 Name",
+      "subId": "6a457bce-dc67-4a6e-9237-fc1b517e71ed"
+    },
+    "agency": {
+      "userId": "72d85b3f-b18b-43ec-a1ce-c86e1a8021bf",
+      "email": "user1_1771513624288@example.com",
+      "role": "admin",
+      "name": "User 1 Name",
+      "subId": "bfea1807-fa28-4301-b3b5-09eef3892945"
+    }
+  },
+  "password": "password123",
+  "workspace": {
+    "id": "b87ec119-7652-4e27-8d16-5c61003ab47b",
+    "tenant_id": "0afbec77-2816-4d7c-87f2-1a3f97d56db8"
+  },
+  "program": {
+    "id": "e47ac10b-58cc-4372-a567-0e02b2c3d483",
+    "tenant_id": null
+  },
+  "tenant": {
+    "id": "0afbec77-2816-4d7c-87f2-1a3f97d56db8",
+    "name": "Default Company"
+  },
+  "portfolios": [
+    {
+      "id": "f47ac10b-58cc-4372-a567-0e02b2c3d480",
+      "name": "Infrastructure Modernization"
+    },
+    {
+      "id": "d47ac10b-58cc-4372-a567-0e02b2c3d479",
+      "name": "Digital Transformation"
+    }
+  ]
+}

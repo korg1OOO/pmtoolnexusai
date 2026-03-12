@@ -4,10 +4,10 @@ import { toast } from 'sonner';
 import { useEffect } from 'react';
 import type { Database } from '@/integrations/supabase/types';
 
-type TaskType = Database['public']['Enums']['task_type'];
-type TaskStatus = Database['public']['Enums']['task_status'];
-type PriorityLevel = Database['public']['Enums']['priority_level'];
-type ConstraintType = Database['public']['Enums']['constraint_type'];
+export type TaskType = Database['public']['Enums']['task_type'];
+export type TaskStatus = Database['public']['Enums']['task_status'];
+export type PriorityLevel = Database['public']['Enums']['priority_level'];
+export type ConstraintType = Database['public']['Enums']['constraint_type'];
 
 export interface DbTask {
   id: string;
@@ -50,6 +50,12 @@ export interface DbTask {
   // Scheduling fields
   manually_scheduled?: boolean | null;
   calendar_id?: string | null;
+  child_project_id?: string | null;
+  scenario_id?: string | null;
+  // Baseline fields
+  baseline_start?: string | null;
+  baseline_end?: string | null;
+  custom_fields?: Record<string, any>;
 }
 
 export interface DbDependency {
@@ -58,6 +64,7 @@ export interface DbDependency {
   predecessor_id: string;
   type: Database['public']['Enums']['dependency_type'];
   lag: number;
+  scenario_id?: string | null;
   created_at: string;
 }
 
@@ -72,19 +79,26 @@ export interface DbBaseline {
   created_at: string;
 }
 
-export function useTasks(projectId: string | null) {
+export function useTasks(projectId: string | null, scenarioId: string | null = null) {
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ['tasks', projectId],
+    queryKey: ['tasks', projectId, scenarioId],
     queryFn: async () => {
       if (!projectId) return [];
-      
-      const { data, error } = await supabase
+
+      let builder = (supabase as any)
         .from('tasks')
         .select('*')
-        .eq('project_id', projectId)
-        .order('sort_order', { ascending: true });
+        .eq('project_id', projectId);
+
+      if (scenarioId) {
+        builder = builder.eq('scenario_id', scenarioId);
+      } else {
+        builder = builder.is('scenario_id', null);
+      }
+
+      const { data, error } = await builder.order('sort_order', { ascending: true });
 
       if (error) throw error;
       return data as DbTask[];
@@ -107,7 +121,7 @@ export function useTasks(projectId: string | null) {
           filter: `project_id=eq.${projectId}`,
         },
         () => {
-          queryClient.invalidateQueries({ queryKey: ['tasks', projectId] });
+          queryClient.invalidateQueries({ queryKey: ['tasks', projectId, scenarioId] });
         }
       )
       .subscribe();
@@ -120,22 +134,30 @@ export function useTasks(projectId: string | null) {
   return query;
 }
 
-export function useDependencies(projectId: string | null) {
+export function useDependencies(projectId: string | null, scenarioId: string | null = null) {
   const queryClient = useQueryClient();
 
   const query = useQuery({
-    queryKey: ['dependencies', projectId],
+    queryKey: ['dependencies', projectId, scenarioId],
     queryFn: async () => {
       if (!projectId) return [];
-      
-      // Get all task IDs for this project first
-      const { data: tasks, error: tasksError } = await supabase
+
+      // Get all task IDs for this project first (filtered by scenario)
+      let tasksBuilder = supabase
         .from('tasks')
         .select('id')
         .eq('project_id', projectId);
 
+      if (scenarioId) {
+        tasksBuilder = (tasksBuilder as any).eq('scenario_id', scenarioId);
+      } else {
+        tasksBuilder = tasksBuilder.is('scenario_id', null);
+      }
+
+      const { data: tasks, error: tasksError } = await tasksBuilder;
+
       if (tasksError) throw tasksError;
-      
+
       const taskIds = tasks.map(t => t.id);
       if (taskIds.length === 0) return [];
 
@@ -164,7 +186,7 @@ export function useDependencies(projectId: string | null) {
           table: 'task_dependencies',
         },
         () => {
-          queryClient.invalidateQueries({ queryKey: ['dependencies', projectId] });
+          queryClient.invalidateQueries({ queryKey: ['dependencies', projectId, scenarioId] });
         }
       )
       .subscribe();
@@ -182,7 +204,7 @@ export function useBaselines(taskId: string | null) {
     queryKey: ['baselines', taskId],
     queryFn: async () => {
       if (!taskId) return [];
-      
+
       const { data, error } = await supabase
         .from('task_baselines')
         .select('*')
@@ -203,17 +225,17 @@ export function useCreateTask() {
     mutationFn: async (task: Omit<DbTask, 'id' | 'created_at' | 'updated_at'>) => {
       const { data, error } = await supabase
         .from('tasks')
-        .insert(task)
+        .insert(task as any)
         .select()
         .single();
 
       if (error) throw error;
       return data;
     },
-    onSuccess: (data) => {
-      queryClient.invalidateQueries({ queryKey: ['tasks', data.project_id] });
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['tasks', data.project_id, data.scenario_id] });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error('Failed to create task: ' + error.message);
     },
   });
@@ -226,7 +248,7 @@ export function useUpdateTask() {
     mutationFn: async ({ id, project_id, ...updates }: Partial<DbTask> & { id: string; project_id: string }) => {
       const { data, error } = await supabase
         .from('tasks')
-        .update(updates)
+        .update(updates as any)
         .eq('id', id)
         .select()
         .single();
@@ -234,10 +256,10 @@ export function useUpdateTask() {
       if (error) throw error;
       return { ...data, project_id };
     },
-    onSuccess: (data) => {
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ['tasks', data.project_id] });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error('Failed to update task: ' + error.message);
     },
   });
@@ -253,7 +275,7 @@ export function useBulkUpdateTasks() {
         const { id, ...rest } = task;
         const { error } = await supabase
           .from('tasks')
-          .update(rest)
+          .update(rest as any)
           .eq('id', id);
         if (error) throw error;
         return task;
@@ -265,7 +287,7 @@ export function useBulkUpdateTasks() {
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['tasks', data.projectId] });
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error('Failed to update tasks: ' + error.message);
     },
   });
@@ -288,7 +310,7 @@ export function useDeleteTask() {
       queryClient.invalidateQueries({ queryKey: ['tasks', data.projectId] });
       toast.success('Task deleted');
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error('Failed to delete task: ' + error.message);
     },
   });
@@ -298,13 +320,13 @@ export function useCreateDependency() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ dependency, projectId }: { 
-      dependency: Omit<DbDependency, 'id' | 'created_at'>; 
-      projectId: string 
+    mutationFn: async ({ dependency, projectId }: {
+      dependency: Omit<DbDependency, 'id' | 'created_at'>;
+      projectId: string
     }) => {
       const { data, error } = await supabase
         .from('task_dependencies')
-        .insert(dependency)
+        .insert(dependency as any)
         .select()
         .single();
 
@@ -315,7 +337,7 @@ export function useCreateDependency() {
       queryClient.invalidateQueries({ queryKey: ['dependencies', result.projectId] });
       toast.success('Dependency created');
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error('Failed to create dependency: ' + error.message);
     },
   });
@@ -338,7 +360,7 @@ export function useDeleteDependency() {
       queryClient.invalidateQueries({ queryKey: ['dependencies', data.projectId] });
       toast.success('Dependency removed');
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error('Failed to delete dependency: ' + error.message);
     },
   });
@@ -348,12 +370,12 @@ export function useUpdateDependency() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ 
-      dependencyId, 
+    mutationFn: async ({
+      dependencyId,
       projectId,
-      updates 
-    }: { 
-      dependencyId: string; 
+      updates
+    }: {
+      dependencyId: string;
       projectId: string;
       updates: { type?: 'FS' | 'SS' | 'FF' | 'SF'; lag?: number };
     }) => {
@@ -371,7 +393,7 @@ export function useUpdateDependency() {
       queryClient.invalidateQueries({ queryKey: ['dependencies', result.projectId] });
       toast.success('Dependency updated');
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error('Failed to update dependency: ' + error.message);
     },
   });
@@ -395,7 +417,7 @@ export function useCreateBaseline() {
       queryClient.invalidateQueries({ queryKey: ['baselines', data.task_id] });
       toast.success('Baseline saved');
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error('Failed to save baseline: ' + error.message);
     },
   });
@@ -405,10 +427,10 @@ export function useSaveProjectBaseline() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ projectId, name, description }: { 
-      projectId: string; 
-      name: string; 
-      description?: string 
+    mutationFn: async ({ projectId, name, description }: {
+      projectId: string;
+      name: string;
+      description?: string
     }) => {
       // Get all tasks for the project
       const { data: tasks, error: tasksError } = await supabase
@@ -451,7 +473,7 @@ export function useSaveProjectBaseline() {
       queryClient.invalidateQueries({ queryKey: ['project-baselines', data.projectId] });
       toast.success('Project baseline saved');
     },
-    onError: (error) => {
+    onError: (error: Error) => {
       toast.error('Failed to save baseline: ' + error.message);
     },
   });

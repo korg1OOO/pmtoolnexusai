@@ -98,6 +98,8 @@ function FolderTreeItem({
   onRenameFolder: (folderId: string, newName: string) => void;
 }) {
   const [isOpen, setIsOpen] = useState(true);
+  const [isRenaming, setIsRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState(folder.name);
   const folderPresentations = presentations.filter(p => p.folder_id === folder.id);
   const hasChildren = folder.children.length > 0 || folderPresentations.length > 0;
 
@@ -196,13 +198,40 @@ function FolderTreeItem({
           </Collapsible>
         </ContextMenuTrigger>
         <ContextMenuContent>
-          <ContextMenuItem onClick={() => {
-            const name = prompt('Enter new name:', folder.name);
-            if (name) onRenameFolder(folder.id, name);
-          }}>
-            <Edit2 className="h-4 w-4 mr-2" />
-            Rename
-          </ContextMenuItem>
+          {isRenaming ? (
+            <div className="p-2 flex gap-1">
+              <Input
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                className="h-7 text-xs flex-1"
+                autoFocus
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && renameValue.trim()) {
+                    onRenameFolder(folder.id, renameValue.trim());
+                    setIsRenaming(false);
+                  }
+                  if (e.key === 'Escape') setIsRenaming(false);
+                }}
+              />
+              <button
+                className="text-xs text-primary hover:underline"
+                onClick={() => {
+                  if (renameValue.trim()) {
+                    onRenameFolder(folder.id, renameValue.trim());
+                    setIsRenaming(false);
+                  }
+                }}
+              >OK</button>
+            </div>
+          ) : (
+            <ContextMenuItem onClick={() => {
+              setRenameValue(folder.name);
+              setIsRenaming(true);
+            }}>
+              <Edit2 className="h-4 w-4 mr-2" />
+              Rename
+            </ContextMenuItem>
+          )}
           <ContextMenuSeparator />
           <ContextMenuItem
             onClick={() => onDeleteFolder(folder.id)}

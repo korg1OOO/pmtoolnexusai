@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
 import { Lightbulb, TrendingUp, TrendingDown, Minus, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { MLPredictionFeedback } from '@/components/ml/MLPredictionFeedback';
 
 interface Insight {
   id: string;
@@ -11,6 +12,7 @@ interface Insight {
   description: string;
   trend?: 'up' | 'down' | 'stable';
   confidence: number;
+  metadata?: Record<string, any>; // For ml_prediction_id
 }
 
 interface AIInsightsSectionProps {
@@ -77,6 +79,22 @@ export function AIInsightsSection({ insights, summary }: AIInsightsSectionProps)
                 </div>
                 <h4 className="font-medium text-sm mb-1">{insight.title}</h4>
                 <p className="text-sm text-muted-foreground">{insight.description}</p>
+
+                {/* ML Feedback Component */}
+                {insight.metadata?.ml_prediction_id && (
+                  <div className="mt-3">
+                    <MLPredictionFeedback
+                      predictionId={insight.metadata.ml_prediction_id}
+                      predictionType="ai_insight"
+                      prediction={{
+                        title: insight.title,
+                        description: insight.description,
+                        category: insight.category,
+                      }}
+                      compact
+                    />
+                  </div>
+                )}
               </div>
             </div>
           </Card>

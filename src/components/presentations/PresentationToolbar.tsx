@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React, { useCallback, useState } from 'react';
 import { Editor } from '@tiptap/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -95,21 +95,19 @@ export function PresentationToolbar({
   hasEmbeddedComponents,
   isActivePresentation,
 }: PresentationToolbarProps) {
-  const setLink = useCallback(() => {
+  const [linkOpen, setLinkOpen] = useState(false);
+  const [linkUrl, setLinkUrl] = useState('');
+
+  const applyLink = useCallback(() => {
     if (!editor) return;
-    
-    const previousUrl = editor.getAttributes('link').href;
-    const url = window.prompt('Enter URL', previousUrl);
-
-    if (url === null) return;
-
-    if (url === '') {
+    if (linkUrl === '') {
       editor.chain().focus().extendMarkRange('link').unsetLink().run();
-      return;
+    } else {
+      editor.chain().focus().extendMarkRange('link').setLink({ href: linkUrl }).run();
     }
-
-    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
-  }, [editor]);
+    setLinkOpen(false);
+    setLinkUrl('');
+  }, [editor, linkUrl]);
 
   const insertTable = useCallback(() => {
     if (!editor) return;
@@ -320,16 +318,43 @@ export function PresentationToolbar({
         <Separator orientation="vertical" className="h-6 mx-1" />
 
         {/* Insert */}
-        <Button variant="ghost" size="iconSm" onClick={setLink}>
-          <Link className="h-4 w-4" />
-        </Button>
+        <Popover open={linkOpen} onOpenChange={setLinkOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="ghost" size="iconSm" onClick={() => {
+              setLinkUrl(editor?.getAttributes('link').href || '');
+              setLinkOpen(true);
+            }}>
+              <Link className="h-4 w-4" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-64 p-3">
+            <p className="text-xs font-medium mb-2">Insert link</p>
+            <div className="flex gap-1">
+              <Input
+                placeholder="https://…"
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                className="h-7 text-sm"
+                autoFocus
+                onKeyDown={(e) => { if (e.key === 'Enter') applyLink(); }}
+              />
+              <Button size="icon" className="h-7 w-7" onClick={applyLink}>OK</Button>
+            </div>
+            {editor?.isActive('link') && (
+              <button
+                className="text-xs text-destructive mt-1 hover:underline"
+                onClick={() => { setLinkUrl(''); applyLink(); }}
+              >Remove link</button>
+            )}
+          </PopoverContent>
+        </Popover>
         <Button variant="ghost" size="iconSm" onClick={onInsertImage}>
           <Image className="h-4 w-4" />
         </Button>
         <Button variant="ghost" size="iconSm" onClick={insertTable}>
           <Table className="h-4 w-4" />
         </Button>
-        <ShapeLibrary 
+        <ShapeLibrary
           trigger={
             <Button variant="ghost" size="iconSm">
               <Shapes className="h-4 w-4" />
@@ -351,9 +376,9 @@ export function PresentationToolbar({
         {/* Refresh Components */}
         {hasEmbeddedComponents && onRefreshComponents && (
           <>
-            <Button 
-              variant="ghost" 
-              size="iconSm" 
+            <Button
+              variant="ghost"
+              size="iconSm"
               onClick={onRefreshComponents}
               title={isActivePresentation ? "Refresh all live components" : "Activate presentation to refresh"}
               className={cn(!isActivePresentation && 'opacity-50')}

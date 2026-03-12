@@ -1,3 +1,3 @@
 export { EmailAccountSettings } from './EmailAccountSettings';
-export { CommunicationsView } from './CommunicationsView';
+export { default as CommunicationsView } from './CommunicationsView';
 export { EmailComposeDialog } from './EmailComposeDialog';

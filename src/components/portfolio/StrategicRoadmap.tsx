@@ -1,0 +1,247 @@
+import { useState } from 'react';
+import { useParams } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
+import { Card } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Calendar, Target, Flag, GitBranch } from 'lucide-react';
+import { getPortfolioRoadmap } from '@/services/portfolioService';
+
+interface Initiative {
+    id: string;
+    name: string;
+    start_date: string;
+    end_date: string;
+    status: 'planned' | 'in-progress' | 'completed';
+    milestones: number;
+    dependencies: string[];
+}
+
+export function StrategicRoadmap() {
+    const { portfolioId } = useParams();
+    const [viewMode, setViewMode] = useState<'timeline' | 'list'>('timeline');
+
+    const { data: roadmapData } = useQuery({
+        queryKey: ['portfolio-roadmap', portfolioId],
+        queryFn: () => getPortfolioRoadmap(portfolioId!),
+        enabled: !!portfolioId
+    });
+
+    // Service returns roadmap data directly - no mapping needed
+    // If roadmapData is null, components will handle empty state
+
+
+    return (
+        <div className="p-6 space-y-6">
+            {/* Header */}
+<div className="flex items-center justify-between">
+    <div>
+        <h1 className="text-3xl font-bold">Strategic Roadmap</h1>
+        <p className="text-muted-foreground">Multi-year initiative planning and tracking</p>
+    </div>
+    <div className="flex gap-2">
+        <Button
+            variant={viewMode === 'timeline' ? 'default' : 'outline'}
+            onClick={() => setViewMode('timeline')}
+        >
+            Timeline View
+        </Button>
+        <Button
+            variant={viewMode === 'list' ? 'default' : 'outline'}
+            onClick={() => setViewMode('list')}
+        >
+            List View
+        </Button>
+        <Button>Add Initiative</Button>
+    </div>
+</div>
+
+{/* Summary Cards */ }
+<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+    <Card className="p-6">
+        <div className="flex items-center gap-3">
+            <Target className="w-8 h-8 text-blue-600" />
+            <div>
+                <p className="text-sm text-muted-foreground">Total Initiatives</p>
+                <p className="text-2xl font-bold">{roadmapData?.initiatives.length}</p>
+            </div>
+        </div>
+    </Card>
+    <Card className="p-6">
+        <div className="flex items-center gap-3">
+            <Calendar className="w-8 h-8 text-green-600" />
+            <div>
+                <p className="text-sm text-muted-foreground">In Progress</p>
+                <p className="text-2xl font-bold">
+                    {roadmapData?.initiatives.filter(i => i.status === 'in-progress').length}
+                </p>
+            </div>
+        </div>
+    </Card>
+    <Card className="p-6">
+        <div className="flex items-center gap-3">
+            <Flag className="w-8 h-8 text-purple-600" />
+            <div>
+                <p className="text-sm text-muted-foreground">Milestones</p>
+                <p className="text-2xl font-bold">{roadmapData?.milestones.length}</p>
+            </div>
+        </div>
+    </Card>
+    <Card className="p-6">
+        <div className="flex items-center gap-3">
+            <GitBranch className="w-8 h-8 text-orange-600" />
+            <div>
+                <p className="text-sm text-muted-foreground">Dependencies</p>
+                <p className="text-2xl font-bold">
+                    {roadmapData?.initiatives.reduce((sum, i) => sum + i.dependencies.length, 0)}
+                </p>
+            </div>
+        </div>
+    </Card>
+</div>
+
+{/* Timeline View */ }
+{
+    viewMode === 'timeline' && (
+        <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Initiative Timeline</h2>
+            <div className="space-y-4">
+                {roadmapData?.initiatives.map((initiative) => (
+                    <InitiativeTimelineCard key={initiative.id} initiative={initiative} />
+                ))}
+            </div>
+        </Card>
+    )
+}
+
+{/* List View */ }
+{
+    viewMode === 'list' && (
+        <Card className="p-6">
+            <h2 className="text-xl font-semibold mb-4">Initiative List</h2>
+            <div className="space-y-3">
+                {roadmapData?.initiatives.map((initiative) => (
+                    <InitiativeListCard key={initiative.id} initiative={initiative} />
+                ))}
+            </div>
+        </Card>
+    )
+}
+
+{/* Upcoming Milestones */ }
+<Card className="p-6">
+    <h2 className="text-xl font-semibold mb-4">Upcoming Milestones</h2>
+    <div className="space-y-3">
+        {roadmapData?.milestones.map((milestone) => (
+            <div key={milestone.id} className="flex items-center justify-between p-3 border rounded-lg">
+                <div className="flex items-center gap-3">
+                    <Flag className={`w-5 h-5 ${milestone.status === 'completed' ? 'text-green-600' :
+                        milestone.status === 'in-progress' ? 'text-blue-600' :
+                            'text-gray-400'
+                        }`} />
+                    <div>
+                        <h4 className="font-medium">{milestone.name}</h4>
+                        <p className="text-sm text-muted-foreground">
+                            {new Date(milestone.date).toLocaleDateString('en-US', {
+                                month: 'short',
+                                day: 'numeric',
+                                year: 'numeric'
+                            })}
+                        </p>
+                    </div>
+                </div>
+                <span className={`text-xs px-2 py-1 rounded ${milestone.status === 'completed' ? 'bg-green-100 text-green-700' :
+                    milestone.status === 'in-progress' ? 'bg-blue-100 text-blue-700' :
+                        'bg-gray-100 text-gray-700'
+                    }`}>
+                    {milestone.status === 'completed' ? 'Completed' :
+                        milestone.status === 'in-progress' ? 'In Progress' : 'Planned'}
+                </span>
+            </div>
+        ))}
+    </div>
+</Card>
+        </div >
+    );
+}
+
+function InitiativeTimelineCard({ initiative }: { initiative: Initiative }) {
+    const startDate = new Date(initiative.start_date);
+    const endDate = new Date(initiative.end_date);
+    const duration = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24 * 30));
+
+    return (
+        <div className="border rounded-lg p-4">
+            <div className="flex items-start justify-between mb-3">
+                <div>
+                    <h3 className="font-semibold">{initiative.name}</h3>
+                    <p className="text-sm text-muted-foreground">
+                        {startDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })} - {endDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                    </p>
+                </div>
+                <span className={`text-xs px-2 py-1 rounded ${initiative.status === 'completed' ? 'bg-green-100 text-green-700' :
+                    initiative.status === 'in-progress' ? 'bg-blue-100 text-blue-700' :
+                        'bg-gray-100 text-gray-700'
+                    }`}>
+                    {initiative.status === 'completed' ? 'Completed' :
+                        initiative.status === 'in-progress' ? 'In Progress' : 'Planned'}
+                </span>
+            </div>
+
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1">
+                    <Calendar className="w-4 h-4" />
+                    {duration} months
+                </span>
+                <span className="flex items-center gap-1">
+                    <Flag className="w-4 h-4" />
+                    {initiative.milestones} milestones
+                </span>
+                {initiative.dependencies.length > 0 && (
+                    <span className="flex items-center gap-1">
+                        <GitBranch className="w-4 h-4" />
+                        {initiative.dependencies.length} dependencies
+                    </span>
+                )}
+            </div>
+
+            {/* Visual timeline bar */}
+            <div className="mt-3 h-2 bg-gray-200 rounded-full overflow-hidden">
+                <div
+                    className={`h-full ${initiative.status === 'completed' ? 'bg-green-600' :
+                        initiative.status === 'in-progress' ? 'bg-blue-600' :
+                            'bg-gray-400'
+                        }`}
+                    style={{ width: initiative.status === 'completed' ? '100%' : initiative.status === 'in-progress' ? '50%' : '0%' }}
+                />
+            </div>
+        </div>
+    );
+}
+
+function InitiativeListCard({ initiative }: { initiative: Initiative }) {
+    return (
+        <div className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent cursor-pointer">
+            <div className="flex items-center gap-3">
+                <Target className="w-5 h-5 text-blue-600" />
+                <div>
+                    <h4 className="font-medium">{initiative.name}</h4>
+                    <p className="text-sm text-muted-foreground">
+                        {initiative.milestones} milestones • {initiative.dependencies.length} dependencies
+                    </p>
+                </div>
+            </div>
+            <div className="flex items-center gap-3">
+                <span className="text-sm text-muted-foreground">
+                    {new Date(initiative.start_date).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                </span>
+                <span className={`text-xs px-2 py-1 rounded ${initiative.status === 'completed' ? 'bg-green-100 text-green-700' :
+                    initiative.status === 'in-progress' ? 'bg-blue-100 text-blue-700' :
+                        'bg-gray-100 text-gray-700'
+                    }`}>
+                    {initiative.status === 'completed' ? 'Completed' :
+                        initiative.status === 'in-progress' ? 'In Progress' : 'Planned'}
+                </span>
+            </div>
+        </div>
+    );
+}

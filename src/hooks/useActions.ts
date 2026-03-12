@@ -6,8 +6,8 @@ import { toast } from 'sonner';
 export type ActionStatus = 'pending' | 'in-progress' | 'completed' | 'deferred' | 'cancelled';
 export type ActionPriority = 'critical' | 'high' | 'medium' | 'low';
 
-export interface Action { id: string; project_id: string | null; title: string; description: string | null; priority: ActionPriority; status: ActionStatus; owner_id: string | null; owner_name: string | null; created_by_id: string | null; created_by_name: string | null; due_date: string | null; completed_at: string | null; progress: number; notes: string | null; source_type: string | null; source_id: string | null; source_title: string | null; linked_items: any[]; dependencies: any[]; blocked_by: string | null; tags: string[]; sla_target_hours: number | null; sla_started_at: string | null; sla_breached: boolean; sla_breached_at: string | null; history: any[]; created_at: string; updated_at: string; }
-export interface ActionInput { title: string; description?: string; priority?: ActionPriority; status?: ActionStatus; owner_name?: string; created_by_name?: string; due_date?: string; progress?: number; notes?: string; source_type?: string; source_id?: string; source_title?: string; tags?: string[]; sla_target_hours?: number; }
+export interface Action { id: string; project_id: string | null; title: string; description: string | null; priority: ActionPriority; status: ActionStatus; owner_id: string | null; owner_name: string | null; created_by_id: string | null; created_by_name: string | null; due_date: string | null; completed_at: string | null; progress: number; notes: string | null; source_type: string | null; source_id: string | null; source_title: string | null; linked_items: any[]; dependencies: any[]; blocked_by: string | null; tags: string[]; sla_target_hours: number | null; sla_started_at: string | null; sla_breached: boolean; sla_breached_at: string | null; history: any[]; created_at: string; updated_at: string; custom_fields?: Record<string, any>; }
+export interface ActionInput { title: string; description?: string; priority?: ActionPriority; status?: ActionStatus; owner_name?: string; created_by_name?: string; due_date?: string; progress?: number; notes?: string; source_type?: string; source_id?: string; source_title?: string; tags?: string[]; sla_target_hours?: number; custom_fields?: Record<string, any>; }
 
 export function useActions() {
   const { settings } = useProjectContext();
@@ -22,7 +22,7 @@ export function useActions() {
       setLoading(true);
       const { data, error: e } = await supabase.from('actions').select('*').eq('project_id', projectId).order('created_at', { ascending: false });
       if (e) throw e;
-      setActions((data || []).map((a: any) => ({ ...a, priority: a.priority as ActionPriority, status: a.status as ActionStatus, linked_items: Array.isArray(a.linked_items) ? a.linked_items : [], dependencies: Array.isArray(a.dependencies) ? a.dependencies : [], tags: Array.isArray(a.tags) ? a.tags : [], history: Array.isArray(a.history) ? a.history : [] })));
+      setActions((data || []).map((a: any) => ({ ...a, priority: a.priority as ActionPriority, status: a.status as ActionStatus, linked_items: Array.isArray(a.linked_items) ? a.linked_items : [], dependencies: Array.isArray(a.dependencies) ? a.dependencies : [], tags: Array.isArray(a.tags) ? a.tags : [], history: Array.isArray(a.history) ? a.history : [], custom_fields: a.custom_fields || {} })));
       setError(null);
     } catch (err: any) { setError(err.message); } finally { setLoading(false); }
   }, [projectId]);
@@ -39,11 +39,31 @@ export function useActions() {
     if (!projectId) { toast.error('No project selected'); return null; }
     try {
       const now = new Date().toISOString();
-      const { data, error: e } = await supabase.from('actions').insert({ project_id: projectId, title: input.title, description: input.description || null, priority: input.priority || 'medium', status: input.status || 'pending', owner_name: input.owner_name || null, created_by_name: input.created_by_name || null, due_date: input.due_date || null, progress: input.progress || 0, notes: input.notes || null, source_type: input.source_type || 'manual', source_id: input.source_id || null, source_title: input.source_title || null, tags: input.tags || [], sla_target_hours: input.sla_target_hours || null, sla_started_at: input.sla_target_hours ? now : null, history: [{ timestamp: now, user: input.created_by_name || 'System', action: 'Created action' }] }).select().single();
+      const payload: any = {
+        project_id: projectId,
+        title: input.title,
+        description: input.description || null,
+        priority: (input.priority || 'medium').toLowerCase(),
+        status: (input.status || 'pending').toLowerCase(),
+        owner_name: input.owner_name || null,
+        created_by_name: input.created_by_name || null,
+        due_date: input.due_date || null,
+        progress: input.progress || 0,
+        notes: input.notes || null,
+        source_type: input.source_type || 'manual',
+        source_id: input.source_id || null,
+        source_title: input.source_title || null,
+        tags: input.tags || [],
+        sla_target_hours: input.sla_target_hours || null,
+        sla_started_at: input.sla_target_hours ? now : null,
+        custom_fields: input.custom_fields || {}
+      };
+
+      const { data, error: e } = await supabase.from('actions').insert(payload).select().single();
       if (e) throw e;
-      const action: Action = { ...data, priority: data.priority as ActionPriority, status: data.status as ActionStatus, linked_items: Array.isArray(data.linked_items) ? data.linked_items : [], dependencies: Array.isArray(data.dependencies) ? data.dependencies : [], tags: (Array.isArray(data.tags) ? data.tags : []).map(String), history: Array.isArray(data.history) ? data.history : [] };
+      const action: Action = { ...data, priority: data.priority as ActionPriority, status: data.status as ActionStatus, linked_items: Array.isArray(data.linked_items) ? data.linked_items : [], dependencies: Array.isArray(data.dependencies) ? data.dependencies : [], tags: (Array.isArray(data.tags) ? data.tags : []).map(String), history: Array.isArray(data.history) ? data.history : [], custom_fields: data.custom_fields || {} };
       toast.success('Action created'); return action;
-    } catch { toast.error('Failed to create action'); return null; }
+    } catch (err: any) { console.error(err); toast.error('Failed to create action'); return null; }
   };
 
   const updateAction = async (id: string, updates: Partial<ActionInput & { blocked_by?: string }>) => {

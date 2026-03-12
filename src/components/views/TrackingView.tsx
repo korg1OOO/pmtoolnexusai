@@ -28,7 +28,7 @@ import { BaselineManager } from '@/components/tracking/BaselineManager';
 import { VarianceTable } from '@/components/tracking/VarianceTable';
 import { TrackingGantt } from '@/components/tracking/TrackingGantt';
 
-export function TrackingView() {
+export default function TrackingView() {
   const { data: projects = [] } = useProjects();
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(
     projects[0]?.id || null

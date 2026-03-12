@@ -1,5 +1,9 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
+import { loadAgentConfig, loadAgentCapabilities, getDefaultSystemPrompt, type AIAgentConfig } from "../_shared/agentLoader.ts";
+import { deductCredits, getTenantId } from "../_shared/creditDeduction.ts";
+import { ALL_TOOLS, type ToolSchema } from "../_shared/toolSchemas.ts";
+import { dispatchTool, type ExecutorContext } from "../_shared/toolExecutor.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -28,6 +32,12 @@ interface AgentInput {
   userRole: string;
   conversationHistory: Message[];
   projectContext: Record<string, unknown>;
+  // credit billing context (optional, passed through from main handler)
+  supabase?: SupabaseClient;
+  userId?: string | null;
+  tenantId?: string | null;
+  tools?: ToolSchema[];
+  executorCtx?: ExecutorContext;
 }
 
 interface AgentOutput {
@@ -36,6 +46,12 @@ interface AgentOutput {
   actions?: Array<{ type: string; description: string; data?: unknown }>;
   confidence: number;
   metadata?: Record<string, unknown>;
+  // Agentic tool-calling fields
+  requiresConfirmation?: boolean;
+  pendingActionId?: string;
+  diff?: Record<string, unknown>;
+  toolName?: string;
+  toolResult?: unknown;
 }
 
 // =============================================================================
@@ -116,7 +132,7 @@ function hasPermission(userRole: string, requiredPermissions: string[]): boolean
 function getPermissionDenialResponse(userRole: string, action: string, requiredPermission: string): string {
   const alternatives = ROLE_PERMISSIONS[userRole] || [];
   const alternativeActions = [];
-  
+
   if (alternatives.includes("VIEW_ALL")) {
     alternativeActions.push("View project status and timeline");
     alternativeActions.push("Get insights and recommendations");
@@ -125,7 +141,7 @@ function getPermissionDenialResponse(userRole: string, action: string, requiredP
     alternativeActions.push("Summarize meeting notes");
     alternativeActions.push("Track action items");
   }
-  
+
   return `I understand you'd like to ${action}, but your current role (${userRole}) doesn't have the required ${requiredPermission} permission.
 
 What I can help you with instead:
@@ -156,9 +172,9 @@ interface IntentClassificationWithClarification extends IntentClassification {
 // =============================================================================
 
 async function classifyIntent(query: string, conversationHistory: Message[]): Promise<IntentClassificationWithClarification> {
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) {
-    throw new Error("LOVABLE_API_KEY is not configured");
+  const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+  if (!OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY is not configured");
   }
 
   const classificationPrompt = `You are an intent classifier for a project management AI system.
@@ -210,14 +226,15 @@ Only include clarifying_question if needs_clarification is true.`;
 
   const recentContext = conversationHistory.slice(-4).map(m => `${m.role}: ${m.content}`).join("\n");
 
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
       "Content-Type": "application/json",
     },
     body: JSON.stringify({
-      model: "google/gemini-3-flash-preview",
+      model: "gpt-4o-mini",
+      response_format: { type: "json_object" },
       messages: [
         { role: "system", content: classificationPrompt },
         { role: "user", content: `Recent conversation:\n${recentContext}\n\nUser message to classify: "${query}"` },
@@ -238,7 +255,7 @@ Only include clarifying_question if needs_clarification is true.`;
 
   const data = await response.json();
   const content = data.choices?.[0]?.message?.content || "";
-  
+
   try {
     // Extract JSON from response
     const jsonMatch = content.match(/\{[\s\S]*\}/);
@@ -262,7 +279,7 @@ Only include clarifying_question if needs_clarification is true.`;
 // =============================================================================
 
 async function buildProjectContext(
-  supabase: any,
+  supabase: SupabaseClient,
   projectId: string,
   agentType: string
 ): Promise<Record<string, unknown>> {
@@ -275,7 +292,7 @@ async function buildProjectContext(
       .select("*")
       .eq("id", projectId)
       .single();
-    
+
     context.project = project;
 
     // Fetch agent-specific data
@@ -413,13 +430,13 @@ User Role: ${input.userRole}
 Provide specific, actionable insights about the schedule. Reference actual task names and dates from the context.
 If the user wants to modify the schedule, explain the impact but note that changes require confirmation.`;
 
-  return await callLovableAI(systemPrompt, input.query, input.conversationHistory, "scheduler");
+  return await callOpenAI(systemPrompt, input.query, input.conversationHistory, "scheduler", undefined, input.supabase, input.userId, input.tenantId, input.tools, input.executorCtx);
 }
 
 // --- Finance Agent ---
 async function runFinanceAgent(input: AgentInput): Promise<AgentOutput> {
   const project = input.projectContext.project as Record<string, unknown> || {};
-  
+
   const systemPrompt = `You are FinanceAgent, an expert in project financial management and EVM analysis.
 
 Your capabilities:
@@ -442,7 +459,7 @@ User Role: ${input.userRole}
 
 Provide detailed financial analysis with specific numbers. Calculate CPI, SPI, and EAC when relevant.`;
 
-  return await callLovableAI(systemPrompt, input.query, input.conversationHistory, "finance");
+  return await callOpenAI(systemPrompt, input.query, input.conversationHistory, "finance", undefined, input.supabase, input.userId, input.tenantId, input.tools, input.executorCtx);
 }
 
 // --- Risk Agent ---
@@ -464,7 +481,7 @@ User Role: ${input.userRole}
 Identify specific risks based on the project data. Score risks using a 1-5 scale for impact and probability.
 Provide actionable mitigation strategies.`;
 
-  return await callLovableAI(systemPrompt, input.query, input.conversationHistory, "risk");
+  return await callOpenAI(systemPrompt, input.query, input.conversationHistory, "risk", undefined, input.supabase, input.userId, input.tenantId, input.tools, input.executorCtx);
 }
 
 // --- Assignment Agent ---
@@ -486,7 +503,7 @@ User Role: ${input.userRole}
 When recommending assignments, consider resource availability, skills, and current workload.
 Provide specific recommendations with resource names and task names from the context.`;
 
-  return await callLovableAI(systemPrompt, input.query, input.conversationHistory, "assignment");
+  return await callOpenAI(systemPrompt, input.query, input.conversationHistory, "assignment", undefined, input.supabase, input.userId, input.tenantId, input.tools, input.executorCtx);
 }
 
 // --- Meeting Agent ---
@@ -508,7 +525,7 @@ User Role: ${input.userRole}
 Reference specific meetings, decisions, and action items from the context.
 Track overdue actions and highlight follow-up needs.`;
 
-  return await callLovableAI(systemPrompt, input.query, input.conversationHistory, "meeting");
+  return await callOpenAI(systemPrompt, input.query, input.conversationHistory, "meeting", undefined, input.supabase, input.userId, input.tenantId, input.tools, input.executorCtx);
 }
 
 // --- Document Agent ---
@@ -530,7 +547,7 @@ User Role: ${input.userRole}
 Generate professional, well-structured documents based on actual project data.
 Use appropriate formatting for the document type requested.`;
 
-  return await callLovableAI(systemPrompt, input.query, input.conversationHistory, "document");
+  return await callOpenAI(systemPrompt, input.query, input.conversationHistory, "document", undefined, input.supabase, input.userId, input.tenantId, input.tools, input.executorCtx);
 }
 
 // --- Insight Agent ---
@@ -552,7 +569,7 @@ User Role: ${input.userRole}
 Provide holistic project insights. Consider schedule, resources, and overall health.
 Give specific recommendations based on the data. Be proactive in identifying potential issues.`;
 
-  return await callLovableAI(systemPrompt, input.query, input.conversationHistory, "insight");
+  return await callOpenAI(systemPrompt, input.query, input.conversationHistory, "insight", undefined, input.supabase, input.userId, input.tenantId, input.tools, input.executorCtx);
 }
 
 // --- Strategic Agent ---
@@ -573,7 +590,7 @@ User Role: ${input.userRole}
 
 Provide high-level strategic insights. Consider business value, stakeholder interests, and long-term implications.`;
 
-  return await callLovableAI(systemPrompt, input.query, input.conversationHistory, "strategic");
+  return await callOpenAI(systemPrompt, input.query, input.conversationHistory, "strategic", undefined, input.supabase, input.userId, input.tenantId, input.tools, input.executorCtx);
 }
 
 // --- Communication Agent ---
@@ -594,23 +611,36 @@ User Role: ${input.userRole}
 
 Analyze communication patterns and identify potential issues. Look for delay signals, escalation patterns, and team dynamics.`;
 
-  return await callLovableAI(systemPrompt, input.query, input.conversationHistory, "communication");
+  return await callOpenAI(systemPrompt, input.query, input.conversationHistory, "communication", undefined, input.supabase, input.userId, input.tenantId, input.tools, input.executorCtx);
 }
 
 // =============================================================================
-// AI CALL HELPER
+// AI CALL HELPER — Direct OpenAI
 // =============================================================================
 
-async function callLovableAI(
+async function callOpenAI(
   systemPrompt: string,
   userQuery: string,
   conversationHistory: Message[],
-  agentType: string
+  agentType: string,
+  agentConfig?: AIAgentConfig | null,
+  supabase?: SupabaseClient,
+  userId?: string | null,
+  tenantId?: string | null,
+  tools?: ToolSchema[],
+  executorCtx?: ExecutorContext
 ): Promise<AgentOutput> {
-  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-  if (!LOVABLE_API_KEY) {
-    throw new Error("LOVABLE_API_KEY is not configured");
+  const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY");
+  if (!OPENAI_API_KEY) {
+    throw new Error("OPENAI_API_KEY is not configured");
   }
+
+  // Respect DB-configurable model if admin set it, otherwise default to gpt-4o
+  const modelName = (agentConfig?.model_provider === "openai" && agentConfig?.model_name)
+    ? agentConfig.model_name
+    : "gpt-4o";
+  const maxTokens = agentConfig?.max_tokens || 2000;
+  const temperature = agentConfig?.temperature || 0.7;
 
   const messages = [
     { role: "system", content: systemPrompt },
@@ -618,24 +648,32 @@ async function callLovableAI(
     { role: "user", content: userQuery },
   ];
 
-  const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+  const requestBody: Record<string, unknown> = {
+    model: modelName,
+    messages,
+    temperature,
+    max_tokens: maxTokens,
+  };
+
+  // Inject tools when available (function calling)
+  if (tools && tools.length > 0) {
+    requestBody.tools = tools;
+    requestBody.tool_choice = "auto";
+  }
+
+  const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${LOVABLE_API_KEY}`,
+      Authorization: `Bearer ${OPENAI_API_KEY}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({
-      model: "google/gemini-3-flash-preview",
-      messages,
-      temperature: 0.7,
-      max_tokens: 2000,
-    }),
+    body: JSON.stringify(requestBody),
   });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error(`${agentType} agent failed:`, errorText);
-    
+    console.error(`[ai-orchestrator] ${agentType} agent failed:`, errorText);
+
     if (response.status === 429) {
       return {
         response: "I'm currently experiencing high demand. Please try again in a moment.",
@@ -650,13 +688,72 @@ async function callLovableAI(
         confidence: 0,
       };
     }
-    
+
     throw new Error(`Agent ${agentType} failed: ${response.status}`);
   }
 
   const data = await response.json();
-  const content = data.choices?.[0]?.message?.content || "I couldn't generate a response.";
+  const choice = data.choices?.[0];
 
+  // Deduct AI credits — 2× billing multiplier applied inside helper
+  if (supabase && userId) {
+    const usage = data.usage ?? {};
+    await deductCredits(supabase, userId, tenantId ?? null, {
+      featureType: `ai_agent_${agentType}`,
+      requestId: `agent-${agentType}-${Date.now()}`,
+      modelName,
+      promptTokens: usage.prompt_tokens ?? 0,
+      completionTokens: usage.completion_tokens ?? 0,
+    });
+  }
+
+  // ── Handle tool_calls (function calling) ──────────────────────────────────
+  if (choice?.finish_reason === "tool_calls" && choice?.message?.tool_calls?.length > 0 && executorCtx) {
+    const toolCall = choice.message.tool_calls[0]; // Handle first tool call
+    const toolName = toolCall.function.name;
+    let toolParams: Record<string, unknown> = {};
+    try {
+      toolParams = JSON.parse(toolCall.function.arguments ?? "{}");
+    } catch {
+      toolParams = {};
+    }
+
+    console.log(`[ai-orchestrator] Tool call detected: ${toolName}`, toolParams);
+
+    const toolResult = await dispatchTool(toolName, toolParams, executorCtx);
+
+    if (toolResult.requiresConfirmation) {
+      // Return a structured confirmation response to the UI
+      const diffSummary = toolResult.summary ?? `The AI wants to execute: ${toolName}`;
+      return {
+        response: `I can do that! Here's what I'll execute:\n\n**${toolName.replace(/_/g, " ").toUpperCase()}**\n\n${diffSummary}\n\nPlease review the details below and confirm to proceed.`,
+        agentType,
+        confidence: 0.95,
+        requiresConfirmation: true,
+        pendingActionId: toolResult.pendingActionId,
+        diff: toolResult.diff,
+        toolName,
+      };
+    } else if (toolResult.error) {
+      return {
+        response: `I tried to execute **${toolName}** but encountered an error: ${toolResult.error}`,
+        agentType,
+        confidence: 0.5,
+      };
+    } else {
+      // Immediate result (e.g., PDF generation)
+      return {
+        response: `Done! The action **${toolName.replace(/_/g, " ")}** completed successfully.`,
+        agentType,
+        confidence: 0.95,
+        toolResult: toolResult.result,
+        toolName,
+      };
+    }
+  }
+
+  // ── Standard text response ─────────────────────────────────────────────────
+  const content = choice?.message?.content || "I couldn't generate a response.";
   return {
     response: content,
     agentType,
@@ -708,7 +805,14 @@ serve(async (req) => {
   const startTime = Date.now();
 
   try {
-    const { message, projectId, conversationId, conversationHistory = [] } = await req.json();
+    const {
+      message,
+      projectId,
+      conversationId,
+      conversationHistory = [],
+      agentType: requestedAgentType,  // explicit agent type from admin validation / direct call
+      enableTools = true,             // set false to disable function calling
+    } = await req.json();
 
     if (!message || !projectId) {
       return new Response(
@@ -736,7 +840,7 @@ serve(async (req) => {
         // Get user's role for this project
         const { data: roleData } = await supabase
           .rpc("get_user_role", { p_user_id: userId, p_project_id: projectId });
-        
+
         if (roleData) {
           userRole = roleData;
         }
@@ -751,7 +855,7 @@ serve(async (req) => {
     // Step 1.5: Handle Clarification Needed
     if (intent.needs_clarification && intent.clarifying_question) {
       console.log("Clarification needed:", intent.clarifying_question);
-      
+
       return new Response(
         JSON.stringify({
           response: intent.clarifying_question.context || "I need a bit more information to help you.",
@@ -804,6 +908,19 @@ serve(async (req) => {
     // Step 4: Build Context
     const projectContext = await buildProjectContext(supabase, projectId, agentType);
 
+    // Resolve tenant for credit billing
+    const tenantId = userId ? await getTenantId(supabase, userId) : null;
+
+    // Build executor context for tool dispatch
+    const executorCtx: ExecutorContext = {
+      supabase,
+      userId: userId ?? "",
+      tenantId,
+      projectId,
+      supabaseUrl,
+      serviceRoleKey: supabaseKey,
+    };
+
     // Step 5: Route to Agent
     const agentInput: AgentInput = {
       query: message,
@@ -811,9 +928,17 @@ serve(async (req) => {
       userRole,
       conversationHistory,
       projectContext,
+      supabase,
+      userId,
+      tenantId,
+      tools: ALL_TOOLS,
+      executorCtx,
     };
 
-    const agentOutput = await routeToAgent(agentType, agentInput);
+    // If caller specified an explicit agent type (e.g., admin validation page), skip intent classification
+    const resolvedAgentType = requestedAgentType || agentType;
+
+    const agentOutput = await routeToAgent(resolvedAgentType, agentInput);
 
     // Step 6: Handle Multi-Agent (if secondary intents)
     let synthesizedResponse = agentOutput.response;
@@ -824,12 +949,12 @@ serve(async (req) => {
         const secondaryAgent = INTENT_TO_AGENT[secondaryIntent];
         if (secondaryAgent && secondaryAgent !== agentType) {
           const secondaryPermissions = AGENT_PERMISSIONS[secondaryAgent] || ["VIEW_ALL"];
-          
+
           if (hasPermission(userRole, secondaryPermissions)) {
             const secondaryContext = await buildProjectContext(supabase, projectId, secondaryAgent);
             const secondaryInput = { ...agentInput, projectContext: secondaryContext };
             const secondaryOutput = await routeToAgent(secondaryAgent, secondaryInput);
-            
+
             synthesizedResponse += `\n\n---\n\n**Additional Analysis (${secondaryAgent}):**\n${secondaryOutput.response}`;
             agentsUsed.push(secondaryAgent);
           }
@@ -852,11 +977,17 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         response: synthesizedResponse,
-        agentType: agentsUsed.length > 1 ? "multi-agent" : agentType,
+        agentType: agentsUsed.length > 1 ? "multi-agent" : resolvedAgentType,
         agentsUsed,
         intent,
         confidence: agentOutput.confidence,
         actions: agentOutput.actions,
+        // Agentic tool-calling fields
+        requiresConfirmation: agentOutput.requiresConfirmation,
+        pendingActionId: agentOutput.pendingActionId,
+        diff: agentOutput.diff,
+        toolName: agentOutput.toolName,
+        toolResult: agentOutput.toolResult,
         executionTime: Date.now() - startTime,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
@@ -864,7 +995,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error("Orchestrator error:", error);
-    
+
     return new Response(
       JSON.stringify({
         error: error instanceof Error ? error.message : "An unexpected error occurred",

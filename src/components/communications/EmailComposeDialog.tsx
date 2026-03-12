@@ -122,9 +122,10 @@ export function EmailComposeDialog({
 
       toast.success('Email sent successfully');
       onOpenChange(false);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error sending email:', err);
-      toast.error(err.message || 'Failed to send email');
+      const errorMessage = err instanceof Error ? err.message : 'Failed to send email';
+      toast.error(errorMessage);
     } finally {
       setIsSending(false);
     }

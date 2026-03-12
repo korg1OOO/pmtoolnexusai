@@ -20,22 +20,23 @@ import { Badge } from '@/components/ui/badge';
 import { ViewSwitcher, PlanViewMode } from './ViewSwitcher';
 import { DatabaseTaskGrid } from '@/components/planning/DatabaseTaskGrid';
 import { DatabaseGantt } from '@/components/planning/DatabaseGantt';
-import { SprintBoardView } from './SprintBoardView';
-import { AuthDialog } from '@/components/auth/AuthDialog';
+import SprintBoardView from './SprintBoardView';
+
 import { CalendarDialog } from '@/components/planning/CalendarDialog';
 import { ResourceSheet } from '@/components/resources/ResourceSheet';
 import { ResourceUsageView } from '@/components/resources/ResourceUsageView';
 import { ProjectChat } from '@/components/collaboration/ProjectChat';
 import { useAuth } from '@/hooks/useAuth';
 import { useProjects, useCreateProject, Project } from '@/hooks/useProjects';
-import { useTasks, useCreateTask } from '@/hooks/useTasks';
+import { useTasks, useCreateTask, DbTask } from '@/hooks/useTasks';
+import { LinkChildProjectDialog } from '@/components/planning/LinkChildProjectDialog';
 import { useCalculateCriticalPath } from '@/hooks/useCriticalPath';
 import { useScheduleTrigger } from '@/hooks/useScheduleTrigger';
 import { usePresenceContext } from '@/contexts/PresenceContext';
-import { 
+import {
   useProjectCalendars,
-  useDefaultCalendar, 
-  useCalendarExceptions, 
+  useDefaultCalendar,
+  useCalendarExceptions,
   useUpdateCalendar,
   useCreateCalendarException,
   useDeleteCalendarException,
@@ -71,11 +72,17 @@ import { toast } from 'sonner';
 
 type ResourceViewMode = 'none' | 'sheet' | 'usage';
 
-export function PlanningView() {
+
+interface PlanningViewProps {
+  demo?: boolean;
+  scenarioId?: string | null;
+}
+
+export default function PlanningView({ demo = false, scenarioId = null }: PlanningViewProps) {
   const [viewMode, setViewMode] = useState<PlanViewMode>('grid');
   const [resourceView, setResourceView] = useState<ResourceViewMode>('none');
   const [showShortcuts, setShowShortcuts] = useState(false);
-  const [showAuthDialog, setShowAuthDialog] = useState(false);
+
   const [showNewProjectDialog, setShowNewProjectDialog] = useState(false);
   const [showCalendarDialog, setShowCalendarDialog] = useState(false);
   const [showChat, setShowChat] = useState(false);
@@ -84,6 +91,11 @@ export function PlanningView() {
   const [newProjectName, setNewProjectName] = useState('');
   const [newProjectCode, setNewProjectCode] = useState('');
   const [newProjectDesc, setNewProjectDesc] = useState('');
+
+  const [selectedTasks, setSelectedTasks] = useState<DbTask[]>([]);
+  const [showLinkDialog, setShowLinkDialog] = useState(false);
+  const [linkingTaskId, setLinkingTaskId] = useState<string | null>(null);
+  const [currentChildProjectId, setCurrentChildProjectId] = useState<string | null>(null);
 
   const { user, loading: authLoading, signOut, isAuthenticated } = useAuth();
   const { data: projects = [], isLoading: projectsLoading } = useProjects();
@@ -95,8 +107,8 @@ export function PlanningView() {
   // Calendar hooks
   const { data: calendars = [] } = useProjectCalendars(selectedProjectId);
   const { data: defaultCalendar } = useDefaultCalendar(selectedProjectId);
-  const selectedCalendar = selectedCalendarId 
-    ? calendars.find(c => c.id === selectedCalendarId) || null 
+  const selectedCalendar = selectedCalendarId
+    ? calendars.find(c => c.id === selectedCalendarId) || null
     : defaultCalendar;
   const { data: calendarExceptions = [] } = useCalendarExceptions(selectedCalendar?.id || null);
   const updateCalendar = useUpdateCalendar();
@@ -125,6 +137,27 @@ export function PlanningView() {
       setSelectedCalendarId(null);
     }
   }, [defaultCalendar]);
+
+  const handleChildPlanClick = () => {
+    if (selectedTasks.length !== 1) return;
+    const task = selectedTasks[0];
+
+    if (task.child_project_id) {
+      // Navigate to child project
+      setSelectedProjectId(task.child_project_id);
+      setCurrentProjectId(task.child_project_id);
+      toast.success('Switched to child plan');
+    } else {
+      // Open link dialog
+      setLinkingTaskId(task.id);
+      setCurrentChildProjectId(null);
+      setShowLinkDialog(true);
+    }
+  };
+
+  const handleLinkSuccess = () => {
+    // Refresh tasks logic if needed, but QueryClient handles it
+  };
 
   const shortcuts = [
     { key: '↑ / ↓', description: 'Navigate between tasks' },
@@ -225,54 +258,24 @@ export function PlanningView() {
       {/* Toolbar */}
       <div className="flex items-center justify-between p-4 border-b bg-card">
         <div className="flex items-center gap-2">
-          {/* Project Selector */}
-          <div className="flex items-center gap-2 mr-4">
-            <FolderOpen className="h-4 w-4 text-muted-foreground" />
-            {projectsLoading ? (
-              <Skeleton className="h-8 w-40" />
-            ) : (
-              <Select
-                value={selectedProjectId || ''}
-                onValueChange={setSelectedProjectId}
-              >
-                <SelectTrigger className="w-48 h-8">
-                  <SelectValue placeholder="Select project" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projects.map((project) => (
-                    <SelectItem key={project.id} value={project.id}>
-                      <span className="font-mono text-xs mr-2">{project.code}</span>
-                      {project.name}
-                    </SelectItem>
-                  ))}
-                  <DropdownMenuSeparator />
-                  <SelectItem value="__new__" disabled>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="w-full justify-start -ml-2"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowNewProjectDialog(true);
-                      }}
-                    >
-                      <Plus className="h-4 w-4 mr-2" />
-                      New Project
-                    </Button>
-                  </SelectItem>
-                </SelectContent>
-              </Select>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowNewProjectDialog(true)}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
+
 
           <div className="w-px h-6 bg-border" />
+
+          <Button
+            size="sm"
+            onClick={handleChildPlanClick}
+            disabled={selectedTasks.length !== 1}
+            className={cn(
+              selectedTasks.length === 1 && selectedTasks[0].child_project_id
+                ? "bg-green-600 hover:bg-green-700 text-white"
+                : "bg-blue-600 hover:bg-blue-700 text-white"
+            )}
+            variant={selectedTasks.length !== 1 ? "outline" : "default"}
+          >
+            <Link2 className="h-4 w-4 mr-1" />
+            Child Plan
+          </Button>
 
           <Button size="sm" onClick={handleAddTask} disabled={!selectedProjectId}>
             <Plus className="h-4 w-4 mr-1" />
@@ -293,12 +296,12 @@ export function PlanningView() {
         <div className="flex items-center gap-2">
           <ViewSwitcher value={viewMode} onChange={(v) => { setViewMode(v); setResourceView('none'); }} />
           <div className="w-px h-6 bg-border" />
-          
+
           {/* Resource Views Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button 
-                variant={resourceView !== 'none' ? 'secondary' : 'outline'} 
+              <Button
+                variant={resourceView !== 'none' ? 'secondary' : 'outline'}
                 size="sm"
               >
                 <Users className="h-4 w-4 mr-1" />
@@ -341,8 +344,8 @@ export function PlanningView() {
           <Button variant="outline" size="sm">
             Baseline
           </Button>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
             onClick={() => setShowCalendarDialog(true)}
             disabled={!selectedProjectId}
@@ -350,8 +353,8 @@ export function PlanningView() {
             <CalendarDays className="h-4 w-4 mr-1" />
             Calendar
           </Button>
-          <Button 
-            variant="default" 
+          <Button
+            variant="default"
             size="sm"
             onClick={handleAutoSchedule}
             disabled={!selectedProjectId || isScheduling}
@@ -363,8 +366,8 @@ export function PlanningView() {
             )}
             Auto-Schedule
           </Button>
-          <Button 
-            variant="secondary" 
+          <Button
+            variant="secondary"
             size="sm"
             onClick={handleCalculateCriticalPath}
             disabled={!selectedProjectId || calculateCriticalPath.isPending}
@@ -379,10 +382,10 @@ export function PlanningView() {
 
           {/* Chat Button */}
           {selectedProjectId && (
-            <ProjectChat 
-              projectId={selectedProjectId} 
-              isOpen={showChat} 
-              onToggle={() => setShowChat(!showChat)} 
+            <ProjectChat
+              projectId={selectedProjectId}
+              isOpen={showChat}
+              onToggle={() => setShowChat(!showChat)}
             />
           )}
 
@@ -410,28 +413,93 @@ export function PlanningView() {
       </div>
 
       {/* Content */}
-      {selectedProjectId ? (
+      {(selectedProjectId || demo) ? (
         <>
           {/* Resource Views */}
           {resourceView === 'sheet' && (
-            <ResourceSheet projectId={selectedProjectId} />
+            <ResourceSheet projectId={selectedProjectId || 'demo'} />
           )}
           {resourceView === 'usage' && (
-            <ResourceUsageView projectId={selectedProjectId} />
+            <ResourceUsageView projectId={selectedProjectId || 'demo'} />
           )}
-          
+
           {/* Task Views (only show when not in resource view) */}
           {resourceView === 'none' && (
             <>
-              {viewMode === 'grid' && (
-                <DatabaseTaskGrid projectId={selectedProjectId} />
-              )}
-              {viewMode === 'gantt' && (
-                <DatabaseGantt projectId={selectedProjectId} />
-              )}
+              {
+                demo ? (
+                  // Demo mode: shows a static task grid preview for the landing page
+                  <div className="p-8">
+                    <div className="border rounded-xl shadow-sm overflow-hidden bg-card/60 backdrop-blur-sm">
+                      <table className="w-full text-sm">
+                        <thead className="bg-muted/50 border-b border-border/50">
+                          <tr>
+                            <th className="p-4 text-left w-20 font-bold text-muted-foreground text-xs uppercase tracking-wider">WBS</th>
+                            <th className="p-4 text-left font-bold text-muted-foreground text-xs uppercase tracking-wider">Task Name</th>
+                            <th className="p-4 text-left w-40 font-bold text-muted-foreground text-xs uppercase tracking-wider">Assignee</th>
+                            <th className="p-4 text-left w-32 font-bold text-muted-foreground text-xs uppercase tracking-wider">Status</th>
+                            <th className="p-4 text-left w-32 font-bold text-muted-foreground text-xs uppercase tracking-wider">Duration</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {[
+                            { wbs: "1.0", name: "Program Initiation", assignee: "Project Office", status: "Completed", dur: "15d", indent: 0, statusColor: "text-emerald-500 bg-emerald-500/10" },
+                            { wbs: "1.1", name: "Charter Approval", assignee: "Exec Comm", status: "Completed", dur: "5d", indent: 1, statusColor: "text-emerald-500 bg-emerald-500/10" },
+                            { wbs: "1.2", name: "Resource Allocation", assignee: "Sarah K.", status: "Completed", dur: "10d", indent: 1, statusColor: "text-emerald-500 bg-emerald-500/10" },
+                            { wbs: "2.0", name: "Planning Phase", assignee: "Core Team", status: "In Progress", dur: "45d", indent: 0, statusColor: "text-indigo-500 bg-indigo-500/10" },
+                            { wbs: "2.1", name: "Requirements Analysis", assignee: "John D.", status: "In Progress", dur: "15d", indent: 1, statusColor: "text-indigo-500 bg-indigo-500/10" },
+                            { wbs: "2.2", name: "Technical Architecture", assignee: "Mike R.", status: "Pending", dur: "20d", indent: 1, statusColor: "text-amber-500 bg-amber-500/10" },
+                            { wbs: "2.3", name: "Risk Assessment", assignee: "Legal Team", status: "At Risk", dur: "10d", indent: 1, statusColor: "text-red-500 bg-red-500/10" },
+                            { wbs: "3.0", name: "Execution", assignee: "Dev Team", status: "Not Started", dur: "90d", indent: 0, statusColor: "text-muted-foreground bg-muted" },
+                            { wbs: "3.1", name: "Module A Development", assignee: "Backend Squad", status: "Not Started", dur: "30d", indent: 1, statusColor: "text-muted-foreground bg-muted" },
+                          ].map((task, i) => (
+                            <tr key={i} className="border-b border-border/50 last:border-0 hover:bg-muted/5 transition-colors">
+                              <td className="p-4 font-mono text-xs text-muted-foreground">{task.wbs}</td>
+                              <td className="p-4 font-medium">
+                                <span style={{ paddingLeft: `${task.indent * 20}px` }} className="flex items-center gap-2">
+                                  {task.indent > 0 && <span className="text-muted-foreground/30">↳</span>}
+                                  {task.name}
+                                </span>
+                              </td>
+                              <td className="p-4">
+                                <div className="flex items-center gap-2 text-xs">
+                                  <div className="w-5 h-5 rounded-full bg-primary/10 text-primary flex items-center justify-center text-[9px] font-bold">
+                                    {task.assignee.charAt(0)}
+                                  </div>
+                                  {task.assignee}
+                                </div>
+                              </td>
+                              <td className="p-4"><Badge variant="outline" className={`border-0 ${task.statusColor} hover:${task.statusColor}`}>{task.status}</Badge></td>
+                              <td className="p-4 text-xs tabular-nums text-muted-foreground">{task.dur}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex-1 overflow-hidden relative">
+                    {viewMode === 'grid' && selectedProjectId && (
+                      <DatabaseTaskGrid
+                        projectId={selectedProjectId}
+                        scenarioId={scenarioId}
+                        onSelectionChange={setSelectedTasks}
+                      />
+                    )}
+
+                    {viewMode === 'gantt' && (
+                      <DatabaseGantt
+                        projectId={selectedProjectId || ''}
+                        scenarioId={scenarioId}
+                        onSelectionChange={setSelectedTasks}
+                      />
+                    )}
+                  </div>
+                )}
               {viewMode === 'board' && <SprintBoardView />}
             </>
-          )}
+          )
+          }
         </>
       ) : (
         <div className="flex-1 flex items-center justify-center text-muted-foreground">
@@ -525,43 +593,57 @@ export function PlanningView() {
         </DialogContent>
       </Dialog>
 
-      <AuthDialog open={showAuthDialog} onOpenChange={setShowAuthDialog} />
+
+
+      {
+        linkingTaskId && (
+          <LinkChildProjectDialog
+            open={showLinkDialog}
+            onOpenChange={setShowLinkDialog}
+            taskId={linkingTaskId}
+            currentChildProjectId={currentChildProjectId}
+            onLinkSuccess={handleLinkSuccess}
+          />
+        )
+      }
 
       {/* Calendar Dialog */}
-      {selectedProjectId && (
-        <CalendarDialog
-          open={showCalendarDialog}
-          onOpenChange={setShowCalendarDialog}
-          calendars={calendars}
-          selectedCalendar={selectedCalendar}
-          exceptions={calendarExceptions}
-          projectId={selectedProjectId}
-          onSelectCalendar={(id) => setSelectedCalendarId(id)}
-          onSave={async (updates) => {
-            if (selectedCalendar) {
-              await updateCalendar.mutateAsync({ id: selectedCalendar.id, ...updates });
-            }
-          }}
-          onCreateCalendar={async (calendar) => {
-            const newCal = await createCalendar.mutateAsync(calendar);
-            setSelectedCalendarId(newCal.id);
-          }}
-          onDeleteCalendar={async (id) => {
-            await deleteCalendar.mutateAsync({ id, projectId: selectedProjectId });
-            setSelectedCalendarId(null);
-          }}
-          onAddException={async (exception) => {
-            await createException.mutateAsync(exception);
-          }}
-          onRemoveException={async (id) => {
-            if (selectedCalendar) {
-              await deleteException.mutateAsync({ id, calendarId: selectedCalendar.id });
-            }
-          }}
-          isSaving={updateCalendar.isPending}
-        />
-      )}
-    </div>
+      {
+        selectedProjectId && (
+          <CalendarDialog
+            open={showCalendarDialog}
+            onOpenChange={setShowCalendarDialog}
+            calendars={calendars}
+            selectedCalendar={selectedCalendar}
+            exceptions={calendarExceptions}
+            projectId={selectedProjectId}
+            onSelectCalendar={(id) => setSelectedCalendarId(id)}
+            onSave={async (updates) => {
+              if (selectedCalendar) {
+                await updateCalendar.mutateAsync({ id: selectedCalendar.id, ...updates });
+              }
+            }}
+            onCreateCalendar={async (calendar) => {
+              const newCal = await createCalendar.mutateAsync(calendar);
+              setSelectedCalendarId(newCal.id);
+            }}
+            onDeleteCalendar={async (id) => {
+              await deleteCalendar.mutateAsync({ id, projectId: selectedProjectId });
+              setSelectedCalendarId(null);
+            }}
+            onAddException={async (exception) => {
+              await createException.mutateAsync(exception);
+            }}
+            onRemoveException={async (id) => {
+              if (selectedCalendar) {
+                await deleteException.mutateAsync({ id, calendarId: selectedCalendar.id });
+              }
+            }}
+            isSaving={updateCalendar.isPending}
+          />
+        )
+      }
+    </div >
   );
 }
 

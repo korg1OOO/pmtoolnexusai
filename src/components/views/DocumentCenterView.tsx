@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import { usePermissions } from '@/hooks/usePermissions';
 import { cn } from '@/lib/utils';
 import { FolderOpen, ChevronRight, Home, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,6 +9,7 @@ import { useProjectContext } from '@/contexts/ProjectContext';
 import { useDocuments, type Document } from '@/hooks/useDocuments';
 import { useDocumentFolders, type DocumentFolder } from '@/hooks/useDocumentFolders';
 import { useDocumentSharing } from '@/hooks/useDocumentSharing';
+import { useRecordLock } from '@/hooks/useRecordLock';
 import {
   DocumentToolbar,
   type ViewMode,
@@ -31,10 +33,14 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 
-export function DocumentCenterView() {
+export default function DocumentCenterView() {
   const { settings } = useProjectContext();
   const { toast } = useToast();
   const projectId = settings?.id || undefined;
+  const { can } = usePermissions(projectId);
+  const canCreate = can('document.create');
+  const canEdit = can('document.edit');
+  const canDelete = can('document.delete');
 
   // Data hooks
   const {
@@ -92,6 +98,15 @@ export function DocumentCenterView() {
     updateSharePermission,
     copyShareLink,
   } = useDocumentSharing(selectedDocument?.id);
+
+  // Record lock for the selected document
+  const {
+    isLocked: docIsLocked,
+    isOwnLock: docIsOwnLock,
+    lockedBy: docLockedBy,
+    lock: lockDoc,
+    unlock: unlockDoc,
+  } = useRecordLock('documents', selectedDocument?.id ?? '');
 
   // Computed values
   const folderTree = useMemo(() => {
@@ -299,12 +314,12 @@ export function DocumentCenterView() {
         showDetailsPanel={showDetailsPanel}
         onToggleDetailsPanel={() => setShowDetailsPanel(!showDetailsPanel)}
         selectedCount={selectedIds.length}
-        onUpload={() => setShowUploadDialog(true)}
-        onNewFolder={() => {
+        onUpload={canCreate ? () => setShowUploadDialog(true) : undefined}
+        onNewFolder={canCreate ? () => {
           setNewFolderParentId(currentFolderId);
           setShowFolderDialog(true);
-        }}
-        onDelete={() => setShowDeleteConfirm(true)}
+        } : undefined}
+        onDelete={canDelete ? () => setShowDeleteConfirm(true) : undefined}
         onDownload={() => {
           const doc = documents.find((d) => d.id === selectedIds[0]);
           if (doc) window.open(doc.file_url, '_blank');
@@ -318,10 +333,10 @@ export function DocumentCenterView() {
         }}
         onCopy={() => setShowMoveDialog(true)}
         onMove={() => setShowMoveDialog(true)}
-        onRename={() => {
+        onRename={canEdit ? () => {
           const doc = documents.find((d) => d.id === selectedIds[0]);
           if (doc) openRenameDialog(doc);
-        }}
+        } : undefined}
       />
 
       {/* Breadcrumb */}
@@ -472,8 +487,18 @@ export function DocumentCenterView() {
             }}
             onRename={() => selectedDocument && openRenameDialog(selectedDocument)}
             onToggleLock={async () => {
-              // Lock/unlock functionality would go here
-              toast({ title: 'Lock feature', description: 'Coming soon' });
+              if (!selectedDocument?.id) return;
+              if (docIsLocked && !docIsOwnLock) {
+                toast({ title: 'Document locked', description: `Locked by ${docLockedBy}. Cannot acquire lock.`, variant: 'destructive' });
+                return;
+              }
+              if (docIsOwnLock) {
+                const ok = await unlockDoc();
+                toast({ title: ok ? 'Document unlocked' : 'Unlock failed', variant: ok ? 'default' : 'destructive' });
+              } else {
+                const ok = await lockDoc();
+                toast({ title: ok ? 'Document locked (10 min)' : 'Lock failed', variant: ok ? 'default' : 'destructive' });
+              }
             }}
             onUploadNewVersion={() => setShowNewVersionDialog(true)}
           />

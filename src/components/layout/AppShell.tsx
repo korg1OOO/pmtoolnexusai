@@ -7,6 +7,8 @@ import { GlobalAISidebar } from '@/components/ai/GlobalAISidebar';
 import { MiniChatWindow } from '@/components/chat/MiniChatWindow';
 import { PresenceProvider } from '@/contexts/PresenceContext';
 import { useProjectContext } from '@/contexts/ProjectContext';
+import { usePermissions } from '@/hooks/usePermissions';
+import { NotificationBanner } from '@/components/notifications/NotificationBanner';
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -15,18 +17,18 @@ interface AppShellProps {
 }
 
 export function AppShell({ children, activeView, onViewChange }: AppShellProps) {
-  const [showAISidebar, setShowAISidebar] = useState(false);
-  const [showMiniChat, setShowMiniChat] = useState(false);
-  const { settings } = useProjectContext();
+  const { settings, activeGlobalPanel, setActiveGlobalPanel } = useProjectContext();
+  const { can } = usePermissions(settings?.id);
+  const canUseAI = can('ai.use');
 
-  // Handle chat button click - toggle mini chat instead of navigating
+  // Handle chat button click - toggle global panel instead of local state
   const handleOpenChat = () => {
-    setShowMiniChat(true);
+    setActiveGlobalPanel(activeGlobalPanel === 'chat' ? null : 'chat');
   };
 
   // Expand mini chat to full view
   const handleExpandChat = () => {
-    setShowMiniChat(false);
+    setActiveGlobalPanel(null);
     onViewChange('team-chat');
   };
 
@@ -40,7 +42,7 @@ export function AppShell({ children, activeView, onViewChange }: AppShellProps) 
           />
           <div className={cn(
             "flex flex-1 flex-col min-w-0 transition-all duration-300",
-            showAISidebar && "mr-96"
+            activeGlobalPanel === 'ai' && canUseAI && "mr-96"
           )}>
             <TopBar
               projectName={settings.name}
@@ -48,21 +50,25 @@ export function AppShell({ children, activeView, onViewChange }: AppShellProps) 
               onCreateProject={() => onViewChange('create-project')}
               onOpenChat={handleOpenChat}
             />
+            {/* Critical notification banner */}
+            <NotificationBanner />
             <main className="flex-1 overflow-auto">
               {children}
             </main>
           </div>
-          <GlobalAISidebar 
-            isOpen={showAISidebar} 
-            onToggle={() => setShowAISidebar(!showAISidebar)}
-            projectId={settings.id}
-            projectName={settings.name}
-            currentView={activeView}
-          />
+          {canUseAI && (
+            <GlobalAISidebar
+              isOpen={activeGlobalPanel === 'ai'}
+              onToggle={() => setActiveGlobalPanel(activeGlobalPanel === 'ai' ? null : 'ai')}
+              projectId={settings.id}
+              projectName={settings.name}
+              currentView={activeView}
+            />
+          )}
           {/* Mini Chat Window */}
           <MiniChatWindow
-            isOpen={showMiniChat}
-            onClose={() => setShowMiniChat(false)}
+            isOpen={activeGlobalPanel === 'chat'}
+            onClose={() => setActiveGlobalPanel(null)}
             onExpand={handleExpandChat}
           />
         </div>

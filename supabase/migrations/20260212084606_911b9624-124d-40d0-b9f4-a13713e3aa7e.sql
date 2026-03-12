@@ -1,0 +1,3 @@
+-- This migration is redundant as tables (profiles, reports, user_preferences)
+-- are already created with better schemas in 20260205* migrations.
+-- Skipping to avoid conflicts.

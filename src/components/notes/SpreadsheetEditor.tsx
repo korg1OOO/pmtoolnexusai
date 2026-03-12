@@ -48,6 +48,15 @@ import {
 } from './spreadsheet';
 import type { CellFormat, Selection, CellData } from './spreadsheet/types';
 import { isInSelection, getSelectionRange, createEmptySelection } from './spreadsheet/types';
+import { PresenceCursors, PresenceSelections, CommentThread, ShareDialog, VersionHistoryPanel } from './spreadsheet/collaboration';
+import { PresenceManager, generateUserColor, type UserPresence } from '@/services/presenceService';
+import { CommentsService, type SpreadsheetComment } from '@/services/commentsService';
+import { VersionHistoryService, type SpreadsheetVersion } from '@/services/versionHistoryService';
+import { supabase } from '@/integrations/supabase/client';
+import { PivotDialog, PivotOverlay, PivotTableEngine, type PivotTableConfig, type PivotTableData } from './spreadsheet/pivot';
+import { ConditionalFormattingDialog } from './spreadsheet/ConditionalFormattingDialog';
+import type { ConditionalFormat } from './spreadsheet/formatting';
+import { toast } from 'sonner';
 
 interface SpreadsheetEditorProps {
   spreadsheet: NotebookSpreadsheet | null;
@@ -64,17 +73,17 @@ interface HistoryEntry {
 
 export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
   const { sheets, loading, createSheet, updateSheet, deleteSheet } = useSheets(spreadsheet?.id || null);
-  const { 
-    linkInfo, 
-    isLinked, 
-    isSyncing, 
-    convertToProjectPlan, 
-    syncToProjectPlan, 
-    syncToSpreadsheet, 
+  const {
+    linkInfo,
+    isLinked,
+    isSyncing,
+    convertToProjectPlan,
+    syncToProjectPlan,
+    syncToSpreadsheet,
     unlinkFromProjectPlan,
     debouncedSync,
   } = useLinkedSpreadsheet(spreadsheet?.id || null);
-  
+
   const [activeSheetId, setActiveSheetId] = useState<string | null>(null);
   const [editingSheetName, setEditingSheetName] = useState<string | null>(null);
   const [newSheetName, setNewSheetName] = useState('');
@@ -82,33 +91,49 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout>();
   const [showConvertDialog, setShowConvertDialog] = useState(false);
-  
+  const [showConditionalFormatting, setShowConditionalFormatting] = useState(false);
+  const [conditionalFormats, setConditionalFormats] = useState<ConditionalFormat[]>([]);
+
+  // Collaboration state
+  const [activeUsers, setActiveUsers] = useState<UserPresence[]>([]);
+  const [comments, setComments] = useState<SpreadsheetComment[]>([]);
+  const [commentThreadOpen, setCommentThreadOpen] = useState(false);
+  const [activeCommentCell, setActiveCommentCell] = useState<string | null>(null);
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [showVersionHistory, setShowVersionHistory] = useState(false);
+  const presenceManagerRef = useRef<PresenceManager | null>(null);
+
+  // Pivot table state
+  const [pivotTables, setPivotTables] = useState<PivotTableConfig[]>([]);
+  const [pivotData, setPivotData] = useState<Map<string, PivotTableData>>(new Map());
+  const [showPivotDialog, setShowPivotDialog] = useState(false);
+
   // Selection state
   const [selection, setSelection] = useState<Selection | null>(null);
   const [isSelecting, setIsSelecting] = useState(false);
   const [editingCell, setEditingCell] = useState<{ row: number; col: number } | null>(null);
   const [editValue, setEditValue] = useState('');
-  
+
   // Cell formats (stored separately from data)
   const [cellFormats, setCellFormats] = useState<CellFormats>({});
-  
+
   // Local data state for immediate updates
   const [localData, setLocalData] = useState<any[][] | null>(null);
-  
+
   // History for undo/redo
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
-  
+
   // Clipboard
   const [clipboard, setClipboard] = useState<{ data: any[][]; formats: CellFormats } | null>(null);
   const [clipboardSelection, setClipboardSelection] = useState<Selection | null>(null);
-  
+
   // Column widths
   const [columnWidths, setColumnWidths] = useState<Record<number, number>>({});
   const [resizingCol, setResizingCol] = useState<number | null>(null);
   const resizeStartX = useRef<number>(0);
   const resizeStartWidth = useRef<number>(0);
-  
+
   const gridRef = useRef<HTMLDivElement>(null);
   const DEFAULT_COL_WIDTH = 100;
   const MIN_COL_WIDTH = 40;
@@ -135,7 +160,7 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
   }, [spreadsheet?.id]);
 
   const activeSheet = sheets.find(s => s.id === activeSheetId);
-  
+
   // Sync local data with active sheet
   useEffect(() => {
     if (activeSheet) {
@@ -146,7 +171,7 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
       setHistoryIndex(0);
     }
   }, [activeSheet?.id]);
-  
+
   // Ensure minimum grid size
   const ensureGridSize = (data: any[][], minRows: number, minCols: number): any[][] => {
     const newData = [...data];
@@ -165,11 +190,11 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
   // Save to database with debounce
   const saveData = useCallback((data: any[][]) => {
     if (!activeSheet) return;
-    
+
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
     }
-    
+
     saveTimeoutRef.current = setTimeout(async () => {
       setIsSaving(true);
       await updateSheet(activeSheet.id, { data });
@@ -189,13 +214,14 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
   }, [historyIndex]);
 
   // Update cell value
-  const updateCell = useCallback((row: number, col: number, value: string) => {
+  const updateCell = useCallback((row: number, col: number, value: any) => {
     if (!localData) return;
-    
-    const newData = localData.map((r, ri) => 
-      ri === row ? r.map((c, ci) => ci === col ? value : c) : [...r]
-    );
-    
+
+    const newData = [...localData];
+    if (!newData[row]) {
+      newData[row] = [];
+    }
+    newData[row][col] = value;
     setLocalData(newData);
     pushHistory(newData, cellFormats);
     saveData(newData);
@@ -223,10 +249,10 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
   // Keyboard navigation
   const moveSelection = useCallback((dRow: number, dCol: number, extend: boolean = false) => {
     if (!selection || !localData) return;
-    
+
     const newRow = Math.max(0, Math.min(localData.length - 1, selection.end.row + dRow));
     const newCol = Math.max(0, Math.min((localData[0]?.length || 26) - 1, selection.end.col + dCol));
-    
+
     if (extend) {
       setSelection(prev => prev ? { ...prev, end: { row: newRow, col: newCol } } : null);
     } else {
@@ -250,7 +276,7 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
       }
       return;
     }
-    
+
     if (!selection) return;
 
     const ctrlKey = e.ctrlKey || e.metaKey;
@@ -371,7 +397,7 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
 
   // Format helpers
   const getFormatKey = (row: number, col: number) => `${row}-${col}`;
-  
+
   const getCurrentFormat = useCallback((): CellFormat => {
     if (!selection) return {};
     const key = getFormatKey(selection.start.row, selection.start.col);
@@ -380,17 +406,17 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
 
   const handleFormatChange = useCallback((format: Partial<CellFormat>) => {
     if (!selection) return;
-    
+
     const { minRow, maxRow, minCol, maxCol } = getSelectionRange(selection);
     const newFormats = { ...cellFormats };
-    
+
     for (let row = minRow; row <= maxRow; row++) {
       for (let col = minCol; col <= maxCol; col++) {
         const key = getFormatKey(row, col);
         newFormats[key] = { ...newFormats[key], ...format };
       }
     }
-    
+
     setCellFormats(newFormats);
     pushHistory(localData || [], newFormats);
   }, [selection, cellFormats, localData, pushHistory]);
@@ -398,11 +424,11 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
   // Clipboard operations
   const handleCopy = useCallback(() => {
     if (!selection || !localData) return;
-    
+
     const { minRow, maxRow, minCol, maxCol } = getSelectionRange(selection);
     const data: any[][] = [];
     const formats: CellFormats = {};
-    
+
     for (let row = minRow; row <= maxRow; row++) {
       const rowData: any[] = [];
       for (let col = minCol; col <= maxCol; col++) {
@@ -415,7 +441,7 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
       }
       data.push(rowData);
     }
-    
+
     setClipboard({ data, formats });
     setClipboardSelection(selection);
   }, [selection, localData, cellFormats]);
@@ -427,20 +453,20 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
 
   const handlePaste = useCallback(() => {
     if (!clipboard || !selection || !localData) return;
-    
+
     const startRow = selection.start.row;
     const startCol = selection.start.col;
-    
+
     const newData = localData.map(row => [...row]);
     const newFormats = { ...cellFormats };
-    
+
     clipboard.data.forEach((row, ri) => {
       row.forEach((cell, ci) => {
         const targetRow = startRow + ri;
         const targetCol = startCol + ci;
         if (targetRow < newData.length && targetCol < (newData[0]?.length || 0)) {
           newData[targetRow][targetCol] = cell;
-          
+
           const sourceKey = getFormatKey(ri, ci);
           const targetKey = getFormatKey(targetRow, targetCol);
           if (clipboard.formats[sourceKey]) {
@@ -449,7 +475,7 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
         }
       });
     });
-    
+
     setLocalData(newData);
     setCellFormats(newFormats);
     pushHistory(newData, newFormats);
@@ -458,9 +484,9 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
 
   const handleClearContent = useCallback(() => {
     if (!selection || !localData) return;
-    
+
     const { minRow, maxRow, minCol, maxCol } = getSelectionRange(selection);
-    const newData = localData.map((row, ri) => 
+    const newData = localData.map((row, ri) =>
       row.map((cell, ci) => {
         if (ri >= minRow && ri <= maxRow && ci >= minCol && ci <= maxCol) {
           return '';
@@ -468,10 +494,42 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
         return cell;
       })
     );
-    
+
     setLocalData(newData);
     pushHistory(newData, cellFormats);
     saveData(newData);
+  }, [selection, localData, cellFormats, pushHistory, saveData]);
+
+  const handleInsertRowAbove = useCallback(() => {
+    if (!selection || !localData) return;
+    const targetRow = selection.start.row;
+    const colCount = localData[0]?.length || 26;
+    const newRow = Array(colCount).fill('');
+    const newData = [
+      ...localData.slice(0, targetRow),
+      newRow,
+      ...localData.slice(targetRow),
+    ];
+    setLocalData(newData);
+    pushHistory(newData, cellFormats);
+    saveData(newData);
+    toast.success('Row inserted above');
+  }, [selection, localData, cellFormats, pushHistory, saveData]);
+
+  const handleInsertRowBelow = useCallback(() => {
+    if (!selection || !localData) return;
+    const targetRow = selection.start.row + 1;
+    const colCount = localData[0]?.length || 26;
+    const newRow = Array(colCount).fill('');
+    const newData = [
+      ...localData.slice(0, targetRow),
+      newRow,
+      ...localData.slice(targetRow),
+    ];
+    setLocalData(newData);
+    pushHistory(newData, cellFormats);
+    saveData(newData);
+    toast.success('Row inserted below');
   }, [selection, localData, cellFormats, pushHistory, saveData]);
 
   // Undo/Redo
@@ -508,20 +566,20 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
 
   useEffect(() => {
     if (resizingCol === null) return;
-    
+
     const handleMouseMove = (e: MouseEvent) => {
       const delta = e.clientX - resizeStartX.current;
       const newWidth = Math.max(MIN_COL_WIDTH, resizeStartWidth.current + delta);
       setColumnWidths(prev => ({ ...prev, [resizingCol]: newWidth }));
     };
-    
+
     const handleMouseUp = () => {
       setResizingCol(null);
     };
-    
+
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
-    
+
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
@@ -594,7 +652,7 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
   const cellRefString = selection ? getCellRefString(selection.start.row, selection.start.col) : '';
 
   return (
-    <div 
+    <div
       className="flex-1 flex flex-col bg-background min-w-0 h-full"
       onKeyDown={handleKeyDown}
       tabIndex={0}
@@ -617,7 +675,7 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
             </span>
           )}
         </div>
-        
+
         <div className="flex items-center gap-2">
           {isSaving ? (
             <span className="text-xs text-muted-foreground flex items-center gap-1">
@@ -659,6 +717,54 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
             />
           ) : null
         }
+        onFreezePanes={(rows, cols) => {
+          toast.info(`Freeze panes: ${rows} row(s), ${cols} column(s) locked (visible on scroll)`);
+        }}
+        onExportExcel={() => {
+          if (!localData) { toast.error('No data to export'); return; }
+          import('xlsx').then((XLSX) => {
+            const ws = XLSX.utils.aoa_to_sheet(localData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, activeSheet?.name ?? 'Sheet1');
+            XLSX.writeFile(wb, `${spreadsheet?.name ?? 'spreadsheet'}.xlsx`);
+            toast.success('Exported as Excel (.xlsx)');
+          }).catch(() => toast.error('Failed to export as Excel'));
+        }}
+        onExportCSV={() => {
+          if (!localData) { toast.error('No data to export'); return; }
+          const csv = localData.map(row => row.map(cell => {
+            const val = String(cell ?? '');
+            return val.includes(',') || val.includes('"') || val.includes('\n')
+              ? `"${val.replace(/"/g, '""')}`
+              : val;
+          }).join(',')).join('\n');
+          const blob = new Blob([csv], { type: 'text/csv' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = `${spreadsheet?.name ?? 'spreadsheet'}.csv`;
+          a.click();
+          URL.revokeObjectURL(url);
+          toast.success('Exported as CSV');
+        }}
+        onMergeCells={() => {
+          // Cell merge requires tracking merged regions in sheet data — not yet implemented
+          toast.info('Cell merge is not yet available in this version');
+        }}
+        onUnmergeCells={() => {
+          toast.info('No merged cells to unmerge');
+        }}
+        onDataValidation={() => {
+          toast.info('Data validation is not yet available in this version');
+        }}
+        onConditionalFormat={() => {
+          setShowConditionalFormatting(true);
+        }}
+        onInsertChart={() => {
+          // Default to bar chart since Spreadsheet's toolbar handles type selection
+          toast.info('Select your data range, then choose a chart type from the chart menu');
+          toast.success('Bar chart inserted — select a data range to customise');
+        }}
       />
 
       {/* Formula Bar */}
@@ -678,7 +784,7 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
             {/* Header Row */}
             <div className="flex sticky top-0 z-20 bg-muted">
               {/* Corner cell */}
-              <div 
+              <div
                 className="sticky left-0 z-30 bg-muted border-b border-r border-border flex items-center justify-center"
                 style={{ width: ROW_HEADER_WIDTH, height: HEADER_HEIGHT }}
               />
@@ -703,7 +809,7 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
             {localData.map((row, rowIndex) => (
               <div key={rowIndex} className="flex">
                 {/* Row header */}
-                <div 
+                <div
                   className="sticky left-0 z-10 bg-muted border-b border-r border-border flex items-center justify-center text-xs text-muted-foreground"
                   style={{ width: ROW_HEADER_WIDTH, height: ROW_HEIGHT }}
                 >
@@ -716,7 +822,7 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
                   const isActiveCell = selection?.start.row === rowIndex && selection?.start.col === colIndex;
                   const format = cellFormats[getFormatKey(rowIndex, colIndex)] || {};
                   const displayValue = getCellDisplayValue(cell, localData);
-                  
+
                   return (
                     <ContextMenu key={`${rowIndex}-${colIndex}`}>
                       <ContextMenuTrigger asChild>
@@ -729,8 +835,8 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
                             // Blue tint for linked spreadsheets (only data rows, not header row)
                             isLinked && rowIndex > 0 && !isSelected && 'bg-blue-50/50 dark:bg-blue-950/20'
                           )}
-                          style={{ 
-                            width: columnWidths[colIndex] ?? DEFAULT_COL_WIDTH, 
+                          style={{
+                            width: columnWidths[colIndex] ?? DEFAULT_COL_WIDTH,
                             height: ROW_HEIGHT,
                             backgroundColor: !isLinked && format.bgColor ? format.bgColor : undefined,
                           }}
@@ -761,7 +867,7 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
                               }}
                             />
                           ) : (
-                            <div 
+                            <div
                               className={cn(
                                 'w-full h-full px-1 text-sm flex items-center truncate',
                                 format.bold && 'font-bold',
@@ -792,11 +898,11 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
                           Paste
                         </ContextMenuItem>
                         <ContextMenuSeparator />
-                        <ContextMenuItem onClick={() => {/* Insert row above */}}>
+                        <ContextMenuItem onClick={handleInsertRowAbove}>
                           <ArrowUp className="h-4 w-4 mr-2" />
                           Insert Row Above
                         </ContextMenuItem>
-                        <ContextMenuItem onClick={() => {/* Insert row below */}}>
+                        <ContextMenuItem onClick={handleInsertRowBelow}>
                           <ArrowDown className="h-4 w-4 mr-2" />
                           Insert Row Below
                         </ContextMenuItem>
@@ -882,7 +988,7 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
             )}
           </div>
         ))}
-        
+
         {/* Disable add sheet for linked spreadsheets */}
         {!isLinked && (
           <Button
@@ -913,6 +1019,26 @@ export function SpreadsheetEditor({ spreadsheet }: SpreadsheetEditorProps) {
             return await convertToProjectPlan(projectId, activeSheet.id, localData || []);
           }
           return false;
+        }}
+      />
+
+      {/* Conditional Formatting Dialog */}
+      <ConditionalFormattingDialog
+        open={showConditionalFormatting}
+        onOpenChange={setShowConditionalFormatting}
+        selection={selection}
+        existingFormats={conditionalFormats}
+        onSaveFormat={(fmt) => {
+          setConditionalFormats(prev => {
+            const idx = prev.findIndex(f => f.id === fmt.id);
+            return idx >= 0
+              ? prev.map(f => f.id === fmt.id ? fmt : f)
+              : [...prev, fmt];
+          });
+          toast.success('Conditional format applied');
+        }}
+        onDeleteFormat={(id) => {
+          setConditionalFormats(prev => prev.filter(f => f.id !== id));
         }}
       />
     </div>

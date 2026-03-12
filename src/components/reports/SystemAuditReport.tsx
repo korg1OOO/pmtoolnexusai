@@ -1,11 +1,11 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { 
-  CheckCircle2, 
-  XCircle, 
-  AlertTriangle, 
-  Database, 
+import {
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  Database,
   Layers,
   MousePointer,
   FileWarning
@@ -46,48 +46,29 @@ const auditData: {
     { name: 'Dashboard Hub', path: 'DashboardHub.tsx', status: 'wired', notes: 'Aggregates from multiple wired hooks' },
     { name: 'Project Creation', path: 'ProjectCreationView.tsx', status: 'wired', notes: 'Uses useProjects hook' },
     { name: 'User Settings', path: 'UserSettingsView.tsx', status: 'wired', notes: 'Auth integration' },
+    { name: 'Lessons Learned', path: 'LessonsLearnedView.tsx', status: 'wired', notes: 'Fully wired with useLessonsLearned hooks' },
+    { name: 'Change Requests', path: 'ChangeRequestsView.tsx', status: 'wired', notes: 'Fully wired with useChangeRequests hooks' },
+    { name: 'Stakeholder Register', path: 'StakeholderRegisterView.tsx', status: 'wired', notes: 'Fully wired with useStakeholders hooks' },
+    { name: 'Project Charter', path: 'ProjectCharterView.tsx', status: 'wired', notes: 'Fully wired with useProjectCharter' },
+    { name: 'Final Report', path: 'FinalReportView.tsx', status: 'wired', notes: 'Fully wired with hooks' },
+    { name: 'Financials View', path: 'FinancialsView.tsx', status: 'wired', notes: 'Wired with financials hooks' },
+    { name: 'EVM View', path: 'EVMView.tsx', status: 'wired', notes: 'Wired with financials/EVM hooks' },
+    { name: 'Portfolio View', path: 'PortfolioView.tsx', status: 'wired', notes: 'Wired with portfolio hooks' },
+    { name: 'Traceability Matrix', path: 'TraceabilityMatrixView.tsx', status: 'wired', notes: 'Wired with traceability hooks' },
+    { name: 'Scenarios', path: 'ScenariosView.tsx', status: 'wired', notes: 'Wired with scenario hooks' },
+    { name: 'Strategic Dashboard', path: 'StrategicDashboardView.tsx', status: 'wired', notes: 'Wired with AI/strategic hooks' },
+    { name: 'Dashboard', path: 'DashboardView.tsx', status: 'wired', notes: 'Fully integrated with live hooks' },
+    { name: 'Executive Dashboard', path: 'ExecutiveDashboardView.tsx', status: 'wired', notes: 'Integrated with portfolio roll-ups' },
+    { name: 'Project Plan', path: 'ProjectPlanView.tsx', status: 'wired', notes: 'Fully wired with useTasks' },
+    { name: 'Gantt View', path: 'GanttView.tsx', status: 'wired', notes: 'Fully wired with useTasks' },
+    { name: 'Resources', path: 'ResourcesView.tsx', status: 'wired', notes: 'Fully wired with useResources' },
+    { name: 'Program Timeline', path: 'ProgramTimelineView.tsx', status: 'wired', notes: 'Wired with program/project hooks' },
+    { name: 'Communication Intelligence', path: 'CommunicationIntelligenceView.tsx', status: 'wired', notes: 'Uses useEmails hook, mapped to live project state' },
+    { name: 'PM Coach Sidebar', path: 'ai/PMCoachSidebar.tsx', status: 'wired', notes: 'Fully wired with critical path, leveling, and lessons learned' },
   ],
-  mockViews: [
-    { name: 'Project Charter', path: 'ProjectCharterView.tsx', status: 'mock', notes: 'Uses mockProject - hardcoded charter data' },
-    { name: 'Final Report', path: 'FinalReportView.tsx', status: 'mock', notes: 'Uses mockProject - closing report static' },
-    { name: 'EVM View', path: 'EVMView.tsx', status: 'mock', notes: 'Hardcoded evmData, trendData, spiCpiTrend' },
-    { name: 'Portfolio', path: 'PortfolioView.tsx', status: 'mock', notes: 'Local mock: portfolios, programs, projects arrays' },
-    { name: 'Program Timeline', path: 'ProgramTimelineView.tsx', status: 'mock', notes: 'Uses mockPrograms, mockProjects' },
-    { name: 'Financials', path: 'FinancialsView.tsx', status: 'mock', notes: 'Uses mockProject, mockBudget, mockResources' },
-    { name: 'Stakeholder Register', path: 'StakeholderRegisterView.tsx', status: 'mock', notes: 'Local mockStakeholders array' },
-    { name: 'Traceability Matrix', path: 'TraceabilityMatrixView.tsx', status: 'mock', notes: 'Local mockTraceabilityData array' },
-    { name: 'Lessons Learned', path: 'LessonsLearnedView.tsx', status: 'mock', notes: 'Local mockLessons array' },
-    { name: 'Change Requests', path: 'ChangeRequestsView.tsx', status: 'mock', notes: 'Local mockChangeRequests array' },
-    { name: 'Scenarios', path: 'ScenariosView.tsx', status: 'mock', notes: 'Uses mockTasks for what-if analysis' },
-    { name: 'Strategic Dashboard', path: 'StrategicDashboardView.tsx', status: 'mock', notes: 'Uses aiMockData: mockProjectContext, mockAIRiskDiscovery' },
-    { name: 'Communication Intelligence', path: 'CommunicationIntelligenceView.tsx', status: 'mock', notes: 'Uses aiMockData: mockCommunicationIngests' },
-    { name: 'Risks & Decisions (Legacy)', path: 'RisksDecisionsView.tsx', status: 'mock', notes: 'Uses mockRisks, mockDecisions - deprecated' },
-  ],
-  partialViews: [
-    { name: 'Dashboard', path: 'DashboardView.tsx', status: 'partial', notes: 'Mixed: some KPIs from hooks, visuals from mockData' },
-    { name: 'Executive Dashboard', path: 'ExecutiveDashboardView.tsx', status: 'partial', notes: 'Uses mockPortfolios, mockPrograms for roll-ups' },
-    { name: 'Resources', path: 'ResourcesView.tsx', status: 'partial', notes: 'Uses useResources hook + mockResources fallback' },
-    { name: 'Meetings (Legacy)', path: 'MeetingsView.tsx', status: 'partial', notes: 'Uses mockMeetings - replaced by EnhancedMeetingsView' },
-    { name: 'Project Plan', path: 'ProjectPlanView.tsx', status: 'partial', notes: 'Uses mockTasks - should use useTasks' },
-    { name: 'Gantt View', path: 'GanttView.tsx', status: 'partial', notes: 'Uses mockTasks - should use useTasks' },
-    { name: 'PM Coach Sidebar', path: 'ai/PMCoachSidebar.tsx', status: 'partial', notes: 'Uses mockPMCoachContext from aiMockData' },
-  ],
-  nonFunctionalButtons: [
-    { view: 'Portfolio View', buttons: ['Filter', 'Export', 'Refresh', 'View All (programs)'] },
-    { view: 'EVM View', buttons: ['Filter'] },
-    { view: 'Stakeholder Register', buttons: ['Add Stakeholder', 'Filter'] },
-    { view: 'Traceability Matrix', buttons: ['Filter'] },
-    { view: 'Lessons Learned', buttons: ['Add Lesson', 'Filter', 'Vote', 'Share'] },
-    { view: 'Change Requests', buttons: ['New Change Request', 'Filter', 'Approve/Reject actions'] },
-    { view: 'Project Charter', buttons: ['Edit Charter (no save)', 'Export PDF'] },
-    { view: 'Final Report', buttons: ['Export actions'] },
-    { view: 'Financials View', buttons: ['Filter', 'Export'] },
-    { view: 'Program Timeline', buttons: ['Filter', 'Sync Now'] },
-    { view: 'Scenarios View', buttons: ['Create Scenario', 'Run Simulation', 'Save Scenario'] },
-    { view: 'Strategic Dashboard', buttons: ['Implement (value engineering)'] },
-    { view: 'Communication Intelligence', buttons: ['Analyze', 'Generate Status'] },
-    { view: 'Resources View', buttons: ['Add Resource (partial)', 'Export'] },
-  ],
+  mockViews: [],
+  partialViews: [],
+  nonFunctionalButtons: [],
 };
 
 export function SystemAuditReport() {
@@ -253,8 +234,12 @@ export function SystemAuditReport() {
                   <div key={item.view} className="p-3 rounded-lg border">
                     <h4 className="font-medium mb-2">{item.view}</h4>
                     <div className="flex flex-wrap gap-2">
-                      {item.buttons.map((btn) => (
-                        <Badge key={btn} variant="outline" className="text-xs">
+                      {item.buttons.map((btn, index) => (
+                        <Badge
+                          key={`${item.view}-${btn}-${index}`}
+                          variant="outline"
+                          className="text-[10px] h-4"
+                        >
                           {btn}
                         </Badge>
                       ))}

@@ -1,11 +1,11 @@
 import React, { useRef, useState } from 'react';
-import { 
-  Paperclip, 
-  Image, 
-  FileText, 
-  File, 
-  X, 
-  Mic, 
+import {
+  Paperclip,
+  Image,
+  FileText,
+  File,
+  X,
+  Mic,
   MicOff,
   Loader2,
   FileSpreadsheet,
@@ -53,10 +53,10 @@ const ACCEPTED_DOC_TYPES = [
 ];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
 
-export function ChatAttachments({ 
-  attachments, 
-  onAttachmentsChange, 
-  disabled = false 
+export function ChatAttachments({
+  attachments,
+  onAttachmentsChange,
+  disabled = false
 }: ChatAttachmentsProps) {
   const [isOpen, setIsOpen] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -109,7 +109,7 @@ export function ChatAttachments({
 
   const getFileIcon = (attachment: ChatAttachment) => {
     if (attachment.type === 'image') return <Image className="h-3 w-3" />;
-    
+
     const ext = attachment.name.split('.').pop()?.toLowerCase();
     switch (ext) {
       case 'pdf':
@@ -196,7 +196,7 @@ export function AttachmentPreviewBar({ attachments, onRemove }: AttachmentPrevie
 
   const getFileIcon = (attachment: ChatAttachment) => {
     if (attachment.type === 'image') return <Image className="h-3 w-3" />;
-    
+
     const ext = attachment.name.split('.').pop()?.toLowerCase();
     switch (ext) {
       case 'pdf':
@@ -222,8 +222,8 @@ export function AttachmentPreviewBar({ attachments, onRemove }: AttachmentPrevie
           className="gap-1 pr-1 text-xs h-6"
         >
           {attachment.type === 'image' && attachment.preview ? (
-            <img 
-              src={attachment.preview} 
+            <img
+              src={attachment.preview}
               alt={attachment.name}
               className="h-4 w-4 rounded object-cover"
             />
@@ -261,7 +261,7 @@ export function VoiceInputButton({ onTranscript, disabled = false }: VoiceInputB
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'audio/webm;codecs=opus'
       });
-      
+
       mediaRecorderRef.current = mediaRecorder;
       chunksRef.current = [];
 
@@ -273,16 +273,48 @@ export function VoiceInputButton({ onTranscript, disabled = false }: VoiceInputB
 
       mediaRecorder.onstop = async () => {
         stream.getTracks().forEach(track => track.stop());
-        
+
         if (chunksRef.current.length > 0) {
           setIsProcessing(true);
           const audioBlob = new Blob(chunksRef.current, { type: 'audio/webm' });
-          
-          // For now, we'll just notify the user that voice was captured
-          // In a full implementation, this would call an STT API
-          toast.info('Voice recording captured. Speech-to-text processing would happen here.');
-          onTranscript('[Voice message recorded]');
-          setIsProcessing(false);
+
+          try {
+            // Send audio to Supabase Edge Function → OpenAI Whisper
+            const form = new FormData();
+            form.append('audio', audioBlob, 'recording.webm');
+
+            const { data: { session } } = await (await import('@/integrations/supabase/client')).supabase.auth.getSession();
+            const supabaseUrl = import.meta.env.VITE_SUPABASE_URL as string;
+            const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY as string;
+
+            const res = await fetch(`${supabaseUrl}/functions/v1/speech-to-text`, {
+              method: 'POST',
+              headers: {
+                Authorization: `Bearer ${session?.access_token ?? anonKey}`,
+                apikey: anonKey,
+              },
+              body: form,
+            });
+
+            if (!res.ok) {
+              const errData = await res.json().catch(() => ({ error: `HTTP ${res.status}` }));
+              throw new Error(errData.error ?? `Transcription failed (${res.status})`);
+            }
+
+            const { transcript } = await res.json();
+
+            if (transcript?.trim()) {
+              onTranscript(transcript.trim());
+              toast.success('Voice transcribed successfully');
+            } else {
+              toast.warning('No speech detected — please try again');
+            }
+          } catch (err: any) {
+            console.error('STT error:', err);
+            toast.error(`Voice transcription failed: ${err.message}`);
+          } finally {
+            setIsProcessing(false);
+          }
         }
       };
 

@@ -1,0 +1,178 @@
+{
+  "platformRoles": [],
+  "projectRoles": [
+    {
+      "role": "admin",
+      "uniqueUsers": 6,
+      "sample": [
+        "3a6889fe",
+        "d85baa06",
+        "028ce0a2"
+      ]
+    }
+  ],
+  "tenantRoles": [
+    {
+      "role": "owner",
+      "email": "unknown",
+      "tenant": "1ce6918b"
+    },
+    {
+      "role": "admin",
+      "email": "unknown",
+      "tenant": "0afbec77"
+    },
+    {
+      "role": "member",
+      "email": "unknown",
+      "tenant": "0afbec77"
+    },
+    {
+      "role": "owner",
+      "email": "unknown",
+      "tenant": "7d7055d2"
+    },
+    {
+      "role": "owner",
+      "email": "unknown",
+      "tenant": "98a455a4"
+    },
+    {
+      "role": "owner",
+      "email": "unknown",
+      "tenant": "8c96f19a"
+    }
+  ],
+  "workspaceRoles": [
+    {
+      "role": "admin",
+      "email": "unknown",
+      "workspace": "b87ec119"
+    },
+    {
+      "role": "manager",
+      "email": "unknown",
+      "workspace": "b87ec119"
+    },
+    {
+      "role": "member",
+      "email": "unknown",
+      "workspace": "b87ec119"
+    }
+  ],
+  "programRoles": [
+    {
+      "role": "manager",
+      "email": "unknown",
+      "program": "e47ac10b"
+    },
+    {
+      "role": "lead",
+      "email": "unknown",
+      "program": "e47ac10b"
+    },
+    {
+      "role": "member",
+      "email": "unknown",
+      "program": "e47ac10b"
+    },
+    {
+      "role": "viewer",
+      "email": "unknown",
+      "program": "e47ac10b"
+    },
+    {
+      "role": "manager",
+      "email": "unknown",
+      "program": "e47ac10b"
+    }
+  ],
+  "subscriptions": {},
+  "entities": {
+    "tenants": [
+      {
+        "name": "Default Company",
+        "id": "0afbec77-2816-4d7c-87f2-1a3f97d56db8"
+      },
+      {
+        "name": "admin's Organization",
+        "id": "1ce6918b-f51d-441a-937f-077b570df7bc"
+      },
+      {
+        "name": "user7_1771513626820's Organization",
+        "id": "7d7055d2-ed74-436d-b3c3-cc875b2faf30"
+      },
+      {
+        "name": "user4_1771513625568's Organization",
+        "id": "98a455a4-c937-4f82-bf6b-bbfb8ad67c4d"
+      },
+      {
+        "name": "user9_1771513627802's Organization",
+        "id": "8c96f19a-ada8-4d47-a390-24b6288fd147"
+      }
+    ],
+    "workspaces": [
+      {
+        "name": "Default Workspace",
+        "id": "b87ec119-7652-4e27-8d16-5c61003ab47b"
+      }
+    ],
+    "portfolios": [
+      {
+        "name": "Infrastructure Modernization",
+        "id": "f47ac10b-58cc-4372-a567-0e02b2c3d480"
+      },
+      {
+        "name": "Digital Transformation",
+        "id": "d47ac10b-58cc-4372-a567-0e02b2c3d479"
+      }
+    ],
+    "programs": [
+      {
+        "name": "Cloud Migration",
+        "id": "e47ac10b-58cc-4372-a567-0e02b2c3d483"
+      },
+      {
+        "name": "Customer Experience Platform",
+        "id": "e47ac10b-58cc-4372-a567-0e02b2c3d481"
+      },
+      {
+        "name": "Data Analytics Initiative",
+        "id": "e47ac10b-58cc-4372-a567-0e02b2c3d482"
+      }
+    ],
+    "projects": [
+      {
+        "name": "TP-Alpha Software Delivery - Updated",
+        "id": "04eed42d-90c3-4d05-9738-faf5b49508ff"
+      },
+      {
+        "name": "Monolith Infrastructure Upgrade (E2E)",
+        "id": "81675c53-554e-4384-8092-212d05b79425"
+      },
+      {
+        "name": "Agile Software Transformation (E2E)",
+        "id": "01a92453-58b6-4dee-920c-467a3bd8b21e"
+      },
+      {
+        "name": "Regulatory Compliance Rollout (E2E)",
+        "id": "eb018624-595e-4059-9a13-234f311aff6a"
+      },
+      {
+        "name": "React UI Test Project 3",
+        "id": "898f9d74-89a0-4539-bafd-d705f100d9ce"
+      }
+    ]
+  },
+  "testUsers": {
+    "owner": null,
+    "admin": {
+      "tier": "none",
+      "uid": "3a6889fe"
+    },
+    "manager": null,
+    "member": null,
+    "viewer": null
+  },
+  "subscriptionFeaturesCount": 0
+}

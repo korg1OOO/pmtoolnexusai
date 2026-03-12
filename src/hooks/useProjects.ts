@@ -58,13 +58,34 @@ export function useCreateProject() {
 
   return useMutation({
     mutationFn: async (project: Omit<Project, 'id' | 'created_at' | 'updated_at'>) => {
+      await import('@/lib/enforcement').then(({ checkLimit }) => checkLimit('create_project'));
       const { data, error } = await supabase
         .from('projects')
         .insert(project)
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Supabase projects insert error:", error);
+        throw error;
+      }
+
+      // BUG-006 fix: Auto-assign project creator as admin so they get CRUD permissions
+      // Uses SECURITY DEFINER RPC to bypass RLS (chicken-and-egg: INSERT requires admin, but user isn't admin yet)
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && data?.id) {
+        const { error: roleError } = await supabase
+          .rpc('assign_project_creator_role', {
+            p_user_id: user.id,
+            p_project_id: data.id,
+          });
+
+        if (roleError) {
+          console.error('Failed to assign admin role to project creator:', roleError);
+          // Non-blocking — project was created, role assignment is secondary
+        }
+      }
+
       return data;
     },
     onSuccess: () => {

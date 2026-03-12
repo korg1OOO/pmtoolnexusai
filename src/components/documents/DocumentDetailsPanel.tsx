@@ -31,6 +31,7 @@ import {
 import { type Document } from '@/hooks/useDocuments';
 import { type DocumentVersion, useDocumentVersions } from '@/hooks/useDocumentVersions';
 import { type DocumentShare, useDocumentSharing } from '@/hooks/useDocumentSharing';
+import { DocumentApprovalWorkflow } from './DocumentApprovalWorkflow';
 
 interface DocumentDetailsPanelProps {
   document: Document | null;
@@ -78,7 +79,7 @@ const formatDate = (dateString: string) => {
   });
 };
 
-const getStatusVariant = (status: string) => {
+const getStatusVariant = (status: string): 'success' | 'secondary' | 'warning' | 'outline' => {
   switch (status) {
     case 'approved':
       return 'success';
@@ -139,7 +140,7 @@ export function DocumentDetailsPanel({
           <div className="flex flex-col items-center py-6 bg-muted/30 rounded-lg">
             {getFileIcon(document.file_type)}
             <Badge
-              variant={getStatusVariant(document.status) as any}
+              variant={getStatusVariant(document.status)}
               className="mt-3"
             >
               {document.status}
@@ -297,6 +298,21 @@ export function DocumentDetailsPanel({
                     Manage Sharing
                   </Button>
                 </div>
+              </AccordionContent>
+            </AccordionItem>
+
+            <AccordionItem value="approvals">
+              <AccordionTrigger className="text-sm">
+                Approval Workflow
+              </AccordionTrigger>
+              <AccordionContent>
+                <DocumentApprovalWorkflow
+                  documentId={document.id}
+                  documentName={document.name}
+                  currentStatus={document.status === 'review' ? 'in-review' : document.status as any}
+                  approvers={[]} // In a real app, this would come from a hook
+                  currentUserCanApprove={true} // In a real app, check user permissions
+                />
               </AccordionContent>
             </AccordionItem>
           </Accordion>

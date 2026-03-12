@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   Settings,
@@ -13,15 +12,22 @@ import {
   Plus,
   MoreHorizontal,
   Check,
-  AlertCircle,
-  Clock,
   Target,
   Kanban,
   LayoutGrid,
   ChevronRight,
   Save,
   RefreshCw,
+  User,
+  Copy,
+  Briefcase,
 } from 'lucide-react';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
+import { useProjects, useUpdateProject } from '@/hooks/useProjects';
+import { usePortfolios, useUpdatePortfolio } from '@/hooks/usePortfolios';
+import { usePrograms, useUpdateProgram } from '@/hooks/usePrograms';
+import { useTeamMembers } from '@/hooks/useTeamMembers';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -49,14 +55,6 @@ interface TeamMember {
   role: 'owner' | 'admin' | 'manager' | 'member' | 'viewer';
   avatar?: string;
 }
-
-const mockTeam: TeamMember[] = [
-  { id: '1', name: 'Sarah Chen', email: 'sarah.chen@company.com', role: 'owner' },
-  { id: '2', name: 'Michael Rodriguez', email: 'm.rodriguez@company.com', role: 'admin' },
-  { id: '3', name: 'Emily Watson', email: 'e.watson@company.com', role: 'manager' },
-  { id: '4', name: 'David Kim', email: 'd.kim@company.com', role: 'member' },
-  { id: '5', name: 'Lisa Park', email: 'l.park@company.com', role: 'member' },
-];
 
 const methodologyInfo: Record<Methodology, { name: string; description: string; icon: React.ElementType }> = {
   waterfall: {
@@ -138,7 +136,7 @@ const moduleGroups: { category: string; modules: { key: keyof ModuleVisibility; 
   },
 ];
 
-const roleColors: Record<TeamMember['role'], string> = {
+const roleColors: Record<string, string> = {
   owner: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
   admin: 'bg-blue-500/20 text-blue-400 border-blue-500/30',
   manager: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
@@ -146,9 +144,45 @@ const roleColors: Record<TeamMember['role'], string> = {
   viewer: 'bg-muted text-muted-foreground border-border',
 };
 
-export function ProjectAdminView() {
+export default function ProjectAdminView() {
   const [activeTab, setActiveTab] = useState('settings');
   const { settings, updateMethodology, updateModuleVisibility, updateSettings, getDefaultModules } = useProjectContext();
+  const [currentUserId, setCurrentUserId] = useState<string>('');
+  const { data: members, isLoading: isLoadingTeam } = useTeamMembers(settings.id);
+  const updateProjectMutation = useUpdateProject();
+
+  const handleSave = async () => {
+    if (!settings.id) {
+      toast.error('No project selected to update');
+      return;
+    }
+
+    try {
+      await updateProjectMutation.mutateAsync({
+        id: settings.id,
+        name: settings.name,
+        code: settings.code,
+        methodology: settings.methodology,
+        // Add other fields as they become available in settings/types
+      });
+      toast.success('Project settings saved successfully');
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      toast.error('Failed to save project settings');
+    }
+  };
+
+
+  React.useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) setCurrentUserId(data.user.id);
+    });
+  }, []);
+
+  const copyId = () => {
+    navigator.clipboard.writeText(currentUserId);
+    toast.success('User ID copied to clipboard');
+  };
 
   const handleMethodologyChange = (methodology: Methodology) => {
     updateMethodology(methodology);
@@ -175,8 +209,9 @@ export function ProjectAdminView() {
             Configure project settings, team, and methodology
           </p>
         </div>
-        <Button>
-          <Save className="h-4 w-4 mr-2" />
+        <Button onClick={handleSave} disabled={updateProjectMutation.isPending}>
+          {updateProjectMutation.isPending && <RefreshCw className="h-4 w-4 mr-2 animate-spin" />}
+          {!updateProjectMutation.isPending && <Save className="h-4 w-4 mr-2" />}
           Save Changes
         </Button>
       </div>
@@ -212,6 +247,10 @@ export function ProjectAdminView() {
             <TabsTrigger value="integrations" className="gap-2">
               <Plug className="h-4 w-4" />
               Integrations
+            </TabsTrigger>
+            <TabsTrigger value="assignments" className="gap-2">
+              <Briefcase className="h-4 w-4" />
+              Assignments
             </TabsTrigger>
           </TabsList>
 
@@ -310,24 +349,26 @@ export function ProjectAdminView() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mockTeam.map((member) => (
+                  {isLoadingTeam ? (
+                    <TableRow><TableCell colSpan={3} className="text-center p-4">Loading team...</TableCell></TableRow>
+                  ) : (members?.map((member) => (
                     <TableRow key={member.id}>
                       <TableCell>
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8">
-                            <AvatarImage src={member.avatar} />
+                            <AvatarImage src={member.avatar_url || undefined} />
                             <AvatarFallback className="text-xs">
-                              {member.name.split(' ').map((n) => n[0]).join('')}
+                              {(member.full_name || 'U').split(' ').map((n) => n[0]).join('')}
                             </AvatarFallback>
                           </Avatar>
                           <div>
-                            <div className="font-medium text-sm">{member.name}</div>
+                            <div className="font-medium text-sm">{member.full_name || 'Unknown User'}</div>
                             <div className="text-xs text-muted-foreground">{member.email}</div>
                           </div>
                         </div>
                       </TableCell>
                       <TableCell>
-                        <Badge variant="outline" className={cn('capitalize', roleColors[member.role])}>
+                        <Badge variant="outline" className={cn('capitalize', roleColors[member.role] || roleColors.viewer)}>
                           {member.role}
                         </Badge>
                       </TableCell>
@@ -337,7 +378,10 @@ export function ProjectAdminView() {
                         </Button>
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )))}
+                  {!isLoadingTeam && (!members || members.length === 0) && (
+                    <TableRow><TableCell colSpan={3} className="text-center p-4">No team members found.</TableCell></TableRow>
+                  )}
                 </TableBody>
               </Table>
             </Card>
@@ -414,7 +458,7 @@ export function ProjectAdminView() {
                     const info = methodologyInfo[method];
                     const Icon = info.icon;
                     const isSelected = settings.methodology === method;
-                    
+
                     return (
                       <button
                         key={method}
@@ -617,8 +661,197 @@ export function ProjectAdminView() {
               ))}
             </div>
           </TabsContent>
+
+          {/* Assignments Tab */}
+          <TabsContent value="assignments" className="space-y-6">
+            <div className="mb-6 p-4 rounded-lg bg-muted/50 border flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="bg-primary/10 p-2 rounded-full">
+                  <User className="h-5 w-5 text-primary" />
+                </div>
+                <div>
+                  <p className="text-sm font-medium">Your User ID</p>
+                  <p className="text-xs text-muted-foreground font-mono mt-0.5">{currentUserId || 'Loading...'}</p>
+                </div>
+              </div>
+              <Button variant="outline" size="sm" onClick={copyId} disabled={!currentUserId}>
+                <Copy className="h-4 w-4 mr-2" />
+                Copy ID
+              </Button>
+            </div>
+
+            <Tabs defaultValue="portfolios" className="w-full">
+              <TabsList className="grid w-full grid-cols-2 max-w-[400px] mb-4">
+                <TabsTrigger value="portfolios">Portfolios</TabsTrigger>
+                <TabsTrigger value="programs">Programs</TabsTrigger>
+              </TabsList>
+              <TabsContent value="portfolios" className="space-y-4">
+                <PortfolioAssignments currentUserId={currentUserId} members={members || []} />
+              </TabsContent>
+              <TabsContent value="programs" className="space-y-4">
+                <ProgramAssignments currentUserId={currentUserId} members={members || []} />
+              </TabsContent>
+            </Tabs>
+          </TabsContent>
         </Tabs>
       </div>
     </div>
+  );
+}
+
+function PortfolioAssignments({ currentUserId, members }: { currentUserId: string, members: any[] }) {
+  const { data: portfolios } = usePortfolios();
+  const updatePortfolio = useUpdatePortfolio();
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const handleAssign = async (id: string, newOwnerId: string) => {
+    try {
+      await updatePortfolio.mutateAsync({ id, ...({ owner_id: newOwnerId } as any) });
+      toast.success('Portfolio owner updated');
+      setEditingId(null);
+    } catch (error) {
+      toast.error('Failed to update owner');
+    }
+  };
+
+  return (
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Portfolio Name</TableHead>
+            <TableHead>Current Owner</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {portfolios?.map((p) => (
+            <AssignmentRow
+              key={p.id}
+              item={p}
+              currentUserId={currentUserId}
+              members={members}
+              onAssign={handleAssign}
+              isEditing={editingId === p.id}
+              setEditing={setEditingId}
+            />
+          ))}
+          {(!portfolios || portfolios.length === 0) && (
+            <TableRow><TableCell colSpan={3} className="p-8 text-center text-muted-foreground">No portfolios found.</TableCell></TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function ProgramAssignments({ currentUserId, members }: { currentUserId: string, members: any[] }) {
+  const { data: programs } = usePrograms();
+  const updateProgram = useUpdateProgram();
+  const [editingId, setEditingId] = useState<string | null>(null);
+
+  const handleAssign = async (id: string, newOwnerId: string) => {
+    try {
+      await updateProgram.mutateAsync({ id, owner_id: newOwnerId });
+      toast.success('Program owner updated');
+      setEditingId(null);
+    } catch (error) {
+      toast.error('Failed to update owner');
+    }
+  };
+
+  return (
+    <div className="rounded-md border">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Program Name</TableHead>
+            <TableHead>Current Owner</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {programs?.map((p) => (
+            <AssignmentRow
+              key={p.id}
+              item={p}
+              currentUserId={currentUserId}
+              members={members}
+              onAssign={handleAssign}
+              isEditing={editingId === p.id}
+              setEditing={setEditingId}
+            />
+          ))}
+          {(!programs || programs.length === 0) && (
+            <TableRow><TableCell colSpan={3} className="p-8 text-center text-muted-foreground">No programs found.</TableCell></TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
+function AssignmentRow({ item, currentUserId, members, onAssign, isEditing, setEditing }: any) {
+  const [selectedOwner, setSelectedOwner] = useState(item.owner_id || '');
+  const [inputValue, setInputValue] = useState(item.owner_id || ''); // For "Assign to Me" fallback or manual
+
+  const ownerName = members.find((m: any) => m.id === item.owner_id)?.full_name || item.owner_id || 'Unassigned';
+
+  return (
+    <TableRow>
+      <TableCell className="font-medium">{item.name}</TableCell>
+      <TableCell className="font-mono text-sm">
+        {isEditing ? (
+          <Select value={selectedOwner} onValueChange={setSelectedOwner}>
+            <SelectTrigger className="h-8 w-[250px]">
+              <SelectValue placeholder="Select user" />
+            </SelectTrigger>
+            <SelectContent>
+              {members.map((m: any) => (
+                <SelectItem key={m.id} value={m.id}>
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-5 w-5">
+                      <AvatarImage src={m.avatar_url || undefined} />
+                      <AvatarFallback className="text-[10px]">
+                        {(m.full_name || 'U').split(' ').map((n: string) => n[0]).join('')}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span>{m.full_name}</span>
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        ) : (
+          <div className="flex items-center gap-2">
+            <Avatar className="h-6 w-6">
+              <AvatarImage src={members.find((m: any) => m.id === item.owner_id)?.avatar_url || undefined} />
+              <AvatarFallback className="text-[10px]">
+                {(ownerName !== 'Unassigned' && ownerName !== item.owner_id) ? ownerName.split(' ').map((n: any) => n[0]).join('') : '?'}
+              </AvatarFallback>
+            </Avatar>
+            <span className="truncate max-w-[200px]">{ownerName}</span>
+            {item.owner_id === currentUserId && <Badge variant="outline" className="text-[10px] h-5">You</Badge>}
+          </div>
+        )}
+      </TableCell>
+      <TableCell className="text-right">
+        {isEditing ? (
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setEditing(null)}>Cancel</Button>
+            <Button size="sm" onClick={() => onAssign(item.id, selectedOwner)}>Save</Button>
+          </div>
+        ) : (
+          <div className="flex justify-end gap-2">
+            <Button variant="outline" size="sm" onClick={() => { onAssign(item.id, currentUserId); }}>
+              Assign to Me
+            </Button>
+            <Button variant="ghost" size="sm" onClick={() => { setSelectedOwner(item.owner_id || ''); setEditing(item.id); }}>
+              Edit
+            </Button>
+          </div>
+        )}
+      </TableCell>
+    </TableRow>
   );
 }

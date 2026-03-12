@@ -51,6 +51,9 @@ export interface AIMessageMetadata {
   executionTime?: number;
   agentsUsed?: AgentType[];
   permissionDenied?: boolean;
+  creditsDeducted?: number;
+  tokensDeducted?: number;
+  link?: string;
 }
 
 export interface IntentClassification {
@@ -103,9 +106,18 @@ export interface AIOrchestratorResponse {
   needsClarification?: boolean;
   clarifyingQuestion?: ClarifyingQuestion;
   error?: string;
+  requiresConfirmation?: boolean;
+  pendingActionId?: string;
+  toolName?: string;
+  toolResult?: unknown;
+  diff?: Record<string, unknown>;
+  summary?: string;
 }
 
 // Agent display configuration
+// @deprecated This is now loaded from the database via useAIAgents() hook.
+// Kept for backward compatibility and type definitions only.
+// Use src/hooks/useAIAgents.ts instead for dynamic agent configuration.
 export const AGENT_DISPLAY_INFO: Record<AgentType, { label: string; icon: string; color: string }> = {
   scheduler: { label: 'Scheduler', icon: 'Calendar', color: 'text-blue-500' },
   finance: { label: 'Finance', icon: 'DollarSign', color: 'text-green-500' },

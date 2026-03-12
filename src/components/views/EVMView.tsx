@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useMemo } from 'react';
 import { cn } from '@/lib/utils';
 import {
   TrendingUp,
@@ -10,6 +10,8 @@ import {
   CheckCircle2,
   Info,
   Filter,
+  Loader2,
+  Plus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -30,54 +32,12 @@ import {
   Area,
   ReferenceLine,
 } from 'recharts';
+import { useProjectContext } from '@/contexts/ProjectContext';
+import { useEVM } from '@/hooks/useEVM';
 
-const evmData = {
-  asOfDate: '2024-08-10',
-  bac: 2500000,
-  pv: 1250000,
-  ev: 1125000,
-  ac: 1180000,
-  sv: -125000,
-  cv: -55000,
-  spi: 0.90,
-  cpi: 0.95,
-  eac: 2631579,
-  etc: 1451579,
-  vac: -131579,
-  tcpi: 1.04,
-};
-
-const trendData = [
-  { month: 'Jan', pv: 200000, ev: 195000, ac: 190000 },
-  { month: 'Feb', pv: 400000, ev: 380000, ac: 395000 },
-  { month: 'Mar', pv: 600000, ev: 570000, ac: 610000 },
-  { month: 'Apr', pv: 800000, ev: 760000, ac: 810000 },
-  { month: 'May', pv: 950000, ev: 910000, ac: 960000 },
-  { month: 'Jun', pv: 1100000, ev: 1020000, ac: 1080000 },
-  { month: 'Jul', pv: 1180000, ev: 1080000, ac: 1140000 },
-  { month: 'Aug', pv: 1250000, ev: 1125000, ac: 1180000 },
-];
-
-const spiCpiTrend = [
-  { month: 'Jan', spi: 0.98, cpi: 1.03 },
-  { month: 'Feb', spi: 0.95, cpi: 0.96 },
-  { month: 'Mar', spi: 0.95, cpi: 0.93 },
-  { month: 'Apr', spi: 0.95, cpi: 0.94 },
-  { month: 'May', spi: 0.96, cpi: 0.95 },
-  { month: 'Jun', spi: 0.93, cpi: 0.94 },
-  { month: 'Jul', spi: 0.92, cpi: 0.95 },
-  { month: 'Aug', spi: 0.90, cpi: 0.95 },
-];
-
-const wbsMetrics = [
-  { wbs: '1.0', name: 'Discovery', pv: 300000, ev: 300000, ac: 290000, status: 'green' },
-  { wbs: '2.0', name: 'Design', pv: 450000, ev: 450000, ac: 470000, status: 'green' },
-  { wbs: '3.0', name: 'Implementation', pv: 500000, ev: 375000, ac: 420000, status: 'red' },
-  { wbs: '4.0', name: 'Testing', pv: 0, ev: 0, ac: 0, status: 'gray' },
-  { wbs: '5.0', name: 'Go-Live', pv: 0, ev: 0, ac: 0, status: 'gray' },
-];
-
-export function EVMView() {
+export default function EVMView() {
+  const { settings } = useProjectContext();
+  const { data: snapshots, isLoading } = useEVM(settings.id);
   const contentRef = useRef<HTMLDivElement>(null);
 
   const pdfSections: PDFExportSection[] = [
@@ -88,6 +48,32 @@ export function EVMView() {
     { id: 'forecasts', name: 'Forecasts', selector: '[data-section="forecasts"]' },
     { id: 'wbs', name: 'WBS Analysis', selector: '[data-section="wbs"]' },
   ];
+
+  const latestSnapshot = useMemo(() => {
+    if (!snapshots || snapshots.length === 0) return null;
+    return snapshots[snapshots.length - 1];
+  }, [snapshots]);
+
+  const trendData = useMemo(() => {
+    if (!snapshots) return [];
+    return snapshots.map(s => ({
+      month: new Date(s.as_of_date).toLocaleDateString('default', { month: 'short' }),
+      pv: s.pv,
+      ev: s.ev,
+      ac: s.ac,
+      date: s.as_of_date
+    }));
+  }, [snapshots]);
+
+  const spiCpiTrend = useMemo(() => {
+    if (!snapshots) return [];
+    return snapshots.map(s => ({
+      month: new Date(s.as_of_date).toLocaleDateString('default', { month: 'short' }),
+      spi: s.spi,
+      cpi: s.cpi,
+      date: s.as_of_date
+    }));
+  }, [snapshots]);
 
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -104,6 +90,46 @@ export function EVMView() {
     return 'destructive';
   };
 
+  if (isLoading) {
+    return (
+      <div className="flex h-full items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!latestSnapshot) {
+    return (
+      <div className="flex flex-col h-full overflow-auto text-center items-center justify-center p-12">
+        <div className="p-6 rounded-2xl bg-muted/20 border-2 border-dashed max-w-md">
+          <BarChart3 className="h-12 w-12 mx-auto mb-4 text-muted-foreground opacity-50" />
+          <h2 className="text-xl font-semibold mb-2">No Performance Data</h2>
+          <p className="text-muted-foreground mb-6">
+            There are no EVM snapshots available for this project. Start by capturing a baseline or regular performance status to see analytics.
+          </p>
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            Create First Snapshot
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Calculated forecast metrics
+  const bac = latestSnapshot.bac;
+  const ev = latestSnapshot.ev;
+  const ac = latestSnapshot.ac;
+  const cpi = latestSnapshot.cpi;
+  const spi = latestSnapshot.spi;
+
+  const sv = ev - latestSnapshot.pv;
+  const cv = ev - ac;
+  const eac = cpi > 0 ? bac / cpi : bac;
+  const etc = eac - ac;
+  const vac = bac - eac;
+  const tcpi = (bac - ev) / (bac - ac || 1);
+
   return (
     <div className="flex flex-col h-full overflow-auto" ref={contentRef}>
       {/* Header */}
@@ -116,7 +142,7 @@ export function EVMView() {
             <div>
               <h1 className="text-2xl font-bold">Earned Value Management</h1>
               <p className="text-muted-foreground">
-                Performance analysis as of {new Date(evmData.asOfDate).toLocaleDateString()}
+                Performance analysis for {settings.name} as of {new Date(latestSnapshot.as_of_date).toLocaleDateString()}
               </p>
             </div>
           </div>
@@ -144,7 +170,6 @@ export function EVMView() {
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="trends">Trends</TabsTrigger>
             <TabsTrigger value="forecasts">Forecasts</TabsTrigger>
-            <TabsTrigger value="wbs">WBS Analysis</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
@@ -155,9 +180,9 @@ export function EVMView() {
                   <CardTitle className="text-sm font-medium text-muted-foreground">Planned Value (PV)</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{formatCurrency(evmData.pv)}</div>
-                  <p className="text-xs text-muted-foreground">of {formatCurrency(evmData.bac)} BAC</p>
-                  <Progress value={(evmData.pv / evmData.bac) * 100} className="h-2 mt-2" />
+                  <div className="text-2xl font-bold">{formatCurrency(latestSnapshot.pv)}</div>
+                  <p className="text-xs text-muted-foreground">of {formatCurrency(latestSnapshot.bac)} BAC</p>
+                  <Progress value={(latestSnapshot.pv / latestSnapshot.bac) * 100} className="h-2 mt-2" />
                 </CardContent>
               </Card>
               <Card>
@@ -165,9 +190,9 @@ export function EVMView() {
                   <CardTitle className="text-sm font-medium text-muted-foreground">Earned Value (EV)</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{formatCurrency(evmData.ev)}</div>
-                  <p className="text-xs text-muted-foreground">{((evmData.ev / evmData.bac) * 100).toFixed(1)}% complete</p>
-                  <Progress value={(evmData.ev / evmData.bac) * 100} className="h-2 mt-2 [&>div]:bg-success" />
+                  <div className="text-2xl font-bold">{formatCurrency(latestSnapshot.ev)}</div>
+                  <p className="text-xs text-muted-foreground">{((latestSnapshot.ev / latestSnapshot.bac) * 100).toFixed(1)}% complete</p>
+                  <Progress value={(latestSnapshot.ev / latestSnapshot.bac) * 100} className="h-2 mt-2 [&>div]:bg-success" />
                 </CardContent>
               </Card>
               <Card>
@@ -175,32 +200,32 @@ export function EVMView() {
                   <CardTitle className="text-sm font-medium text-muted-foreground">Actual Cost (AC)</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{formatCurrency(evmData.ac)}</div>
-                  <p className="text-xs text-muted-foreground">{((evmData.ac / evmData.bac) * 100).toFixed(1)}% of BAC spent</p>
-                  <Progress value={(evmData.ac / evmData.bac) * 100} className="h-2 mt-2 [&>div]:bg-warning" />
+                  <div className="text-2xl font-bold">{formatCurrency(latestSnapshot.ac)}</div>
+                  <p className="text-xs text-muted-foreground">{((latestSnapshot.ac / latestSnapshot.bac) * 100).toFixed(1)}% of BAC spent</p>
+                  <Progress value={(latestSnapshot.ac / latestSnapshot.bac) * 100} className="h-2 mt-2 [&>div]:bg-warning" />
                 </CardContent>
               </Card>
               <Card className={cn(
                 "border-2",
-                evmData.cpi >= 1 && evmData.spi >= 1 ? 'border-success/50 bg-success/5' :
-                evmData.cpi < 0.9 || evmData.spi < 0.9 ? 'border-destructive/50 bg-destructive/5' :
-                'border-warning/50 bg-warning/5'
+                latestSnapshot.cpi >= 1 && latestSnapshot.spi >= 1 ? 'border-success/50 bg-success/5' :
+                  latestSnapshot.cpi < 0.9 || latestSnapshot.spi < 0.9 ? 'border-destructive/50 bg-destructive/5' :
+                    'border-warning/50 bg-warning/5'
               )}>
                 <CardHeader className="pb-2">
                   <CardTitle className="text-sm font-medium text-muted-foreground">Project Health</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-2">
-                    {evmData.cpi >= 1 && evmData.spi >= 1 ? (
+                    {latestSnapshot.cpi >= 1 && latestSnapshot.spi >= 1 ? (
                       <CheckCircle2 className="h-6 w-6 text-success" />
-                    ) : evmData.cpi < 0.9 || evmData.spi < 0.9 ? (
+                    ) : latestSnapshot.cpi < 0.9 || latestSnapshot.spi < 0.9 ? (
                       <AlertTriangle className="h-6 w-6 text-destructive" />
                     ) : (
                       <AlertTriangle className="h-6 w-6 text-warning" />
                     )}
                     <span className="text-xl font-bold">
-                      {evmData.cpi >= 1 && evmData.spi >= 1 ? 'On Track' :
-                       evmData.cpi < 0.9 || evmData.spi < 0.9 ? 'At Risk' : 'Needs Attention'}
+                      {latestSnapshot.cpi >= 1 && latestSnapshot.spi >= 1 ? 'On Track' :
+                        latestSnapshot.cpi < 0.9 || latestSnapshot.spi < 0.9 ? 'At Risk' : 'Needs Attention'}
                     </span>
                   </div>
                 </CardContent>
@@ -220,21 +245,23 @@ export function EVMView() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Schedule Variance (SV)</span>
                     <div className="flex items-center gap-2">
-                      {evmData.sv < 0 ? <TrendingDown className="h-4 w-4 text-destructive" /> : <TrendingUp className="h-4 w-4 text-success" />}
-                      <span className={cn("font-semibold", evmData.sv < 0 ? 'text-destructive' : 'text-success')}>
-                        {formatCurrency(evmData.sv)}
+                      {sv < 0 ? <TrendingDown className="h-4 w-4 text-destructive" /> : <TrendingUp className="h-4 w-4 text-success" />}
+                      <span className={cn("font-semibold", sv < 0 ? 'text-destructive' : 'text-success')}>
+                        {formatCurrency(sv)}
                       </span>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Schedule Performance Index (SPI)</span>
-                    <Badge variant={getIndexStatus(evmData.spi)} className="text-sm">
-                      {evmData.spi.toFixed(2)}
+                    <Badge variant={getIndexStatus(latestSnapshot.spi)} className="text-sm">
+                      {latestSnapshot.spi.toFixed(2)}
                     </Badge>
                   </div>
                   <div className="p-3 rounded-lg bg-muted/50 text-sm">
                     <Info className="h-4 w-4 inline mr-2 text-muted-foreground" />
-                    Project is {((1 - evmData.spi) * 100).toFixed(0)}% behind schedule
+                    {latestSnapshot.spi >= 1
+                      ? "Project is on or ahead of schedule"
+                      : `Project is ${((1 - latestSnapshot.spi) * 100).toFixed(0)}% behind schedule`}
                   </div>
                 </CardContent>
               </Card>
@@ -250,21 +277,23 @@ export function EVMView() {
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Cost Variance (CV)</span>
                     <div className="flex items-center gap-2">
-                      {evmData.cv < 0 ? <TrendingDown className="h-4 w-4 text-destructive" /> : <TrendingUp className="h-4 w-4 text-success" />}
-                      <span className={cn("font-semibold", evmData.cv < 0 ? 'text-destructive' : 'text-success')}>
-                        {formatCurrency(evmData.cv)}
+                      {cv < 0 ? <TrendingDown className="h-4 w-4 text-destructive" /> : <TrendingUp className="h-4 w-4 text-success" />}
+                      <span className={cn("font-semibold", cv < 0 ? 'text-destructive' : 'text-success')}>
+                        {formatCurrency(cv)}
                       </span>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Cost Performance Index (CPI)</span>
-                    <Badge variant={getIndexStatus(evmData.cpi)} className="text-sm">
-                      {evmData.cpi.toFixed(2)}
+                    <Badge variant={getIndexStatus(latestSnapshot.cpi)} className="text-sm">
+                      {latestSnapshot.cpi.toFixed(2)}
                     </Badge>
                   </div>
                   <div className="p-3 rounded-lg bg-muted/50 text-sm">
                     <Info className="h-4 w-4 inline mr-2 text-muted-foreground" />
-                    Project is {((1 - evmData.cpi) * 100).toFixed(0)}% over budget
+                    {latestSnapshot.cpi >= 1
+                      ? "Project is performing within budget"
+                      : `Project is ${((1 - latestSnapshot.cpi) * 100).toFixed(0)}% over budget`}
                   </div>
                 </CardContent>
               </Card>
@@ -282,8 +311,8 @@ export function EVMView() {
                     <AreaChart data={trendData}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                       <XAxis dataKey="month" className="text-xs" />
-                      <YAxis tickFormatter={(v) => `$${(v / 1000000).toFixed(1)}M`} className="text-xs" />
-                      <Tooltip 
+                      <YAxis tickFormatter={(v) => `$${(v / 1000).toFixed(0)}K`} className="text-xs" />
+                      <Tooltip
                         formatter={(value: number) => formatCurrency(value)}
                         contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }}
                       />
@@ -310,7 +339,7 @@ export function EVMView() {
                     <LineChart data={spiCpiTrend}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                       <XAxis dataKey="month" className="text-xs" />
-                      <YAxis domain={[0.8, 1.1]} className="text-xs" />
+                      <YAxis domain={[0.5, 1.5]} className="text-xs" />
                       <Tooltip contentStyle={{ background: 'hsl(var(--card))', border: '1px solid hsl(var(--border))' }} />
                       <Legend />
                       <ReferenceLine y={1} stroke="hsl(var(--success))" strokeDasharray="5 5" />
@@ -333,13 +362,13 @@ export function EVMView() {
                 <CardContent>
                   <div className={cn(
                     "text-2xl font-bold",
-                    evmData.eac > evmData.bac ? 'text-destructive' : 'text-success'
+                    eac > bac ? 'text-destructive' : 'text-success'
                   )}>
-                    {formatCurrency(evmData.eac)}
+                    {formatCurrency(eac)}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {evmData.eac > evmData.bac ? 'Over budget by ' : 'Under budget by '}
-                    {formatCurrency(Math.abs(evmData.eac - evmData.bac))}
+                    {eac > bac ? 'Over budget by ' : 'Under budget by '}
+                    {formatCurrency(Math.abs(eac - bac))}
                   </p>
                 </CardContent>
               </Card>
@@ -348,7 +377,7 @@ export function EVMView() {
                   <CardTitle className="text-sm font-medium text-muted-foreground">Estimate to Complete (ETC)</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{formatCurrency(evmData.etc)}</div>
+                  <div className="text-2xl font-bold">{formatCurrency(etc)}</div>
                   <p className="text-xs text-muted-foreground">Remaining work cost</p>
                 </CardContent>
               </Card>
@@ -359,12 +388,12 @@ export function EVMView() {
                 <CardContent>
                   <div className={cn(
                     "text-2xl font-bold",
-                    evmData.tcpi > 1.1 ? 'text-destructive' : evmData.tcpi > 1 ? 'text-warning' : 'text-success'
+                    tcpi > 1.1 ? 'text-destructive' : tcpi > 1 ? 'text-warning' : 'text-success'
                   )}>
-                    {evmData.tcpi.toFixed(2)}
+                    {tcpi.toFixed(2)}
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    {evmData.tcpi > 1.1 ? 'Very difficult to achieve' : evmData.tcpi > 1 ? 'Challenging' : 'Achievable'}
+                    {tcpi > 1.1 ? 'Very difficult to achieve' : tcpi > 1 ? 'Challenging' : 'Achievable'}
                   </p>
                 </CardContent>
               </Card>
@@ -379,54 +408,13 @@ export function EVMView() {
                   <h4 className="font-medium mb-2">Variance at Completion (VAC)</h4>
                   <div className={cn(
                     "text-xl font-bold",
-                    evmData.vac < 0 ? 'text-destructive' : 'text-success'
+                    vac < 0 ? 'text-destructive' : 'text-success'
                   )}>
-                    {formatCurrency(evmData.vac)}
+                    {formatCurrency(vac)}
                   </div>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Project is forecasted to be {evmData.vac < 0 ? 'over' : 'under'} budget by {((Math.abs(evmData.vac) / evmData.bac) * 100).toFixed(1)}%
+                    Project is forecasted to be {vac < 0 ? 'over' : 'under'} budget by {((Math.abs(vac) / bac) * 100).toFixed(1)}%
                   </p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="wbs" className="space-y-6" data-section="wbs">
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">WBS Performance Summary</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {wbsMetrics.map((wbs) => (
-                    <div key={wbs.wbs} className="flex items-center gap-4 p-3 rounded-lg border bg-muted/20">
-                      <div className={cn(
-                        'w-3 h-3 rounded-full',
-                        wbs.status === 'green' ? 'bg-success' :
-                        wbs.status === 'red' ? 'bg-destructive' :
-                        'bg-muted-foreground/30'
-                      )} />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-sm text-muted-foreground">{wbs.wbs}</span>
-                          <span className="font-medium">{wbs.name}</span>
-                        </div>
-                      </div>
-                      <div className="text-right text-sm">
-                        <div>PV: {formatCurrency(wbs.pv)}</div>
-                        <div className="text-muted-foreground">EV: {formatCurrency(wbs.ev)}</div>
-                      </div>
-                      <div className="text-right text-sm">
-                        <div>AC: {formatCurrency(wbs.ac)}</div>
-                        <div className={cn(
-                          'font-medium',
-                          wbs.ev - wbs.ac >= 0 ? 'text-success' : 'text-destructive'
-                        )}>
-                          CV: {formatCurrency(wbs.ev - wbs.ac)}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
                 </div>
               </CardContent>
             </Card>

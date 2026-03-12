@@ -1,7 +1,8 @@
 import { useState, useRef, useMemo } from 'react';
+import { usePermissions } from '@/hooks/usePermissions';
 import { motion } from 'framer-motion';
-import { 
-  BarChart3, 
+import {
+  BarChart3,
   Filter,
   Calendar,
   FileText,
@@ -16,236 +17,203 @@ import {
   Users,
   AlertTriangle,
   DollarSign,
-  Target
+  Target,
+  Loader2,
+  Trash2
 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { KPICard } from '@/components/enterprise/KPICard';
 import { PDFExporter } from '@/components/common/PDFExporter';
 import {
   ReportCard,
+  Report as UIReport,
   ReportPreview,
   ReportCategories,
   ScheduleReportDialog,
-  type Report,
-  type ReportCategory,
 } from '@/components/reports';
 import { toast } from 'sonner';
+import { useProjectContext } from '@/contexts/ProjectContext';
+import { useReports, Report, ReportCategory } from '@/hooks/useReports';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
+import { Textarea } from '@/components/ui/textarea';
+import { useTeamMembers } from '@/hooks/useTeamMembers';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
-const mockReports: Report[] = [
-  // Status Reports
-  { 
-    id: 'rpt-portfolio-status', 
-    name: 'Portfolio Status Report', 
-    type: 'status', 
-    category: 'Status',
-    description: 'Executive summary of all active projects with health indicators', 
-    lastGenerated: '2026-01-29', 
-    frequency: 'weekly', 
-    icon: BarChart3,
-    isScheduled: true,
-    nextRun: '2026-02-03 09:00'
-  },
-  { 
-    id: 'rpt-sprint-status', 
-    name: 'Sprint Status Report', 
-    type: 'status', 
-    category: 'Status',
-    description: 'Current sprint progress, velocity, and burndown analysis', 
-    lastGenerated: '2026-01-29', 
-    frequency: 'daily', 
-    icon: Activity,
-    isScheduled: true,
-    nextRun: '2026-01-30 08:00'
-  },
-  { 
-    id: 'rpt-milestone-tracker', 
-    name: 'Milestone Tracker', 
-    type: 'status', 
-    category: 'Status',
-    description: 'Upcoming and overdue milestones across all projects', 
-    lastGenerated: '2026-01-28', 
-    frequency: 'weekly', 
-    icon: Target,
-    isScheduled: false
-  },
+interface ReportsViewProps {
+  demo?: boolean;
+}
 
-  // Financial Reports
-  { 
-    id: 'rpt-financial-summary', 
-    name: 'Financial Summary', 
-    type: 'financial', 
-    category: 'Financial',
-    description: 'Budget vs actuals, burn rate, and financial forecasts', 
-    lastGenerated: '2026-01-28', 
-    frequency: 'weekly', 
-    icon: DollarSign,
-    isScheduled: true,
-    nextRun: '2026-02-04 09:00'
-  },
-  { 
-    id: 'rpt-evm-analysis', 
-    name: 'EVM Analysis Report', 
-    type: 'financial', 
-    category: 'Financial',
-    description: 'Earned Value Management metrics: SPI, CPI, EAC projections', 
-    lastGenerated: '2026-01-27', 
-    frequency: 'monthly', 
-    icon: TrendingUp,
-    isScheduled: true,
-    nextRun: '2026-02-01 09:00'
-  },
-  { 
-    id: 'rpt-burn-rate', 
-    name: 'Burn Rate Report', 
-    type: 'financial', 
-    category: 'Financial',
-    description: 'Resource spending rate and budget runway analysis', 
-    lastGenerated: '2026-01-29', 
-    frequency: 'daily', 
-    icon: Activity,
-    isScheduled: false
-  },
+export default function ReportsView({ demo = false }: ReportsViewProps) {
+  const { settings } = useProjectContext();
+  const { confirm, ConfirmDialog } = useConfirmDialog();
+  const { data: reports, isLoading, createReport, deleteReport, generateReport } = useReports(settings.id);
+  const { can } = usePermissions(settings?.id);
+  const canCreate = can('report.create');
+  const canDelete = can('report.delete');
 
-  // Resource Reports
-  { 
-    id: 'rpt-resource-utilization', 
-    name: 'Resource Utilization', 
-    type: 'resource', 
-    category: 'Resource',
-    description: 'Team capacity, allocation, and utilization metrics', 
-    lastGenerated: '2026-01-29', 
-    frequency: 'weekly', 
-    icon: Users,
-    isScheduled: true,
-    nextRun: '2026-02-03 09:00'
-  },
-  { 
-    id: 'rpt-capacity-planning', 
-    name: 'Capacity Planning', 
-    type: 'resource', 
-    category: 'Resource',
-    description: 'Future resource requirements and availability forecast', 
-    lastGenerated: '2026-01-25', 
-    frequency: 'monthly', 
-    icon: Users,
-    isScheduled: false
-  },
-  { 
-    id: 'rpt-skills-matrix', 
-    name: 'Skills Matrix', 
-    type: 'resource', 
-    category: 'Resource',
-    description: 'Team skills inventory and gap analysis', 
-    lastGenerated: '2026-01-20', 
-    frequency: 'on-demand', 
-    icon: Users,
-    isScheduled: false
-  },
-
-  // Risk Reports
-  { 
-    id: 'rpt-risk-register', 
-    name: 'Risk Register', 
-    type: 'risk', 
-    category: 'Risk',
-    description: 'Comprehensive risk register with mitigation status', 
-    lastGenerated: '2026-01-28', 
-    frequency: 'weekly', 
-    icon: AlertTriangle,
-    isScheduled: true,
-    nextRun: '2026-02-04 09:00'
-  },
-  { 
-    id: 'rpt-risk-assessment', 
-    name: 'Risk Assessment', 
-    type: 'risk', 
-    category: 'Risk',
-    description: 'Detailed risk analysis with probability and impact scoring', 
-    lastGenerated: '2026-01-26', 
-    frequency: 'monthly', 
-    icon: AlertTriangle,
-    isScheduled: false
-  },
-  { 
-    id: 'rpt-risk-trends', 
-    name: 'Risk Trends', 
-    type: 'risk', 
-    category: 'Risk',
-    description: 'Historical risk trends and pattern analysis', 
-    lastGenerated: '2026-01-22', 
-    frequency: 'monthly', 
-    icon: TrendingUp,
-    isScheduled: false
-  },
-
-  // Custom Reports
-  { 
-    id: 'rpt-velocity', 
-    name: 'Sprint Velocity Analysis', 
-    type: 'custom', 
-    category: 'Custom',
-    description: 'Sprint-over-sprint velocity trends and predictions', 
-    lastGenerated: '2026-01-27', 
-    frequency: 'monthly', 
-    icon: PieChart,
-    isScheduled: false
-  },
-  { 
-    id: 'rpt-custom-dashboard', 
-    name: 'Executive Dashboard Export', 
-    type: 'custom', 
-    category: 'Custom',
-    description: 'Custom executive summary with selected KPIs', 
-    lastGenerated: '2026-01-25', 
-    frequency: 'on-demand', 
-    icon: FileText,
-    isScheduled: false
-  },
-];
-
-export function ReportsView() {
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<ReportCategory>('all');
+  const [selectedCategory, setSelectedCategory] = useState<ReportCategory | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
 
+  const [newReport, setNewReport] = useState<Partial<Report>>({
+    name: '',
+    description: '',
+    type: 'status',
+    category: 'Status',
+    frequency: 'weekly',
+    is_scheduled: false
+  });
+
   const categoryCounts = useMemo(() => {
-    const counts: Record<ReportCategory, number> = {
-      all: mockReports.length,
+    const counts: Record<string, number> = {
+      all: reports?.length || 0,
       status: 0,
       financial: 0,
       resource: 0,
       risk: 0,
       custom: 0,
     };
-    mockReports.forEach((report) => {
-      counts[report.type]++;
+    reports?.forEach((report) => {
+      if (counts[report.type]) counts[report.type]++;
     });
     return counts;
-  }, []);
+  }, [reports]);
 
   const filteredReports = useMemo(() => {
-    return mockReports.filter((report) => {
-      const matchesCategory = selectedCategory === 'all' || report.type === selectedCategory;
+    return reports?.filter((report) => {
+      const matchesCategory = selectedCategory === 'all' || report.type === (selectedCategory as string).toLowerCase();
       const matchesSearch = report.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        report.description.toLowerCase().includes(searchQuery.toLowerCase());
+        (report.description || '').toLowerCase().includes(searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
-    });
-  }, [selectedCategory, searchQuery]);
+    }) || [];
+  }, [reports, selectedCategory, searchQuery]);
 
-  const scheduledCount = mockReports.filter((r) => r.isScheduled).length;
+  const scheduledCount = reports?.filter((r) => r.is_scheduled).length || 0;
 
-  const handleGenerate = (report: Report) => {
-    toast.success(`Generating "${report.name}"...`);
-    setSelectedReport(report);
+  const handleGenerate = async (report: Report) => {
+    try {
+      if (generateReport) {
+        await generateReport.mutateAsync(report.id);
+      } else {
+        // Fallback if hook hasn't updated layout yet (shouldn't happen)
+        console.error('generateReport function not returned from hook');
+      }
+    } catch (error) {
+      console.error('Generation failed', error);
+    }
   };
 
   const handleExport = (report: Report) => {
-    toast.success(`Exporting "${report.name}" to PDF...`);
+    try {
+      // Create CSV content from report metadata
+      const headers = ['ID', 'Name', 'Description', 'Type', 'Category', 'Frequency', 'Last Generated'];
+      const row = [
+        report.id,
+        `"${report.name}"`, // Quote to handle commas
+        `"${report.description || ''}"`,
+        report.type,
+        report.category,
+        report.frequency,
+        report.last_generated || 'Never'
+      ];
+
+      const csvContent = "data:text/csv;charset=utf-8,"
+        + headers.join(",") + "\n"
+        + row.join(",");
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `${report.name.replace(/\s+/g, '_').toLowerCase()}_report.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+
+      toast.success(`Exported "${report.name}" to CSV`);
+    } catch (error) {
+      console.error('Export failed:', error);
+      toast.error('Failed to export report');
+    }
   };
+
+  const handleCreate = async () => {
+    try {
+      await createReport.mutateAsync(newReport);
+      setIsCreateOpen(false);
+      setNewReport({
+        name: '',
+        description: '',
+        type: 'status',
+        category: 'Status',
+        frequency: 'weekly',
+        is_scheduled: false
+      });
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const handleDelete = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (await confirm('Are you sure you want to delete this report configuration?', { confirmLabel: 'Delete', variant: 'destructive' })) {
+      await deleteReport.mutateAsync(id);
+      if (selectedReport?.id === id) setSelectedReport(null);
+    }
+  }
+
+  // Map report type to a lucide-react icon for display
+  const getIconForType = (type: string) => {
+    switch (type) {
+      case 'status': return Activity;
+      case 'financial': return DollarSign;
+      case 'resource': return Users;
+      case 'risk': return AlertTriangle;
+      case 'custom': return FileText;
+      default: return FileText;
+    }
+  };
+
+  const mapToUIReport = (dbReport: Report): UIReport => ({
+    id: dbReport.id,
+    name: dbReport.name,
+    type: (['status', 'financial', 'resource', 'risk', 'custom'].includes(dbReport.type)
+      ? dbReport.type
+      : 'custom') as UIReport['type'],
+    category: dbReport.category,
+    description: dbReport.description || '',
+    lastGenerated: dbReport.last_generated || 'Never',
+    frequency: (['daily', 'weekly', 'monthly', 'on-demand'].includes(dbReport.frequency)
+      ? dbReport.frequency
+      : 'on-demand') as UIReport['frequency'],
+    icon: getIconForType(dbReport.type),
+    isScheduled: dbReport.is_scheduled,
+    nextRun: dbReport.next_run || undefined
+  });
+
+  if (isLoading) {
+    return <div className="h-full flex items-center justify-center"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>;
+  }
 
   return (
     <div className="space-y-6 p-6" ref={contentRef}>
@@ -269,51 +237,127 @@ export function ReportsView() {
             <Settings className="h-4 w-4 mr-2" />
             Settings
           </Button>
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            New Report
-          </Button>
+          {canCreate && <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                New Report
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Create New Report</DialogTitle>
+                <DialogDescription>Configure a new report template.</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-2">
+                <div className="space-y-2">
+                  <Label>Name</Label>
+                  <Input
+                    value={newReport.name}
+                    onChange={(e) => setNewReport({ ...newReport, name: e.target.value })}
+                    placeholder="e.g. Weekly Status"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Type</Label>
+                  <Select
+                    value={newReport.type}
+                    onValueChange={(v: any) => {
+                      let category = 'Custom';
+                      if (v === 'status') category = 'Status';
+                      if (v === 'financial') category = 'Financial';
+                      if (v === 'resource') category = 'Resource';
+                      if (v === 'risk') category = 'Risk';
+                      setNewReport({ ...newReport, type: v, category: category as any })
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="status">Status</SelectItem>
+                      <SelectItem value="financial">Financial</SelectItem>
+                      <SelectItem value="resource">Resource</SelectItem>
+                      <SelectItem value="risk">Risk</SelectItem>
+                      <SelectItem value="custom">Custom</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Frequency</Label>
+                  <Select
+                    value={newReport.frequency || 'on-demand'}
+                    onValueChange={(v: any) => setNewReport({ ...newReport, frequency: v })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="daily">Daily</SelectItem>
+                      <SelectItem value="weekly">Weekly</SelectItem>
+                      <SelectItem value="monthly">Monthly</SelectItem>
+                      <SelectItem value="on-demand">On Demand</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Description</Label>
+                  <Textarea
+                    value={newReport.description || ''}
+                    onChange={(e) => setNewReport({ ...newReport, description: e.target.value })}
+                  />
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+                <Button onClick={handleCreate} disabled={!newReport.name || createReport.isPending}>
+                  {createReport.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Create
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>}
         </div>
       </div>
 
       {/* KPI Cards */}
       <div className="grid grid-cols-4 gap-4">
-        <KPICard 
-          title="Total Reports" 
-          value={mockReports.length.toString()} 
-          subtitle="Available templates" 
-          icon={FileText} 
-          status="neutral" 
+        <KPICard
+          title="Total Reports"
+          value={(reports?.length || 0).toString()}
+          subtitle="Available templates"
+          icon={FileText}
+          status="neutral"
         />
-        <KPICard 
-          title="Scheduled Reports" 
-          value={scheduledCount.toString()} 
-          subtitle="Auto-generated" 
-          icon={Clock} 
-          status="success" 
+        <KPICard
+          title="Scheduled Reports"
+          value={scheduledCount.toString()}
+          subtitle="Auto-generated"
+          icon={Clock}
+          status="success"
         />
-        <KPICard 
-          title="Generated This Month" 
-          value="47" 
-          subtitle="Reports created" 
-          icon={Activity} 
-          status="neutral" 
+        <KPICard
+          title="Generated This Month"
+          value="4"
+          subtitle="Reports created"
+          icon={Activity}
+          status="neutral"
         />
-        <KPICard 
-          title="Last Updated" 
-          value="2h ago" 
-          subtitle="Data refresh" 
-          icon={RefreshCw} 
-          status="neutral" 
+        <KPICard
+          title="Last Updated"
+          value="Just now"
+          subtitle="Data refresh"
+          icon={RefreshCw}
+          status="neutral"
         />
       </div>
 
       {/* Category Filter */}
       <div className="flex items-center justify-between">
         <ReportCategories
-          selectedCategory={selectedCategory}
-          onCategoryChange={setSelectedCategory}
-          counts={categoryCounts}
+          selectedCategory={selectedCategory as any}
+          onCategoryChange={(c) => setSelectedCategory(c as any)}
+          counts={categoryCounts as any} // Cast if types slightly mismatch
         />
         <div className="relative w-64">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -351,14 +395,23 @@ export function ReportsView() {
           </div>
           <div className="space-y-3 max-h-[600px] overflow-y-auto pr-2">
             {filteredReports.map((report) => (
-              <ReportCard
-                key={report.id}
-                report={report}
-                isSelected={selectedReport?.id === report.id}
-                onSelect={() => setSelectedReport(report)}
-                onGenerate={() => handleGenerate(report)}
-                onExport={() => handleExport(report)}
-              />
+              <div key={report.id} className="relative group">
+                <ReportCard
+                  report={mapToUIReport(report)}
+                  isSelected={selectedReport?.id === report.id}
+                  onSelect={() => setSelectedReport(report)}
+                  onGenerate={() => handleGenerate(report)}
+                  onExport={() => handleExport(report)}
+                />
+                {canDelete && <Button
+                  variant="ghost"
+                  size="iconSm"
+                  className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
+                  onClick={(e) => handleDelete(report.id, e)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>}
+              </div>
             ))}
             {filteredReports.length === 0 && (
               <Card className="p-8 text-center">
@@ -371,7 +424,7 @@ export function ReportsView() {
         {/* Report Preview */}
         <div className="col-span-3">
           <ReportPreview
-            report={selectedReport}
+            report={selectedReport ? mapToUIReport(selectedReport) : null}
             onRefresh={() => {
               if (selectedReport) {
                 toast.success('Refreshing report data...');
@@ -383,10 +436,11 @@ export function ReportsView() {
 
       {/* Schedule Dialog */}
       <ScheduleReportDialog
-        report={selectedReport}
+        report={selectedReport ? mapToUIReport(selectedReport) : null}
         open={scheduleDialogOpen}
         onOpenChange={setScheduleDialogOpen}
       />
+      <ConfirmDialog />
     </div>
   );
 }

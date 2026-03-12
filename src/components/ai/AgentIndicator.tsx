@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import {
   Calendar,
   DollarSign,
@@ -16,6 +16,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { AgentType, AIMessageMetadata } from '@/types/ai-agents';
+import { useAIAgents } from '@/hooks/useAIAgents';
 
 interface AgentIndicatorProps {
   agentType: AgentType | null;
@@ -23,7 +24,23 @@ interface AgentIndicatorProps {
   metadata?: AIMessageMetadata;
 }
 
-const AGENT_CONFIG: Record<AgentType, {
+// Icon mapping for dynamic agent icons
+const ICON_MAP: Record<string, React.ComponentType<{ className?: string }>> = {
+  Calendar,
+  DollarSign,
+  AlertTriangle,
+  Users,
+  Video,
+  FileText,
+  Lightbulb,
+  Target,
+  MessageCircle,
+  Bot,
+  Network,
+};
+
+// Fallback config if database unavailable
+const FALLBACK_AGENT_CONFIG: Record<AgentType, {
   label: string;
   icon: React.ComponentType<{ className?: string }>;
   colorClass: string;
@@ -41,7 +58,35 @@ const AGENT_CONFIG: Record<AgentType, {
   'multi-agent': { label: 'Multi-Agent', icon: Network, colorClass: 'text-primary bg-primary/10' },
 };
 
+
 export function AgentIndicator({ agentType, isProcessing, metadata }: AgentIndicatorProps) {
+  // Load agents from database
+  const { data: agents } = useAIAgents();
+
+  // Build dynamic agent config from database
+  const AGENT_CONFIG = useMemo(() => {
+    if (!agents || agents.length === 0) {
+      return FALLBACK_AGENT_CONFIG;
+    }
+
+    const config: Record<AgentType, {
+      label: string;
+      icon: React.ComponentType<{ className?: string }>;
+      colorClass: string;
+    }> = {} as any;
+
+    agents.forEach((agent) => {
+      const IconComponent = ICON_MAP[agent.icon] || Bot;
+      config[agent.agent_type as AgentType] = {
+        label: agent.label,
+        icon: IconComponent,
+        colorClass: `${agent.color} bg-${agent.color.replace('text-', '')}/10`,
+      };
+    });
+
+    return config;
+  }, [agents]);
+
   if (!agentType) {
     if (isProcessing) {
       return (

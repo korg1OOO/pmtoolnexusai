@@ -1,5 +1,6 @@
-import { useState, useRef, lazy, Suspense } from 'react';
+import { useState, useRef, lazy, Suspense, useEffect } from 'react';
 import { motion } from 'framer-motion';
+import { useSearchParams } from 'react-router-dom';
 import {
   LayoutDashboard,
   Building2,
@@ -7,6 +8,7 @@ import {
   ChevronDown,
   Check,
   Download,
+  Shield,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -19,11 +21,16 @@ import { PDFExporter } from '@/components/common/PDFExporter';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Lazy load dashboard components
-const DashboardView = lazy(() => import('./DashboardView').then(m => ({ default: m.DashboardView })));
-const ExecutiveDashboardView = lazy(() => import('./ExecutiveDashboardView').then(m => ({ default: m.ExecutiveDashboardView })));
-const StrategicDashboardView = lazy(() => import('./StrategicDashboardView').then(m => ({ default: m.StrategicDashboardView })));
+const DashboardView = lazy(() => import('./DashboardView'));
+const ExecutiveDashboardView = lazy(() => import('./ExecutiveDashboardView'));
+const StrategicDashboardView = lazy(() => import('./StrategicDashboardView'));
+const GlobalGovernanceDashboard = lazy(() => import('@/components/governance/GlobalGovernanceDashboard'));
 
-export type DashboardType = 'project' | 'executive' | 'strategic';
+interface DashboardHubProps {
+  onViewChange?: (view: string) => void;
+}
+
+export type DashboardType = 'project' | 'executive' | 'strategic' | 'governance';
 
 interface DashboardOption {
   id: DashboardType;
@@ -51,6 +58,12 @@ const dashboardOptions: DashboardOption[] = [
     description: 'Business case and value analysis',
     icon: Target,
   },
+  {
+    id: 'governance',
+    name: 'Governance Dashboard',
+    description: 'Project health, milestones & budget',
+    icon: Shield,
+  },
 ];
 
 function DashboardSkeleton() {
@@ -77,21 +90,40 @@ function DashboardSkeleton() {
   );
 }
 
-export function DashboardHub() {
+export default function DashboardHub({ onViewChange }: DashboardHubProps) {
   const [activeDashboard, setActiveDashboard] = useState<DashboardType>('project');
   const contentRef = useRef<HTMLDivElement>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const currentDashboard = dashboardOptions.find(d => d.id === activeDashboard)!;
   const CurrentIcon = currentDashboard.icon;
 
+  /* Deep Linking Logic */
+  useEffect(() => {
+    const dashboardParam = searchParams.get('dashboard');
+    if (dashboardParam && ['project', 'executive', 'strategic', 'governance'].includes(dashboardParam)) {
+      setActiveDashboard(dashboardParam as DashboardType);
+    }
+  }, [searchParams]);
+
+  const handleDashboardChange = (type: DashboardType) => {
+    setActiveDashboard(type);
+    setSearchParams(prev => {
+      prev.set('dashboard', type);
+      return prev;
+    }, { replace: true });
+  };
+
   const renderDashboard = () => {
     switch (activeDashboard) {
       case 'project':
-        return <DashboardView />;
+        return <DashboardView onViewChange={onViewChange} />;
       case 'executive':
         return <ExecutiveDashboardView />;
       case 'strategic':
         return <StrategicDashboardView />;
+      case 'governance':
+        return <GlobalGovernanceDashboard />;
       default:
         return <DashboardView />;
     }

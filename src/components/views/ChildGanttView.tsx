@@ -17,6 +17,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useProjectContext } from '@/contexts/ProjectContext';
+import { useTasks } from '@/hooks/useTasks';
+import { Loader2 } from 'lucide-react';
 
 interface ChildTask {
   id: string;
@@ -32,97 +35,90 @@ interface ChildTask {
   level: number;
 }
 
-const mockChildTasks: ChildTask[] = [
-  {
-    id: 'T-010',
-    wbs: '3.1',
-    name: 'Infrastructure Provisioning',
-    type: 'summary',
-    startDate: '2024-06-01',
-    endDate: '2024-07-15',
-    progress: 100,
-    isCritical: true,
-    sprintLink: { id: 'SP-010', name: 'Sprint 10', startDate: '2024-06-03', endDate: '2024-06-16' },
-    level: 0,
-    children: [
-      { id: 'T-010-1', wbs: '3.1.1', name: 'VPC Configuration', type: 'task', startDate: '2024-06-01', endDate: '2024-06-15', progress: 100, level: 1 },
-      { id: 'T-010-2', wbs: '3.1.2', name: 'Kubernetes Cluster', type: 'task', startDate: '2024-06-10', endDate: '2024-07-01', progress: 100, isCritical: true, level: 1 },
-      { id: 'T-010-3', wbs: '3.1.3', name: 'Infrastructure Complete', type: 'milestone', startDate: '2024-07-15', endDate: '2024-07-15', progress: 100, level: 1 },
-    ],
-  },
-  {
-    id: 'T-011',
-    wbs: '3.2',
-    name: 'Application Migration - Wave 1',
-    type: 'summary',
-    startDate: '2024-07-01',
-    endDate: '2024-08-31',
-    progress: 65,
-    isCritical: true,
-    sprintLink: { id: 'SP-012', name: 'Sprint 12', startDate: '2024-08-05', endDate: '2024-08-18' },
-    level: 0,
-    children: [
-      { id: 'T-011-1', wbs: '3.2.1', name: 'Containerize Core Services', type: 'task', startDate: '2024-07-01', endDate: '2024-07-20', progress: 100, level: 1, sprintLink: { id: 'SP-011', name: 'Sprint 11', startDate: '2024-07-08', endDate: '2024-07-21' } },
-      { id: 'T-011-2', wbs: '3.2.2', name: 'API Migration', type: 'task', startDate: '2024-07-15', endDate: '2024-08-15', progress: 60, isCritical: true, level: 1, sprintLink: { id: 'SP-012', name: 'Sprint 12', startDate: '2024-08-05', endDate: '2024-08-18' } },
-      { id: 'T-011-3', wbs: '3.2.3', name: 'Integration Testing', type: 'task', startDate: '2024-08-10', endDate: '2024-08-31', progress: 0, level: 1 },
-    ],
-  },
-  {
-    id: 'T-012',
-    wbs: '3.3',
-    name: 'Application Migration - Wave 2',
-    type: 'summary',
-    startDate: '2024-08-15',
-    endDate: '2024-10-15',
-    progress: 0,
-    level: 0,
-  },
-  {
-    id: 'T-013',
-    wbs: '3.4',
-    name: 'Data Migration',
-    type: 'summary',
-    startDate: '2024-07-15',
-    endDate: '2024-09-30',
-    progress: 40,
-    sprintLink: { id: 'SP-012', name: 'Sprint 12', startDate: '2024-08-05', endDate: '2024-08-18' },
-    level: 0,
-    children: [
-      { id: 'T-013-1', wbs: '3.4.1', name: 'Data Profiling', type: 'task', startDate: '2024-07-15', endDate: '2024-07-31', progress: 100, level: 1 },
-      { id: 'T-013-2', wbs: '3.4.2', name: 'ETL Pipeline', type: 'task', startDate: '2024-08-01', endDate: '2024-09-15', progress: 35, level: 1, sprintLink: { id: 'SP-012', name: 'Sprint 12', startDate: '2024-08-05', endDate: '2024-08-18' } },
-    ],
-  },
-  {
-    id: 'T-014',
-    wbs: '3.5',
-    name: 'Implementation Complete',
-    type: 'milestone',
-    startDate: '2024-10-31',
-    endDate: '2024-10-31',
-    progress: 0,
-    isCritical: true,
-    level: 0,
-  },
-];
+// Mocks removed - using useTasks hook
+
 
 type TimeScale = 'day' | 'week' | 'month';
 
-export function ChildGanttView() {
+export default function ChildGanttView() {
   const [timeScale, setTimeScale] = useState<TimeScale>('week');
   const [showCriticalPath, setShowCriticalPath] = useState(true);
   const [showSprintLinks, setShowSprintLinks] = useState(true);
-  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set(['T-010', 'T-011', 'T-013']));
+  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
+
+  const { settings } = useProjectContext();
+  const { data: tasks, isLoading } = useTasks(settings.id);
+
+  // Transform tasks to ChildTask format (Simple flat mapping for now, assuming useTasks returns a flat list)
+  // In a real implementation, we would build the tree structure based on parent_id
+  const childTasks: ChildTask[] = useMemo(() => {
+    if (!tasks) return [];
+
+    // We only want to display actual children (level > 0 or parent_id !== null)
+    const taskMap = new Map<string, ChildTask>();
+    const allMapped: ChildTask[] = [];
+
+    // First pass
+    tasks.forEach(t => {
+      const mappedTask: ChildTask = {
+        id: t.id,
+        wbs: t.wbs || '1',
+        name: t.name,
+        type: (t.type || 'task') as 'task' | 'milestone' | 'summary',
+        startDate: t.start_date || new Date().toISOString(),
+        endDate: t.end_date || new Date().toISOString(),
+        progress: t.progress || 0,
+        isCritical: t.is_critical || false,
+        level: (t as any).indentation || 0,
+        sprintLink: undefined,
+        children: []
+      };
+      taskMap.set(t.id, mappedTask);
+      allMapped.push(mappedTask);
+    });
+
+    const rootNodes: ChildTask[] = [];
+
+    // Second pass: build tree, but only for tasks we want to show
+    tasks.forEach(t => {
+      const node = taskMap.get(t.id)!;
+      if (t.parent_id && taskMap.has(t.parent_id)) {
+        const parent = taskMap.get(t.parent_id)!;
+        parent.children = parent.children || [];
+        parent.children.push(node);
+      } else if (t.parent_id !== null) {
+        rootNodes.push(node);
+      }
+    });
+
+    // Fallback: If rootNodes is empty but we have children (because they are nested under null parents)
+    if (rootNodes.length === 0) {
+      tasks.forEach(t => {
+        if (t.parent_id === null) {
+          const abstractParent = taskMap.get(t.id);
+          if (abstractParent && abstractParent.children) {
+            rootNodes.push(...abstractParent.children);
+          }
+        }
+      });
+    }
+
+    return rootNodes.sort((a, b) => a.wbs.localeCompare(b.wbs, undefined, { numeric: true }));
+  }, [tasks]);
 
   const dateRange = useMemo(() => {
+    if (!childTasks || childTasks.length === 0) {
+      const now = new Date();
+      const nextMonth = new Date();
+      nextMonth.setDate(now.getDate() + 30);
+      return { start: now, end: nextMonth };
+    }
     const allDates: Date[] = [];
-    const collectDates = (tasks: ChildTask[]) => {
-      tasks.forEach((task) => {
-        allDates.push(new Date(task.startDate));
-        allDates.push(new Date(task.endDate));
-        if (task.children) collectDates(task.children);
-      });
-    };
-    collectDates(mockChildTasks);
+    // Helper not needed if flat list
+    childTasks.forEach((task) => {
+      allDates.push(new Date(task.startDate));
+      allDates.push(new Date(task.endDate));
+    });
 
     const minDate = new Date(Math.min(...allDates.map((d) => d.getTime())));
     const maxDate = new Date(Math.max(...allDates.map((d) => d.getTime())));
@@ -130,7 +126,7 @@ export function ChildGanttView() {
     maxDate.setDate(maxDate.getDate() + 14);
 
     return { start: minDate, end: maxDate };
-  }, []);
+  }, [childTasks]);
 
   const timelineHeaders = useMemo(() => {
     const headers: { label: string; subHeaders: string[]; width: number }[] = [];
@@ -158,25 +154,18 @@ export function ChildGanttView() {
 
   const totalWidth = timelineHeaders.reduce((sum, h) => sum + h.width, 0);
 
-  const flattenTasks = (tasks: ChildTask[], expanded = true): ChildTask[] => {
-    const result: ChildTask[] = [];
-    tasks.forEach((task) => {
-      result.push(task);
-      if (task.children && expandedTasks.has(task.id)) {
-        result.push(...flattenTasks(task.children, true));
-      }
-    });
-    return result;
-  };
+  const visibleTasks = childTasks; // Use flat list from hook metadata structure
 
-  const visibleTasks = flattenTasks(mockChildTasks);
 
   const getBarStyle = (task: ChildTask) => {
     const start = new Date(task.startDate);
     const end = new Date(task.endDate);
     const totalDays = Math.ceil((dateRange.end.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24));
     const startOffset = Math.ceil((start.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24));
-    const duration = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+
+    // Ensure duration respects at least 1 visual day if start == end
+    let duration = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+    if (duration < 0.5 && task.type !== 'milestone') duration = 1;
 
     const left = (startOffset / totalDays) * 100;
     const width = (duration / totalDays) * 100;
@@ -430,11 +419,10 @@ export function ChildGanttView() {
               <div
                 className="absolute top-0 bottom-0 w-0.5 bg-destructive z-10"
                 style={{
-                  left: `${
-                    ((new Date().getTime() - dateRange.start.getTime()) /
-                      (dateRange.end.getTime() - dateRange.start.getTime())) *
+                  left: `${((new Date().getTime() - dateRange.start.getTime()) /
+                    (dateRange.end.getTime() - dateRange.start.getTime())) *
                     100
-                  }%`,
+                    }%`,
                 }}
               >
                 <div className="absolute -top-1 left-1/2 -translate-x-1/2 bg-destructive text-destructive-foreground text-[10px] px-1 rounded">

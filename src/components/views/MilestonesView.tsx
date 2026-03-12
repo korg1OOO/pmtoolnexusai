@@ -1,9 +1,10 @@
 import { useState } from 'react';
+import { usePermissions } from '@/hooks/usePermissions';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Target, 
-  CheckCircle2, 
-  Clock, 
+import {
+  Target,
+  CheckCircle2,
+  Clock,
   AlertTriangle,
   Calendar,
   Users,
@@ -24,10 +25,16 @@ import {
   MoreHorizontal,
   Edit2,
   Link2,
+  Loader2,
+  Trash2,
+  Table,
+  List,
 } from 'lucide-react';
+import { DataRegisterPage } from '@/components/ui/DataRegisterPage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { DynamicDataGrid, type DynamicColumnDef } from '@/components/ui/DynamicDataGrid';
 import { Progress } from '@/components/ui/progress';
 import { KPICard } from '@/components/enterprise/KPICard';
 import { StatusIndicator } from '@/components/enterprise/StatusIndicator';
@@ -39,6 +46,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger
 } from '@/components/ui/dialog';
 import {
   DropdownMenu,
@@ -48,136 +56,26 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
+import { useProjectContext } from '@/contexts/ProjectContext';
+import { useMilestones, Milestone } from '@/hooks/useMilestones';
+import { useStageGates, StageGate, GateCriteria } from '@/hooks/useStageGates';
+import { toast } from 'sonner';
 
-interface StageGate {
-  id: string;
-  name: string;
-  description: string;
-  phase: string;
-  status: 'pending' | 'in-review' | 'approved' | 'rejected' | 'deferred';
-  approvers: Approver[];
-  criteria: GateCriteria[];
-  scheduledDate: string;
-  actualDate?: string;
-  comments: GateComment[];
-}
-
-interface Approver {
-  id: string;
-  name: string;
-  role: string;
-  avatar?: string;
-  decision?: 'approved' | 'rejected' | 'pending';
-  date?: string;
-  comment?: string;
-}
-
-interface GateCriteria {
-  id: string;
-  description: string;
-  status: 'met' | 'not-met' | 'partial' | 'na';
-  evidence?: string;
-}
-
-interface GateComment {
-  id: string;
-  author: string;
-  date: string;
-  content: string;
-}
-
-interface Milestone {
-  id: string;
-  name: string;
-  project: string;
-  status: 'completed' | 'on-track' | 'at-risk' | 'overdue';
-  dueDate: string;
-  owner: string;
-  progress: number;
-  dependencies: number;
-  deliverables: string[];
-  stageGate?: StageGate;
-}
-
-const mockStageGates: StageGate[] = [
-  {
-    id: 'gate-1',
-    name: 'Phase 1 Gate: Discovery Complete',
-    description: 'Approval to proceed from Discovery to Architecture & Design phase',
-    phase: 'Discovery',
-    status: 'approved',
-    scheduledDate: '2024-03-15',
-    actualDate: '2024-03-15',
-    approvers: [
-      { id: 'a1', name: 'Sarah Mitchell', role: 'Project Sponsor', decision: 'approved', date: '2024-03-14', comment: 'Excellent discovery work' },
-      { id: 'a2', name: 'James Wilson', role: 'Technical Director', decision: 'approved', date: '2024-03-15' },
-      { id: 'a3', name: 'Lisa Chen', role: 'Business Owner', decision: 'approved', date: '2024-03-14' },
-    ],
-    criteria: [
-      { id: 'c1', description: 'Current state analysis completed', status: 'met', evidence: 'Document: CSA-Report-v1.pdf' },
-      { id: 'c2', description: 'Infrastructure inventory documented', status: 'met', evidence: 'Spreadsheet: Infra-Inventory.xlsx' },
-      { id: 'c3', description: 'Risk assessment performed', status: 'met', evidence: 'Risk Register updated' },
-      { id: 'c4', description: 'Stakeholder sign-off obtained', status: 'met', evidence: '3/3 stakeholders approved' },
-    ],
-    comments: [
-      { id: 'cm1', author: 'Sarah Mitchell', date: '2024-03-14', content: 'Team did a thorough job on the discovery phase. Ready to proceed.' },
-    ],
-  },
-  {
-    id: 'gate-2',
-    name: 'Phase 2 Gate: Architecture Approved',
-    description: 'Approval of cloud architecture and security framework before implementation',
-    phase: 'Architecture & Design',
-    status: 'in-review',
-    scheduledDate: '2024-05-31',
-    approvers: [
-      { id: 'a1', name: 'Sarah Mitchell', role: 'Project Sponsor', decision: 'pending' },
-      { id: 'a2', name: 'James Wilson', role: 'Technical Director', decision: 'approved', date: '2024-05-28', comment: 'Architecture looks solid' },
-      { id: 'a3', name: 'Lisa Chen', role: 'Business Owner', decision: 'pending' },
-      { id: 'a4', name: 'Mike Security', role: 'Security Officer', decision: 'approved', date: '2024-05-29' },
-    ],
-    criteria: [
-      { id: 'c1', description: 'Cloud architecture documented and reviewed', status: 'met', evidence: 'Architecture diagrams v2.0' },
-      { id: 'c2', description: 'Security framework meets compliance requirements', status: 'met', evidence: 'Security Audit Report' },
-      { id: 'c3', description: 'Cost estimates within approved budget', status: 'partial', evidence: '5% over initial estimate - pending approval' },
-      { id: 'c4', description: 'Disaster recovery plan approved', status: 'met' },
-      { id: 'c5', description: 'Performance requirements defined', status: 'not-met' },
-    ],
-    comments: [
-      { id: 'cm1', author: 'James Wilson', date: '2024-05-28', content: 'Architecture is well-designed. Minor concerns about cost but acceptable.' },
-      { id: 'cm2', author: 'Mike Security', date: '2024-05-29', content: 'Security requirements fully addressed. Approved from security perspective.' },
-    ],
-  },
-  {
-    id: 'gate-3',
-    name: 'Phase 3 Gate: Implementation Complete',
-    description: 'Verification that all implementation milestones are met before testing',
-    phase: 'Implementation',
-    status: 'pending',
-    scheduledDate: '2024-10-31',
-    approvers: [
-      { id: 'a1', name: 'Sarah Mitchell', role: 'Project Sponsor', decision: 'pending' },
-      { id: 'a2', name: 'James Wilson', role: 'Technical Director', decision: 'pending' },
-      { id: 'a3', name: 'QA Lead', role: 'Quality Assurance', decision: 'pending' },
-    ],
-    criteria: [
-      { id: 'c1', description: 'All Wave 1 migrations completed', status: 'not-met' },
-      { id: 'c2', description: 'All Wave 2 migrations completed', status: 'not-met' },
-      { id: 'c3', description: 'Data migration validated', status: 'not-met' },
-      { id: 'c4', description: 'Integration testing passed', status: 'not-met' },
-    ],
-    comments: [],
-  },
+const STANDARD_COLUMNS: DynamicColumnDef<Milestone>[] = [
+  { key: 'name', label: 'Milestone Name', width: 300, type: 'text', sticky: true },
+  { key: 'status', label: 'Status', width: 140, type: 'select', options: ['on-track', 'at-risk', 'overdue', 'completed'] },
+  { key: 'due_date', label: 'Due Date', width: 140, type: 'date' },
+  { key: 'progress', label: 'Progress (%)', width: 120, type: 'text' },
 ];
 
-const mockMilestones: Milestone[] = [
-  { id: 'ms-1', name: 'Phase 1 Complete', project: 'Enterprise Cloud Migration', status: 'completed', dueDate: '2024-03-15', owner: 'Emily Johnson', progress: 100, dependencies: 0, deliverables: ['UI Mockups', 'Technical Specs', 'Stakeholder Sign-off'], stageGate: mockStageGates[0] },
-  { id: 'ms-2', name: 'Architecture Approved', project: 'Enterprise Cloud Migration', status: 'on-track', dueDate: '2024-05-31', owner: 'Robert Kim', progress: 75, dependencies: 2, deliverables: ['Architecture Docs', 'Security Framework', 'Cost Analysis'], stageGate: mockStageGates[1] },
-  { id: 'ms-3', name: 'Wave 1 Migration Complete', project: 'Enterprise Cloud Migration', status: 'at-risk', dueDate: '2024-08-31', owner: 'Anna Martinez', progress: 45, dependencies: 3, deliverables: ['Migration Report', 'Data Validation', 'Rollback Plan'] },
-  { id: 'ms-4', name: 'Implementation Complete', project: 'Enterprise Cloud Migration', status: 'on-track', dueDate: '2024-10-31', owner: 'Mark Thompson', progress: 20, dependencies: 1, deliverables: ['All Migrations', 'Integration Tests', 'Performance Baseline'], stageGate: mockStageGates[2] },
-  { id: 'ms-5', name: 'Go-Live Ready', project: 'Enterprise Cloud Migration', status: 'on-track', dueDate: '2024-12-15', owner: 'Sophie Turner', progress: 0, dependencies: 2, deliverables: ['UAT Complete', 'Training', 'Cutover Plan'] },
-];
+// Removed local interfaces in favor of hook types
+
+
+// Mocks removed - using useStageGates hook
+
 
 const getStatusColor = (status: Milestone['status']) => {
   switch (status) {
@@ -216,147 +114,219 @@ const getCriteriaIcon = (status: GateCriteria['status']) => {
   }
 };
 
-export function MilestonesView() {
-  const [viewMode, setViewMode] = useState<'timeline' | 'list' | 'gates'>('timeline');
+export default function MilestonesView() {
+  const { settings } = useProjectContext();
+  const { data: milestones, isLoading: milestonesLoading, createMilestone, updateMilestone, deleteMilestone } = useMilestones(settings.id);
+  const { gates, isLoading: gatesLoading, approveGate } = useStageGates(settings.id);
+  const { can } = usePermissions(settings?.id);
+  const canCreate = can('milestone.create');
+  const canEdit = can('milestone.edit');
+  const canDelete = can('milestone.delete');
+  const isLoading = milestonesLoading || gatesLoading;
+
+  const [subViewMode, setSubViewMode] = useState<'timeline' | 'list' | 'gates'>('timeline');
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
+  const [customColumns, setCustomColumns] = useState<DynamicColumnDef<Milestone>[]>([]);
   const [selectedGate, setSelectedGate] = useState<StageGate | null>(null);
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
   const [approvalComment, setApprovalComment] = useState('');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
-  const filteredMilestones = filterStatus 
-    ? mockMilestones.filter(m => m.status === filterStatus)
-    : mockMilestones;
+  // Creation State
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [newMilestone, setNewMilestone] = useState<Partial<Milestone>>({
+    name: '',
+    status: 'on-track',
+    due_date: new Date().toISOString().split('T')[0],
+    progress: 0,
+    project_id: settings.id
+  });
+
+  const filteredMilestones = milestones ? (filterStatus
+    ? milestones.filter(m => m.status === filterStatus)
+    : milestones) : [];
 
   const statusCounts = {
-    completed: mockMilestones.filter(m => m.status === 'completed').length,
-    onTrack: mockMilestones.filter(m => m.status === 'on-track').length,
-    atRisk: mockMilestones.filter(m => m.status === 'at-risk').length,
-    overdue: mockMilestones.filter(m => m.status === 'overdue').length,
+    completed: milestones?.filter(m => m.status === 'completed').length || 0,
+    onTrack: milestones?.filter(m => m.status === 'on-track').length || 0,
+    atRisk: milestones?.filter(m => m.status === 'at-risk').length || 0,
+    overdue: milestones?.filter(m => m.status === 'overdue').length || 0,
   };
 
-  const handleApprove = (gate: StageGate) => {
+  const handleCellSave = async (rowId: string, key: string, value: string) => {
+    const isCustom = !STANDARD_COLUMNS.find(c => c.key === key);
+    const item = milestones?.find(i => i.id === rowId);
+    if (!item) return;
+
+    if (isCustom) {
+      const cf = { ...(item.custom_fields ?? {}), [key]: value };
+      await updateMilestone.mutateAsync({ id: rowId, updates: { custom_fields: cf } });
+    } else {
+      if (key === 'progress') {
+        const numVal = parseInt(value, 10);
+        await updateMilestone.mutateAsync({ id: rowId, updates: { [key]: isNaN(numVal) ? undefined : numVal } });
+      } else {
+        await updateMilestone.mutateAsync({ id: rowId, updates: { [key]: value } });
+      }
+    }
+  };
+
+  const handleCreate = async () => {
+    try {
+      await createMilestone.mutateAsync({ ...newMilestone, project_id: settings.id } as any);
+      setIsCreateOpen(false);
+      setNewMilestone({
+        name: '',
+        status: 'on-track',
+        due_date: new Date().toISOString().split('T')[0],
+        progress: 0,
+        project_id: settings.id
+      });
+      toast.success('Milestone created');
+    } catch (e) {
+      // error handled in hook
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    setDeleteConfirmId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirmId) return;
+    await deleteMilestone.mutateAsync(deleteConfirmId);
+    toast.success('Milestone deleted');
+    setDeleteConfirmId(null);
+  };
+
+  const handleApprove = async (gate: StageGate) => {
+    // Determine if we approve or start review
+    if (gate.status === 'pending') {
+      // Logic to start review could be added here
+    }
     setSelectedGate(gate);
     setApprovalDialogOpen(true);
   };
 
-  return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">Milestones & Stage Gates</h1>
-          <p className="text-sm text-muted-foreground mt-1">Track key deliverables and approval checkpoints</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Filter className="h-4 w-4 mr-2" />
-            Filter
-          </Button>
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-2" />
-            Add Milestone
-          </Button>
-        </div>
+  const confirmApproval = async (status: 'approved' | 'rejected') => {
+    if (!selectedGate) return;
+    try {
+      await approveGate.mutateAsync({
+        gateId: selectedGate.id,
+        status,
+        comments: approvalComment
+      });
+      setApprovalDialogOpen(false);
+      setApprovalComment('');
+    } catch (e) {
+      // handled in hook
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
+    );
+  }
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-4 gap-4">
-        <KPICard 
-          title="Total Milestones" 
-          value={mockMilestones.length.toString()} 
-          subtitle="Across all projects" 
-          icon={Target} 
-          status="neutral" 
-        />
-        <KPICard 
-          title="Completed" 
-          value={statusCounts.completed.toString()} 
-          subtitle={`${Math.round((statusCounts.completed / mockMilestones.length) * 100)}% completion rate`}
-          icon={CheckCircle2} 
-          status="success" 
-        />
-        <KPICard 
-          title="Stage Gates" 
-          value={mockStageGates.length.toString()} 
-          subtitle={`${mockStageGates.filter(g => g.status === 'in-review').length} awaiting approval`}
-          icon={Shield} 
-          status="neutral" 
-        />
-        <KPICard 
-          title="At Risk / Overdue" 
-          value={(statusCounts.atRisk + statusCounts.overdue).toString()} 
-          subtitle={`${statusCounts.overdue} overdue`}
-          icon={AlertTriangle} 
-          status={statusCounts.overdue > 0 ? 'error' : 'warning'} 
-        />
-      </div>
+  const toolbarFilters = (
+    <div className="flex items-center gap-2 h-8">
+      <Badge
+        variant={filterStatus === null ? 'default' : 'outline'}
+        className="cursor-pointer text-[10px] h-full flex items-center"
+        onClick={() => setFilterStatus(null)}
+      >
+        All ({milestones?.length || 0})
+      </Badge>
+      <Badge
+        variant={filterStatus === 'completed' ? 'completed' : 'outline'}
+        className="cursor-pointer text-[10px] h-full flex items-center"
+        onClick={() => setFilterStatus('completed')}
+      >
+        Completed ({statusCounts.completed})
+      </Badge>
+      <Badge
+        variant={filterStatus === 'on-track' ? 'active' : 'outline'}
+        className="cursor-pointer text-[10px] h-full flex items-center"
+        onClick={() => setFilterStatus('on-track')}
+      >
+        On Track ({statusCounts.onTrack})
+      </Badge>
+      <Badge
+        variant={filterStatus === 'at-risk' ? 'warning' : 'outline'}
+        className="cursor-pointer text-[10px] h-full flex items-center"
+        onClick={() => setFilterStatus('at-risk')}
+      >
+        At Risk ({statusCounts.atRisk})
+      </Badge>
+      <Badge
+        variant={filterStatus === 'overdue' ? 'critical' : 'outline'}
+        className="cursor-pointer text-[10px] h-full flex items-center"
+        onClick={() => setFilterStatus('overdue')}
+      >
+        Overdue ({statusCounts.overdue})
+      </Badge>
+    </div>
+  );
 
-      {/* View Toggle */}
-      <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">
-        {(['timeline', 'list', 'gates'] as const).map((mode) => (
-          <button
-            key={mode}
-            onClick={() => setViewMode(mode)}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-all capitalize ${
-              viewMode === mode 
-                ? 'bg-background text-foreground shadow-sm' 
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            {mode === 'gates' ? 'Stage Gates' : mode}
-          </button>
-        ))}
-      </div>
+  const listModeControls = (
+    <div className="flex gap-1 p-1 bg-muted rounded-lg h-8 items-center border">
+      {(['timeline', 'list', 'gates'] as const).map((mode) => (
+        <button
+          key={mode}
+          onClick={() => setSubViewMode(mode)}
+          className={cn('px-3 py-1 rounded text-[10px] font-medium transition-all capitalize', subViewMode === mode ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground')}
+        >
+          {mode === 'gates' ? 'Stage Gates' : mode}
+        </button>
+      ))}
+    </div>
+  );
 
-      {/* Status Filters */}
-      {viewMode !== 'gates' && (
-        <div className="flex gap-2">
-          <Badge 
-            variant={filterStatus === null ? 'default' : 'outline'} 
-            className="cursor-pointer"
-            onClick={() => setFilterStatus(null)}
-          >
-            All ({mockMilestones.length})
-          </Badge>
-          <Badge 
-            variant={filterStatus === 'completed' ? 'completed' : 'outline'} 
-            className="cursor-pointer"
-            onClick={() => setFilterStatus('completed')}
-          >
-            Completed ({statusCounts.completed})
-          </Badge>
-          <Badge 
-            variant={filterStatus === 'on-track' ? 'active' : 'outline'} 
-            className="cursor-pointer"
-            onClick={() => setFilterStatus('on-track')}
-          >
-            On Track ({statusCounts.onTrack})
-          </Badge>
-          <Badge 
-            variant={filterStatus === 'at-risk' ? 'warning' : 'outline'} 
-            className="cursor-pointer"
-            onClick={() => setFilterStatus('at-risk')}
-          >
-            At Risk ({statusCounts.atRisk})
-          </Badge>
-          <Badge 
-            variant={filterStatus === 'overdue' ? 'critical' : 'outline'} 
-            className="cursor-pointer"
-            onClick={() => setFilterStatus('overdue')}
-          >
-            Overdue ({statusCounts.overdue})
-          </Badge>
-        </div>
-      )}
+  const kpiCards = (
+    <div className="grid grid-cols-4 gap-4">
+      <KPICard
+        title="Total Milestones"
+        value={(milestones?.length || 0).toString()}
+        subtitle="Project milestones"
+        icon={Target}
+        status="neutral"
+      />
+      <KPICard
+        title="Completed"
+        value={statusCounts.completed.toString()}
+        subtitle={`${milestones?.length ? Math.round((statusCounts.completed / (milestones.length || 1)) * 100) : 0}% completion`}
+        icon={CheckCircle2}
+        status="success"
+      />
+      <KPICard
+        title="Stage Gates"
+        value={(gates?.length || 0).toString()}
+        subtitle={`${gates?.filter(g => g.status === 'in-review').length || 0} awaiting approval`}
+        icon={Shield}
+        status="neutral"
+      />
+      <KPICard
+        title="At Risk / Overdue"
+        value={(statusCounts.atRisk + statusCounts.overdue).toString()}
+        subtitle={`${statusCounts.overdue} overdue`}
+        icon={AlertTriangle}
+        status={statusCounts.overdue > 0 ? 'error' : 'warning'}
+      />
+    </div>
+  );
 
-      {/* Stage Gates View */}
-      {viewMode === 'gates' && (
+  const listContent = (
+    <div className="flex flex-col h-full space-y-6">
+      {subViewMode === 'gates' && (
         <div className="space-y-6">
-          {mockStageGates.map((gate, index) => {
+          {(gates || []).map((gate, index) => {
             const gateStatus = getGateStatusBadge(gate.status);
-            const metCriteria = gate.criteria.filter(c => c.status === 'met').length;
-            const approvedCount = gate.approvers.filter(a => a.decision === 'approved').length;
-            
+            const metCriteria = gate.criteria?.filter(c => c.status === 'met').length || 0;
+            const approvedCount = gate.approvers?.filter(a => a.status === 'approved').length || 0;
+
             return (
               <motion.div
                 key={gate.id}
@@ -399,72 +369,37 @@ export function MilestonesView() {
                     </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-3 gap-6">
-                      {/* Criteria Progress */}
-                      <div>
-                        <h4 className="text-sm font-medium mb-3">Gate Criteria</h4>
-                        <div className="flex items-center gap-3 mb-2">
-                          <Progress value={(metCriteria / gate.criteria.length) * 100} className="h-2 flex-1" />
-                          <span className="text-sm font-medium">{metCriteria}/{gate.criteria.length}</span>
-                        </div>
-                        <div className="space-y-1">
-                          {gate.criteria.slice(0, 3).map(c => (
-                            <div key={c.id} className="flex items-center gap-2 text-xs">
-                              {getCriteriaIcon(c.status)}
-                              <span className="truncate">{c.description}</span>
-                            </div>
-                          ))}
-                          {gate.criteria.length > 3 && (
-                            <span className="text-xs text-muted-foreground">+{gate.criteria.length - 3} more</span>
-                          )}
-                        </div>
+                    {/* Gate Criteria */}
+                    {gate.criteria && gate.criteria.length > 0 && (
+                      <div className="space-y-2 mb-4">
+                        <p className="text-xs font-semibold uppercase text-muted-foreground">Criteria</p>
+                        {gate.criteria.map((c, i) => (
+                          <div key={i} className="flex items-center gap-2 text-sm">
+                            {getCriteriaIcon(c.status)}
+                            <span className={c.status === 'met' ? 'line-through text-muted-foreground' : ''}>{c.description}</span>
+                          </div>
+                        ))}
                       </div>
-
-                      {/* Approvers */}
-                      <div>
-                        <h4 className="text-sm font-medium mb-3">Approvers</h4>
-                        <div className="flex items-center gap-3 mb-2">
-                          <Progress value={(approvedCount / gate.approvers.length) * 100} className="h-2 flex-1" />
-                          <span className="text-sm font-medium">{approvedCount}/{gate.approvers.length}</span>
-                        </div>
-                        <div className="space-y-1">
-                          {gate.approvers.map(a => (
-                            <div key={a.id} className="flex items-center gap-2 text-xs">
-                              {a.decision === 'approved' ? (
-                                <ThumbsUp className="h-3 w-3 text-success" />
-                              ) : a.decision === 'rejected' ? (
-                                <ThumbsDown className="h-3 w-3 text-destructive" />
-                              ) : (
-                                <Clock className="h-3 w-3 text-muted-foreground" />
-                              )}
-                              <span>{a.name}</span>
-                              <span className="text-muted-foreground">({a.role})</span>
-                            </div>
+                    )}
+                    {/* Approvers */}
+                    {gate.approvers && gate.approvers.length > 0 && (
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold uppercase text-muted-foreground">Approvers</p>
+                        <div className="flex flex-wrap gap-2">
+                          {gate.approvers.map((a, i) => (
+                            <span key={i} className={`text-xs px-2 py-1 rounded-full border ${a.status === 'approved' ? 'bg-green-50 border-green-200 text-green-700' :
+                              a.status === 'rejected' ? 'bg-red-50 border-red-200 text-red-700' :
+                                'bg-muted border-muted-foreground/20'
+                              }`}>
+                              {a.user?.full_name || a.user?.email || a.role || 'Approver'} · {a.status}
+                            </span>
                           ))}
                         </div>
                       </div>
-
-                      {/* Schedule */}
-                      <div>
-                        <h4 className="text-sm font-medium mb-3">Schedule</h4>
-                        <div className="space-y-2">
-                          <div className="flex items-center gap-2 text-sm">
-                            <Calendar className="h-4 w-4 text-muted-foreground" />
-                            <span>Scheduled: {gate.scheduledDate}</span>
-                          </div>
-                          {gate.actualDate && (
-                            <div className="flex items-center gap-2 text-sm text-success">
-                              <CheckCircle2 className="h-4 w-4" />
-                              <span>Completed: {gate.actualDate}</span>
-                            </div>
-                          )}
-                          <div className="flex items-center gap-2 text-sm">
-                            <MessageSquare className="h-4 w-4 text-muted-foreground" />
-                            <span>{gate.comments.length} comments</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                    )}
+                    {((!gate.criteria || gate.criteria.length === 0) && (!gate.approvers || gate.approvers.length === 0)) && (
+                      <p className="text-sm text-muted-foreground">No criteria or approvers defined for this gate.</p>
+                    )}
                   </CardContent>
                 </Card>
               </motion.div>
@@ -474,86 +409,68 @@ export function MilestonesView() {
       )}
 
       {/* Milestones List */}
-      {viewMode === 'list' && (
-        <Card>
+      {subViewMode === 'list' && (
+        <Card className="overflow-hidden">
           <CardContent className="p-0">
             <table className="w-full">
-              <thead className="border-b border-border">
+              <thead className="border-b border-border bg-muted/50">
                 <tr className="text-left text-xs text-muted-foreground uppercase">
-                  <th className="p-4 font-medium">Milestone</th>
-                  <th className="p-4 font-medium">Project</th>
-                  <th className="p-4 font-medium">Status</th>
-                  <th className="p-4 font-medium">Progress</th>
-                  <th className="p-4 font-medium">Due Date</th>
-                  <th className="p-4 font-medium">Owner</th>
-                  <th className="p-4 font-medium">Gate</th>
-                  <th className="p-4"></th>
+                  <th className="p-3 font-medium">Milestone</th>
+                  <th className="p-3 font-medium">Status</th>
+                  <th className="p-3 font-medium">Progress</th>
+                  <th className="p-3 font-medium">Due Date</th>
+                  <th className="p-3"></th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-border">
                 {filteredMilestones.map((milestone) => (
-                  <motion.tr 
-                    key={milestone.id} 
-                    className="border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer"
+                  <motion.tr
+                    key={milestone.id}
+                    className="hover:bg-muted/30 transition-colors cursor-pointer"
                     whileHover={{ backgroundColor: 'hsl(var(--muted) / 0.5)' }}
                   >
-                    <td className="p-4">
+                    <td className="p-3">
                       <div className="flex items-center gap-3">
                         <Flag className="h-4 w-4 text-primary" />
-                        <span className="font-medium">{milestone.name}</span>
+                        <span className="font-medium text-sm">{milestone.name}</span>
                       </div>
                     </td>
-                    <td className="p-4 text-sm text-muted-foreground">{milestone.project}</td>
-                    <td className="p-4">
-                      <Badge variant={getStatusBadgeVariant(milestone.status)}>
+                    <td className="p-3">
+                      <Badge variant={getStatusBadgeVariant(milestone.status)} className="capitalize">
                         {milestone.status.replace('-', ' ')}
                       </Badge>
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                       <div className="flex items-center gap-2">
-                        <Progress value={milestone.progress} className="h-2 w-20" />
-                        <span className="text-sm">{milestone.progress}%</span>
+                        <Progress value={milestone.progress} className="h-1.5 w-20" />
+                        <span className="text-xs font-mono">{milestone.progress}%</span>
                       </div>
                     </td>
-                    <td className="p-4 text-sm">{milestone.dueDate}</td>
-                    <td className="p-4 text-sm">{milestone.owner}</td>
-                    <td className="p-4">
-                      {milestone.stageGate ? (
-                        <Badge variant={getGateStatusBadge(milestone.stageGate.status).variant} className="gap-1">
-                          <Shield className="h-3 w-3" />
-                          Gate
-                        </Badge>
-                      ) : (
-                        <span className="text-muted-foreground text-xs">—</span>
-                      )}
-                    </td>
-                    <td className="p-4">
+                    <td className="p-3 text-xs font-mono text-muted-foreground">{milestone.due_date ? new Date(milestone.due_date).toLocaleDateString() : '—'}</td>
+                    <td className="p-3 text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem>
-                            <Edit2 className="h-4 w-4 mr-2" />
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem>
-                            <Link2 className="h-4 w-4 mr-2" />
-                            Link Items
-                          </DropdownMenuItem>
-                          {milestone.stageGate && (
-                            <DropdownMenuItem onClick={() => setSelectedGate(milestone.stageGate!)}>
-                              <Shield className="h-4 w-4 mr-2" />
-                              Review Gate
-                            </DropdownMenuItem>
-                          )}
+                          {canDelete && <DropdownMenuItem onClick={() => handleDelete(milestone.id)} className="text-destructive">
+                            <Trash2 className="h-4 w-4 mr-2" />
+                            Delete
+                          </DropdownMenuItem>}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>
                   </motion.tr>
                 ))}
+                {filteredMilestones.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                      No milestones found.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </CardContent>
@@ -561,8 +478,13 @@ export function MilestonesView() {
       )}
 
       {/* Timeline View */}
-      {viewMode === 'timeline' && (
+      {subViewMode === 'timeline' && (
         <div className="space-y-4">
+          {filteredMilestones.length === 0 && (
+            <div className="text-center p-8 text-muted-foreground border rounded-lg bg-muted/10 border-dashed">
+              No milestones found. Create one to visualize not just a list, but a timeline.
+            </div>
+          )}
           {filteredMilestones.map((milestone, index) => (
             <motion.div
               key={milestone.id}
@@ -573,9 +495,9 @@ export function MilestonesView() {
             >
               {/* Timeline line */}
               {index < filteredMilestones.length - 1 && (
-                <div className="absolute left-3 top-8 bottom-0 w-0.5 bg-border" />
+                <div className="absolute left-3 top-8 bottom-0 w-px bg-border -ml-px" />
               )}
-              
+
               {/* Timeline dot */}
               <div className="absolute left-0 top-4">
                 <StatusIndicator status={getStatusColor(milestone.status)} pulse={milestone.status !== 'completed'} />
@@ -583,51 +505,27 @@ export function MilestonesView() {
 
               <Card variant="interactive" className="hover:shadow-md transition-shadow">
                 <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                     <div className="space-y-2">
                       <div className="flex items-center gap-3">
-                        <h3 className="font-semibold text-foreground">{milestone.name}</h3>
-                        <Badge variant={getStatusBadgeVariant(milestone.status)}>
+                        <h3 className="font-semibold text-foreground text-sm">{milestone.name}</h3>
+                        <Badge variant={getStatusBadgeVariant(milestone.status)} className="capitalize text-[10px]">
                           {milestone.status.replace('-', ' ')}
                         </Badge>
-                        {milestone.stageGate && (
-                          <Badge 
-                            variant={getGateStatusBadge(milestone.stageGate.status).variant}
-                            className="gap-1 cursor-pointer"
-                            onClick={() => setSelectedGate(milestone.stageGate!)}
-                          >
-                            <Shield className="h-3 w-3" />
-                            Stage Gate
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground">{milestone.project}</p>
-                      
-                      {/* Deliverables */}
-                      <div className="flex flex-wrap gap-2 mt-3">
-                        {milestone.deliverables.map((deliverable, i) => (
-                          <Badge key={i} variant="outline" className="text-xs">
-                            {deliverable}
-                          </Badge>
-                        ))}
                       </div>
                     </div>
 
-                    <div className="text-right space-y-2">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
-                        <span>{milestone.dueDate}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Users className="h-4 w-4" />
-                        <span>{milestone.owner}</span>
+                    <div className="text-right space-y-2 shrink-0">
+                      <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground font-mono">
+                        <Calendar className="h-3.5 w-3.5" />
+                        <span>{milestone.due_date ? new Date(milestone.due_date).toLocaleDateString() : '—'}</span>
                       </div>
                       <div className="mt-3">
-                        <div className="flex items-center justify-end gap-2 mb-1">
-                          <span className="text-xs text-muted-foreground">Progress</span>
-                          <span className="text-sm font-medium">{milestone.progress}%</span>
+                        <div className="flex items-center justify-end gap-2 mb-1.5">
+                          <span className="text-[10px] text-muted-foreground uppercase">Progress</span>
+                          <span className="text-xs font-mono font-medium">{milestone.progress}%</span>
                         </div>
-                        <Progress value={milestone.progress} className="h-2 w-32" />
+                        <Progress value={milestone.progress} className="h-1.5 w-32" />
                       </div>
                     </div>
                   </div>
@@ -639,162 +537,120 @@ export function MilestonesView() {
       )}
 
       {/* Gate Review Dialog */}
-      <Dialog open={!!selectedGate && !approvalDialogOpen} onOpenChange={() => setSelectedGate(null)}>
-        <DialogContent className="max-w-3xl max-h-[80vh] overflow-auto">
-          {selectedGate && (
-            <>
-              <DialogHeader>
-                <div className="flex items-center gap-3">
-                  <Shield className="h-6 w-6 text-primary" />
-                  <div>
-                    <DialogTitle>{selectedGate.name}</DialogTitle>
-                    <DialogDescription>{selectedGate.description}</DialogDescription>
-                  </div>
-                </div>
-              </DialogHeader>
-              
-              <Tabs defaultValue="criteria" className="mt-4">
-                <TabsList>
-                  <TabsTrigger value="criteria">Criteria</TabsTrigger>
-                  <TabsTrigger value="approvers">Approvers</TabsTrigger>
-                  <TabsTrigger value="comments">Comments</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="criteria" className="space-y-4">
-                  {selectedGate.criteria.map(c => (
-                    <div key={c.id} className="flex items-start gap-3 p-3 rounded-lg border">
-                      {getCriteriaIcon(c.status)}
-                      <div className="flex-1">
-                        <p className="font-medium">{c.description}</p>
-                        {c.evidence && (
-                          <p className="text-sm text-muted-foreground mt-1">
-                            Evidence: {c.evidence}
-                          </p>
-                        )}
-                      </div>
-                      <Badge variant={
-                        c.status === 'met' ? 'completed' :
-                        c.status === 'not-met' ? 'critical' :
-                        c.status === 'partial' ? 'warning' : 'secondary'
-                      }>
-                        {c.status.replace('-', ' ')}
-                      </Badge>
-                    </div>
-                  ))}
-                </TabsContent>
-                
-                <TabsContent value="approvers" className="space-y-4">
-                  {selectedGate.approvers.map(a => (
-                    <div key={a.id} className="flex items-start gap-3 p-3 rounded-lg border">
-                      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center text-sm font-medium">
-                        {a.name.split(' ').map(n => n[0]).join('')}
-                      </div>
-                      <div className="flex-1">
-                        <p className="font-medium">{a.name}</p>
-                        <p className="text-sm text-muted-foreground">{a.role}</p>
-                        {a.comment && (
-                          <p className="text-sm mt-2 italic">"{a.comment}"</p>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        {a.decision === 'approved' ? (
-                          <Badge variant="completed">
-                            <ThumbsUp className="h-3 w-3 mr-1" />
-                            Approved
-                          </Badge>
-                        ) : a.decision === 'rejected' ? (
-                          <Badge variant="critical">
-                            <ThumbsDown className="h-3 w-3 mr-1" />
-                            Rejected
-                          </Badge>
-                        ) : (
-                          <Badge variant="outline">
-                            <Clock className="h-3 w-3 mr-1" />
-                            Pending
-                          </Badge>
-                        )}
-                        {a.date && (
-                          <p className="text-xs text-muted-foreground mt-1">{a.date}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </TabsContent>
-                
-                <TabsContent value="comments" className="space-y-4">
-                  {selectedGate.comments.length === 0 ? (
-                    <p className="text-center text-muted-foreground py-8">No comments yet</p>
-                  ) : (
-                    selectedGate.comments.map(c => (
-                      <div key={c.id} className="p-3 rounded-lg border">
-                        <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium">{c.author}</span>
-                          <span className="text-xs text-muted-foreground">{c.date}</span>
-                        </div>
-                        <p className="text-sm">{c.content}</p>
-                      </div>
-                    ))
-                  )}
-                </TabsContent>
-              </Tabs>
-              
-              <DialogFooter className="mt-6">
-                <Button variant="outline" onClick={() => setSelectedGate(null)}>
-                  Close
-                </Button>
-                {selectedGate.status === 'in-review' && (
-                  <>
-                    <Button variant="destructive" onClick={() => setApprovalDialogOpen(true)}>
-                      <ThumbsDown className="h-4 w-4 mr-1" />
-                      Reject
-                    </Button>
-                    <Button onClick={() => setApprovalDialogOpen(true)}>
-                      <ThumbsUp className="h-4 w-4 mr-1" />
-                      Approve
-                    </Button>
-                  </>
-                )}
-              </DialogFooter>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
-
-      {/* Approval Dialog */}
-      <Dialog open={approvalDialogOpen} onOpenChange={setApprovalDialogOpen}>
-        <DialogContent>
+      <Dialog open={!!selectedGate && approvalDialogOpen} onOpenChange={(open) => !open && setApprovalDialogOpen(false)}>
+        <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Submit Gate Decision</DialogTitle>
+            <DialogTitle>Approve Gate: {selectedGate?.name}</DialogTitle>
             <DialogDescription>
-              Provide your decision and any comments for the stage gate review.
+              Provide your decision and comments for this stage gate.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Comment (optional)</label>
+          <div className="py-4 space-y-4">
+            <div className="space-y-2">
+              <Label>Comments / Conditions</Label>
               <Textarea
-                placeholder="Add any comments or conditions for your decision..."
                 value={approvalComment}
                 onChange={(e) => setApprovalComment(e.target.value)}
-                rows={4}
+                placeholder="Enter approval notes or rejection reasons..."
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setApprovalDialogOpen(false)}>
-              Cancel
+            <Button variant="outline" onClick={() => setApprovalDialogOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={() => confirmApproval('rejected')}>Reject</Button>
+            <Button className="bg-success hover:bg-success/90" onClick={() => confirmApproval('approved')}>Approve</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete Milestone</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this milestone? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteConfirmId(null)}>Cancel</Button>
+            <Button variant="destructive" onClick={confirmDelete} disabled={deleteMilestone.isPending}>
+              {deleteMilestone.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
+              Delete
             </Button>
-            <Button variant="destructive">
-              <ThumbsDown className="h-4 w-4 mr-1" />
-              Reject Gate
-            </Button>
-            <Button>
-              <ThumbsUp className="h-4 w-4 mr-1" />
-              Approve Gate
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New Milestone</DialogTitle>
+            <DialogDescription>Create a new key project milestone.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Name</Label>
+              <Input
+                value={newMilestone.name || ''}
+                onChange={(e) => setNewMilestone({ ...newMilestone, name: e.target.value })}
+                placeholder="e.g. Phase 1 Completion"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Due Date</Label>
+              <Input
+                type="date"
+                value={newMilestone.due_date || ''}
+                onChange={(e) => setNewMilestone({ ...newMilestone, due_date: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+            <Button onClick={handleCreate} disabled={!newMilestone.name || createMilestone.isPending}>
+              {createMilestone.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Create
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
+  );
+
+  return (
+    <DataRegisterPage
+      title="Milestones & Stage Gates"
+      description="Track key deliverables and approval checkpoints"
+      icon={Target}
+      iconBgClass="bg-primary/20"
+      iconColorClass="text-primary"
+      toolbarFilters={toolbarFilters}
+      listModeControls={listModeControls}
+      onAddRow={canCreate ? () => setIsCreateOpen(true) : undefined}
+      addLabel="Add Milestone"
+      pdfFilename="milestones"
+      data={filteredMilestones}
+      baseColumns={STANDARD_COLUMNS}
+      customColumns={customColumns}
+      idExtractor={(item) => item.id}
+      customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
+      onCellSave={canEdit ? handleCellSave : undefined}
+      onAddColumn={(col) => {
+        if (customColumns.find(c => c.key === col.key)) {
+          toast.error('Column already exists');
+          return;
+        }
+        setCustomColumns(prev => [...prev, col]);
+        toast.success(`Column "${col.label}" added`);
+      }}
+      onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
+      onDeleteRows={canDelete ? (ids) => {
+        ids.forEach(id => deleteMilestone.mutateAsync(id));
+      } : undefined}
+      emptyStateMessage={filteredMilestones.length === 0 ? 'No milestones found.' : 'No milestones match filters.'}
+      kpiCards={kpiCards}
+      listContent={listContent}
+    />
   );
 }

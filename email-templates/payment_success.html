@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Received</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #ffffff;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            padding: 40px 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #ffffff;
+            margin: 0;
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .success-icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .content {
+            padding: 40px 30px;
+        }
+
+        .success-box {
+            background: #f0fdf4;
+            border-left: 4px solid #10b981;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .success-box h2 {
+            color: #065f46;
+            margin: 0 0 10px 0;
+            font-size: 24px;
+        }
+
+        .invoice-details {
+            background: #f9fafb;
+            padding: 25px;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
+
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid #e5e7eb;
+        }
+
+        .detail-label {
+            color: #6b7280;
+            font-weight: 500;
+        }
+
+        .detail-value {
+            color: #111827;
+            font-weight: 600;
+        }
+
+        .total-row {
+            border-top: 2px solid #10b981;
+            padding-top: 15px;
+            font-size: 18px;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: #10b981;
+            color: #ffffff;
+            padding: 14px 28px;
+            text-decoration: none;
+            border-radius: 8px;
+            font-weight: 600;
+            margin: 20px 10px;
+        }
+
+        .cta-secondary {
+            background: #6b7280;
+        }
+
+        .next-billing {
+            background: #eff6ff;
+            border: 1px solid: #3b82f6;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: center;
+        }
+
+        .footer {
+            background: #f9fafb;
+            padding: 30px;
+            text-align: center;
+            color: #6b7280;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="success-icon">✅</div>
+            <h1>Payment Received</h1>
+        </div>
+
+        <div class="content">
+            <p>Hi {{user_name}},</p>
+
+            <div class="success-box">
+                <h2>Thank you for your payment!</h2>
+                <p style="color: #065f46; margin: 0;">Your payment has been successfully processed.</p>
+            </div>
+
+            <div class="invoice-details">
+                <h3 style="margin-top: 0; color: #111827;">Invoice Details</h3>
+                <div class="detail-row">
+                    <span class="detail-label">Invoice Number</span>
+                    <span class="detail-value">{{invoice_number}}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Date</span>
+                    <span class="detail-value">{{invoice_date}}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Description</span>
+                    <span class="detail-value">{{subscription_tier}} Subscription</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">Billing Period</span>
+                    <span class="detail-value">{{billing_period}}</span>
+                </div>
+                <div class="detail-row total-row">
+                    <span class="detail-label">Total Paid</span>
+                    <span class="detail-value">{{currency}} {{amount}}</span>
+                </div>
+            </div>
+
+            <center>
+                <a href="{{invoice_url}}" class="cta-button">Download Invoice (PDF)</a>
+                <a href="{{portal_url}}" class="cta-button cta-secondary">Manage Subscription</a>
+            </center>
+
+            <div class="next-billing">
+                <p style="margin: 0; color: #1e40af;">
+                    <strong>Next Billing Date:</strong> {{next_billing_date}}
+                </p>
+            </div>
+
+            <p style="margin-top: 30px; color: #6b7280; font-size: 14px;">
+                This payment has been charged to your payment method ending in {{card_last4}}.
+            </p>
+        </div>
+
+        <div class="footer">
+            <p>ProjectOye | Enterprise Project Management</p>
+            <p>Questions? <a href="{{support_url}}">Contact Support</a></p>
+        </div>
+    </div>
+</body>
+
+</html>

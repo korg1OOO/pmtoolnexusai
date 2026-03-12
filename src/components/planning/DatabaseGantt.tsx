@@ -24,17 +24,17 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Skeleton } from '@/components/ui/skeleton';
-import { 
-  DbTask, 
+import {
+  DbTask,
   DbDependency,
-  useTasks, 
+  useTasks,
   useUpdateTask,
   useDependencies,
   useSaveProjectBaseline,
   useBaselines,
 } from '@/hooks/useTasks';
-import { 
-  useResources, 
+import {
+  useResources,
   useResourceAssignments,
   useTaskResourceAssignments,
   useCreateResourceAssignment,
@@ -102,37 +102,39 @@ interface LinkDraggingState {
 
 interface DatabaseGanttProps {
   projectId: string;
+  scenarioId?: string | null;
+  onSelectionChange?: (selectedTasks: DbTask[]) => void;
 }
 
-export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
-  const { data: tasks = [], isLoading, error } = useTasks(projectId);
-  const { data: dependencies = [] } = useDependencies(projectId);
+export function DatabaseGantt({ projectId, scenarioId = null, onSelectionChange }: DatabaseGanttProps) {
+  const { data: tasks = [], isLoading, error } = useTasks(projectId, scenarioId);
+  const { data: dependencies = [] } = useDependencies(projectId, scenarioId);
   const updateTask = useUpdateTask();
   const saveBaseline = useSaveProjectBaseline();
   const { triggerSchedule } = useScheduleTrigger(projectId);
-  
+
   // Auth for current user
   const { user } = useAuth();
-  
+
   // Presence for collaboration
   const { users: presenceUsers, startEditing, stopEditing, updateCursor } = usePresenceContext();
-  
+
   // Resource hooks for task info dialog
   const { data: resources = [] } = useResources(projectId);
   const { data: allAssignments = [] } = useTaskResourceAssignments(projectId);
   const [selectedTaskAssignments, setSelectedTaskAssignments] = useState<ResourceAssignment[]>([]);
-  
+
   // Undo/redo history
   const history = useGanttHistory();
-  
+
   // Resource leveling
   const { levelResources, isLeveling } = useResourceLeveling(projectId);
-  
+
   // Dependency mutations
   const createDependency = useCreateDependency();
   const deleteDependency = useDeleteDependency();
   const updateDependency = useUpdateDependency();
-  
+
   const [timeScale, setTimeScale] = useState<TimeScale>('week');
   const [showBaseline, setShowBaseline] = useState(false);
   const [showCriticalPath, setShowCriticalPath] = useState(true);
@@ -149,19 +151,26 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
   const [selectedTask, setSelectedTask] = useState<DbTask | null>(null);
   const [taskInfoOpen, setTaskInfoOpen] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
-  
+  const [selectedTaskIds, setSelectedTaskIds] = useState<Set<string>>(new Set());
+
+  const handleTaskClick = (task: DbTask) => {
+    const newSet = new Set([task.id]); // Single selection for Gantt for now
+    setSelectedTaskIds(newSet);
+    onSelectionChange?.([task]);
+  };
+
   // Conflict resolution dialog state
   const [conflictDialogOpen, setConflictDialogOpen] = useState(false);
   const [conflictLockedBy, setConflictLockedBy] = useState<PresenceUser | null>(null);
   const [conflictTaskName, setConflictTaskName] = useState('');
   const [pendingEditAction, setPendingEditAction] = useState<(() => void) | null>(null);
-  
+
   const ganttRef = useRef<HTMLDivElement>(null);
 
   // Track cursor movements for collaboration
   const handleGanttMouseMove = useCallback((e: React.MouseEvent) => {
     if (!ganttRef.current || !showCollaborators) return;
-    
+
     const rect = ganttRef.current.getBoundingClientRect();
     updateCursor({
       x: e.clientX,
@@ -183,7 +192,7 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
   // Build hierarchical structure
   const visibleTasks = useMemo(() => {
     const childrenMap = new Map<string | null, DbTask[]>();
-    
+
     tasks.forEach(task => {
       const parentId = task.parent_id;
       if (!childrenMap.has(parentId)) {
@@ -195,14 +204,14 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
     const flatten = (parentId: string | null, level: number): DbTask[] => {
       const children = childrenMap.get(parentId) || [];
       const result: DbTask[] = [];
-      
+
       children.forEach(task => {
         result.push({ ...task, level });
         if (task.expanded) {
           result.push(...flatten(task.id, level + 1));
         }
       });
-      
+
       return result;
     };
 
@@ -290,7 +299,10 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
     const start = new Date(task.start_date);
     const end = new Date(task.end_date);
     const startOffset = Math.ceil((start.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24));
-    const duration = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+
+    // Ensure duration is always at least 1 visual day if start == end or calculated duration is 0
+    let duration = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    if (duration < 1 && task.type !== 'milestone') duration = 1;
 
     const left = (startOffset / totalDays) * 100;
     const width = (duration / totalDays) * 100;
@@ -301,7 +313,7 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
   // Calculate slack bar position (extends from task end to late finish)
   const getSlackBarStyle = useCallback((task: DbTask) => {
     if (!task.late_finish || !task.total_slack || task.total_slack <= 0) return null;
-    
+
     const taskEnd = new Date(task.end_date);
     const lateFinish = new Date(task.late_finish);
     const startOffset = Math.ceil((taskEnd.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24));
@@ -323,15 +335,16 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
   // Calculate baseline bar position
   const getBaselineBarStyle = useCallback((task: DbTask) => {
     if (!task.early_start) return null; // Using early_start as baseline placeholder
-    
+
     // For demo, show baseline slightly offset from actual
     const start = new Date(task.start_date);
     const end = new Date(task.end_date);
     // Simulate baseline being a few days earlier
     start.setDate(start.getDate() - 2);
-    
+
     const startOffset = Math.ceil((start.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24));
-    const duration = Math.max(1, Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)));
+    let duration = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    if (duration < 1 && task.type !== 'milestone') duration = 1;
 
     const left = (startOffset / totalDays) * 100;
     const width = (duration / totalDays) * 100;
@@ -342,11 +355,11 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
   // Get non-working day positions for shading
   const nonWorkingDays = useMemo(() => {
     if (!showNonWorkingTime || timeScale !== 'day') return [];
-    
+
     const days: { left: string; width: string }[] = [];
     const current = new Date(dateRange.start);
     const dayWidth = 100 / totalDays;
-    
+
     let dayIndex = 0;
     while (current <= dateRange.end) {
       if (isWeekend(current)) {
@@ -358,7 +371,7 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
       current.setDate(current.getDate() + 1);
       dayIndex++;
     }
-    
+
     return days;
   }, [dateRange, totalDays, showNonWorkingTime, timeScale]);
 
@@ -380,7 +393,7 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
   const handleMouseDown = (e: React.MouseEvent, task: DbTask, type: DraggingState['type']) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     // Check if task is locked by another user
     const { locked, lockedBy } = isTaskLockedByOther(task.id);
     if (locked) {
@@ -400,7 +413,7 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
       setConflictDialogOpen(true);
       return;
     }
-    
+
     handleStartEditing(task.id);
     setDragging({
       taskId: task.id,
@@ -443,14 +456,14 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
 
     const rect = ganttRef.current.getBoundingClientRect();
     const dx = 0; // We need to track the final position
-    
+
     // For now, just save the current position
     const task = tasks.find(t => t.id === dragging.taskId);
     if (task) {
       // Calculate final dates based on drag
       // This is simplified - in production you'd track the final mouse position
     }
-    
+
     handleStopEditing();
     setDragging(null);
   }, [dragging, tasks, handleStopEditing]);
@@ -489,10 +502,10 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
   const handleLinkDragStart = (e: React.MouseEvent, taskId: string, taskIndex: number, side: 'start' | 'end') => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     const rect = ganttRef.current?.getBoundingClientRect();
     if (!rect) return;
-    
+
     setLinkDragging({
       fromTaskId: taskId,
       fromTaskIndex: taskIndex,
@@ -506,7 +519,7 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
 
   const handleLinkDragMove = useCallback((e: MouseEvent) => {
     if (!linkDragging || !ganttRef.current) return;
-    
+
     const rect = ganttRef.current.getBoundingClientRect();
     setLinkDragging(prev => prev ? {
       ...prev,
@@ -588,12 +601,12 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
       toast.error('Please enter a baseline name');
       return;
     }
-    
+
     await saveBaseline.mutateAsync({
       projectId,
       name: baselineName,
     });
-    
+
     setBaselineDialogOpen(false);
     setBaselineName('');
   };
@@ -602,7 +615,7 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
   const handleUndo = useCallback(async () => {
     const action = history.popUndo();
     if (!action) return;
-    
+
     history.setIsUndoing(true);
     try {
       switch (action.type) {
@@ -664,7 +677,7 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
   const handleRedo = useCallback(async () => {
     const action = history.popRedo();
     if (!action) return;
-    
+
     history.setIsUndoing(true);
     try {
       switch (action.type) {
@@ -731,9 +744,9 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
   const handleUpdateDependencyType = async (dependencyId: string, type: DependencyType) => {
     const dep = dependencies.find(d => d.id === dependencyId);
     if (!dep) return;
-    
+
     history.recordDependencyUpdate(dependencyId, { type: dep.type }, { type });
-    
+
     await updateDependency.mutateAsync({
       dependencyId,
       projectId,
@@ -745,9 +758,9 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
   const handleUpdateDependencyLag = async (dependencyId: string, lag: number) => {
     const dep = dependencies.find(d => d.id === dependencyId);
     if (!dep) return;
-    
+
     history.recordDependencyUpdate(dependencyId, { lag: dep.lag }, { lag });
-    
+
     await updateDependency.mutateAsync({
       dependencyId,
       projectId,
@@ -759,9 +772,9 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
   const handleDeleteDependency = async (dependencyId: string) => {
     const dep = dependencies.find(d => d.id === dependencyId);
     if (!dep) return;
-    
+
     history.recordDependencyDelete(dependencyId, dep);
-    
+
     await deleteDependency.mutateAsync({
       dependencyId,
       projectId,
@@ -784,7 +797,7 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
         handleRedo();
       }
     };
-    
+
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [handleUndo, handleRedo]);
@@ -792,34 +805,34 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
   // Calculate dependency lines
   const dependencyLines = useMemo(() => {
     if (!showDependencies) return [];
-    
-    const lines: { 
+
+    const lines: {
       dependency: DbDependency;
-      from: DbTask; 
-      to: DbTask; 
-      fromIndex: number; 
-      toIndex: number; 
+      from: DbTask;
+      to: DbTask;
+      fromIndex: number;
+      toIndex: number;
       type: string;
     }[] = [];
-    
+
     visibleTasks.forEach((task, toIndex) => {
       const taskDeps = dependencies.filter(d => d.task_id === task.id);
       taskDeps.forEach(dep => {
         const fromTask = visibleTasks.find(t => t.id === dep.predecessor_id);
         if (fromTask) {
           const fromIndex = visibleTasks.indexOf(fromTask);
-          lines.push({ 
+          lines.push({
             dependency: dep,
-            from: fromTask, 
-            to: task, 
-            fromIndex, 
-            toIndex, 
-            type: dep.type 
+            from: fromTask,
+            to: task,
+            fromIndex,
+            toIndex,
+            type: dep.type
           });
         }
       });
     });
-    
+
     return lines;
   }, [visibleTasks, dependencies, showDependencies]);
 
@@ -863,8 +876,8 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
           <div className="w-px h-6 bg-border mx-2" />
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="iconSm"
                 onClick={handleUndo}
                 disabled={!history.canUndo}
@@ -876,8 +889,8 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
           </Tooltip>
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button 
-                variant="ghost" 
+              <Button
+                variant="ghost"
                 size="iconSm"
                 onClick={handleRedo}
                 disabled={!history.canRedo}
@@ -938,11 +951,11 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-          
+
           <Tooltip>
             <TooltipTrigger asChild>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 size="sm"
                 onClick={handleResourceLeveling}
                 disabled={isLeveling}
@@ -957,7 +970,7 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
             </TooltipTrigger>
             <TooltipContent>Resolve over-allocations by delaying lower-priority tasks</TooltipContent>
           </Tooltip>
-          
+
           <Button variant="outline" size="sm" onClick={() => setBaselineDialogOpen(true)}>
             Save Baseline
           </Button>
@@ -974,8 +987,8 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
       )}
 
       {/* Gantt Container */}
-      <div 
-        className="flex-1 overflow-auto" 
+      <div
+        className="flex-1 overflow-auto"
         ref={ganttRef}
         onMouseMove={handleGanttMouseMove}
       >
@@ -998,7 +1011,7 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                   (u) => u.isEditing && u.editingTaskId === task.id && u.id !== user?.id
                 );
                 const isLocked = !!lockedBy;
-                
+
                 return (
                   <div
                     key={task.id}
@@ -1006,11 +1019,13 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                       'h-10 border-b flex items-center px-2 hover:bg-muted/30 transition-colors gap-2',
                       task.is_critical && showCriticalPath && 'border-l-2 border-l-destructive',
                       hoveredTask === task.id && 'bg-muted/50',
-                      isLocked && 'bg-warning/10'
+                      isLocked && 'bg-warning/10',
+                      selectedTaskIds.has(task.id) && 'bg-primary/10'
                     )}
                     style={{ paddingLeft: task.level * 16 + 8 }}
                     onMouseEnter={() => setHoveredTask(task.id)}
                     onMouseLeave={() => setHoveredTask(null)}
+                    onClick={() => handleTaskClick(task)}
                   >
                     <span
                       className={cn(
@@ -1022,10 +1037,10 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                       {task.name}
                     </span>
                     {isLocked && (
-                      <TaskLockIndicator 
-                        taskId={task.id} 
-                        users={presenceUsers} 
-                        currentUserId={user?.id} 
+                      <TaskLockIndicator
+                        taskId={task.id}
+                        users={presenceUsers}
+                        currentUserId={user?.id}
                       />
                     )}
                   </div>
@@ -1090,7 +1105,7 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                 </div>
 
                 {/* Dependency Lines - Interactive */}
-                <div 
+                <div
                   className="absolute inset-0"
                   style={{ width: totalWidth, height: visibleTasks.length * 40 }}
                 >
@@ -1105,13 +1120,13 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                       const toX = parseFloat(toStyle.left);
                       const fromY = line.fromIndex * 40 + 20;
                       const toY = line.toIndex * 40 + 20;
-                      
+
                       const midX = Math.min(fromX + 2, toX - 2);
                       const pathD = `M ${(fromX / 100) * totalWidth} ${fromY} 
                                     L ${(midX / 100) * totalWidth + 10} ${fromY}
                                     L ${(midX / 100) * totalWidth + 10} ${toY}
                                     L ${(toX / 100) * totalWidth} ${toY}`;
-                      
+
                       return (
                         <DependencyContextMenu
                           key={i}
@@ -1168,7 +1183,7 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                     })}
                   </svg>
                 </div>
-                
+
                 {/* Link dragging line SVG */}
                 {linkDragging && (
                   <svg
@@ -1209,13 +1224,13 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                     const hasDeadline = task.deadline;
                     const isOverdue = hasDeadline && new Date(task.end_date) > new Date(task.deadline);
                     const isCurrentLinkTarget = linkTargetTask === task.id;
-                    
+
                     // Check if task is locked by another user
                     const lockedBy = presenceUsers.find(
                       (u) => u.isEditing && u.editingTaskId === task.id && u.id !== user?.id
                     );
                     const isLocked = !!lockedBy;
-                    
+
                     // Mouse down handler that respects locking
                     const handleTaskMouseDown = (e: React.MouseEvent, type: DraggingState['type']) => {
                       if (isLocked) {
@@ -1225,7 +1240,7 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                       handleStartEditing(task.id);
                       handleMouseDown(e, task, type);
                     };
-                    
+
                     return (
                       <div
                         key={task.id}
@@ -1233,7 +1248,8 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                           'h-10 border-b relative',
                           hoveredTask === task.id && 'bg-muted/20',
                           isCurrentLinkTarget && 'bg-primary/10 ring-1 ring-primary/50',
-                          isLocked && 'bg-warning/5'
+                          isLocked && 'bg-warning/5',
+                          selectedTaskIds.has(task.id) && 'bg-primary/5 mt-0.5 mb-0.5 border-primary/20 ring-1 ring-primary/20'
                         )}
                         onMouseEnter={() => {
                           setHoveredTask(task.id);
@@ -1249,6 +1265,7 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                         }}
                         onDoubleClick={() => handleTaskDoubleClick(task)}
                         onMouseUp={handleStopEditing}
+                        onClick={(e) => { e.stopPropagation(); handleTaskClick(task); }}
                       >
                         {/* Baseline Bar (shown behind actual) */}
                         {showBaseline && baselineStyle && task.type === 'task' && (
@@ -1345,7 +1362,7 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                                     {lockedBy?.displayName}
                                   </div>
                                 )}
-                                
+
                                 {/* Left link handle */}
                                 <div
                                   className={cn(
@@ -1356,7 +1373,7 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                                   onMouseDown={(e) => handleLinkDragStart(e, task.id, taskIndex, 'start')}
                                   title="Drag to create dependency"
                                 />
-                                
+
                                 {/* Left resize handle */}
                                 <div
                                   className={cn(
@@ -1365,7 +1382,7 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                                   )}
                                   onMouseDown={(e) => handleTaskMouseDown(e, 'resize-start')}
                                 />
-                                
+
                                 {/* Progress Fill */}
                                 <div
                                   className={cn(
@@ -1380,7 +1397,7 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                                 <span className="relative z-10 px-2 text-[10px] font-medium text-white truncate">
                                   {task.name}
                                 </span>
-                                
+
                                 {/* Right resize handle */}
                                 <div
                                   className={cn(
@@ -1389,7 +1406,7 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                                   )}
                                   onMouseDown={(e) => handleTaskMouseDown(e, 'resize-end')}
                                 />
-                                
+
                                 {/* Right link handle */}
                                 <div
                                   className={cn(
@@ -1431,11 +1448,10 @@ export function DatabaseGantt({ projectId }: DatabaseGanttProps) {
                 <div
                   className="absolute top-0 bottom-0 w-0.5 bg-destructive z-10 pointer-events-none"
                   style={{
-                    left: `${
-                      ((new Date().getTime() - dateRange.start.getTime()) /
-                        (dateRange.end.getTime() - dateRange.start.getTime())) *
+                    left: `${((new Date().getTime() - dateRange.start.getTime()) /
+                      (dateRange.end.getTime() - dateRange.start.getTime())) *
                       100
-                    }%`,
+                      }%`,
                   }}
                 >
                   <div className="absolute -top-1 left-1/2 -translate-x-1/2 bg-destructive text-destructive-foreground text-[10px] px-1 rounded">

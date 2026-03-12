@@ -28,75 +28,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 
-export type NotificationType = 'sla_breach' | 'sla_warning' | 'action_overdue' | 'sync_failed' | 'mention' | 'info';
+import { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead, useDeleteNotification, useNotificationsRealtime, type Notification } from '@/hooks/useNotifications';
 
-export interface Notification {
-  id: string;
-  type: NotificationType;
-  title: string;
-  message: string;
-  timestamp: string;
-  read: boolean;
-  actionUrl?: string;
-  relatedItem?: { type: string; id: string; title: string };
-}
-
-const mockNotifications: Notification[] = [
-  {
-    id: 'n1',
-    type: 'sla_breach',
-    title: 'SLA Breached',
-    message: 'ISS-002: Database migration scripts failing has exceeded its SLA target by 4 hours.',
-    timestamp: '2024-01-20T14:00:00Z',
-    read: false,
-    relatedItem: { type: 'issue', id: 'ISS-002', title: 'Database migration scripts failing' },
-  },
-  {
-    id: 'n2',
-    type: 'sla_warning',
-    title: 'SLA At Risk',
-    message: 'ISS-001: API Gateway timeout has only 2 hours remaining to meet SLA.',
-    timestamp: '2024-01-20T12:30:00Z',
-    read: false,
-    relatedItem: { type: 'issue', id: 'ISS-001', title: 'API Gateway timeout' },
-  },
-  {
-    id: 'n3',
-    type: 'action_overdue',
-    title: 'Action Overdue',
-    message: 'ACT-002: Review and approve migration rollback plan is past its due date.',
-    timestamp: '2024-01-20T12:00:00Z',
-    read: false,
-    relatedItem: { type: 'action', id: 'ACT-002', title: 'Review and approve migration rollback plan' },
-  },
-  {
-    id: 'n4',
-    type: 'sync_failed',
-    title: 'Sync Failed',
-    message: 'Sprint 12 synchronization failed. 3 items could not be linked.',
-    timestamp: '2024-01-20T10:00:00Z',
-    read: true,
-  },
-  {
-    id: 'n5',
-    type: 'mention',
-    title: 'You were mentioned',
-    message: 'Sarah Mitchell mentioned you in MTG-001: Weekly Steering Committee.',
-    timestamp: '2024-01-20T09:30:00Z',
-    read: true,
-    relatedItem: { type: 'meeting', id: 'MTG-001', title: 'Weekly Steering Committee' },
-  },
-  {
-    id: 'n6',
-    type: 'info',
-    title: 'Sprint Started',
-    message: 'Sprint 12 has started. 8 items have been added to the sprint backlog.',
-    timestamp: '2024-01-20T08:00:00Z',
-    read: true,
-  },
-];
-
-const typeConfig: Record<NotificationType, { icon: React.ElementType; color: string }> = {
+const typeConfig: Record<string, { icon: React.ElementType; color: string }> = {
   sla_breach: { icon: AlertTriangle, color: 'text-destructive bg-destructive/10' },
   sla_warning: { icon: Clock, color: 'text-warning bg-warning/10' },
   action_overdue: { icon: Clock, color: 'text-orange-500 bg-orange-500/10' },
@@ -112,7 +46,7 @@ interface NotificationItemProps {
 }
 
 function NotificationItem({ notification, onRead, onDelete }: NotificationItemProps) {
-  const config = typeConfig[notification.type];
+  const config = typeConfig[notification.type] ?? { icon: Info, color: 'text-muted-foreground bg-muted/10' };
   const Icon = config.icon;
 
   return (
@@ -122,7 +56,7 @@ function NotificationItem({ notification, onRead, onDelete }: NotificationItemPr
       exit={{ opacity: 0, x: 20 }}
       className={cn(
         'p-4 border-b last:border-b-0 hover:bg-muted/30 transition-colors group',
-        !notification.read && 'bg-primary/5'
+        !notification.is_read && 'bg-primary/5'
       )}
     >
       <div className="flex items-start gap-3">
@@ -131,22 +65,22 @@ function NotificationItem({ notification, onRead, onDelete }: NotificationItemPr
         </div>
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between mb-1">
-            <h4 className={cn('text-sm font-medium', !notification.read && 'font-semibold')}>
+            <h4 className={cn('text-sm font-medium', !notification.is_read && 'font-semibold')}>
               {notification.title}
             </h4>
             <span className="text-xs text-muted-foreground">
-              {new Date(notification.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              {new Date(notification.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
             </span>
           </div>
           <p className="text-sm text-muted-foreground line-clamp-2">{notification.message}</p>
-          {notification.relatedItem && (
+          {notification.related_item_type && (
             <Button variant="link" size="sm" className="h-6 p-0 text-xs mt-1">
-              View {notification.relatedItem.type}: {notification.relatedItem.id}
+              View {notification.related_item_type}: {notification.related_item_id}
             </Button>
           )}
         </div>
         <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-          {!notification.read && (
+          {!notification.is_read && (
             <Button variant="ghost" size="iconXs" onClick={() => onRead(notification.id)}>
               <Eye className="h-3 w-3" />
             </Button>
@@ -161,32 +95,35 @@ function NotificationItem({ notification, onRead, onDelete }: NotificationItemPr
 }
 
 export function NotificationCenter() {
-  const [notifications, setNotifications] = useState(mockNotifications);
-  const [activeTab, setActiveTab] = useState('all');
+  const [activeTab, setActiveTab] = useState<'all' | 'unread' | 'sla' | 'actions'>('all');
 
-  const unreadCount = notifications.filter(n => !n.read).length;
+  // Fetch notifications with filter
+  const { data: notifications = [], isLoading } = useNotifications(activeTab === 'all' ? undefined : activeTab);
+
+  // Mutations
+  const markRead = useMarkNotificationRead();
+  const markAllRead = useMarkAllNotificationsRead();
+  const deleteNotification = useDeleteNotification();
+
+  // Enable real-time updates
+  useNotificationsRealtime();
+
+  const unreadCount = notifications.filter(n => !n.is_read).length;
 
   const handleRead = (id: string) => {
-    setNotifications(prev =>
-      prev.map(n => (n.id === id ? { ...n, read: true } : n))
-    );
+    markRead.mutate(id);
   };
 
   const handleDelete = (id: string) => {
-    setNotifications(prev => prev.filter(n => n.id !== id));
+    deleteNotification.mutate(id);
   };
 
   const handleMarkAllRead = () => {
-    setNotifications(prev => prev.map(n => ({ ...n, read: true })));
+    markAllRead.mutate();
   };
 
-  const filteredNotifications = notifications.filter(n => {
-    if (activeTab === 'all') return true;
-    if (activeTab === 'unread') return !n.read;
-    if (activeTab === 'sla') return n.type === 'sla_breach' || n.type === 'sla_warning';
-    if (activeTab === 'actions') return n.type === 'action_overdue';
-    return true;
-  });
+  // Filtering is now done in the query, so we use all notifications
+  const filteredNotifications = notifications;
 
   return (
     <Sheet>
@@ -224,7 +161,7 @@ export function NotificationCenter() {
           </div>
         </SheetHeader>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-[calc(100vh-80px)]">
+        <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as typeof activeTab)} className="flex flex-col h-[calc(100vh-80px)]">
           <TabsList className="w-full justify-start rounded-none border-b px-2">
             <TabsTrigger value="all">
               All

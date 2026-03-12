@@ -1,0 +1,128 @@
+═══════════════════════════════════════════════════════════
+  QA Phase 2: Per-Role UI Testing Report
+═══════════════════════════════════════════════════════════
+
+── 1. Complete Test User Map ──
+
+  FREE TIER: undefined
+    Profile role:  null
+    Platform role: null
+    Workspace:     NOT MEMBER
+    Program:       manager
+    Tenant:        NOT MEMBER
+
+  PRO TIER: undefined
+    Profile role:  null
+    Platform role: null
+    Workspace:     NOT MEMBER
+    Program:       NOT MEMBER
+    Tenant:        NOT MEMBER
+
+  BUSINESS TIER: undefined
+    Profile role:  null
+    Platform role: null
+    Workspace:     admin
+    Program:       manager
+    Tenant:        NOT MEMBER
+
+  AGENCY TIER: undefined
+    Profile role:  null
+    Platform role: null
+    Workspace:     NOT MEMBER
+    Program:       NOT MEMBER
+    Tenant:        NOT MEMBER
+
+── 2. Expected Role-Access Matrix ──
+
+  Route                       Guard                                             Min Role            Min Tier
+  -------------------------------------------------------------------------------------------------------------------
+  /admin/*                    AdminPanel                                        platform admin      any
+  /tenant/*                   TenantRoute                                       tenant admin/owner  any
+  /workspace/:id/*            WorkspaceRoute + RequireTier(business)            ws member           business+
+  /portfolio/:id/*            RequireTier(business)                             authenticated       business+
+  /program/:id/*              ProgramRoute + RequireTier(business)              pg member           business+
+  /dashboard                  ProtectedProjectRoute                             authenticated       free+
+  /financials                 RequireTier(pro) + RequirePermission(budget.view) budget.view         pro+
+  /evm                        RequireTier(pro)                                  authenticated       pro+
+
+── 3. Per-User Expected Access ──
+
+  FREE (undefined):
+    Main dashboard            → ✅ Allowed (all authenticated)
+    Platform admin            → ❌ Blocked (not admin)
+    Tenant admin              → ❌ Blocked (not tenant admin)
+    Workspace dashboard       → ❌ Blocked (tier < business)
+    Portfolio dashboard       → ❌ Blocked (tier < business)
+    Program stakeholders      → ❌ Blocked (tier < business)
+    Financials (Pro+)         → ❌ Blocked (tier < pro)
+    EVM (Pro+)                → ❌ Blocked (tier < pro)
+
+  PRO (undefined):
+    Main dashboard            → ✅ Allowed (all authenticated)
+    Platform admin            → ❌ Blocked (not admin)
+    Tenant admin              → ❌ Blocked (not tenant admin)
+    Workspace dashboard       → ❌ Blocked (tier < business)
+    Portfolio dashboard       → ❌ Blocked (tier < business)
+    Program stakeholders      → ❌ Blocked (tier < business)
+    Financials (Pro+)         → ✅ Allowed (pro+)
+    EVM (Pro+)                → ✅ Allowed (pro+)
+
+  BUSINESS (undefined):
+    Main dashboard            → ✅ Allowed (all authenticated)
+    Platform admin            → ❌ Blocked (not admin)
+    Tenant admin              → ❌ Blocked (not tenant admin)
+    Workspace dashboard       → ✅ Allowed (ws admin)
+    Portfolio dashboard       → ✅ Allowed (business+)
+    Program stakeholders      → ✅ Allowed (pg manager)
+    Financials (Pro+)         → ✅ Allowed (pro+)
+    EVM (Pro+)                → ✅ Allowed (pro+)
+
+  AGENCY (undefined):
+    Main dashboard            → ✅ Allowed (all authenticated)
+    Platform admin            → ❌ Blocked (not admin)
+    Tenant admin              → ❌ Blocked (not tenant admin)
+    Workspace dashboard       → ❌ Blocked (not ws member)
+    Portfolio dashboard       → ✅ Allowed (business+)
+    Program stakeholders      → ❌ Blocked (not pg member)
+    Financials (Pro+)         → ✅ Allowed (pro+)
+    EVM (Pro+)                → ✅ Allowed (pro+)
+
+── 4. WorkspaceRoute Role Behavior ──
+
+  WorkspaceRoute has role-specific checks: YES
+  ProgramRoute has role-specific checks:   YES
+
+── 5. Admin Panel Access Check ──
+
+  src/components/admin/AdminPanel.tsx: role check=none, platform=none
+
+── 6. RequirePermission Usage ──
+
+  projectRoutes.tsx: requires "budget.view"
+  projectRoutes.tsx: requires "budget.view"
+  projectRoutes.tsx: requires "project.members.manage"
+  projectRoutes.tsx: requires "project.settings"
+
+═══════════════════════════════════════════════════════════
+  SUMMARY
+═══════════════════════════════════════════════════════════
+
+Role-based access control operates at 3 levels:
+  1. MEMBERSHIP — WorkspaceRoute/ProgramRoute check if user is a member (any role)
+  2. TIER — RequireTier blocks users below minimum subscription tier
+  3. PERMISSIONS — RequirePermission blocks unless user has RBAC permission
+
+Key findings:
+  • WorkspaceRoute does NOT differentiate admin/manager/member (membership-only)
+  • ProgramRoute does NOT differentiate manager/lead/member/viewer (membership-only)
+  • All workspace/portfolio/program routes require Business tier
+  • /financials requires both Pro tier + budget.view permission
+  • Admin panel requires platform admin role
+
+Browser tests needed:
+  1. ✅ Business admin (user7) → workspace/portfolio/program → ALLOWED (Phase 5)
+  2. ✅ Free tier (user4) → workspace → BLOCKED "Business Required" (Phase 5)
+  3. Pro tier (user9) → /financials → should ALLOW (Pro+)
+  4. Pro tier (user9) → /workspace → should BLOCK (tier < business)
+  5. Free tier (user4) → /evm → should BLOCK (tier < pro)
+  6. Agency admin (user1) → /admin → check platform access

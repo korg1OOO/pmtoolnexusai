@@ -22,6 +22,7 @@ import {
   Link2,
   Save,
   Loader2,
+  Users,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,21 +42,31 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Progress } from '@/components/ui/progress';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { format } from 'date-fns';
-import { 
-  DbTask, 
-  useTasks, 
-  useCreateTask, 
-  useUpdateTask, 
+import {
+  DbTask,
+  DbDependency,
+  useTasks,
+  useCreateTask,
+  useUpdateTask,
   useDeleteTask,
   useDependencies,
   useCreateDependency,
   useDeleteDependency,
+  useBulkUpdateTasks,
 } from '@/hooks/useTasks';
 import { useScheduleTrigger } from '@/hooks/useScheduleTrigger';
+import { recalculateWBS } from './utils/wbs';
 import { Skeleton } from '@/components/ui/skeleton';
+import {
+  PredecessorColumn,
+  SlackDisplay,
+  ConstraintIndicator,
+} from './MSProjectColumns';
+import { ResourceAssignmentDialog } from '@/components/resources/ResourceAssignmentDialog';
 import type { Database } from '@/integrations/supabase/types';
 
 type TaskType = Database['public']['Enums']['task_type'];
@@ -105,6 +116,11 @@ interface EditableTaskRowProps {
   onAddSibling: (taskId: string) => void;
   hasChildren: boolean;
   isSaving: boolean;
+  allTasks: DbTask[];
+  dependencies: DbDependency[];
+  onAddDependency: (predecessorId: string, type: DbDependency['type'], lag: number) => Promise<void>;
+  onRemoveDependency: (depId: string) => Promise<void>;
+  onManageResources: () => void;
 }
 
 function EditableTaskRow({
@@ -121,6 +137,11 @@ function EditableTaskRow({
   onAddSibling,
   hasChildren,
   isSaving,
+  allTasks,
+  dependencies,
+  onAddDependency,
+  onRemoveDependency,
+  onManageResources,
 }: EditableTaskRowProps) {
   const indent = task.level * 24;
   const [isEditing, setIsEditing] = useState<string | null>(null);
@@ -161,7 +182,7 @@ function EditableTaskRow({
       exit={{ opacity: 0, x: 10 }}
       onClick={onFocus}
       className={cn(
-        'group grid grid-cols-[40px_minmax(300px,2fr)_100px_100px_120px_120px_100px_80px_60px] items-center border-b border-border hover:bg-muted/30 transition-colors cursor-pointer',
+        'group grid grid-cols-[40px_minmax(300px,2fr)_100px_100px_120px_120px_100px_80px_120px_80px_100px_60px] items-center border-b border-border hover:bg-muted/30 transition-colors cursor-pointer',
         selected && 'bg-primary/5',
         focused && 'ring-1 ring-primary ring-inset',
         task.is_critical && 'border-l-2 border-l-destructive'
@@ -173,7 +194,8 @@ function EditableTaskRow({
       </div>
 
       {/* Task Name */}
-      <div className="flex items-center gap-1 py-2 pr-4" style={{ paddingLeft: indent }}>
+      <div className="flex items-center gap-1 py-2 pr-4 pl-[var(--indent)]">
+        <style dangerouslySetInnerHTML={{ __html: `:root { --indent: ${indent}px; }` }} />
         <GripVertical className="h-3 w-3 text-muted-foreground/50 opacity-0 group-hover:opacity-100 cursor-grab" />
         {hasChildren ? (
           <button
@@ -310,7 +332,7 @@ function EditableTaskRow({
       </div>
 
       {/* Progress - Editable slider */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 px-2">
         <div
           className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden cursor-pointer"
           onClick={(e) => {
@@ -320,17 +342,46 @@ function EditableTaskRow({
             onTaskUpdate(task.id, { progress: Math.max(0, Math.min(100, percent)) });
           }}
         >
-          <div
+          <Progress
+            value={task.progress}
             className={cn(
-              'h-full rounded-full transition-all',
-              task.progress === 100 ? 'bg-success' : 'bg-primary'
+              "h-full rounded-full",
+              task.progress === 100 ? "bg-success" : "bg-primary"
             )}
-            style={{ width: `${task.progress}%` }}
           />
         </div>
         <span className="text-xs text-muted-foreground font-mono w-8">
           {task.progress}%
         </span>
+      </div>
+
+      {/* Predecessors */}
+      <div className="flex items-center justify-center px-2 overflow-hidden">
+        <PredecessorColumn
+          task={task}
+          dependencies={dependencies}
+          allTasks={allTasks}
+          onAddDependency={onAddDependency}
+          onRemoveDependency={onRemoveDependency}
+        />
+      </div>
+
+      {/* Slack */}
+      <div className="flex items-center justify-center">
+        <SlackDisplay
+          freeSlack={task.free_slack || 0}
+          totalSlack={task.total_slack || 0}
+          isCritical={!!task.is_critical}
+        />
+      </div>
+
+      {/* Constraints */}
+      <div className="flex items-center justify-center">
+        <ConstraintIndicator
+          constraintType={task.constraint_type || undefined}
+          constraintDate={task.constraint_date || undefined}
+          deadline={task.deadline || undefined}
+        />
       </div>
 
       {/* Actions */}
@@ -349,6 +400,11 @@ function EditableTaskRow({
             <DropdownMenuItem onClick={() => onAddChild(task.id)}>
               <Plus className="h-4 w-4 mr-2" />
               Add Subtask
+            </DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={onManageResources}>
+              <Users className="h-4 w-4 mr-2" />
+              Manage Resources
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem>
@@ -376,16 +432,37 @@ function EditableTaskRow({
 
 interface DatabaseTaskGridProps {
   projectId: string;
+  scenarioId?: string | null;
+  onSelectionChange?: (selectedTasks: DbTask[]) => void;
 }
 
-export function DatabaseTaskGrid({ projectId }: DatabaseTaskGridProps) {
-  const { data: tasks = [], isLoading, error } = useTasks(projectId);
-  const { data: dependencies = [] } = useDependencies(projectId);
+export function DatabaseTaskGrid({
+  projectId,
+  scenarioId = null,
+  onSelectionChange
+}: DatabaseTaskGridProps) {
+  const { data: tasks = [], isLoading, error } = useTasks(projectId, scenarioId);
+  const { data: dependencies = [] } = useDependencies(projectId, scenarioId);
+  const createDependency = useCreateDependency();
+  const deleteDependency = useDeleteDependency();
+  const [assigningTask, setAssigningTask] = useState<{ id: string; name: string } | null>(null);
+
+  const handleAddDependency = async (taskId: string, predecessorId: string, type: DbDependency['type'], lag: number) => {
+    await createDependency.mutateAsync({
+      dependency: { task_id: taskId, predecessor_id: predecessorId, type, lag, scenario_id: scenarioId },
+      projectId
+    });
+  };
+
+  const handleRemoveDependency = async (depId: string) => {
+    await deleteDependency.mutateAsync({ dependencyId: depId, projectId });
+  };
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
+  const bulkUpdateTasks = useBulkUpdateTasks();
   const { triggerSchedule } = useScheduleTrigger(projectId);
-  
+
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
   const [focusedTaskId, setFocusedTaskId] = useState<string | null>(null);
@@ -395,7 +472,7 @@ export function DatabaseTaskGrid({ projectId }: DatabaseTaskGridProps) {
   // Build hierarchical structure
   const { visibleTasks, taskChildrenMap } = useMemo(() => {
     const childrenMap = new Map<string | null, DbTask[]>();
-    
+
     tasks.forEach(task => {
       const parentId = task.parent_id;
       if (!childrenMap.has(parentId)) {
@@ -407,14 +484,14 @@ export function DatabaseTaskGrid({ projectId }: DatabaseTaskGridProps) {
     const flatten = (parentId: string | null, level: number): DbTask[] => {
       const children = childrenMap.get(parentId) || [];
       const result: DbTask[] = [];
-      
+
       children.forEach(task => {
         result.push({ ...task, level });
         if (expandedTasks.has(task.id) || task.expanded) {
           result.push(...flatten(task.id, level + 1));
         }
       });
-      
+
       return result;
     };
 
@@ -435,11 +512,74 @@ export function DatabaseTaskGrid({ projectId }: DatabaseTaskGridProps) {
     setExpandedTasks(expanded);
   }, [tasks]);
 
+  const handleTaskDelete = useCallback(async (taskId: string) => {
+    await deleteTask.mutateAsync({ taskId, projectId });
+    if (focusedTaskId === taskId) {
+      setFocusedTaskId(null);
+    }
+
+    // Recalculate WBS after deletion
+    const remainingTasks = tasks.filter(t => t.id !== taskId);
+    const wbsUpdates = recalculateWBS(remainingTasks);
+    if (wbsUpdates.length > 0) {
+      bulkUpdateTasks.mutate({ tasks: wbsUpdates, projectId });
+    }
+  }, [deleteTask, bulkUpdateTasks, projectId, focusedTaskId, tasks]);
+
+  const handleTaskUpdate = useCallback(async (taskId: string, updates: Partial<DbTask>) => {
+    setSavingTasks(prev => new Set([...prev, taskId]));
+    try {
+      await updateTask.mutateAsync({ id: taskId, project_id: projectId, ...updates });
+
+      // Trigger auto-scheduling when date-related fields change
+      const schedulingFields = ['start_date', 'end_date', 'duration', 'constraint_type', 'constraint_date'];
+      const shouldSchedule = schedulingFields.some(field => field in updates);
+      if (shouldSchedule) {
+        triggerSchedule(taskId);
+      }
+    } finally {
+      setSavingTasks(prev => {
+        const next = new Set(prev);
+        next.delete(taskId);
+        return next;
+      });
+    }
+  }, [updateTask, projectId, triggerSchedule]);
+
+  const toggleTask = useCallback((taskId: string) => {
+    setExpandedTasks((prev) => {
+      const next = new Set(prev);
+      if (next.has(taskId)) {
+        next.delete(taskId);
+      } else {
+        next.add(taskId);
+      }
+      return next;
+    });
+  }, []);
+
+  const toggleSelection = useCallback((taskId: string, selected: boolean) => {
+    setSelectedTasks((prev) => {
+      const next = new Set(prev);
+      if (selected) {
+        next.add(taskId);
+      } else {
+        next.delete(taskId);
+      }
+
+      // Notify parent
+      const selectedTaskObjects = tasks.filter(t => next.has(t.id));
+      onSelectionChange?.(selectedTaskObjects);
+
+      return next;
+    });
+  }, [tasks, onSelectionChange]);
+
   // Keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (!focusedTaskId) return;
-      
+
       const currentIndex = visibleTasks.findIndex(t => t.id === focusedTaskId);
       if (currentIndex === -1) return;
 
@@ -496,58 +636,7 @@ export function DatabaseTaskGrid({ projectId }: DatabaseTaskGridProps) {
 
     document.addEventListener('keydown', handleKeyDown);
     return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [focusedTaskId, visibleTasks, expandedTasks, taskChildrenMap]);
-
-  const toggleTask = (taskId: string) => {
-    setExpandedTasks((prev) => {
-      const next = new Set(prev);
-      if (next.has(taskId)) {
-        next.delete(taskId);
-      } else {
-        next.add(taskId);
-      }
-      return next;
-    });
-  };
-
-  const toggleSelection = (taskId: string, selected: boolean) => {
-    setSelectedTasks((prev) => {
-      const next = new Set(prev);
-      if (selected) {
-        next.add(taskId);
-      } else {
-        next.delete(taskId);
-      }
-      return next;
-    });
-  };
-
-  const handleTaskUpdate = async (taskId: string, updates: Partial<DbTask>) => {
-    setSavingTasks(prev => new Set([...prev, taskId]));
-    try {
-      await updateTask.mutateAsync({ id: taskId, project_id: projectId, ...updates });
-      
-      // Trigger auto-scheduling when date-related fields change
-      const schedulingFields = ['start_date', 'end_date', 'duration', 'constraint_type', 'constraint_date'];
-      const shouldSchedule = schedulingFields.some(field => field in updates);
-      if (shouldSchedule) {
-        triggerSchedule(taskId);
-      }
-    } finally {
-      setSavingTasks(prev => {
-        const next = new Set(prev);
-        next.delete(taskId);
-        return next;
-      });
-    }
-  };
-
-  const handleTaskDelete = async (taskId: string) => {
-    await deleteTask.mutateAsync({ taskId, projectId });
-    if (focusedTaskId === taskId) {
-      setFocusedTaskId(null);
-    }
-  };
+  }, [focusedTaskId, visibleTasks, expandedTasks, taskChildrenMap, handleTaskDelete]);
 
   const generateWBS = (parentId: string | null, existingChildren: DbTask[]): string => {
     const childCount = existingChildren.length;
@@ -565,7 +654,7 @@ export function DatabaseTaskGrid({ projectId }: DatabaseTaskGridProps) {
     const siblings = taskChildrenMap.get(parentId) || [];
     const wbs = generateWBS(parentId, siblings);
     const level = parentId ? (tasks.find(t => t.id === parentId)?.level ?? 0) + 1 : 0;
-    
+
     let sortOrder = 0;
     if (afterTaskId) {
       const afterTask = tasks.find(t => t.id === afterTaskId);
@@ -574,7 +663,7 @@ export function DatabaseTaskGrid({ projectId }: DatabaseTaskGridProps) {
       sortOrder = siblings.length;
     }
 
-    await createTask.mutateAsync({
+    const newTaskData = await createTask.mutateAsync({
       project_id: projectId,
       parent_id: parentId,
       wbs,
@@ -592,10 +681,44 @@ export function DatabaseTaskGrid({ projectId }: DatabaseTaskGridProps) {
       expanded: true,
       level,
       sort_order: sortOrder,
+      scenario_id: scenarioId,
     });
 
     if (parentId) {
       setExpandedTasks(prev => new Set([...prev, parentId]));
+    }
+
+    // Recalculate WBS after addition to adjust anything that was shifted down
+    const newTasksList = [...tasks];
+
+    // Shift siblings down if we inserted in the middle
+    if (afterTaskId) {
+      newTasksList.forEach(t => {
+        if (t.parent_id === parentId && (t.sort_order || 0) >= sortOrder) {
+          t.sort_order = (t.sort_order || 0) + 1;
+        }
+      });
+    }
+
+    newTasksList.push(newTaskData as any);
+    const wbsUpdates = recalculateWBS(newTasksList);
+
+    // Also include sort_order updates if shifting occurred
+    if (afterTaskId) {
+      newTasksList.forEach(t => {
+        if (t.parent_id === parentId && t.id !== (newTaskData as any).id && (t.sort_order || 0) > sortOrder) {
+          const existingUpdate = wbsUpdates.find(u => u.id === t.id);
+          if (existingUpdate) {
+            existingUpdate.sort_order = t.sort_order;
+          } else {
+            wbsUpdates.push({ id: t.id, sort_order: t.sort_order });
+          }
+        }
+      });
+    }
+
+    if (wbsUpdates.length > 0) {
+      bulkUpdateTasks.mutate({ tasks: wbsUpdates, projectId });
     }
   };
 
@@ -611,7 +734,7 @@ export function DatabaseTaskGrid({ projectId }: DatabaseTaskGridProps) {
   if (isLoading) {
     return (
       <div className="flex flex-col flex-1 overflow-hidden">
-        <div className="grid grid-cols-[40px_minmax(300px,2fr)_100px_100px_120px_120px_100px_80px_60px] items-center border-b border-border bg-muted/50 text-xs font-medium text-muted-foreground">
+        <div className="grid grid-cols-[40px_minmax(300px,2fr)_100px_100px_120px_120px_100px_80px_120px_80px_100px_60px] items-center border-b border-border bg-muted/50 text-xs font-medium text-muted-foreground">
           <div className="flex items-center justify-center h-9"><Skeleton className="h-4 w-4" /></div>
           <div className="py-2 px-2">Task Name</div>
           <div className="py-2">Status</div>
@@ -620,6 +743,9 @@ export function DatabaseTaskGrid({ projectId }: DatabaseTaskGridProps) {
           <div className="py-2">End</div>
           <div className="py-2">Duration</div>
           <div className="py-2">Progress</div>
+          <div className="py-2">Predecessors</div>
+          <div className="py-2">Slack</div>
+          <div className="py-2">Constraints</div>
           <div className="py-2"></div>
         </div>
         <div className="flex-1 p-4 space-y-2">
@@ -642,16 +768,19 @@ export function DatabaseTaskGrid({ projectId }: DatabaseTaskGridProps) {
   return (
     <div ref={containerRef} className="flex flex-col flex-1 overflow-hidden">
       {/* Table Header */}
-      <div className="grid grid-cols-[40px_minmax(300px,2fr)_100px_100px_120px_120px_100px_80px_60px] items-center border-b border-border bg-muted/50 text-xs font-medium text-muted-foreground">
+      <div className="grid grid-cols-[40px_minmax(300px,2fr)_100px_100px_120px_120px_100px_80px_120px_80px_100px_60px] items-center border-b border-border bg-muted/50 text-xs font-medium text-muted-foreground">
         <div className="flex items-center justify-center h-9">
           <Checkbox
             checked={selectedTasks.size === visibleTasks.length && visibleTasks.length > 0}
             onCheckedChange={(checked) => {
+              let newSet = new Set<string>();
               if (checked) {
-                setSelectedTasks(new Set(visibleTasks.map(t => t.id)));
-              } else {
-                setSelectedTasks(new Set());
+                newSet = new Set(visibleTasks.map(t => t.id));
               }
+              setSelectedTasks(newSet);
+
+              const selectedTaskObjects = tasks.filter(t => newSet.has(t.id));
+              onSelectionChange?.(selectedTaskObjects);
             }}
           />
         </div>
@@ -668,6 +797,9 @@ export function DatabaseTaskGrid({ projectId }: DatabaseTaskGridProps) {
         </div>
         <div className="py-2">Duration</div>
         <div className="py-2">Progress</div>
+        <div className="py-2 px-2">Predecessors</div>
+        <div className="py-2">Slack</div>
+        <div className="py-2">Constraints</div>
         <div className="py-2"></div>
       </div>
 
@@ -699,6 +831,11 @@ export function DatabaseTaskGrid({ projectId }: DatabaseTaskGridProps) {
                 onAddSibling={handleAddSibling}
                 hasChildren={taskChildrenMap.has(task.id)}
                 isSaving={savingTasks.has(task.id)}
+                allTasks={tasks}
+                dependencies={dependencies}
+                onAddDependency={(predId, type, lag) => handleAddDependency(task.id, predId, type, lag)}
+                onRemoveDependency={handleRemoveDependency}
+                onManageResources={() => setAssigningTask({ id: task.id, name: task.name })}
               />
             ))}
           </AnimatePresence>
@@ -729,6 +866,14 @@ export function DatabaseTaskGrid({ projectId }: DatabaseTaskGridProps) {
           </div>
         </div>
       </div>
+
+      <ResourceAssignmentDialog
+        open={!!assigningTask}
+        onOpenChange={(open) => !open && setAssigningTask(null)}
+        taskId={assigningTask?.id || ''}
+        taskName={assigningTask?.name || ''}
+        projectId={projectId}
+      />
     </div>
   );
 }

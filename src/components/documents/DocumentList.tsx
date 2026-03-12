@@ -85,7 +85,7 @@ const formatSize = (bytes: number) => {
   return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
 };
 
-const getStatusVariant = (status: string) => {
+const getStatusVariant = (status: string): 'success' | 'secondary' | 'warning' | 'outline' => {
   switch (status) {
     case 'approved':
       return 'success';
@@ -272,7 +272,7 @@ export function DocumentList({
                 <>
                   <TableCell>
                     <Badge
-                      variant={getStatusVariant(doc.status) as any}
+                      variant={getStatusVariant(doc.status)}
                       className="text-[10px]"
                     >
                       {doc.status}

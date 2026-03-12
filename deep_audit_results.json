@@ -1,0 +1,2167 @@
+Starting Deep Audit...
+[
+  {
+    "category": "Component",
+    "name": "EmptyProjectState",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "NavLink",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "ThemeProvider",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "ThemeToggle",
+    "dataPath": "Hook (useTheme)",
+    "persistence": "UNKNOWN",
+    "status": "[LIVE]",
+    "issues": [
+      "[PERSISTENCE FAILURE]: Interactive component with no clear DB write path"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "AIProviderSettings",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "ActionConfirmDialog",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "AgentIndicator",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "ChatAttachments",
+    "dataPath": "Hook (useRef)",
+    "persistence": "UNKNOWN",
+    "status": "[LIVE]",
+    "issues": [
+      "[PERSISTENCE FAILURE]: Interactive component with no clear DB write path"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "ChatMessage",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "ClarifyingQuestion",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "CommunicationAISidebar",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "ContextSelector",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "GlobalAISidebar",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "IntentModeToggle",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "MeetingAISidebar",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "PMCoachSidebar",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "PageContextPanel",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "StrategicAISidebar",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "AuthDialog",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "ProtectedRoute",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "BriefingSectionCard",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "BriefingSettingsPanel",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "FlexibleBriefingGrid",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "ResizableBriefingLayout",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "AIInsightsSection",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "ActionsSection",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "BudgetAnalysisSection",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "CriticalAlertsSection",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "DecisionsSection",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "IssuesSection",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "MeetingsSection",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "ProfitLossSection",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "RiskAssessmentSection",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "ScheduleSlippageSection",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "TeamAvailabilitySection",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "ChatAttachment",
+    "dataPath": "Supabase <> chat-attachments",
+    "persistence": "Unknown (Read-only?)",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "ComposeArea",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "EmojiPicker",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "MentionInput",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "MessageBubble",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[BROKEN]",
+    "issues": [
+      "Unwired event handlers"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "MessageEditor",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "MessageForward",
+    "dataPath": "Supabase <> projects",
+    "persistence": "Unknown (Read-only?)",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "MessageReactions",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "MessageSearch",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "MessageThread",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "MiniChatWindow",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "PinnedMessages",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "ReadReceipts",
+    "dataPath": "Hook (useReadReceipts)",
+    "persistence": "UNKNOWN",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "TypingIndicator",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "CollaboratorCursors",
+    "dataPath": "Hook (usePresence)",
+    "persistence": "UNKNOWN",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "ConflictResolutionDialog",
+    "dataPath": "Hook (usePresence)",
+    "persistence": "UNKNOWN",
+    "status": "[LIVE]",
+    "issues": [
+      "[PERSISTENCE FAILURE]: Interactive component with no clear DB write path"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "PresenceIndicator",
+    "dataPath": "Hook (usePresence)",
+    "persistence": "UNKNOWN",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "ProjectChat",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "TaskLockIndicator",
+    "dataPath": "Hook (usePresence)",
+    "persistence": "UNKNOWN",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "PDFExporter",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "CommunicationsView",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "EmailAccountSettings",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "EmailComposeDialog",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "EmptyProjectState",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "DocumentApprovalWorkflow",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "DocumentDetailsPanel",
+    "dataPath": "Supabase (via useDocuments) <> documents",
+    "persistence": "YES",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "DocumentGrid",
+    "dataPath": "Supabase (via useDocuments) <> documents",
+    "persistence": "YES",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "DocumentList",
+    "dataPath": "Supabase (via useDocuments) <> documents",
+    "persistence": "YES",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "DocumentMoveDialog",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "DocumentShareDialog",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "DocumentSidebar",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "DocumentToolbar",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "DocumentUploadDialog",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "FolderCreateDialog",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "VersionHistory",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "KPICard",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "ProgressRing",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "StatusIndicator",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "AddBudgetItemDialog",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "AddInvoiceDialog",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "FeaturesSection",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "AppShell",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "LandingFooter",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "LandingHeader",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "ProjectSwitcher",
+    "dataPath": "Supabase <> projects",
+    "persistence": "Unknown (Read-only?)",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "Sidebar",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "TopBar",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "LinkDialog",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "MeetingCreationDialog",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "MeetingEditDialog",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "MiniCalendarSidebar",
+    "dataPath": "Hook (useMemo)",
+    "persistence": "UNKNOWN",
+    "status": "[LIVE]",
+    "issues": [
+      "[PERSISTENCE FAILURE]: Interactive component with no clear DB write path"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "RecurringEditDialog",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "TranscriptUploadDialog",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "ContactFormModal",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "BacklinksSidebar",
+    "dataPath": "Supabase (via useNotebooks) <> notebooks",
+    "persistence": "YES",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "NotebookSidebar",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "PageEditor",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "PageList",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "RichTextEditor",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "SpreadsheetEditor",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "ConvertToProjectPlanDialog",
+    "dataPath": "Supabase <> projects",
+    "persistence": "YES",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "FormulaBar",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "LinkedSpreadsheetIcon",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "SpreadsheetToolbar",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "SyncStatusIndicator",
+    "dataPath": "Supabase (via useLinkedSpreadsheet) <> notebook_spreadsheets",
+    "persistence": "YES",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "NotificationCenter",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "CalendarDialog",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "DatabaseGantt",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "DatabaseTaskGrid",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "DependencyContextMenu",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "LinkChildProjectDialog",
+    "dataPath": "Supabase <> projects",
+    "persistence": "YES",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "MSProjectColumns",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "TaskGrid",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "TaskInformationDialog",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "ComponentPicker",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "EmbeddedDashboardWidget",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "PresentationSidebar",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "PresentationToolbar",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "ShapeLibrary",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "SlideEditor",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "SlidePropertiesPanel",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "SpeakerNotesPanel",
+    "dataPath": "Hook (useEditor)",
+    "persistence": "UNKNOWN",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "MethodologySelector",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "TemplateGallery",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "TemplatePreview",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "ReportCard",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "ReportCategories",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "ReportPreview",
+    "dataPath": "Hook (useRef)",
+    "persistence": "UNKNOWN",
+    "status": "[LIVE]",
+    "issues": [
+      "[PERSISTENCE FAILURE]: Interactive component with no clear DB write path"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "ScheduleReportDialog",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "SystemAuditReport",
+    "dataPath": "Hook (usePointer)",
+    "persistence": "UNKNOWN",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "ResourceAssignmentDialog",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "ResourceSheet",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "ResourceUsageView",
+    "dataPath": "Hook (useMemo)",
+    "persistence": "UNKNOWN",
+    "status": "[LIVE]",
+    "issues": [
+      "[PERSISTENCE FAILURE]: Interactive component with no clear DB write path"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "KeyboardShortcutsDialog",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "SprintBurndownChart",
+    "dataPath": "Hook (useMemo)",
+    "persistence": "UNKNOWN",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "SprintCard",
+    "dataPath": "Hook (useDragControls)",
+    "persistence": "UNKNOWN",
+    "status": "[LIVE]",
+    "issues": [
+      "[PERSISTENCE FAILURE]: Interactive component with no clear DB write path"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "SyncStatusIndicator",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "BaselineManager",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "TrackingGantt",
+    "dataPath": "Hook (useMemo)",
+    "persistence": "UNKNOWN",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "VarianceTable",
+    "dataPath": "Supabase (via useBaselines) <> project_baselines",
+    "persistence": "YES",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "accordion",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "alert-dialog",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "alert",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "aspect-ratio",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "avatar",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "badge",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "breadcrumb",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "button",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "calendar",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "card",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "carousel",
+    "dataPath": "Hook (useEmblaCarousel)",
+    "persistence": "UNKNOWN",
+    "status": "[LIVE]",
+    "issues": [
+      "[PERSISTENCE FAILURE]: Interactive component with no clear DB write path"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "chart",
+    "dataPath": "Hook (useChart)",
+    "persistence": "UNKNOWN",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "checkbox",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "collapsible",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "command",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "context-menu",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "dialog",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "drawer",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "dropdown-menu",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "form",
+    "dataPath": "Hook (useFormContext)",
+    "persistence": "UNKNOWN",
+    "status": "[LIVE]",
+    "issues": [
+      "[PERSISTENCE FAILURE]: Interactive component with no clear DB write path"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "hover-card",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "input-otp",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "input",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "label",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "menubar",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "navigation-menu",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "pagination",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "popover",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "progress",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "radio-group",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "resizable",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "scroll-area",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "select",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "separator",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "sheet",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "sidebar",
+    "dataPath": "Hook (useIsMobile)",
+    "persistence": "UNKNOWN",
+    "status": "[LIVE]",
+    "issues": [
+      "[PERSISTENCE FAILURE]: Interactive component with no clear DB write path"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "skeleton",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "slider",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "sonner",
+    "dataPath": "Hook (useTheme)",
+    "persistence": "UNKNOWN",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "switch",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "table",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "tabs",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "textarea",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "toast",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "toaster",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "toggle-group",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "toggle",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "tooltip",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "ActionsView",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "BacklogView",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "CalendarView",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "ChangeRequestsView",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "ChildGanttView",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "ChildPlansView",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "CommunicationIntelligenceView",
+    "dataPath": "Supabase <> project_status_reports",
+    "persistence": "Unknown (Read-only?)",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "DashboardHub",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "DashboardView",
+    "dataPath": "Hook (useMemo)",
+    "persistence": "UNKNOWN",
+    "status": "[LIVE]",
+    "issues": [
+      "[PERSISTENCE FAILURE]: Interactive component with no clear DB write path"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "DecisionsView",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "DeliverablesView",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "DocumentCenterView",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "EVMView",
+    "dataPath": "Hook (useRef)",
+    "persistence": "UNKNOWN",
+    "status": "[LIVE]",
+    "issues": [
+      "[PERSISTENCE FAILURE]: Interactive component with no clear DB write path"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "EnhancedMeetingsView",
+    "dataPath": "Supabase <> meetings",
+    "persistence": "YES",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "ExecutiveDashboardView",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "FinalReportView",
+    "dataPath": "Hook (useRef)",
+    "persistence": "UNKNOWN",
+    "status": "[LIVE]",
+    "issues": [
+      "[PERSISTENCE FAILURE]: Interactive component with no clear DB write path"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "FinancialsView",
+    "dataPath": "Hook (useMemo)",
+    "persistence": "UNKNOWN",
+    "status": "[LIVE]",
+    "issues": [
+      "[PERSISTENCE FAILURE]: Interactive component with no clear DB write path"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "GanttView",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "IssuesRegisterView",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "LessonsLearnedView",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "MilestonesView",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "MorningBriefingView",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "NotesView",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "PlanningView",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "PlatformAdminView",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "PortfolioManagement",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "PortfolioView",
+    "dataPath": "Supabase <> portfolios",
+    "persistence": "YES",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "PresentationsView",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "ProgramTimelineView",
+    "dataPath": "Supabase <> portfolios",
+    "persistence": "YES",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "ProjectAdminView",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "ProjectCharterView",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "ProjectCreationView",
+    "dataPath": "Supabase <> projects",
+    "persistence": "YES",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "ProjectPlanView",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "ReportsView",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "ResourcesView",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "RisksView",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "ScenariosView",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "SprintBoardView",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "StakeholderRegisterView",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "StrategicDashboardView",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "TeamChatView",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "TeamManagementView",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "TemplatesAdminView",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "TimelinePlannerTab",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "TraceabilityMatrixView",
+    "dataPath": "Supabase <> projects",
+    "persistence": "Unknown (Read-only?)",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "TrackingView",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "UserSettingsView",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Component",
+    "name": "ViewSwitcher",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "PresenceContext",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "ProjectContext",
+    "dataPath": "Supabase <> projects",
+    "persistence": "Unknown (Read-only?)",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Component",
+    "name": "use-mobile",
+    "dataPath": "Hook (useIsMobile)",
+    "persistence": "UNKNOWN",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Page",
+    "name": "AboutUs",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Page",
+    "name": "Auth",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Page",
+    "name": "ContactUs",
+    "dataPath": "Internal State",
+    "persistence": "NO",
+    "status": "[MOCK]",
+    "issues": [
+      "Uses hardcoded/mock data"
+    ]
+  },
+  {
+    "category": "Page",
+    "name": "Debug",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Page",
+    "name": "Index",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Page",
+    "name": "LandingPage",
+    "dataPath": "Hook (useRef)",
+    "persistence": "UNKNOWN",
+    "status": "[LIVE]",
+    "issues": [
+      "[PERSISTENCE FAILURE]: Interactive component with no clear DB write path"
+    ]
+  },
+  {
+    "category": "Page",
+    "name": "NotFound",
+    "dataPath": "Hook (useLocation)",
+    "persistence": "UNKNOWN",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Page",
+    "name": "OAuthCallback",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Page",
+    "name": "PrivacyPolicy",
+    "dataPath": "Internal State",
+    "persistence": "N/A",
+    "status": "[LIVE]",
+    "issues": []
+  },
+  {
+    "category": "Page",
+    "name": "ProductTour",
+    "dataPath": "Hook (useRef)",
+    "persistence": "UNKNOWN",
+    "status": "[LIVE]",
+    "issues": []
+  }
+]

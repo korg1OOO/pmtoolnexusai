@@ -1,41 +1,51 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
-  ZoomIn,
-  ZoomOut,
-  Maximize2,
+import { useQueryClient } from '@tanstack/react-query';
+import { usePortfolios } from '@/hooks/usePortfolios';
+import { usePrograms } from '@/hooks/usePrograms';
+import {
+  Loader2,
+  Plus,
   Filter,
   Download,
-  Milestone,
+  Maximize2,
+  ChevronLeft,
+  ChevronRight,
+  Calendar,
+  ZoomOut,
+  ZoomIn,
   Flag,
-  AlertTriangle,
   CheckCircle2,
+  AlertTriangle,
+  Milestone,
   X,
-  Users,
+  Target,
   DollarSign,
   TrendingUp,
   Clock,
-  Target
+  Users
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
-import { mockPrograms, mockProjects } from '@/data/mockData';
 import { StatusIndicator } from '@/components/enterprise/StatusIndicator';
 import { ProgressRing } from '@/components/enterprise/ProgressRing';
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer 
+import { Progress } from '@/components/ui/progress';
+import {
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer
 } from 'recharts';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 
 type TimeScale = 'month' | 'quarter' | 'year';
 
@@ -52,7 +62,6 @@ interface TimelineProject {
   milestones: { date: Date; name: string; status: 'completed' | 'upcoming' | 'at-risk' }[];
 }
 
-// Extended project type with more details
 interface ExtendedProject extends TimelineProject {
   budget: number;
   spent: number;
@@ -63,60 +72,86 @@ interface ExtendedProject extends TimelineProject {
   burndownData: { week: string; planned: number; actual: number }[];
 }
 
-export function ProgramTimelineView() {
+export default function ProgramTimelineView() {
   const [timeScale, setTimeScale] = useState<TimeScale>('quarter');
   const [viewDate, setViewDate] = useState(new Date(2024, 0, 1));
-  const [expandedPrograms, setExpandedPrograms] = useState<string[]>(mockPrograms.map(p => p.id));
+  const { data: portfolios, isLoading: isLoadingPortfolios } = usePortfolios();
+  const { data: programsData, isLoading: isLoadingPrograms } = usePrograms();
+  const queryClient = useQueryClient();
+  const [expandedPrograms, setExpandedPrograms] = useState<string[]>([]);
   const [selectedProject, setSelectedProject] = useState<ExtendedProject | null>(null);
 
-  // Generate timeline data with extended info
+  // Create Program Dialog
+  const [isCreateProgramOpen, setIsCreateProgramOpen] = useState(false);
+  const [newProgramName, setNewProgramName] = useState('');
+  const [newProgramPortfolioId, setNewProgramPortfolioId] = useState<string>('none');
+  const [isCreatingProgram, setIsCreatingProgram] = useState(false);
+
+  const handleCreateProgram = async () => {
+    if (!newProgramName.trim()) return;
+    setIsCreatingProgram(true);
+    try {
+      const { error } = await (supabase as any).from('programs').insert({
+        name: newProgramName.trim(),
+        description: `Program created on ${new Date().toLocaleDateString()}`,
+        status: 'active',
+        portfolio_id: newProgramPortfolioId === 'none' ? null : newProgramPortfolioId
+      });
+      if (error) throw error;
+      toast.success('Program created successfully!');
+      queryClient.invalidateQueries({ queryKey: ['programs'] });
+      queryClient.invalidateQueries({ queryKey: ['portfolios'] });
+      setNewProgramName('');
+      setNewProgramPortfolioId('none');
+      setIsCreateProgramOpen(false);
+    } catch (err: any) {
+      toast.error('Failed to create program', { description: err.message });
+    } finally {
+      setIsCreatingProgram(false);
+    }
+  };
+
+  // Initialize expanded programs once data is loaded
+  useMemo(() => {
+    if (programsData && expandedPrograms.length === 0) {
+      setExpandedPrograms(programsData.map(p => p.id));
+    }
+  }, [programsData]);
+
+  // Generate timeline data from live data
   const timelineData = useMemo(() => {
-    return mockProjects.map((project, index) => {
-      const program = mockPrograms.find(p => p.projectIds.includes(project.id));
-      
-      // Generate realistic mock data for drill-down
-      const burndownWeeks = ['W1', 'W2', 'W3', 'W4', 'W5', 'W6'];
-      const variance = project.health === 'red' ? 15 : project.health === 'amber' ? 8 : 3;
-      
-      return {
-        id: project.id,
-        name: project.name,
-        code: project.code,
-        programId: program?.id || '',
-        programName: program?.name || '',
-        startDate: new Date(project.startDate),
-        endDate: new Date(project.endDate),
-        progress: project.progress,
-        health: project.health,
-        budget: project.budget.approved,
-        spent: project.budget.actual,
-        manager: project.manager,
-        description: `${project.name} - Strategic initiative focused on delivering key capabilities and business value.`,
-        team: ['Lead PM', 'Tech Lead', 'Designer', 'Developer 1', 'Developer 2'].slice(0, 3 + (index % 3)),
-        risks: project.health === 'green' ? [] : 
-               project.health === 'amber' ? [{ name: 'Timeline pressure', severity: 'medium' as const }] :
-               [{ name: 'Critical blockers', severity: 'high' as const }, { name: 'Resource constraints', severity: 'medium' as const }],
-        burndownData: burndownWeeks.map((week, i) => ({
-          week,
-          planned: 100 - (i * 15),
-          actual: 100 - (i * 15) + (Math.random() * variance * (project.health === 'green' ? -1 : 1))
-        })),
-        milestones: [
-          { date: new Date(project.startDate), name: 'Kickoff', status: 'completed' as const },
-          { 
-            date: new Date(new Date(project.startDate).getTime() + (new Date(project.endDate).getTime() - new Date(project.startDate).getTime()) * 0.5),
-            name: 'Mid-point Review',
-            status: project.progress >= 50 ? 'completed' as const : project.progress >= 40 ? 'upcoming' as const : 'at-risk' as const
-          },
-          { 
-            date: new Date(project.endDate), 
-            name: 'Go-Live', 
-            status: project.progress >= 100 ? 'completed' as const : project.health === 'red' ? 'at-risk' as const : 'upcoming' as const 
-          },
-        ],
-      };
-    });
-  }, []);
+    if (!programsData) return [];
+
+    return programsData.flatMap(program =>
+      (program.projects as any[] || []).map((project, index) => {
+        const startDate = project.start_date ? new Date(project.start_date) : new Date();
+        const endDate = project.end_date ? new Date(project.end_date) : new Date(startDate.getTime() + 90 * 24 * 60 * 60 * 1000);
+
+        return {
+          id: project.id,
+          name: project.name,
+          code: project.code,
+          programId: program.id,
+          programName: program.name,
+          startDate,
+          endDate,
+          progress: project.progress || 0,
+          health: (project.health as any) || 'green',
+          budget: project.budget || 0,
+          spent: project.spent || 0,
+          manager: project.owner_id || 'Unassigned',
+          description: project.description || `${project.name} - Strategic initiative.`,
+          team: [], // Team data would come from another hook if available
+          risks: [], // Risks data would come from useRisks if available
+          burndownData: [], // Calculated from snapshots if available
+          milestones: [
+            { date: startDate, name: 'Kickoff', status: 'completed' as const },
+            { date: endDate, name: 'Go-Live', status: (project.progress || 0) >= 100 ? 'completed' as const : 'upcoming' as const },
+          ],
+        };
+      })
+    );
+  }, [programsData]);
 
   const formatCurrency = (value: number) => {
     if (value >= 1000000) return `$${(value / 1000000).toFixed(1)}M`;
@@ -124,7 +159,6 @@ export function ProgramTimelineView() {
     return `$${value}`;
   };
 
-  // Calculate timeline range
   const getTimelineRange = () => {
     const ranges: { [key in TimeScale]: { months: number; label: string } } = {
       month: { months: 6, label: 'Monthly' },
@@ -137,6 +171,15 @@ export function ProgramTimelineView() {
   const timelineRange = getTimelineRange();
   const endDate = new Date(viewDate);
   endDate.setMonth(endDate.getMonth() + timelineRange.months);
+
+  if (isLoadingPortfolios || isLoadingPrograms) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        <span className="ml-3 text-muted-foreground">Loading timeline data...</span>
+      </div>
+    );
+  }
 
   // Generate time periods for header
   const getTimePeriods = () => {
@@ -227,8 +270,8 @@ export function ProgramTimelineView() {
   };
 
   const toggleProgram = (programId: string) => {
-    setExpandedPrograms(prev => 
-      prev.includes(programId) 
+    setExpandedPrograms(prev =>
+      prev.includes(programId)
         ? prev.filter(id => id !== programId)
         : [...prev, programId]
     );
@@ -263,6 +306,7 @@ export function ProgramTimelineView() {
           <Button variant="outline" size="sm">
             <Maximize2 className="h-4 w-4" />
           </Button>
+          <Button size="sm" onClick={() => setIsCreateProgramOpen(true)}><Plus className="h-4 w-4 mr-2" />Create Program</Button>
         </div>
       </div>
 
@@ -292,11 +336,10 @@ export function ProgramTimelineView() {
                   <button
                     key={scale}
                     onClick={() => setTimeScale(scale)}
-                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all capitalize ${
-                      timeScale === scale
-                        ? 'bg-background text-foreground shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
+                    className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all capitalize ${timeScale === scale
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                      }`}
                   >
                     {scale}
                   </button>
@@ -353,18 +396,21 @@ export function ProgramTimelineView() {
               </div>
 
               {/* Program/Project List */}
-              {mockPrograms.map((program) => {
+              {(programsData || []).map((program) => {
                 const programProjects = timelineData.filter(p => p.programId === program.id);
                 const isExpanded = expandedPrograms.includes(program.id);
                 const { totalLanes } = calculateSwimlanes(programProjects);
                 const summaryRowHeight = Math.max(10, 10 + (totalLanes - 1) * 8);
+                const redHealth = programProjects.some(p => p.health === 'red');
+                const amberHealth = programProjects.some(p => p.health === 'amber');
+                const health = redHealth ? 'red' : amberHealth ? 'amber' : 'green';
 
                 return (
                   <div key={program.id}>
                     {/* Program Row */}
                     <motion.div
-                      className="border-b border-border/50 px-4 flex items-center gap-2 bg-muted/50 cursor-pointer hover:bg-muted transition-colors"
-                      style={{ height: `${summaryRowHeight}px`, minHeight: '40px' }}
+                      className="border-b border-border/50 px-4 flex items-center gap-2 bg-muted/50 cursor-pointer hover:bg-muted transition-colors min-h-[40px]"
+                      style={{ height: `${summaryRowHeight}px` }}
                       onClick={() => toggleProgram(program.id)}
                     >
                       <motion.div
@@ -373,7 +419,7 @@ export function ProgramTimelineView() {
                       >
                         <ChevronRight className="h-4 w-4 text-muted-foreground" />
                       </motion.div>
-                      <StatusIndicator status={program.health} size="sm" />
+                      <StatusIndicator status={health} size="sm" />
                       <span className="text-sm font-medium truncate">{program.name}</span>
                       <Badge variant="outline" className="ml-auto text-xs">
                         {programProjects.length}
@@ -398,6 +444,9 @@ export function ProgramTimelineView() {
                   </div>
                 );
               })}
+              {(!programsData || programsData.length === 0) && (
+                <p className="p-10 text-center text-muted-foreground italic">No programs found.</p>
+              )}
             </div>
 
             {/* Right Panel - Timeline Grid */}
@@ -415,7 +464,7 @@ export function ProgramTimelineView() {
               </div>
 
               {/* Timeline Rows */}
-              {mockPrograms.map((program) => {
+              {(programsData || []).map((program) => {
                 const programProjects = timelineData.filter(p => p.programId === program.id);
                 const isExpanded = expandedPrograms.includes(program.id);
                 const { swimlaneMap, totalLanes } = calculateSwimlanes(programProjects);
@@ -424,7 +473,7 @@ export function ProgramTimelineView() {
                 return (
                   <div key={program.id}>
                     {/* Program Row - Summary Bar with swimlanes */}
-                    <div 
+                    <div
                       className="border-b border-border/50 relative bg-muted/30"
                       style={{ height: `${summaryRowHeight}px` }}
                     >
@@ -438,8 +487,8 @@ export function ProgramTimelineView() {
                         const barStyle = getBarStyle(project);
                         const laneIndex = swimlaneMap.get(project.id) || 0;
                         const topOffset = 4 + laneIndex * 8; // Stack bars vertically
-                        const healthColor = project.health === 'green' ? 'bg-success/60' : 
-                                           project.health === 'amber' ? 'bg-warning/60' : 'bg-destructive/60';
+                        const healthColor = project.health === 'green' ? 'bg-success/60' :
+                          project.health === 'amber' ? 'bg-warning/60' : 'bg-destructive/60';
 
                         return (
                           <div
@@ -453,7 +502,7 @@ export function ProgramTimelineView() {
                             onClick={() => setSelectedProject(project as ExtendedProject)}
                           >
                             {/* Progress overlay */}
-                            <div 
+                            <div
                               className="absolute inset-0 bg-foreground/20 rounded-l-full"
                               style={{ width: `${project.progress}%` }}
                             />
@@ -465,8 +514,8 @@ export function ProgramTimelineView() {
                     {/* Project Rows */}
                     {isExpanded && programProjects.map((project) => {
                       const barStyle = getBarStyle(project);
-                      const healthColor = project.health === 'green' ? 'bg-success' : 
-                                         project.health === 'amber' ? 'bg-warning' : 'bg-destructive';
+                      const healthColor = project.health === 'green' ? 'bg-success' :
+                        project.health === 'amber' ? 'bg-warning' : 'bg-destructive';
 
                       return (
                         <div key={project.id} className="h-12 border-b border-border/30 relative">
@@ -478,7 +527,7 @@ export function ProgramTimelineView() {
                           </div>
 
                           {/* Today line */}
-                          <div 
+                          <div
                             className="absolute top-0 bottom-0 w-px bg-primary z-10"
                             style={{ left: getMilestonePosition(new Date()) }}
                           />
@@ -494,7 +543,7 @@ export function ProgramTimelineView() {
                             onClick={() => setSelectedProject(project as ExtendedProject)}
                           >
                             {/* Progress overlay */}
-                            <div 
+                            <div
                               className="absolute inset-0 bg-foreground/20 rounded-l"
                               style={{ width: `${project.progress}%` }}
                             />
@@ -508,10 +557,11 @@ export function ProgramTimelineView() {
                           {/* Milestones */}
                           {project.milestones.map((milestone, idx) => {
                             if (milestone.date < viewDate || milestone.date > endDate) return null;
-                            const Icon = milestone.status === 'completed' ? CheckCircle2 : 
-                                         milestone.status === 'at-risk' ? AlertTriangle : Milestone;
-                            const color = milestone.status === 'completed' ? 'text-success' : 
-                                         milestone.status === 'at-risk' ? 'text-destructive' : 'text-primary';
+                            const msStatus = milestone.status as string;
+                            const Icon = msStatus === 'completed' ? CheckCircle2 :
+                              msStatus === 'at-risk' ? AlertTriangle : Milestone;
+                            const color = msStatus === 'completed' ? 'text-success' :
+                              msStatus === 'at-risk' ? 'text-destructive' : 'text-primary';
 
                             return (
                               <div
@@ -546,7 +596,7 @@ export function ProgramTimelineView() {
                 <Calendar className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-semibold">{mockProjects.length}</p>
+                <p className="text-2xl font-semibold">{timelineData.length}</p>
                 <p className="text-xs text-muted-foreground">Active Projects</p>
               </div>
             </div>
@@ -559,7 +609,9 @@ export function ProgramTimelineView() {
                 <CheckCircle2 className="h-5 w-5 text-success" />
               </div>
               <div>
-                <p className="text-2xl font-semibold">12</p>
+                <p className="text-2xl font-semibold">
+                  {timelineData.reduce((sum, p) => sum + p.milestones.filter(m => m.status === 'completed').length, 0)}
+                </p>
                 <p className="text-xs text-muted-foreground">Completed Milestones</p>
               </div>
             </div>
@@ -572,7 +624,9 @@ export function ProgramTimelineView() {
                 <Flag className="h-5 w-5 text-warning" />
               </div>
               <div>
-                <p className="text-2xl font-semibold">8</p>
+                <p className="text-2xl font-semibold">
+                  {timelineData.reduce((sum, p) => sum + p.milestones.filter(m => m.status === 'upcoming').length, 0)}
+                </p>
                 <p className="text-xs text-muted-foreground">Upcoming Milestones</p>
               </div>
             </div>
@@ -585,8 +639,10 @@ export function ProgramTimelineView() {
                 <AlertTriangle className="h-5 w-5 text-destructive" />
               </div>
               <div>
-                <p className="text-2xl font-semibold">3</p>
-                <p className="text-xs text-muted-foreground">At-Risk Milestones</p>
+                <p className="text-2xl font-semibold">
+                  {timelineData.filter(p => p.health === 'red').length}
+                </p>
+                <p className="text-xs text-muted-foreground">Critical Projects</p>
               </div>
             </div>
           </CardContent>
@@ -714,24 +770,24 @@ export function ProgramTimelineView() {
                         <AreaChart data={selectedProject.burndownData}>
                           <defs>
                             <linearGradient id="colorPlanned" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0.3}/>
-                              <stop offset="95%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0}/>
+                              <stop offset="5%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0.3} />
+                              <stop offset="95%" stopColor="hsl(var(--muted-foreground))" stopOpacity={0} />
                             </linearGradient>
                             <linearGradient id="colorActual" x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3}/>
-                              <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0}/>
+                              <stop offset="5%" stopColor="hsl(var(--primary))" stopOpacity={0.3} />
+                              <stop offset="95%" stopColor="hsl(var(--primary))" stopOpacity={0} />
                             </linearGradient>
                           </defs>
                           <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
                           <XAxis dataKey="week" tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
                           <YAxis tick={{ fontSize: 10 }} stroke="hsl(var(--muted-foreground))" />
-                          <Tooltip 
-                            contentStyle={{ 
-                              backgroundColor: 'hsl(var(--popover))', 
+                          <Tooltip
+                            contentStyle={{
+                              backgroundColor: 'hsl(var(--popover))',
                               border: '1px solid hsl(var(--border))',
                               borderRadius: '8px',
                               fontSize: '12px'
-                            }} 
+                            }}
                           />
                           <Area type="monotone" dataKey="planned" stroke="hsl(var(--muted-foreground))" fillOpacity={1} fill="url(#colorPlanned)" strokeDasharray="5 5" />
                           <Area type="monotone" dataKey="actual" stroke="hsl(var(--primary))" fillOpacity={1} fill="url(#colorActual)" />
@@ -750,10 +806,9 @@ export function ProgramTimelineView() {
                     <div className="space-y-3">
                       {selectedProject.milestones.map((milestone, idx) => (
                         <div key={idx} className="flex items-center gap-3">
-                          <div className={`p-1.5 rounded-full ${
-                            milestone.status === 'completed' ? 'bg-success/10' :
+                          <div className={`p-1.5 rounded-full ${milestone.status === 'completed' ? 'bg-success/10' :
                             milestone.status === 'at-risk' ? 'bg-destructive/10' : 'bg-primary/10'
-                          }`}>
+                            }`}>
                             {milestone.status === 'completed' ? (
                               <CheckCircle2 className="h-4 w-4 text-success" />
                             ) : milestone.status === 'at-risk' ? (
@@ -768,7 +823,7 @@ export function ProgramTimelineView() {
                           </div>
                           <Badge variant={
                             milestone.status === 'completed' ? 'default' :
-                            milestone.status === 'at-risk' ? 'destructive' : 'outline'
+                              milestone.status === 'at-risk' ? 'destructive' : 'outline'
                           } className="text-xs capitalize">
                             {milestone.status}
                           </Badge>
@@ -816,7 +871,7 @@ export function ProgramTimelineView() {
                             <span className="text-sm">{risk.name}</span>
                             <Badge variant={
                               risk.severity === 'high' ? 'destructive' :
-                              risk.severity === 'medium' ? 'secondary' : 'outline'
+                                risk.severity === 'medium' ? 'secondary' : 'outline'
                             } className="text-xs capitalize">
                               {risk.severity}
                             </Badge>
@@ -850,6 +905,49 @@ export function ProgramTimelineView() {
           </>
         )}
       </AnimatePresence>
+
+      {/* Create Program Dialog */}
+      <Dialog open={isCreateProgramOpen} onOpenChange={setIsCreateProgramOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create New Program</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="program-name">Program Name</Label>
+              <Input
+                id="program-name"
+                placeholder="e.g. Digital Transformation"
+                value={newProgramName}
+                onChange={(e) => setNewProgramName(e.target.value)}
+                autoFocus
+                onKeyDown={(e) => { if (e.key === 'Enter') handleCreateProgram(); }}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="program-portfolio">Assign to Portfolio (optional)</Label>
+              <Select value={newProgramPortfolioId} onValueChange={setNewProgramPortfolioId}>
+                <SelectTrigger id="program-portfolio">
+                  <SelectValue placeholder="Select a portfolio..." />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No portfolio</SelectItem>
+                  {(portfolios || []).map((p: any) => (
+                    <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateProgramOpen(false)}>Cancel</Button>
+            <Button onClick={handleCreateProgram} disabled={isCreatingProgram || !newProgramName.trim()}>
+              {isCreatingProgram ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}
+              Create Program
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

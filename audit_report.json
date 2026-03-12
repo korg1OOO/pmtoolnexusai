@@ -1,0 +1,1179 @@
+{
+  "totalComponents": 227,
+  "totalPages": 9,
+  "pages": {
+    "AboutUs": {
+      "path": "pages/AboutUs.tsx",
+      "wired": true
+    },
+    "Auth": {
+      "path": "pages/Auth.tsx",
+      "wired": true
+    },
+    "ContactUs": {
+      "path": "pages/ContactUs.tsx",
+      "wired": true
+    },
+    "Debug": {
+      "path": "pages/Debug.tsx",
+      "wired": true
+    },
+    "Index": {
+      "path": "pages/Index.tsx",
+      "wired": true
+    },
+    "LandingPage": {
+      "path": "pages/LandingPage.tsx",
+      "wired": true
+    },
+    "NotFound": {
+      "path": "pages/NotFound.tsx",
+      "wired": true
+    },
+    "OAuthCallback": {
+      "path": "pages/OAuthCallback.tsx",
+      "wired": true
+    },
+    "PrivacyPolicy": {
+      "path": "pages/PrivacyPolicy.tsx",
+      "wired": true
+    }
+  },
+  "components": {
+    "EmptyProjectState": {
+      "path": "components/EmptyProjectState.tsx",
+      "usages": 1,
+      "category": "root"
+    },
+    "NavLink": {
+      "path": "components/NavLink.tsx",
+      "usages": 0,
+      "category": "root"
+    },
+    "ThemeProvider": {
+      "path": "components/ThemeProvider.tsx",
+      "usages": 1,
+      "category": "root"
+    },
+    "ThemeToggle": {
+      "path": "components/ThemeToggle.tsx",
+      "usages": 2,
+      "category": "root"
+    },
+    "AIProviderSettings": {
+      "path": "components/admin/AIProviderSettings.tsx",
+      "usages": 1,
+      "category": "admin"
+    },
+    "ActionConfirmDialog": {
+      "path": "components/ai/ActionConfirmDialog.tsx",
+      "usages": 1,
+      "category": "ai"
+    },
+    "AgentIndicator": {
+      "path": "components/ai/AgentIndicator.tsx",
+      "usages": 2,
+      "category": "ai"
+    },
+    "ChatAttachments": {
+      "path": "components/ai/ChatAttachments.tsx",
+      "usages": 1,
+      "category": "ai"
+    },
+    "ChatMessage": {
+      "path": "components/ai/ChatMessage.tsx",
+      "usages": 8,
+      "category": "ai"
+    },
+    "ClarifyingQuestion": {
+      "path": "components/ai/ClarifyingQuestion.tsx",
+      "usages": 3,
+      "category": "ai"
+    },
+    "CommunicationAISidebar": {
+      "path": "components/ai/CommunicationAISidebar.tsx",
+      "usages": 1,
+      "category": "ai"
+    },
+    "ContextSelector": {
+      "path": "components/ai/ContextSelector.tsx",
+      "usages": 1,
+      "category": "ai"
+    },
+    "GlobalAISidebar": {
+      "path": "components/ai/GlobalAISidebar.tsx",
+      "usages": 3,
+      "category": "ai"
+    },
+    "IntentModeToggle": {
+      "path": "components/ai/IntentModeToggle.tsx",
+      "usages": 1,
+      "category": "ai"
+    },
+    "MeetingAISidebar": {
+      "path": "components/ai/MeetingAISidebar.tsx",
+      "usages": 1,
+      "category": "ai"
+    },
+    "PMCoachSidebar": {
+      "path": "components/ai/PMCoachSidebar.tsx",
+      "usages": 1,
+      "category": "ai"
+    },
+    "PageContextPanel": {
+      "path": "components/ai/PageContextPanel.tsx",
+      "usages": 1,
+      "category": "ai"
+    },
+    "StrategicAISidebar": {
+      "path": "components/ai/StrategicAISidebar.tsx",
+      "usages": 1,
+      "category": "ai"
+    },
+    "AuthDialog": {
+      "path": "components/auth/AuthDialog.tsx",
+      "usages": 0,
+      "category": "auth"
+    },
+    "BriefingSectionCard": {
+      "path": "components/briefing/BriefingSectionCard.tsx",
+      "usages": 3,
+      "category": "briefing"
+    },
+    "BriefingSettingsPanel": {
+      "path": "components/briefing/BriefingSettingsPanel.tsx",
+      "usages": 2,
+      "category": "briefing"
+    },
+    "FlexibleBriefingGrid": {
+      "path": "components/briefing/FlexibleBriefingGrid.tsx",
+      "usages": 2,
+      "category": "briefing"
+    },
+    "ResizableBriefingLayout": {
+      "path": "components/briefing/ResizableBriefingLayout.tsx",
+      "usages": 1,
+      "category": "briefing"
+    },
+    "AIInsightsSection": {
+      "path": "components/briefing/sections/AIInsightsSection.tsx",
+      "usages": 2,
+      "category": "briefing"
+    },
+    "ActionsSection": {
+      "path": "components/briefing/sections/ActionsSection.tsx",
+      "usages": 2,
+      "category": "briefing"
+    },
+    "BudgetAnalysisSection": {
+      "path": "components/briefing/sections/BudgetAnalysisSection.tsx",
+      "usages": 2,
+      "category": "briefing"
+    },
+    "CriticalAlertsSection": {
+      "path": "components/briefing/sections/CriticalAlertsSection.tsx",
+      "usages": 2,
+      "category": "briefing"
+    },
+    "DecisionsSection": {
+      "path": "components/briefing/sections/DecisionsSection.tsx",
+      "usages": 2,
+      "category": "briefing"
+    },
+    "IssuesSection": {
+      "path": "components/briefing/sections/IssuesSection.tsx",
+      "usages": 2,
+      "category": "briefing"
+    },
+    "MeetingsSection": {
+      "path": "components/briefing/sections/MeetingsSection.tsx",
+      "usages": 2,
+      "category": "briefing"
+    },
+    "ProfitLossSection": {
+      "path": "components/briefing/sections/ProfitLossSection.tsx",
+      "usages": 2,
+      "category": "briefing"
+    },
+    "RiskAssessmentSection": {
+      "path": "components/briefing/sections/RiskAssessmentSection.tsx",
+      "usages": 2,
+      "category": "briefing"
+    },
+    "ScheduleSlippageSection": {
+      "path": "components/briefing/sections/ScheduleSlippageSection.tsx",
+      "usages": 2,
+      "category": "briefing"
+    },
+    "TeamAvailabilitySection": {
+      "path": "components/briefing/sections/TeamAvailabilitySection.tsx",
+      "usages": 2,
+      "category": "briefing"
+    },
+    "ChatAttachment": {
+      "path": "components/chat/ChatAttachment.tsx",
+      "usages": 5,
+      "category": "chat"
+    },
+    "ComposeArea": {
+      "path": "components/chat/ComposeArea.tsx",
+      "usages": 1,
+      "category": "chat"
+    },
+    "EmojiPicker": {
+      "path": "components/chat/EmojiPicker.tsx",
+      "usages": 1,
+      "category": "chat"
+    },
+    "MentionInput": {
+      "path": "components/chat/MentionInput.tsx",
+      "usages": 2,
+      "category": "chat"
+    },
+    "MessageBubble": {
+      "path": "components/chat/MessageBubble.tsx",
+      "usages": 1,
+      "category": "chat"
+    },
+    "MessageEditor": {
+      "path": "components/chat/MessageEditor.tsx",
+      "usages": 4,
+      "category": "chat"
+    },
+    "MessageForward": {
+      "path": "components/chat/MessageForward.tsx",
+      "usages": 3,
+      "category": "chat"
+    },
+    "MessageReactions": {
+      "path": "components/chat/MessageReactions.tsx",
+      "usages": 3,
+      "category": "chat"
+    },
+    "MessageSearch": {
+      "path": "components/chat/MessageSearch.tsx",
+      "usages": 2,
+      "category": "chat"
+    },
+    "MessageThread": {
+      "path": "components/chat/MessageThread.tsx",
+      "usages": 3,
+      "category": "chat"
+    },
+    "MiniChatWindow": {
+      "path": "components/chat/MiniChatWindow.tsx",
+      "usages": 1,
+      "category": "chat"
+    },
+    "PinnedMessages": {
+      "path": "components/chat/PinnedMessages.tsx",
+      "usages": 5,
+      "category": "chat"
+    },
+    "ReadReceipts": {
+      "path": "components/chat/ReadReceipts.tsx",
+      "usages": 4,
+      "category": "chat"
+    },
+    "TypingIndicator": {
+      "path": "components/chat/TypingIndicator.tsx",
+      "usages": 3,
+      "category": "chat"
+    },
+    "CollaboratorCursors": {
+      "path": "components/collaboration/CollaboratorCursors.tsx",
+      "usages": 1,
+      "category": "collaboration"
+    },
+    "ConflictResolutionDialog": {
+      "path": "components/collaboration/ConflictResolutionDialog.tsx",
+      "usages": 1,
+      "category": "collaboration"
+    },
+    "PresenceIndicator": {
+      "path": "components/collaboration/PresenceIndicator.tsx",
+      "usages": 1,
+      "category": "collaboration"
+    },
+    "ProjectChat": {
+      "path": "components/collaboration/ProjectChat.tsx",
+      "usages": 4,
+      "category": "collaboration"
+    },
+    "TaskLockIndicator": {
+      "path": "components/collaboration/TaskLockIndicator.tsx",
+      "usages": 1,
+      "category": "collaboration"
+    },
+    "PDFExporter": {
+      "path": "components/common/PDFExporter.tsx",
+      "usages": 10,
+      "category": "common"
+    },
+    "CommunicationsView": {
+      "path": "components/communications/CommunicationsView.tsx",
+      "usages": 2,
+      "category": "communications"
+    },
+    "EmailAccountSettings": {
+      "path": "components/communications/EmailAccountSettings.tsx",
+      "usages": 2,
+      "category": "communications"
+    },
+    "EmailComposeDialog": {
+      "path": "components/communications/EmailComposeDialog.tsx",
+      "usages": 2,
+      "category": "communications"
+    },
+    "DocumentApprovalWorkflow": {
+      "path": "components/documents/DocumentApprovalWorkflow.tsx",
+      "usages": 0,
+      "category": "documents"
+    },
+    "DocumentDetailsPanel": {
+      "path": "components/documents/DocumentDetailsPanel.tsx",
+      "usages": 1,
+      "category": "documents"
+    },
+    "DocumentGrid": {
+      "path": "components/documents/DocumentGrid.tsx",
+      "usages": 1,
+      "category": "documents"
+    },
+    "DocumentList": {
+      "path": "components/documents/DocumentList.tsx",
+      "usages": 1,
+      "category": "documents"
+    },
+    "DocumentMoveDialog": {
+      "path": "components/documents/DocumentMoveDialog.tsx",
+      "usages": 1,
+      "category": "documents"
+    },
+    "DocumentShareDialog": {
+      "path": "components/documents/DocumentShareDialog.tsx",
+      "usages": 1,
+      "category": "documents"
+    },
+    "DocumentSidebar": {
+      "path": "components/documents/DocumentSidebar.tsx",
+      "usages": 1,
+      "category": "documents"
+    },
+    "DocumentToolbar": {
+      "path": "components/documents/DocumentToolbar.tsx",
+      "usages": 3,
+      "category": "documents"
+    },
+    "DocumentUploadDialog": {
+      "path": "components/documents/DocumentUploadDialog.tsx",
+      "usages": 1,
+      "category": "documents"
+    },
+    "FolderCreateDialog": {
+      "path": "components/documents/FolderCreateDialog.tsx",
+      "usages": 1,
+      "category": "documents"
+    },
+    "VersionHistory": {
+      "path": "components/documents/VersionHistory.tsx",
+      "usages": 2,
+      "category": "documents"
+    },
+    "KPICard": {
+      "path": "components/enterprise/KPICard.tsx",
+      "usages": 8,
+      "category": "enterprise"
+    },
+    "ProgressRing": {
+      "path": "components/enterprise/ProgressRing.tsx",
+      "usages": 4,
+      "category": "enterprise"
+    },
+    "StatusIndicator": {
+      "path": "components/enterprise/StatusIndicator.tsx",
+      "usages": 9,
+      "category": "enterprise"
+    },
+    "AddBudgetItemDialog": {
+      "path": "components/financials/AddBudgetItemDialog.tsx",
+      "usages": 1,
+      "category": "financials"
+    },
+    "AddInvoiceDialog": {
+      "path": "components/financials/AddInvoiceDialog.tsx",
+      "usages": 1,
+      "category": "financials"
+    },
+    "AppShell": {
+      "path": "components/layout/AppShell.tsx",
+      "usages": 1,
+      "category": "layout"
+    },
+    "LandingFooter": {
+      "path": "components/layout/LandingFooter.tsx",
+      "usages": 2,
+      "category": "layout"
+    },
+    "LandingHeader": {
+      "path": "components/layout/LandingHeader.tsx",
+      "usages": 2,
+      "category": "layout"
+    },
+    "ProjectSwitcher": {
+      "path": "components/layout/ProjectSwitcher.tsx",
+      "usages": 1,
+      "category": "layout"
+    },
+    "Sidebar": {
+      "path": "components/layout/Sidebar.tsx",
+      "usages": 27,
+      "category": "layout"
+    },
+    "TopBar": {
+      "path": "components/layout/TopBar.tsx",
+      "usages": 1,
+      "category": "layout"
+    },
+    "LinkDialog": {
+      "path": "components/linking/LinkDialog.tsx",
+      "usages": 3,
+      "category": "linking"
+    },
+    "MeetingCreationDialog": {
+      "path": "components/meetings/MeetingCreationDialog.tsx",
+      "usages": 3,
+      "category": "meetings"
+    },
+    "MeetingEditDialog": {
+      "path": "components/meetings/MeetingEditDialog.tsx",
+      "usages": 2,
+      "category": "meetings"
+    },
+    "MiniCalendarSidebar": {
+      "path": "components/meetings/MiniCalendarSidebar.tsx",
+      "usages": 2,
+      "category": "meetings"
+    },
+    "RecurringEditDialog": {
+      "path": "components/meetings/RecurringEditDialog.tsx",
+      "usages": 2,
+      "category": "meetings"
+    },
+    "TranscriptUploadDialog": {
+      "path": "components/meetings/TranscriptUploadDialog.tsx",
+      "usages": 2,
+      "category": "meetings"
+    },
+    "ContactFormModal": {
+      "path": "components/modals/ContactFormModal.tsx",
+      "usages": 2,
+      "category": "modals"
+    },
+    "BacklinksSidebar": {
+      "path": "components/notes/BacklinksSidebar.tsx",
+      "usages": 2,
+      "category": "notes"
+    },
+    "NotebookSidebar": {
+      "path": "components/notes/NotebookSidebar.tsx",
+      "usages": 2,
+      "category": "notes"
+    },
+    "PageEditor": {
+      "path": "components/notes/PageEditor.tsx",
+      "usages": 2,
+      "category": "notes"
+    },
+    "PageList": {
+      "path": "components/notes/PageList.tsx",
+      "usages": 2,
+      "category": "notes"
+    },
+    "RichTextEditor": {
+      "path": "components/notes/RichTextEditor.tsx",
+      "usages": 2,
+      "category": "notes"
+    },
+    "SpreadsheetEditor": {
+      "path": "components/notes/SpreadsheetEditor.tsx",
+      "usages": 2,
+      "category": "notes"
+    },
+    "ConvertToProjectPlanDialog": {
+      "path": "components/notes/spreadsheet/ConvertToProjectPlanDialog.tsx",
+      "usages": 2,
+      "category": "notes"
+    },
+    "FormulaBar": {
+      "path": "components/notes/spreadsheet/FormulaBar.tsx",
+      "usages": 2,
+      "category": "notes"
+    },
+    "LinkedSpreadsheetIcon": {
+      "path": "components/notes/spreadsheet/LinkedSpreadsheetIcon.tsx",
+      "usages": 2,
+      "category": "notes"
+    },
+    "SpreadsheetToolbar": {
+      "path": "components/notes/spreadsheet/SpreadsheetToolbar.tsx",
+      "usages": 2,
+      "category": "notes"
+    },
+    "SyncStatusIndicator": {
+      "path": "components/sync/SyncStatusIndicator.tsx",
+      "usages": 3,
+      "category": "sync"
+    },
+    "NotificationCenter": {
+      "path": "components/notifications/NotificationCenter.tsx",
+      "usages": 1,
+      "category": "notifications"
+    },
+    "CalendarDialog": {
+      "path": "components/planning/CalendarDialog.tsx",
+      "usages": 1,
+      "category": "planning"
+    },
+    "DatabaseGantt": {
+      "path": "components/planning/DatabaseGantt.tsx",
+      "usages": 1,
+      "category": "planning"
+    },
+    "DatabaseTaskGrid": {
+      "path": "components/planning/DatabaseTaskGrid.tsx",
+      "usages": 1,
+      "category": "planning"
+    },
+    "DependencyContextMenu": {
+      "path": "components/planning/DependencyContextMenu.tsx",
+      "usages": 1,
+      "category": "planning"
+    },
+    "InteractiveGantt": {
+      "path": "components/planning/InteractiveGantt.tsx",
+      "usages": 0,
+      "category": "planning"
+    },
+    "LinkChildProjectDialog": {
+      "path": "components/planning/LinkChildProjectDialog.tsx",
+      "usages": 1,
+      "category": "planning"
+    },
+    "MSProjectColumns": {
+      "path": "components/planning/MSProjectColumns.tsx",
+      "usages": 0,
+      "category": "planning"
+    },
+    "TaskGrid": {
+      "path": "components/planning/TaskGrid.tsx",
+      "usages": 2,
+      "category": "planning"
+    },
+    "TaskInformationDialog": {
+      "path": "components/planning/TaskInformationDialog.tsx",
+      "usages": 1,
+      "category": "planning"
+    },
+    "ComponentPicker": {
+      "path": "components/presentations/ComponentPicker.tsx",
+      "usages": 2,
+      "category": "presentations"
+    },
+    "EmbeddedDashboardWidget": {
+      "path": "components/presentations/EmbeddedDashboardWidget.tsx",
+      "usages": 4,
+      "category": "presentations"
+    },
+    "PresentationSidebar": {
+      "path": "components/presentations/PresentationSidebar.tsx",
+      "usages": 2,
+      "category": "presentations"
+    },
+    "PresentationToolbar": {
+      "path": "components/presentations/PresentationToolbar.tsx",
+      "usages": 2,
+      "category": "presentations"
+    },
+    "ShapeLibrary": {
+      "path": "components/presentations/ShapeLibrary.tsx",
+      "usages": 3,
+      "category": "presentations"
+    },
+    "SlideEditor": {
+      "path": "components/presentations/SlideEditor.tsx",
+      "usages": 2,
+      "category": "presentations"
+    },
+    "SlidePropertiesPanel": {
+      "path": "components/presentations/SlidePropertiesPanel.tsx",
+      "usages": 2,
+      "category": "presentations"
+    },
+    "SpeakerNotesPanel": {
+      "path": "components/presentations/SpeakerNotesPanel.tsx",
+      "usages": 2,
+      "category": "presentations"
+    },
+    "MethodologySelector": {
+      "path": "components/project-creation/MethodologySelector.tsx",
+      "usages": 1,
+      "category": "project-creation"
+    },
+    "TemplateGallery": {
+      "path": "components/project-creation/TemplateGallery.tsx",
+      "usages": 1,
+      "category": "project-creation"
+    },
+    "TemplatePreview": {
+      "path": "components/project-creation/TemplatePreview.tsx",
+      "usages": 1,
+      "category": "project-creation"
+    },
+    "ReportCard": {
+      "path": "components/reports/ReportCard.tsx",
+      "usages": 4,
+      "category": "reports"
+    },
+    "ReportCategories": {
+      "path": "components/reports/ReportCategories.tsx",
+      "usages": 2,
+      "category": "reports"
+    },
+    "ReportPreview": {
+      "path": "components/reports/ReportPreview.tsx",
+      "usages": 2,
+      "category": "reports"
+    },
+    "ScheduleReportDialog": {
+      "path": "components/reports/ScheduleReportDialog.tsx",
+      "usages": 2,
+      "category": "reports"
+    },
+    "SystemAuditReport": {
+      "path": "components/reports/SystemAuditReport.tsx",
+      "usages": 1,
+      "category": "reports"
+    },
+    "ResourceAssignmentDialog": {
+      "path": "components/resources/ResourceAssignmentDialog.tsx",
+      "usages": 0,
+      "category": "resources"
+    },
+    "ResourceSheet": {
+      "path": "components/resources/ResourceSheet.tsx",
+      "usages": 2,
+      "category": "resources"
+    },
+    "ResourceUsageView": {
+      "path": "components/resources/ResourceUsageView.tsx",
+      "usages": 2,
+      "category": "resources"
+    },
+    "SprintBurndownChart": {
+      "path": "components/sprint/SprintBurndownChart.tsx",
+      "usages": 0,
+      "category": "sprint"
+    },
+    "BaselineManager": {
+      "path": "components/tracking/BaselineManager.tsx",
+      "usages": 1,
+      "category": "tracking"
+    },
+    "TrackingGantt": {
+      "path": "components/tracking/TrackingGantt.tsx",
+      "usages": 1,
+      "category": "tracking"
+    },
+    "VarianceTable": {
+      "path": "components/tracking/VarianceTable.tsx",
+      "usages": 1,
+      "category": "tracking"
+    },
+    "accordion": {
+      "path": "components/ui/accordion.tsx",
+      "usages": 1,
+      "category": "ui"
+    },
+    "alert-dialog": {
+      "path": "components/ui/alert-dialog.tsx",
+      "usages": 7,
+      "category": "ui"
+    },
+    "alert": {
+      "path": "components/ui/alert.tsx",
+      "usages": 17,
+      "category": "ui"
+    },
+    "aspect-ratio": {
+      "path": "components/ui/aspect-ratio.tsx",
+      "usages": 0,
+      "category": "ui"
+    },
+    "avatar": {
+      "path": "components/ui/avatar.tsx",
+      "usages": 38,
+      "category": "ui"
+    },
+    "badge": {
+      "path": "components/ui/badge.tsx",
+      "usages": 110,
+      "category": "ui"
+    },
+    "breadcrumb": {
+      "path": "components/ui/breadcrumb.tsx",
+      "usages": 0,
+      "category": "ui"
+    },
+    "button": {
+      "path": "components/ui/button.tsx",
+      "usages": 158,
+      "category": "ui"
+    },
+    "calendar": {
+      "path": "components/ui/calendar.tsx",
+      "usages": 23,
+      "category": "ui"
+    },
+    "card": {
+      "path": "components/ui/card.tsx",
+      "usages": 97,
+      "category": "ui"
+    },
+    "carousel": {
+      "path": "components/ui/carousel.tsx",
+      "usages": 0,
+      "category": "ui"
+    },
+    "chart": {
+      "path": "components/ui/chart.tsx",
+      "usages": 17,
+      "category": "ui"
+    },
+    "checkbox": {
+      "path": "components/ui/checkbox.tsx",
+      "usages": 14,
+      "category": "ui"
+    },
+    "collapsible": {
+      "path": "components/ui/collapsible.tsx",
+      "usages": 8,
+      "category": "ui"
+    },
+    "command": {
+      "path": "components/ui/command.tsx",
+      "usages": 7,
+      "category": "ui"
+    },
+    "context-menu": {
+      "path": "components/ui/context-menu.tsx",
+      "usages": 3,
+      "category": "ui"
+    },
+    "dialog": {
+      "path": "components/ui/dialog.tsx",
+      "usages": 58,
+      "category": "ui"
+    },
+    "drawer": {
+      "path": "components/ui/drawer.tsx",
+      "usages": 0,
+      "category": "ui"
+    },
+    "dropdown-menu": {
+      "path": "components/ui/dropdown-menu.tsx",
+      "usages": 37,
+      "category": "ui"
+    },
+    "form": {
+      "path": "components/ui/form.tsx",
+      "usages": 128,
+      "category": "ui"
+    },
+    "hover-card": {
+      "path": "components/ui/hover-card.tsx",
+      "usages": 0,
+      "category": "ui"
+    },
+    "input-otp": {
+      "path": "components/ui/input-otp.tsx",
+      "usages": 0,
+      "category": "ui"
+    },
+    "input": {
+      "path": "components/ui/input.tsx",
+      "usages": 95,
+      "category": "ui"
+    },
+    "label": {
+      "path": "components/ui/label.tsx",
+      "usages": 99,
+      "category": "ui"
+    },
+    "menubar": {
+      "path": "components/ui/menubar.tsx",
+      "usages": 0,
+      "category": "ui"
+    },
+    "navigation-menu": {
+      "path": "components/ui/navigation-menu.tsx",
+      "usages": 0,
+      "category": "ui"
+    },
+    "pagination": {
+      "path": "components/ui/pagination.tsx",
+      "usages": 0,
+      "category": "ui"
+    },
+    "popover": {
+      "path": "components/ui/popover.tsx",
+      "usages": 29,
+      "category": "ui"
+    },
+    "progress": {
+      "path": "components/ui/progress.tsx",
+      "usages": 76,
+      "category": "ui"
+    },
+    "radio-group": {
+      "path": "components/ui/radio-group.tsx",
+      "usages": 4,
+      "category": "ui"
+    },
+    "resizable": {
+      "path": "components/ui/resizable.tsx",
+      "usages": 5,
+      "category": "ui"
+    },
+    "scroll-area": {
+      "path": "components/ui/scroll-area.tsx",
+      "usages": 53,
+      "category": "ui"
+    },
+    "select": {
+      "path": "components/ui/select.tsx",
+      "usages": 166,
+      "category": "ui"
+    },
+    "separator": {
+      "path": "components/ui/separator.tsx",
+      "usages": 22,
+      "category": "ui"
+    },
+    "sheet": {
+      "path": "components/ui/sheet.tsx",
+      "usages": 26,
+      "category": "ui"
+    },
+    "sidebar": {
+      "path": "components/ui/sidebar.tsx",
+      "usages": 10,
+      "category": "ui"
+    },
+    "skeleton": {
+      "path": "components/ui/skeleton.tsx",
+      "usages": 11,
+      "category": "ui"
+    },
+    "slider": {
+      "path": "components/ui/slider.tsx",
+      "usages": 4,
+      "category": "ui"
+    },
+    "sonner": {
+      "path": "components/ui/sonner.tsx",
+      "usages": 82,
+      "category": "ui"
+    },
+    "switch": {
+      "path": "components/ui/switch.tsx",
+      "usages": 66,
+      "category": "ui"
+    },
+    "table": {
+      "path": "components/ui/table.tsx",
+      "usages": 64,
+      "category": "ui"
+    },
+    "tabs": {
+      "path": "components/ui/tabs.tsx",
+      "usages": 43,
+      "category": "ui"
+    },
+    "textarea": {
+      "path": "components/ui/textarea.tsx",
+      "usages": 35,
+      "category": "ui"
+    },
+    "toast": {
+      "path": "components/ui/toast.tsx",
+      "usages": 106,
+      "category": "ui"
+    },
+    "toaster": {
+      "path": "components/ui/toaster.tsx",
+      "usages": 2,
+      "category": "ui"
+    },
+    "toggle-group": {
+      "path": "components/ui/toggle-group.tsx",
+      "usages": 1,
+      "category": "ui"
+    },
+    "toggle": {
+      "path": "components/ui/toggle.tsx",
+      "usages": 35,
+      "category": "ui"
+    },
+    "tooltip": {
+      "path": "components/ui/tooltip.tsx",
+      "usages": 32,
+      "category": "ui"
+    },
+    "ActionsView": {
+      "path": "components/views/ActionsView.tsx",
+      "usages": 2,
+      "category": "views"
+    },
+    "BacklogView": {
+      "path": "components/views/BacklogView.tsx",
+      "usages": 2,
+      "category": "views"
+    },
+    "CalendarView": {
+      "path": "components/views/CalendarView.tsx",
+      "usages": 2,
+      "category": "views"
+    },
+    "ChangeRequestsView": {
+      "path": "components/views/ChangeRequestsView.tsx",
+      "usages": 2,
+      "category": "views"
+    },
+    "ChildGanttView": {
+      "path": "components/views/ChildGanttView.tsx",
+      "usages": 1,
+      "category": "views"
+    },
+    "ChildPlansView": {
+      "path": "components/views/ChildPlansView.tsx",
+      "usages": 1,
+      "category": "views"
+    },
+    "CommunicationIntelligenceView": {
+      "path": "components/views/CommunicationIntelligenceView.tsx",
+      "usages": 2,
+      "category": "views"
+    },
+    "DashboardHub": {
+      "path": "components/views/DashboardHub.tsx",
+      "usages": 2,
+      "category": "views"
+    },
+    "DashboardView": {
+      "path": "components/views/DashboardView.tsx",
+      "usages": 5,
+      "category": "views"
+    },
+    "DecisionsView": {
+      "path": "components/views/DecisionsView.tsx",
+      "usages": 2,
+      "category": "views"
+    },
+    "DeliverablesView": {
+      "path": "components/views/DeliverablesView.tsx",
+      "usages": 1,
+      "category": "views"
+    },
+    "DocumentCenterView": {
+      "path": "components/views/DocumentCenterView.tsx",
+      "usages": 2,
+      "category": "views"
+    },
+    "EVMView": {
+      "path": "components/views/EVMView.tsx",
+      "usages": 2,
+      "category": "views"
+    },
+    "EnhancedMeetingsView": {
+      "path": "components/views/EnhancedMeetingsView.tsx",
+      "usages": 3,
+      "category": "views"
+    },
+    "ExecutiveDashboardView": {
+      "path": "components/views/ExecutiveDashboardView.tsx",
+      "usages": 3,
+      "category": "views"
+    },
+    "FinalReportView": {
+      "path": "components/views/FinalReportView.tsx",
+      "usages": 2,
+      "category": "views"
+    },
+    "FinancialsView": {
+      "path": "components/views/FinancialsView.tsx",
+      "usages": 2,
+      "category": "views"
+    },
+    "GanttView": {
+      "path": "components/views/GanttView.tsx",
+      "usages": 3,
+      "category": "views"
+    },
+    "IssuesRegisterView": {
+      "path": "components/views/IssuesRegisterView.tsx",
+      "usages": 2,
+      "category": "views"
+    },
+    "LessonsLearnedView": {
+      "path": "components/views/LessonsLearnedView.tsx",
+      "usages": 2,
+      "category": "views"
+    },
+    "MilestonesView": {
+      "path": "components/views/MilestonesView.tsx",
+      "usages": 1,
+      "category": "views"
+    },
+    "MorningBriefingView": {
+      "path": "components/views/MorningBriefingView.tsx",
+      "usages": 3,
+      "category": "views"
+    },
+    "NotesView": {
+      "path": "components/views/NotesView.tsx",
+      "usages": 3,
+      "category": "views"
+    },
+    "PlanningView": {
+      "path": "components/views/PlanningView.tsx",
+      "usages": 4,
+      "category": "views"
+    },
+    "PlatformAdminView": {
+      "path": "components/views/PlatformAdminView.tsx",
+      "usages": 1,
+      "category": "views"
+    },
+    "PortfolioManagement": {
+      "path": "components/views/PortfolioManagement.tsx",
+      "usages": 1,
+      "category": "views"
+    },
+    "PortfolioView": {
+      "path": "components/views/PortfolioView.tsx",
+      "usages": 2,
+      "category": "views"
+    },
+    "PresentationsView": {
+      "path": "components/views/PresentationsView.tsx",
+      "usages": 2,
+      "category": "views"
+    },
+    "ProgramTimelineView": {
+      "path": "components/views/ProgramTimelineView.tsx",
+      "usages": 2,
+      "category": "views"
+    },
+    "ProjectAdminView": {
+      "path": "components/views/ProjectAdminView.tsx",
+      "usages": 1,
+      "category": "views"
+    },
+    "ProjectCharterView": {
+      "path": "components/views/ProjectCharterView.tsx",
+      "usages": 2,
+      "category": "views"
+    },
+    "ProjectCreationView": {
+      "path": "components/views/ProjectCreationView.tsx",
+      "usages": 2,
+      "category": "views"
+    },
+    "ProjectPlanView copy": {
+      "path": "components/views/ProjectPlanView copy.tsx",
+      "usages": 0,
+      "category": "views"
+    },
+    "ProjectPlanView": {
+      "path": "components/views/ProjectPlanView.tsx",
+      "usages": 4,
+      "category": "views"
+    },
+    "ReportsView": {
+      "path": "components/views/ReportsView.tsx",
+      "usages": 2,
+      "category": "views"
+    },
+    "ResourcesView": {
+      "path": "components/views/ResourcesView.tsx",
+      "usages": 2,
+      "category": "views"
+    },
+    "RisksView": {
+      "path": "components/views/RisksView.tsx",
+      "usages": 2,
+      "category": "views"
+    },
+    "ScenariosView": {
+      "path": "components/views/ScenariosView.tsx",
+      "usages": 2,
+      "category": "views"
+    },
+    "SprintBoardView": {
+      "path": "components/views/SprintBoardView.tsx",
+      "usages": 3,
+      "category": "views"
+    },
+    "StakeholderRegisterView": {
+      "path": "components/views/StakeholderRegisterView.tsx",
+      "usages": 2,
+      "category": "views"
+    },
+    "StrategicDashboardView": {
+      "path": "components/views/StrategicDashboardView.tsx",
+      "usages": 3,
+      "category": "views"
+    },
+    "TeamChatView": {
+      "path": "components/views/TeamChatView.tsx",
+      "usages": 5,
+      "category": "views"
+    },
+    "TeamManagementView": {
+      "path": "components/views/TeamManagementView.tsx",
+      "usages": 1,
+      "category": "views"
+    },
+    "TemplatesAdminView": {
+      "path": "components/views/TemplatesAdminView.tsx",
+      "usages": 1,
+      "category": "views"
+    },
+    "TimelinePlannerTab": {
+      "path": "components/views/TimelinePlannerTab.tsx",
+      "usages": 2,
+      "category": "views"
+    },
+    "TraceabilityMatrixView": {
+      "path": "components/views/TraceabilityMatrixView.tsx",
+      "usages": 3,
+      "category": "views"
+    },
+    "TrackingView": {
+      "path": "components/views/TrackingView.tsx",
+      "usages": 2,
+      "category": "views"
+    },
+    "UserSettingsView": {
+      "path": "components/views/UserSettingsView.tsx",
+      "usages": 2,
+      "category": "views"
+    },
+    "ViewSwitcher": {
+      "path": "components/views/ViewSwitcher.tsx",
+      "usages": 1,
+      "category": "views"
+    }
+  }
+}

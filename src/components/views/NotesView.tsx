@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { NotebookSidebar, PageList, PageEditor, BacklinksSidebar, SpreadsheetEditor } from '@/components/notes';
 import { useNotebooks, useSections, usePages, useAllPages, usePageLinks } from '@/hooks/useNotebooks';
 import { useSpreadsheets } from '@/hooks/useSpreadsheets';
@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { PanelLeftClose, PanelLeftOpen, PanelRightClose, PanelRightOpen } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import type { NotebookPage } from '@/hooks/useNotebooks';
+import type { Notebook, NotebookSection, NotebookPage } from '@/hooks/useNotebooks';
 
 type ViewMode = 'pages' | 'spreadsheet';
 
@@ -42,29 +42,65 @@ function saveState(state: Partial<NotesViewState>) {
   }
 }
 
-export function NotesView() {
+interface NotesViewProps {
+  demo?: boolean;
+}
+
+export default function NotesView({ demo = false }: NotesViewProps) {
   const { settings } = useProjectContext();
   const projectId = settings?.id;
-  
+
   const savedState = loadState();
-  
+
   const [selectedNotebookId, setSelectedNotebookId] = useState<string | null>(savedState.selectedNotebookId || null);
   const [selectedSectionId, setSelectedSectionId] = useState<string | null>(savedState.selectedSectionId || null);
   const [selectedSpreadsheetId, setSelectedSpreadsheetId] = useState<string | null>(savedState.selectedSpreadsheetId || null);
   const [selectedPage, setSelectedPage] = useState<NotebookPage | null>(null);
   const [selectedPageId, setSelectedPageId] = useState<string | null>(savedState.selectedPageId || null);
   const [viewMode, setViewMode] = useState<ViewMode>(savedState.viewMode || 'pages');
-  
+
   // Panel collapse states
   const [notebookSidebarCollapsed, setNotebookSidebarCollapsed] = useState(savedState.notebookSidebarCollapsed || false);
   const [pageListCollapsed, setPageListCollapsed] = useState(savedState.pageListCollapsed || false);
   const [backlinksSidebarCollapsed, setBacklinksSidebarCollapsed] = useState(savedState.backlinksSidebarCollapsed || false);
 
-  const { notebooks, loading: notebooksLoading, createNotebook, updateNotebook, deleteNotebook } = useNotebooks();
-  const { sections, loading: sectionsLoading, createSection, updateSection, deleteSection } = useSections(selectedNotebookId);
-  const { spreadsheets, loading: spreadsheetsLoading, createSpreadsheet, updateSpreadsheet, deleteSpreadsheet } = useSpreadsheets(selectedNotebookId);
-  const { pages, loading: pagesLoading, createPage, updatePage, deletePage } = usePages(selectedSectionId);
-  const { allPages, loading: allPagesLoading } = useAllPages(projectId);
+  const {
+    notebooks: realNotebooks,
+    loading: notebooksLoading,
+    createNotebook,
+    updateNotebook,
+    deleteNotebook,
+  } = useNotebooks();
+  const { sections: realSections, loading: sectionsLoading } = useSections(selectedNotebookId);
+  const { pages: realPages, loading: pagesLoading } = usePages(selectedSectionId);
+  // Demo mode disabled - always use real data
+  const notebooks = realNotebooks;
+  const sections = realSections;
+  const pages = realPages;
+  const allPages: any[] = [];
+
+  const {
+    createSection,
+    updateSection,
+    deleteSection
+  } = useSections(selectedNotebookId);
+
+  const {
+    createPage,
+    updatePage,
+    deletePage
+  } = usePages(selectedSectionId);
+
+  const {
+    spreadsheets,
+    createSpreadsheet,
+    updateSpreadsheet,
+    deleteSpreadsheet,
+    moveSpreadsheet,
+    loading: spreadsheetsLoading,
+  } = useSpreadsheets(selectedNotebookId);
+
+
   const { outgoingLinks, incomingLinks } = usePageLinks(selectedPage?.id || null);
 
   // Save state when selections change
@@ -93,7 +129,7 @@ export function NotesView() {
         setSelectedNotebookId(notebooks[0].id);
       }
     }
-  }, [notebooks, selectedNotebookId]);
+  }, [notebooks, selectedNotebookId, setSelectedNotebookId]);
 
   // Restore selected section when sections load
   useEffect(() => {
@@ -117,7 +153,7 @@ export function NotesView() {
         }
       }
     }
-  }, [sections, selectedNotebookId, selectedSectionId, selectedSpreadsheetId]);
+  }, [sections, selectedNotebookId, selectedSectionId, selectedSpreadsheetId, setSelectedSectionId, setViewMode]);
 
   // Restore selected page when pages load
   useEffect(() => {
@@ -135,43 +171,52 @@ export function NotesView() {
     } else if (viewMode === 'pages' && pages.length === 0) {
       setSelectedPage(null);
     }
-  }, [pages, viewMode, selectedPageId]);
+  }, [pages, viewMode, selectedPageId, setSelectedPage]);
 
-  const handleSelectNotebook = (id: string) => {
+  const handleSelectNotebook = useCallback((id: string) => {
     setSelectedNotebookId(id);
     // Reset selections when notebook changes
     setSelectedSectionId(null);
     setSelectedSpreadsheetId(null);
     setSelectedPage(null);
     setSelectedPageId(null);
-  };
+  }, []);
 
-  const handleSelectSection = (id: string) => {
+  const handleSelectSection = useCallback((id: string) => {
     setSelectedSectionId(id);
     setSelectedSpreadsheetId(null);
     setViewMode('pages');
-  };
+  }, []);
 
-  const handleSelectSpreadsheet = (id: string) => {
+  const handleSelectSpreadsheet = useCallback((id: string) => {
     setSelectedSpreadsheetId(id);
     setSelectedSectionId(null);
     setSelectedPage(null);
     setSelectedPageId(null);
     setViewMode('spreadsheet');
-  };
+  }, []);
 
-  const handleSelectPage = (page: NotebookPage) => {
+  const handleSelectPage = useCallback((page: NotebookPage) => {
     setSelectedPage(page);
     setSelectedPageId(page.id);
-  };
+  }, []);
 
-  const handleCreatePage = async () => {
+  const handleCreatePage = useCallback(async () => {
     const newPage = await createPage('Untitled');
     if (newPage) {
-      setSelectedPage(newPage);
+      setSelectedPage(newPage as NotebookPage);
       setSelectedPageId(newPage.id);
     }
-  };
+  }, [createPage]);
+
+  const handleCreateSpreadsheet = useCallback(async () => {
+    const newSpreadsheet = await createSpreadsheet('Untitled Spreadsheet');
+    if (newSpreadsheet) {
+      setSelectedSpreadsheetId(newSpreadsheet.id);
+      setViewMode('spreadsheet');
+    }
+  }, [createSpreadsheet]);
+
 
   const handleNavigateToPage = useCallback((pageId: string) => {
     // Find the page and navigate to it
@@ -203,8 +248,8 @@ export function NotesView() {
     <div className="h-full flex overflow-hidden">
       <ResizablePanelGroup direction="horizontal" className="h-full">
         {/* Notebook Sidebar */}
-        <ResizablePanel 
-          defaultSize={notebookSidebarCollapsed ? 0 : 18} 
+        <ResizablePanel
+          defaultSize={notebookSidebarCollapsed ? 0 : 18}
           minSize={0}
           maxSize={30}
           collapsible
@@ -237,15 +282,15 @@ export function NotesView() {
             />
           )}
         </ResizablePanel>
-        
+
         <ResizableHandle withHandle />
-        
+
         {/* Content Area */}
         {viewMode === 'pages' ? (
           <>
             {/* Page List */}
-            <ResizablePanel 
-              defaultSize={pageListCollapsed ? 0 : 22} 
+            <ResizablePanel
+              defaultSize={pageListCollapsed ? 0 : 22}
               minSize={0}
               maxSize={35}
               collapsible
@@ -261,15 +306,16 @@ export function NotesView() {
                   sectionName={currentSection?.name || 'Pages'}
                   onSelectPage={handleSelectPage}
                   onCreatePage={handleCreatePage}
+                  onCreateSpreadsheet={handleCreateSpreadsheet}
                   onUpdatePage={updatePage}
                   onDeletePage={deletePage}
                   loading={pagesLoading}
                 />
               )}
             </ResizablePanel>
-            
+
             <ResizableHandle withHandle />
-            
+
             {/* Page Editor - Main content area */}
             <ResizablePanel defaultSize={backlinksSidebarCollapsed ? 60 : 40} minSize={30}>
               <div className="h-full flex flex-col relative">
@@ -278,9 +324,9 @@ export function NotesView() {
                   {notebookSidebarCollapsed && (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          size="iconSm" 
+                        <Button
+                          variant="ghost"
+                          size="iconSm"
                           onClick={() => setNotebookSidebarCollapsed(false)}
                           className="bg-background/80 backdrop-blur-sm"
                         >
@@ -293,9 +339,9 @@ export function NotesView() {
                   {!notebookSidebarCollapsed && (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          size="iconSm" 
+                        <Button
+                          variant="ghost"
+                          size="iconSm"
                           onClick={() => setNotebookSidebarCollapsed(true)}
                           className="bg-background/80 backdrop-blur-sm"
                         >
@@ -308,9 +354,9 @@ export function NotesView() {
                   {pageListCollapsed && (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          size="iconSm" 
+                        <Button
+                          variant="ghost"
+                          size="iconSm"
                           onClick={() => setPageListCollapsed(false)}
                           className="bg-background/80 backdrop-blur-sm"
                         >
@@ -323,9 +369,9 @@ export function NotesView() {
                   {!pageListCollapsed && (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          size="iconSm" 
+                        <Button
+                          variant="ghost"
+                          size="iconSm"
                           onClick={() => setPageListCollapsed(true)}
                           className="bg-background/80 backdrop-blur-sm"
                         >
@@ -336,14 +382,14 @@ export function NotesView() {
                     </Tooltip>
                   )}
                 </div>
-                
+
                 <div className="absolute top-2 right-2 z-10 flex gap-1">
                   {backlinksSidebarCollapsed && (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          size="iconSm" 
+                        <Button
+                          variant="ghost"
+                          size="iconSm"
                           onClick={() => setBacklinksSidebarCollapsed(false)}
                           className="bg-background/80 backdrop-blur-sm"
                         >
@@ -356,9 +402,9 @@ export function NotesView() {
                   {!backlinksSidebarCollapsed && (
                     <Tooltip>
                       <TooltipTrigger asChild>
-                        <Button 
-                          variant="ghost" 
-                          size="iconSm" 
+                        <Button
+                          variant="ghost"
+                          size="iconSm"
                           onClick={() => setBacklinksSidebarCollapsed(true)}
                           className="bg-background/80 backdrop-blur-sm"
                         >
@@ -369,7 +415,7 @@ export function NotesView() {
                     </Tooltip>
                   )}
                 </div>
-                
+
                 <PageEditor
                   page={selectedPage}
                   onUpdate={updatePage}
@@ -378,12 +424,12 @@ export function NotesView() {
                 />
               </div>
             </ResizablePanel>
-            
+
             <ResizableHandle withHandle />
-            
+
             {/* Backlinks Sidebar */}
-            <ResizablePanel 
-              defaultSize={backlinksSidebarCollapsed ? 0 : 20} 
+            <ResizablePanel
+              defaultSize={backlinksSidebarCollapsed ? 0 : 20}
               minSize={0}
               maxSize={30}
               collapsible
@@ -412,9 +458,9 @@ export function NotesView() {
                 {notebookSidebarCollapsed && (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="iconSm" 
+                      <Button
+                        variant="ghost"
+                        size="iconSm"
                         onClick={() => setNotebookSidebarCollapsed(false)}
                         className="bg-background/80 backdrop-blur-sm"
                       >
@@ -427,9 +473,9 @@ export function NotesView() {
                 {!notebookSidebarCollapsed && (
                   <Tooltip>
                     <TooltipTrigger asChild>
-                      <Button 
-                        variant="ghost" 
-                        size="iconSm" 
+                      <Button
+                        variant="ghost"
+                        size="iconSm"
                         onClick={() => setNotebookSidebarCollapsed(true)}
                         className="bg-background/80 backdrop-blur-sm"
                       >

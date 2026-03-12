@@ -4,7 +4,7 @@
 CREATE TYPE public.project_role AS ENUM ('admin', 'pm', 'lead', 'developer', 'analyst', 'viewer');
 
 -- 2. Create user_roles table for RBAC
-CREATE TABLE public.user_roles (
+CREATE TABLE IF NOT EXISTS public.user_roles (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL,
   project_id UUID REFERENCES public.projects(id) ON DELETE CASCADE,
@@ -175,3 +175,29 @@ CREATE TRIGGER update_ai_conversations_updated_at
   BEFORE UPDATE ON public.ai_conversations
   FOR EACH ROW
   EXECUTE FUNCTION public.update_updated_at_column();
+
+-- 10. Add deferred policies for features table (from 20240522)
+do $$
+begin
+  if not exists (select 1 from pg_policies where policyname = 'Admins can insert features' and tablename = 'features') then
+    create policy "Admins can insert features" on public.features for insert with check (
+        auth.role() = 'service_role' 
+        or exists (select 1 from public.user_roles where user_id = auth.uid() and role = 'admin')
+    );
+  end if;
+
+  if not exists (select 1 from pg_policies where policyname = 'Admins can update features' and tablename = 'features') then
+    create policy "Admins can update features" on public.features for update using (
+        auth.role() = 'service_role' 
+        or exists (select 1 from public.user_roles where user_id = auth.uid() and role = 'admin')
+    );
+  end if;
+
+  if not exists (select 1 from pg_policies where policyname = 'Admins can delete features' and tablename = 'features') then
+    create policy "Admins can delete features" on public.features for delete using (
+        auth.role() = 'service_role' 
+        or exists (select 1 from public.user_roles where user_id = auth.uid() and role = 'admin')
+    );
+  end if;
+end
+$$;

@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
 import { addDays, addWeeks, addMonths, format, isBefore, parseISO } from 'date-fns';
-import type { 
+import type {
   AIEnhancedMeeting,
   ExtractedDecision,
   ExtractedActionItem,
@@ -20,14 +20,14 @@ function generateRecurringInstances(
   parentId: string
 ): Omit<CreateMeetingInput, 'recurring_schedule' | 'recurring_end_date'>[] {
   const instances: Omit<CreateMeetingInput, 'recurring_schedule' | 'recurring_end_date'>[] = [];
-  
+
   if (!input.recurring_schedule || input.recurring_schedule === 'none') {
     return instances;
   }
 
   const startDate = parseISO(input.date);
-  const endDate = input.recurring_end_date 
-    ? parseISO(input.recurring_end_date) 
+  const endDate = input.recurring_end_date
+    ? parseISO(input.recurring_end_date)
     : addMonths(startDate, 3); // Default to 3 months if no end date
 
   let currentDate = startDate;
@@ -52,7 +52,7 @@ function generateRecurringInstances(
 
   while (isBefore(currentDate, endDate) && count < maxInstances) {
     const instanceDate = format(currentDate, 'yyyy-MM-dd');
-    
+
     instances.push({
       project_id: input.project_id,
       title: input.title,
@@ -88,7 +88,7 @@ function generateRecurringInstances(
         currentDate = addMonths(currentDate, 1);
         break;
     }
-    
+
     count++;
   }
 
@@ -333,8 +333,23 @@ export function useMeetings(projectId?: string | null) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Helper
+  const isValidUuid = (id: string | null | undefined): boolean => {
+    if (!id) return false;
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    return uuidRegex.test(id);
+  };
+
   // Fetch all meetings for project
   const fetchMeetings = useCallback(async () => {
+    // Skip if projectId is provided but is "demo" or invalid UUID
+    if (projectId && !isValidUuid(projectId)) {
+      console.log("Skipping meetings fetch for invalid/demo projectId:", projectId);
+      setMeetings([]); // Or maybe set some demo data? For now, empty.
+      setIsLoading(false);
+      return;
+    }
+
     setIsLoading(true);
     setError(null);
 
@@ -408,14 +423,55 @@ export function useMeetings(projectId?: string | null) {
       }
 
       try {
+        // Safe parsing for times
+        let finalEndTime = input.end_time;
+        let durationMins = 60;
+
+        if (!finalEndTime || finalEndTime.trim() === '') {
+          // Default to +1 hour if not provided
+          try {
+            const [hours, mins] = input.start_time.split(':').map(Number);
+            const endDate = new Date();
+            endDate.setHours(hours + 1, mins, 0);
+            finalEndTime = `${String(endDate.getHours()).padStart(2, '0')}:${String(endDate.getMinutes()).padStart(2, '0')}`;
+          } catch (e) {
+            finalEndTime = '23:59';
+          }
+        } else {
+          // Calculate duration if both provided
+          try {
+            const [sH, sM] = input.start_time.split(':').map(Number);
+            const [eH, eM] = finalEndTime.split(':').map(Number);
+            durationMins = (eH * 60 + eM) - (sH * 60 + sM);
+            if (durationMins <= 0) durationMins = 60; // fallback
+          } catch (e) { }
+        }
+
+        // Clean up input payload, filtering undefined/empty values that PostgREST rejects
+        const payload: any = {
+          project_id: input.project_id || null,
+          title: input.title,
+          description: input.description || null,
+          meeting_type: input.meeting_type || 'online',
+          date: input.date,
+          start_time: input.start_time,
+          end_time: finalEndTime,
+          duration_minutes: durationMins,
+          status: input.status || 'scheduled',
+          source_type: input.source_type || 'manual',
+          purpose_type: input.purpose_type || 'status-update',
+          recurring_schedule: input.recurring_schedule === 'none' ? null : input.recurring_schedule,
+          created_by: user.id
+        };
+
+        if (input.location) payload.location = input.location;
+        if (input.meeting_link) payload.meeting_link = input.meeting_link;
+        if (input.purpose_description) payload.purpose_description = input.purpose_description;
+
         // Create the parent meeting
         const { data: parentMeeting, error: insertError } = await supabase
           .from('meetings')
-          .insert({
-            ...input,
-            recurring_schedule: input.recurring_schedule === 'none' ? null : input.recurring_schedule,
-            created_by: user.id,
-          })
+          .insert(payload)
           .select()
           .single();
 
@@ -424,7 +480,7 @@ export function useMeetings(projectId?: string | null) {
         // Generate recurring instances if applicable
         if (input.recurring_schedule && input.recurring_schedule !== 'none') {
           const instances = generateRecurringInstances(input, parentMeeting.id);
-          
+
           if (instances.length > 0) {
             const { error: instancesError } = await supabase
               .from('meetings')
@@ -432,7 +488,7 @@ export function useMeetings(projectId?: string | null) {
                 ...inst,
                 created_by: user.id,
               })));
-            
+
             if (instancesError) {
               console.error('Error creating recurring instances:', instancesError);
               // Don't fail the whole operation, just log the error

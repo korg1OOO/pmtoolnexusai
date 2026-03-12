@@ -1,0 +1,58 @@
+{
+  "results": [
+    {
+      "action": "inserted",
+      "role": "pm",
+      "email": "user2 (manager)"
+    },
+    {
+      "action": "inserted",
+      "role": "developer",
+      "email": "user0 (member)"
+    },
+    {
+      "action": "inserted",
+      "role": "analyst",
+      "email": "user3 (analyst)"
+    },
+    {
+      "action": "inserted",
+      "role": "lead",
+      "email": "user4_member"
+    }
+  ],
+  "finalState": [
+    {
+      "role": "admin",
+      "role_name": "Admin",
+      "email": "user1_1771513624288@example.com"
+    },
+    {
+      "role": "viewer",
+      "role_name": "Viewer",
+      "email": "user4_1771513625568@example.com"
+    },
+    {
+      "role": "pm",
+      "role_name": "pm"
+    },
+    {
+      "role": "developer",
+      "role_name": "developer",
+      "email": "user0_1771513165671@example.com"
+    },
+    {
+      "role": "analyst",
+      "role_name": "analyst"
+    },
+    {
+      "role": "lead",
+      "role_name": "lead"
+    },
+    {
+      "role": "admin",
+      "role_name": "Project Admin",
+      "email": "admin@projectoye.com"
+    }
+  ]
+}

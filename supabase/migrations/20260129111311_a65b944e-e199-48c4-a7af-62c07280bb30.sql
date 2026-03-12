@@ -125,7 +125,8 @@ ALTER PUBLICATION supabase_realtime ADD TABLE presentation_versions;
 ALTER PUBLICATION supabase_realtime ADD TABLE presentation_collaborators;
 
 -- Create storage bucket for presentation assets
-INSERT INTO storage.buckets (id, name, public) VALUES ('presentation-assets', 'presentation-assets', true);
+INSERT INTO storage.buckets (id, name, public) VALUES ('presentation-assets', 'presentation-assets', true)
+ON CONFLICT (id) DO NOTHING;
 
 -- Storage policies for presentation-assets bucket
 CREATE POLICY "Anyone can view presentation assets" ON storage.objects FOR SELECT USING (bucket_id = 'presentation-assets');

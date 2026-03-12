@@ -1,4 +1,5 @@
 import React, { useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
@@ -345,7 +346,8 @@ function EmailDetailView({
 }
 
 // Main Communications View
-export function CommunicationsView() {
+export default function CommunicationsView() {
+  const navigate = useNavigate();
   const { settings } = useProjectContext();
   const projectId = settings.id;
   const { accounts, isLoading: accountsLoading, syncAccount } = useEmailAccounts(projectId);
@@ -422,7 +424,7 @@ export function CommunicationsView() {
         <p className="text-muted-foreground text-center max-w-md mb-4">
           Connect your email accounts in Settings to start viewing and managing your communications.
         </p>
-        <Button onClick={() => window.location.href = '/?view=settings'}>
+        <Button onClick={() => navigate('/settings')}>
           <Settings className="h-4 w-4 mr-2" />
           Go to Settings
         </Button>
@@ -531,10 +533,19 @@ export function CommunicationsView() {
         </ScrollArea>
 
         {/* Sync Button */}
-        <div className="p-2 border-t">
+        <div className="p-2 border-t space-y-1">
           <Button variant="ghost" size="sm" className="w-full" onClick={handleSyncAll}>
             <RefreshCw className="h-4 w-4 mr-2" />
             Sync All
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="w-full text-primary hover:text-primary hover:bg-primary/10"
+            onClick={() => navigate('/communication-intelligence')}
+          >
+            <Settings className="h-4 w-4 mr-2" />
+            AI Intelligence
           </Button>
         </div>
       </div>

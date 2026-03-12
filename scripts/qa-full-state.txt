@@ -1,0 +1,159 @@
+=== PROFILES BY ROLE ===
+
+admin (25):
+  user0_1771513165671@example.com | User 0 Name | d85baa06
+  user1_1771513168019@example.com | User 1 Name | 028ce0a2
+  user6_1771513170422@example.com | User 6 Name | 48b3d7ed
+  user9_1771513171727@example.com | User 9 Name | e6aa1815
+  user11_1771513172567@example.com | User 11 Name | 238fcc85
+  user12_1771513172977@example.com | User 12 Name | dbc6ff7b
+  user0_1771513325617@example.com | User 0 Name | a91d0f43
+  user0_1771510977896@example.com | User 0 Name | a5f8a820
+  user2_1771510978974@example.com | User 2 Name | 9afefa9f
+  user4_1771510979797@example.com | User 4 Name | f6550639
+  user6_1771510980601@example.com | User 6 Name | 1bc4b250
+  user9_1771510981848@example.com | User 9 Name | 0ab0ac35
+  user6_1771513329125@example.com | User 6 Name | 011d2a9e
+  user8_1771513330040@example.com | User 8 Name | a06ed0ea
+  user9_1771513330544@example.com | User 9 Name | 4a09a34a
+  user11_1771513331438@example.com | User 11 Name | 2f1e85da
+  user17_1771513334253@example.com | User 17 Name | 1037d806
+  user19_1771513335202@example.com | User 19 Name | 93bdf57e
+  user0_1771513622964@example.com | User 0 Name | 402eaa28
+  user1_1771513624288@example.com | User 1 Name | 72d85b3f
+  user7_1771513626820@example.com | User 7 Name | 73c0787b
+  user11_1771513628843@example.com | User 11 Name | b0373809
+  user14_1771513630083@example.com | User 14 Name | b30a9b42
+  user18_1771513631747@example.com | User 18 Name | 55311c66
+  admin@projectoye.com | Super Admin | 3a6889fe
+
+manager (20):
+  user2_1771513168650@example.com | User 2 Name | be816e1b
+  user5_1771513170011@example.com | User 5 Name | ebc36f5c
+  user10_1771513172143@example.com | User 10 Name | 9e9eb229
+  user13_1771513173398@example.com | User 13 Name | ff3a4692
+  user14_1771513173838@example.com | User 14 Name | 6bb189b4
+  user18_1771513175495@example.com | User 18 Name | 04a86b4a
+  user5_1771510980198@example.com | User 5 Name | f545d383
+  user7_1771510981004@example.com | User 7 Name | 462b9c55
+  user8_1771510981428@example.com | User 8 Name | 19b52d37
+  user10_1771510982316@example.com | User 10 Name | 6e20c81e
+  user12_1771510983126@example.com | User 12 Name | ca64844d
+  user16_1771510984847@example.com | User 16 Name | 499fb34c
+  user3_1771513327746@example.com | User 3 Name | 54b0f663
+  user14_1771513332911@example.com | User 14 Name | 2ad5b353
+  user15_1771513333318@example.com | User 15 Name | 35f16687
+  user3_1771513625164@example.com | User 3 Name | 3d21016c
+  user9_1771513627802@example.com | User 9 Name | bc754335
+  user12_1771513629264@example.com | User 12 Name | 1c7e57e3
+  user16_1771513630919@example.com | User 16 Name | 8664b850
+  user17_1771513631330@example.com | User 17 Name | 5be26826
+
+viewer (18):
+  user3_1771513169166@example.com | User 3 Name | 78f245cc
+  user7_1771513170850@example.com | User 7 Name | 593e3989
+  user19_1771513175911@example.com | User 19 Name | c7e201e0
+  user1_1771510978504@example.com | User 1 Name | 62ff5bb4
+  user3_1771510979398@example.com | User 3 Name | f5848d08
+  user14_1771510984038@example.com | User 14 Name | e3db7254
+  user15_1771510984442@example.com | User 15 Name | 4608d634
+  user18_1771510985678@example.com | User 18 Name | dc823071
+  user19_1771510986077@example.com | User 19 Name | e927fecb
+  user4_1771513328283@example.com | User 4 Name | 9f1e61ca
+  user5_1771513328700@example.com | User 5 Name | 322d7a78
+  user7_1771513329542@example.com | User 7 Name | 5621ceea
+  user13_1771513332389@example.com | User 13 Name | e3cae3ee
+  user16_1771513333731@example.com | User 16 Name | 5169aca7
+  user4_1771513625568@example.com | User 4 Name | 54ade06c
+  user5_1771513625997@example.com | User 5 Name | 20d898eb
+  user8_1771513627299@example.com | User 8 Name | 6f9e6bb2
+  user15_1771513630497@example.com | User 15 Name | 662c58a3
+
+member (18):
+  user4_1771513169590@example.com | User 4 Name | 240d53c7
+  user8_1771513171303@example.com | User 8 Name | bcd1811a
+  user15_1771513174252@example.com | User 15 Name | 5cfb0911
+  user16_1771513174669@example.com | User 16 Name | 9b47259d
+  user17_1771513175085@example.com | User 17 Name | 7ef83170
+  user11_1771510982718@example.com | User 11 Name | e5796934
+  user13_1771510983538@example.com | User 13 Name | ca0f79d7
+  user17_1771510985258@example.com | User 17 Name | 52c565ab
+  user1_1771513326793@example.com | User 1 Name | 27e0bd80
+  user2_1771513327299@example.com | User 2 Name | 9ef91e56
+  user10_1771513330958@example.com | User 10 Name | 80cc46bc
+  user12_1771513331866@example.com | User 12 Name | 433a78e5
+  user18_1771513334665@example.com | User 18 Name | bb56bf52
+  user2_1771513624762@example.com | User 2 Name | b93c7aae
+  user6_1771513626422@example.com | User 6 Name | bdc68bea
+  user10_1771513628313@example.com | User 10 Name | c4c034ea
+  user13_1771513629685@example.com | User 13 Name | 43f77104
+  user19_1771513632147@example.com | User 19 Name | 42fd1312
+
+
+=== SUBSCRIPTION PLANS ===
+  free: $0/mo $0/yr active=true id=e1204e18
+  pro: $2900/mo $29000/yr active=true id=a1ceb5b9
+  business: $9900/mo $99000/yr active=true id=c921e2f2
+  agency: $29900/mo $299000/yr active=true id=9da9b61d
+
+
+=== SUBSCRIPTIONS (tier|status count) ===
+  pro|active: 3
+  business|active: 6
+  agency|active: 5
+  pro|cancelled: 1
+  free|active: 6
+
+
+=== TENANTS ===
+  Default Company | plan=none | id=0afbec77
+  admin's Organization | plan=none | id=1ce6918b
+
+
+=== USER-TENANT MAPPINGS ===
+  Total: 1
+  role=owner: 1
+
+
+=== WORKSPACES ===
+  Default Workspace | tenant=0afbec77 | id=b87ec119
+
+
+=== WORKSPACE MEMBERS ===
+  Total: 0
+
+
+=== PORTFOLIOS ===
+  Infrastructure Modernization | workspace=undefined | id=f47ac10b
+  Digital Transformation | workspace=undefined | id=d47ac10b
+
+
+=== PROGRAMS ===
+  Cloud Migration | portfolio=f47ac10b | id=e47ac10b
+  Customer Experience Platform | portfolio=d47ac10b | id=e47ac10b
+  Data Analytics Initiative | portfolio=d47ac10b | id=e47ac10b
+
+
+=== PROGRAM MEMBERS ===
+  Total: 0
+
+
+=== PROJECTS (first 10) ===
+  TP-Alpha Software Delivery - Updated | status=active | ws=none | id=04eed42d
+  Monolith Infrastructure Upgrade (E2E) | status=active | ws=none | id=81675c53
+  Agile Software Transformation (E2E) | status=active | ws=none | id=01a92453
+  Regulatory Compliance Rollout (E2E) | status=active | ws=none | id=eb018624
+  React UI Test Project 3 | status=active | ws=none | id=898f9d74
+  New AI Project | status=active | ws=none | id=c76d595a
+  Ultimate ERP AI Deployment | status=active | ws=none | id=e5d78174
+  Ultimate ERP AI Deployment | status=active | ws=none | id=650acee4
+  Master ERP Execution Phase with AI Agent | status=active | ws=none | id=c2e943a3
+  Full-stack ERP system implementation covering finance, procurement, and HR modules. | status=active | ws=none | id=51a6601b
+
+
+=== AI AGENTS ===
+  Total: 0
+
+
+=== SUBSCRIPTION FEATURES ===
+  Total: 0

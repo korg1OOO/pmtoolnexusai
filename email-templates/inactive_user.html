@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>We Miss You!</title>
+</head>
+
+<body
+    style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f5f5f5;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+        style="background-color: #f5f5f5; padding: 40px 20px;">
+        <tr>
+            <td align="center">
+                <!-- Main Container -->
+                <table role="presentation" width="600" cellpadding="0" cellspacing="0"
+                    style="background: linear-gradient(135deg, #ec4899 0%, #be185d 100%); border-radius: 16px; overflow: hidden; box-shadow: 0 10px 40px rgba(190, 24, 93, 0.2);">
+
+                    <!-- Header -->
+                    <tr>
+                        <td style="padding: 40px 40px 20px; text-align: center;">
+                            <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 700;">
+                                👋 We Miss You!
+                            </h1>
+                        </td>
+                    </tr>
+
+                    <!-- Content -->
+                    <tr>
+                        <td
+                            style="padding: 0 40px 40px; background-color: #ffffff; border-top-left-radius: 24px; border-top-right-radius: 24px;">
+
+                            <!-- Icon -->
+                            <div style="text-align: center; margin: -30px 0 20px;">
+                                <div
+                                    style="display: inline-block; width: 60px; height: 60px; background: linear-gradient(135deg, #ec4899, #be185d); border-radius: 50%; padding: 15px; box-shadow: 0 4px 12px rgba(190, 24, 93, 0.3);">
+                                    <span style="font-size: 30px;">💝</span>
+                                </div>
+                            </div>
+
+                            <!-- Message -->
+                            <div style="padding: 20px 0;">
+                                <p
+                                    style="margin: 0 0 20px; color: #1a1a1a; font-size: 20px; line-height: 1.6; text-align: center;">
+                                    It's been a while, {{user_name}}!
+                                </p>
+
+                                <p style="margin: 0 0 20px; color: #4a5568; font-size: 16px; line-height: 1.6;">
+                                    We noticed you haven't logged in for {{days_inactive}} days. We've been busy adding
+                                    new features and improvements that we think you'll love!
+                                </p>
+                            </div>
+
+                            <!-- What's New -->
+                            <div
+                                style="background-color: #fdf2f8; border: 2px solid #ec4899; padding: 24px; margin: 20px 0; border-radius: 12px;">
+                                <p
+                                    style="margin: 0 0 16px; color: #831843; font-size: 16px; font-weight: 600; text-align: center;">
+                                    ✨ What's New Since You've Been Gone
+                                </p>
+                                <ul
+                                    style="margin: 0; padding-left: 20px; color: #4a5568; font-size: 15px; line-height: 2;">
+                                    <li><strong>New Dashboard:</strong> Redesigned for better insights</li>
+                                    <li><strong>Mobile App:</strong> Now available for iOS & Android</li>
+                                    <li><strong>AI Assistant:</strong> Get smarter recommendations</li>
+                                    <li><strong>Team Collaboration:</strong> Enhanced sharing features</li>
+                                </ul>
+                            </div>
+
+                            <!-- Special Offer -->
+                            <div
+                                style="background: linear-gradient(135deg, #fdf2f8 0%, #fce7f3 100%); padding: 24px; margin: 20px 0; border-radius: 12px; text-align: center;">
+                                <p
+                                    style="margin: 0 0 12px; color: #be185d; font-size: 14px; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
+                                    Welcome Back Offer
+                                </p>
+                                <p style="margin: 0 0 8px; color: #1a1a1a; font-size: 28px; font-weight: 700;">
+                                    20% Off
+                                </p>
+                                <p style="margin: 0; color: #4a5568; font-size: 14px;">
+                                    Your next upgrade • Use code: <strong style="color: #be185d;">WELCOME20</strong>
+                                </p>
+                            </div>
+
+                            <!-- CTA Button -->
+                            <div style="text-align: center; margin: 30px 0;">
+                                <a href="{{login_url}}"
+                                    style="display: inline-block; background: linear-gradient(135deg, #ec4899, #be185d); color: #ffffff; text-decoration: none; padding: 16px 48px; border-radius: 8px; font-size: 16px; font-weight: 600; box-shadow: 0 4px 12px rgba(190, 24, 93, 0.3);">
+                                    Welcome Back - Log In →
+                                </a>
+                            </div>
+
+                            <!-- Stats (if available) -->
+                            <div style="margin: 30px 0; padding: 20px; background-color: #f9fafb; border-radius: 8px;">
+                                <p style="margin: 0 0 12px; color: #374151; font-size: 14px; text-align: center;">
+                                    Your Account Summary
+                                </p>
+                                <table role="presentation" width="100%" cellpadding="8" cellspacing="0">
+                                    <tr style="text-align: center;">
+                                        <td>
+                                            <div style="color: #1a1a1a; font-size: 24px; font-weight: 700;">
+                                                {{project_count}}</div>
+                                            <div style="color: #718096; font-size: 12px;">Projects</div>
+                                        </td>
+                                        <td>
+                                            <div style="color: #1a1a1a; font-size: 24px; font-weight: 700;">
+                                                {{team_count}}</div>
+                                            <div style="color: #718096; font-size: 12px;">Team Members</div>
+                                        </td>
+                                        <td>
+                                            <div style="color: #ec4899; font-size: 24px; font-weight: 700;">
+                                                {{last_login}}</div>
+                                            <div style="color: #718096; font-size: 12px;">Last Visit</div>
+                                        </td>
+                                    </tr>
+                                </table>
+                            </div>
+
+                            <!-- Help -->
+                            <div style="text-align: center; margin: 20px 0;">
+                                <p style="margin: 0; color: #718096; font-size: 14px;">
+                                    Need help getting started again? <a href="{{help_url}}"
+                                        style="color: #ec4899; text-decoration: none;">View our guide</a>
+                                </p>
+                            </div>
+
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td style="padding: 30px 40px; background-color: #1a1a1a; text-align: center;">
+                            <p style="margin: 0 0 10px; color: #ffffff; font-size: 16px; font-weight: 600;">
+                                {{app_name}}
+                            </p>
+                            <p style="margin: 0 0 15px; color: #a0aec0; font-size: 14px;">
+                                We'd love to have you back!
+                            </p>
+                            <p style="margin: 0; color: #718096; font-size: 12px; line-height: 1.6;">
+                                Not interested? <a href="{{unsubscribe_url}}"
+                                    style="color: #ec4899; text-decoration: none;">Update preferences</a>
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+
+</html>

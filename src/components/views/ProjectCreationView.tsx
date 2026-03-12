@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
@@ -34,11 +35,15 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
+import { supabase } from '@/integrations/supabase/client';
 import { TemplateGallery } from '@/components/project-creation/TemplateGallery';
 import { MethodologySelector } from '@/components/project-creation/MethodologySelector';
 import { TemplatePreview } from '@/components/project-creation/TemplatePreview';
-import { projectTemplates, methodologyOptions } from '@/data/templateData';
-import type { ProjectTemplate, Methodology, GovernanceLevel, ProjectCreationData } from '@/types/templates';
+import { templateCategories, methodologyOptions } from '@/data/templateData';
+import type { Methodology, GovernanceLevel, ProjectCreationData } from '@/types/templates';
+import { useTemplates, useCreateProjectFromTemplate, type ProjectTemplate } from '@/hooks/useTemplates';
+import { useSubscriptionLimits } from '@/hooks/useSubscriptionLimits';
+import { Crown, TrendingUp } from 'lucide-react';
 
 type CreationPath = 'template' | 'custom' | null;
 type Step = 'path' | 'template-select' | 'methodology' | 'details' | 'team' | 'review';
@@ -62,12 +67,17 @@ const priorityOptions = [
   { id: 'critical', name: 'Critical', color: 'text-destructive' },
 ];
 
-export function ProjectCreationView() {
+export default function ProjectCreationView() {
+  const navigate = useNavigate();
+  const { data: templates, isLoading: isLoadingTemplates } = useTemplates();
+  const createProjectMutation = useCreateProjectFromTemplate();
+  const { canCreateProject, requireLimit, usage, limits, tier } = useSubscriptionLimits();
+
   const [creationPath, setCreationPath] = useState<CreationPath>(null);
   const [currentStep, setCurrentStep] = useState<Step>('path');
   const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
   const [showTemplatePreview, setShowTemplatePreview] = useState(false);
-  
+
   const [formData, setFormData] = useState<Partial<ProjectCreationData>>({
     name: '',
     description: '',
@@ -89,7 +99,7 @@ export function ProjectCreationView() {
 
   const [tagInput, setTagInput] = useState('');
 
-  const steps: Step[] = creationPath === 'template' 
+  const steps: Step[] = creationPath === 'template'
     ? ['path', 'template-select', 'details', 'team', 'review']
     : ['path', 'methodology', 'details', 'team', 'review'];
 
@@ -128,14 +138,14 @@ export function ProjectCreationView() {
     }
   };
 
-  const handleTemplateSelect = (template: ProjectTemplate) => {
+  const handleTemplateSelect = (template: any) => {
     setSelectedTemplate(template);
     setFormData((prev) => ({
       ...prev,
-      methodology: template.methodology,
+      methodology: template.methodology as Methodology,
       templateId: template.id,
       name: '',
-      enabledPhases: template.phases.map((p) => p.id),
+      enabledPhases: (template.phases || []).map((p: any) => p.id),
     }));
   };
 
@@ -160,11 +170,88 @@ export function ProjectCreationView() {
     }));
   };
 
-  const handleCreateProject = () => {
-    toast.success('Project Created Successfully!', {
-      description: `${formData.name} has been created and is ready for planning.`,
-    });
-    // In real app, this would navigate to the new project
+  const handleCreateProject = async () => {
+    // Subscription limit check — blocks with toast + upgrade link if over limit
+    if (!requireLimit('projects')) return;
+
+    try {
+      // Get the real current user ID to use as owner_id
+      const { data: { session } } = await supabase.auth.getSession();
+      const currentUserId = session?.user?.id;
+
+      const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str);
+      const validOwnerId = (formData.owner && isUUID(formData.owner)) ? formData.owner : currentUserId;
+
+      if (!validOwnerId) {
+        throw new Error('You must be logged in to create a project');
+      }
+
+      if (creationPath === 'template' && selectedTemplate) {
+        // Use RPC for template-based creation
+        const data = await createProjectMutation.mutateAsync({
+          templateId: selectedTemplate.id,
+          name: formData.name || 'New Project',
+          description: formData.description || '',
+          ownerId: validOwnerId,
+          organizationId: formData.organizationId,
+          startDate: new Date(formData.startDate || Date.now()),
+        });
+
+        // BUG-006 fix: Auto-assign creator as admin
+        if (data?.id && currentUserId) {
+          await supabase.rpc('assign_project_creator_role' as any, {
+            p_user_id: currentUserId,
+            p_project_id: data.id,
+          }).then(({ error: roleErr }) => { if (roleErr) console.error('Role assign failed:', roleErr); });
+        }
+
+        toast.success('Project Created Successfully!', {
+          description: `${data.name} has been created from template.`,
+        });
+
+        if (data) {
+          localStorage.setItem('projectoye_selected_project', data.id);
+          navigate('/');
+        }
+
+      } else {
+        // Existing logic for custom project (or fallback)
+        const { data, error } = await supabase.from('projects').insert({
+          name: formData.name,
+          code: formData.code,
+          description: formData.description,
+          methodology: formData.methodology || 'hybrid',
+          status: 'active', // Must be one of: 'active', 'on-hold', 'completed', 'cancelled'
+          start_date: formData.startDate || new Date().toISOString().split('T')[0],
+          end_date: formData.targetEndDate ? formData.targetEndDate : null,
+          owner_id: validOwnerId,
+        }).select().single();
+
+        if (error) throw error;
+
+        // BUG-006 fix: Auto-assign creator as admin
+        if ((data as any)?.id && currentUserId) {
+          await supabase.rpc('assign_project_creator_role' as any, {
+            p_user_id: currentUserId,
+            p_project_id: (data as any).id,
+          }).then(({ error: roleErr }) => { if (roleErr) console.error('Role assign failed:', roleErr); });
+        }
+
+        toast.success('Project Created Successfully!', {
+          description: `${formData.name} has been created.`,
+        });
+
+        if (data) {
+          localStorage.setItem('projectoye_selected_project', (data as any).id);
+          navigate('/');
+        }
+      }
+    } catch (error: any) {
+      console.error('Error creating project:', error);
+      toast.error('Failed to create project', {
+        description: error.message || 'Please try again',
+      });
+    }
   };
 
   const canProceed = () => {
@@ -188,6 +275,26 @@ export function ProjectCreationView() {
 
   const renderPathSelection = () => (
     <div className="max-w-4xl mx-auto">
+      {/* Subscription limit banner */}
+      {!canCreateProject && (
+        <div className="mb-6 p-4 rounded-lg border-2 border-destructive/50 bg-destructive/10 flex items-center gap-4">
+          <div className="p-2 rounded-full bg-destructive/20">
+            <Crown className="h-6 w-6 text-destructive" />
+          </div>
+          <div className="flex-1">
+            <p className="font-semibold text-destructive">Project limit reached</p>
+            <p className="text-sm text-muted-foreground">
+              You have {usage.projects} / {limits.projects} projects on the {tier} plan.
+              Upgrade to create more.
+            </p>
+          </div>
+          <Button variant="destructive" size="sm" onClick={() => navigate('/pricing')}>
+            <TrendingUp className="h-4 w-4 mr-1" />
+            Upgrade
+          </Button>
+        </div>
+      )}
+
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold mb-2">Create New Project</h1>
         <p className="text-muted-foreground">
@@ -198,11 +305,10 @@ export function ProjectCreationView() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
           <Card
-            className={`cursor-pointer transition-all h-full ${
-              creationPath === 'template'
-                ? 'ring-2 ring-primary border-primary'
-                : 'hover:border-primary/50'
-            }`}
+            className={`cursor-pointer transition-all h-full ${creationPath === 'template'
+              ? 'ring-2 ring-primary border-primary'
+              : 'hover:border-primary/50'
+              }`}
             onClick={() => setCreationPath('template')}
           >
             <CardContent className="p-6">
@@ -213,7 +319,7 @@ export function ProjectCreationView() {
                 <div className="flex-1">
                   <h3 className="text-xl font-semibold mb-2">Create from Template</h3>
                   <p className="text-muted-foreground text-sm mb-4">
-                    Start with a pre-built template optimized for your project type. 
+                    Start with a pre-built template optimized for your project type.
                     Includes phases, milestones, tasks, and best practices.
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -229,11 +335,10 @@ export function ProjectCreationView() {
 
         <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
           <Card
-            className={`cursor-pointer transition-all h-full ${
-              creationPath === 'custom'
-                ? 'ring-2 ring-primary border-primary'
-                : 'hover:border-primary/50'
-            }`}
+            className={`cursor-pointer transition-all h-full ${creationPath === 'custom'
+              ? 'ring-2 ring-primary border-primary'
+              : 'hover:border-primary/50'
+              }`}
             onClick={() => setCreationPath('custom')}
           >
             <CardContent className="p-6">
@@ -244,7 +349,7 @@ export function ProjectCreationView() {
                 <div className="flex-1">
                   <h3 className="text-xl font-semibold mb-2">Create Custom Project</h3>
                   <p className="text-muted-foreground text-sm mb-4">
-                    Build your project from scratch with full control over 
+                    Build your project from scratch with full control over
                     methodology, phases, and configuration.
                   </p>
                   <div className="flex flex-wrap gap-2">
@@ -284,10 +389,10 @@ export function ProjectCreationView() {
       </div>
 
       <TemplateGallery
-        templates={projectTemplates}
-        selectedTemplate={selectedTemplate}
+        templates={(templates || []) as any}
+        selectedTemplate={selectedTemplate as any}
         onSelect={handleTemplateSelect}
-        onPreview={(template) => {
+        onPreview={(template: any) => {
           setSelectedTemplate(template);
           setShowTemplatePreview(true);
         }}
@@ -295,7 +400,7 @@ export function ProjectCreationView() {
 
       {showTemplatePreview && selectedTemplate && (
         <TemplatePreview
-          template={selectedTemplate}
+          template={selectedTemplate as any}
           open={showTemplatePreview}
           onClose={() => setShowTemplatePreview(false)}
           onSelect={() => {
@@ -666,11 +771,10 @@ export function ProjectCreationView() {
                 <div className="space-y-2">
                   {selectedTemplate.risks.slice(0, 3).map((risk) => (
                     <div key={risk.id} className="flex items-start gap-2 text-sm">
-                      <div className={`h-2 w-2 rounded-full mt-1.5 ${
-                        risk.impact === 'critical' ? 'bg-destructive' :
+                      <div className={`h-2 w-2 rounded-full mt-1.5 ${risk.impact === 'critical' ? 'bg-destructive' :
                         risk.impact === 'high' ? 'bg-orange-500' :
-                        'bg-warning'
-                      }`} />
+                          'bg-warning'
+                        }`} />
                       <div>
                         <span className="font-medium">{risk.title}</span>
                         <span className="text-muted-foreground"> — {risk.mitigation}</span>
@@ -870,18 +974,16 @@ export function ProjectCreationView() {
                 {steps.map((step, index) => (
                   <React.Fragment key={step}>
                     <div
-                      className={`flex items-center gap-2 ${
-                        index <= currentStepIndex ? 'text-foreground' : 'text-muted-foreground'
-                      }`}
+                      className={`flex items-center gap-2 ${index <= currentStepIndex ? 'text-foreground' : 'text-muted-foreground'
+                        }`}
                     >
                       <div
-                        className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-medium ${
-                          index < currentStepIndex
-                            ? 'bg-primary text-primary-foreground'
-                            : index === currentStepIndex
+                        className={`h-6 w-6 rounded-full flex items-center justify-center text-xs font-medium ${index < currentStepIndex
+                          ? 'bg-primary text-primary-foreground'
+                          : index === currentStepIndex
                             ? 'bg-primary/20 text-primary border border-primary'
                             : 'bg-muted'
-                        }`}
+                          }`}
                       >
                         {index < currentStepIndex ? (
                           <Check className="h-3 w-3" />
@@ -930,9 +1032,9 @@ export function ProjectCreationView() {
             </Button>
 
             {currentStep === 'review' ? (
-              <Button onClick={handleCreateProject} disabled={!canProceed()}>
+              <Button onClick={handleCreateProject} disabled={!canProceed() || !canCreateProject}>
                 <Sparkles className="mr-2 h-4 w-4" />
-                Create Project
+                {canCreateProject ? 'Create Project' : 'Upgrade to Create'}
               </Button>
             ) : (
               <Button onClick={handleNext} disabled={!canProceed()}>

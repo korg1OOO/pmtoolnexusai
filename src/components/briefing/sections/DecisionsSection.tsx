@@ -4,25 +4,19 @@ import { Card } from '@/components/ui/card';
 import { Gavel, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-interface Decision {
-  id: string;
-  title: string;
-  description: string;
-  status: 'pending' | 'approved' | 'rejected';
-  owner: string;
-  date: string;
-  impact: 'low' | 'medium' | 'high';
-}
+import { BriefingDecision } from '@/types/briefing';
+
+// interface Decision removed in favor of BriefingDecision
 
 interface DecisionsSectionProps {
-  decisions: Decision[];
+  decisions: BriefingDecision[];
 }
 
 export function DecisionsSection({ decisions }: DecisionsSectionProps) {
   const pendingDecisions = decisions.filter(d => d.status === 'pending');
   const recentDecisions = decisions.filter(d => d.status !== 'pending');
 
-  const getStatusIcon = (status: Decision['status']) => {
+  const getStatusIcon = (status: BriefingDecision['status']) => {
     switch (status) {
       case 'approved':
         return <CheckCircle className="h-4 w-4 text-green-500" />;
@@ -33,7 +27,7 @@ export function DecisionsSection({ decisions }: DecisionsSectionProps) {
     }
   };
 
-  const getImpactColor = (impact: Decision['impact']) => {
+  const getImpactColor = (impact: BriefingDecision['impact']) => {
     switch (impact) {
       case 'high':
         return 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400';
@@ -44,7 +38,7 @@ export function DecisionsSection({ decisions }: DecisionsSectionProps) {
     }
   };
 
-  const renderDecisionCard = (decision: Decision) => (
+  const renderDecisionCard = (decision: BriefingDecision) => (
     <Card key={decision.id} className="p-3">
       <div className="flex items-start gap-2">
         {getStatusIcon(decision.status)}

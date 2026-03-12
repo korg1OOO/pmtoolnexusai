@@ -15,6 +15,13 @@ export interface CellFormat {
   wrapText?: boolean;
 }
 
+export interface MergedCellRange {
+  startRow: number;
+  startCol: number;
+  endRow: number;
+  endCol: number;
+}
+
 export interface CellData {
   value: string | number;
   format?: CellFormat;

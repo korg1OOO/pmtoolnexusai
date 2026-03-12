@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
   ChevronRight,
@@ -18,12 +18,35 @@ import {
   Circle,
   Pause,
   XCircle,
+  Loader2,
+  Trash2,
+  Trash2,
+  Table,
+  List,
 } from 'lucide-react';
+import { DataRegisterPage } from '@/components/ui/DataRegisterPage';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Checkbox } from '@/components/ui/checkbox';
-import { mockTasks } from '@/data/mockData';
+import { Checkbox } from '@/components/ui/checkbox';
+import { DynamicDataGrid, type DynamicColumnDef } from '@/components/ui/DynamicDataGrid';
+import { useProjectContext } from '@/contexts/ProjectContext';
+import { useTasks, useCreateTask, useDeleteTask, useBulkUpdateTasks, useSaveProjectBaseline, DbTask } from '@/hooks/useTasks';
+import { recalculateWBS } from '../planning/utils/wbs';
 import type { Task, TaskStatus, TaskType, Priority } from '@/types/project';
+import { toast } from 'sonner';
+
+const STANDARD_COLUMNS: DynamicColumnDef<Task>[] = [
+  { key: 'wbs', label: 'WBS', width: 80, type: 'text', sticky: true },
+  { key: 'name', label: 'Task Name', width: 300, type: 'text' },
+  { key: 'type', label: 'Type', width: 120, type: 'select', options: ['task', 'milestone', 'summary'] },
+  { key: 'status', label: 'Status', width: 120, type: 'select', options: ['not-started', 'in-progress', 'completed', 'blocked', 'on-hold'] },
+  { key: 'priority', label: 'Priority', width: 120, type: 'select', options: ['low', 'medium', 'high', 'critical'] },
+  { key: 'startDate', label: 'Start Date', width: 130, type: 'date' },
+  { key: 'endDate', label: 'End Date', width: 130, type: 'date' },
+  { key: 'duration', label: 'Duration (d)', width: 100, type: 'text' },
+  { key: 'progress', label: 'Progress (%)', width: 100, type: 'text' },
+];
 
 const statusIcons: Record<TaskStatus, React.ReactNode> = {
   'not-started': <Circle className="h-4 w-4 text-muted-foreground" />,
@@ -52,11 +75,15 @@ interface TaskRowProps {
   onToggle: () => void;
   selected: boolean;
   onSelect: (selected: boolean) => void;
+  onDelete: () => void;
 }
 
-function TaskRow({ task, expanded, onToggle, selected, onSelect }: TaskRowProps) {
+function TaskRow({ task, expanded, onToggle, selected, onSelect, onDelete }: TaskRowProps) {
   const hasChildren = task.children && task.children.length > 0;
-  const indent = task.level * 24;
+
+  const indentClass = [
+    'pl-0', 'pl-6', 'pl-12', 'pl-[72px]', 'pl-[96px]', 'pl-[120px]'
+  ][Math.min(task.level, 5)];
 
   return (
     <motion.div
@@ -74,17 +101,18 @@ function TaskRow({ task, expanded, onToggle, selected, onSelect }: TaskRowProps)
       </div>
 
       {/* Task Name */}
-      <div className="flex items-center gap-2 py-2 pr-4" style={{ paddingLeft: indent }}>
+      <div className={cn("flex items-center gap-2 py-2 pr-4", indentClass)}>
         {hasChildren ? (
           <button
             onClick={onToggle}
-            className="p-0.5 rounded hover:bg-muted transition-colors"
-          >
-            {expanded ? (
-              <ChevronDown className="h-4 w-4 text-muted-foreground" />
-            ) : (
-              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            aria-label="Toggle children"
+            title="Toggle children"
+            className={cn(
+              "p-0.5 rounded hover:bg-muted transition-colors transition-transform duration-200",
+              expanded ? "rotate-0" : "-rotate-90"
             )}
+          >
+            <ChevronDown className="h-4 w-4 text-muted-foreground" />
           </button>
         ) : (
           <div className="w-5" />
@@ -123,12 +151,12 @@ function TaskRow({ task, expanded, onToggle, selected, onSelect }: TaskRowProps)
 
       {/* Start Date */}
       <div className="text-xs text-muted-foreground font-mono">
-        {new Date(task.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+        {task.startDate ? new Date(task.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
       </div>
 
       {/* End Date */}
       <div className="text-xs text-muted-foreground font-mono">
-        {new Date(task.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+        {task.endDate ? new Date(task.endDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '—'}
       </div>
 
       {/* Duration */}
@@ -154,21 +182,99 @@ function TaskRow({ task, expanded, onToggle, selected, onSelect }: TaskRowProps)
 
       {/* Actions */}
       <div className="flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-        <Button variant="ghost" size="iconXs">
-          <MoreHorizontal className="h-4 w-4" />
+        <Button variant="ghost" size="icon" onClick={onDelete} className="text-destructive hover:bg-destructive/10">
+          <Trash2 className="h-4 w-4" />
         </Button>
       </div>
     </motion.div>
   );
 }
 
-export function ProjectPlanView() {
-  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(
-    new Set(mockTasks.filter(t => t.expanded).map(t => t.id))
-  );
-  const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
+export default function ProjectPlanView() {
+  const { settings } = useProjectContext();
+  const projectId = settings.id;
 
-  const toggleTask = (taskId: string) => {
+  const { data: dbTasks = [], isLoading } = useTasks(projectId);
+  const createTask = useCreateTask();
+  const deleteTask = useDeleteTask();
+  const bulkUpdateTasks = useBulkUpdateTasks();
+  const saveBaseline = useSaveProjectBaseline();
+
+  const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
+  const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
+  const [customColumns, setCustomColumns] = useState<DynamicColumnDef<Task>[]>([]);
+
+  const handleCellSave = async (rowId: string, key: string, value: string) => {
+    if (!projectId) return;
+    const isCustom = !STANDARD_COLUMNS.find(c => c.key === key);
+    const dbTask = dbTasks.find(t => t.id === rowId);
+    if (!dbTask) return;
+
+    if (isCustom) {
+      const cf = { ...(dbTask.custom_fields ?? {}), [key]: value };
+      bulkUpdateTasks.mutate({ tasks: [{ id: rowId, custom_fields: cf }], projectId });
+    } else {
+      let dbKey = key as keyof DbTask;
+      if (key === 'startDate') dbKey = 'start_date';
+      else if (key === 'endDate') dbKey = 'end_date';
+      else if (key === 'isCritical') dbKey = 'is_critical';
+
+      if (key === 'duration' || key === 'progress') {
+        const numVal = parseInt(value, 10);
+        bulkUpdateTasks.mutate({ tasks: [{ id: rowId, [dbKey]: isNaN(numVal) ? undefined : numVal }], projectId });
+      } else {
+        bulkUpdateTasks.mutate({ tasks: [{ id: rowId, [dbKey]: value }], projectId });
+      }
+    }
+  };
+
+  const taskTree = useMemo(() => {
+    const taskMap = new Map<string, Task>();
+    const roots: Task[] = [];
+
+    dbTasks.forEach(t => {
+      taskMap.set(t.id, {
+        id: t.id,
+        wbs: t.wbs,
+        name: t.name,
+        type: t.type as TaskType,
+        status: t.status as TaskStatus,
+        priority: t.priority as Priority,
+        startDate: t.start_date,
+        endDate: t.end_date,
+        duration: t.duration,
+        progress: t.progress,
+        assignee: t.assignee_id || undefined,
+        dependencies: [],
+        isCritical: t.is_critical || false,
+        level: t.level,
+        expanded: t.expanded || false, // from DB
+        children: [],
+      });
+    });
+
+    dbTasks.forEach(t => {
+      const task = taskMap.get(t.id)!;
+      if (t.parent_id && taskMap.has(t.parent_id)) {
+        taskMap.get(t.parent_id)!.children!.push(task);
+      } else {
+        roots.push(task);
+      }
+    });
+
+    return roots;
+  }, [dbTasks]);
+
+  // Sync expanded tasks from DB if needed, but for now we'll just use the local state
+  // Or initialize it if it's the first load
+  useEffect(() => {
+    if (dbTasks.length > 0 && expandedTasks.size === 0) {
+      const initialExpanded = new Set(dbTasks.filter(t => t.expanded).map(t => t.id));
+      setExpandedTasks(initialExpanded);
+    }
+  }, [dbTasks, expandedTasks.size, setExpandedTasks]);
+
+  const toggleTask = useCallback((taskId: string) => {
     setExpandedTasks((prev) => {
       const next = new Set(prev);
       if (next.has(taskId)) {
@@ -178,9 +284,9 @@ export function ProjectPlanView() {
       }
       return next;
     });
-  };
+  }, []);
 
-  const toggleSelection = (taskId: string, selected: boolean) => {
+  const toggleSelection = useCallback((taskId: string, selected: boolean) => {
     setSelectedTasks((prev) => {
       const next = new Set(prev);
       if (selected) {
@@ -190,90 +296,173 @@ export function ProjectPlanView() {
       }
       return next;
     });
-  };
+  }, []);
 
-  const flattenTasks = (tasks: Task[]): Task[] => {
+  const flattenTasks = useCallback((tasks: Task[]): Task[] => {
     const result: Task[] = [];
     for (const task of tasks) {
       result.push(task);
-      if (task.children && expandedTasks.has(task.id)) {
+      if (task.children && task.children.length > 0 && expandedTasks.has(task.id)) {
         result.push(...flattenTasks(task.children));
       }
     }
     return result;
-  };
+  }, [expandedTasks]);
 
-  const visibleTasks = flattenTasks(mockTasks);
+  const visibleTasks = useMemo(() => flattenTasks(taskTree), [taskTree, flattenTasks]);
 
-  return (
-    <div className="flex flex-col h-full">
-      {/* Toolbar */}
-      <div className="flex items-center justify-between p-4 border-b bg-card">
-        <div className="flex items-center gap-2">
-          <Button size="sm">
-            <Plus className="h-4 w-4 mr-1" />
-            Add Task
-          </Button>
-          <Button variant="outline" size="sm">
-            <Link2 className="h-4 w-4 mr-1" />
-            Link
-          </Button>
-          <div className="w-px h-6 bg-border mx-2" />
-          <Button variant="ghost" size="sm">
-            Indent
-          </Button>
-          <Button variant="ghost" size="sm">
-            Outdent
-          </Button>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="gap-1">
-            <Flag className="h-3 w-3 text-destructive" />
-            Critical Path
-          </Badge>
-          <Button variant="outline" size="sm">
-            Baseline
-          </Button>
-        </div>
+  const handleAddTask = useCallback(async () => {
+    if (!projectId) return;
+
+    const newTask: Omit<DbTask, 'id' | 'created_at' | 'updated_at'> = {
+      project_id: projectId,
+      name: 'New Task',
+      wbs: `${visibleTasks.length + 1}`,
+      type: 'task',
+      status: 'not-started',
+      priority: 'medium',
+      start_date: new Date().toISOString(),
+      end_date: new Date().toISOString(),
+      duration: 1,
+      progress: 0,
+      assignee_id: null,
+      parent_id: null,
+      level: 0,
+      sort_order: visibleTasks.length,
+      is_critical: false,
+      notes: null,
+      expanded: false,
+    };
+
+    try {
+      const newTaskData = await createTask.mutateAsync(newTask);
+      toast.success('Task created successfully');
+
+      const newTasksList = [...dbTasks, newTaskData as any];
+      const wbsUpdates = recalculateWBS(newTasksList);
+      if (wbsUpdates.length > 0) {
+        bulkUpdateTasks.mutate({ tasks: wbsUpdates, projectId });
+      }
+    } catch (error) {
+      // toast.error handled by mutation
+    }
+  }, [projectId, visibleTasks.length, createTask, dbTasks, bulkUpdateTasks]);
+
+  const handleTaskDelete = useCallback(async (taskId: string) => {
+    try {
+      await deleteTask.mutateAsync({ taskId, projectId });
+      const remainingTasks = dbTasks.filter(t => t.id !== taskId);
+      const wbsUpdates = recalculateWBS(remainingTasks);
+      if (wbsUpdates.length > 0) {
+        bulkUpdateTasks.mutate({ tasks: wbsUpdates, projectId });
+      }
+      toast.success('Task deleted successfully');
+    } catch (error) {
+      // toast.error handled by mutation
+    }
+  }, [deleteTask, projectId, dbTasks, bulkUpdateTasks]);
+
+  const handleBaseline = useCallback(async () => {
+    if (!projectId) return;
+
+    const name = `Baseline ${new Date().toLocaleDateString()}`;
+    try {
+      await saveBaseline.mutateAsync({ projectId, name });
+      toast.success('Project baseline saved');
+    } catch (error) {
+      // toast.error handled by mutation
+    }
+  }, [projectId, saveBaseline]);
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full p-12">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
+    );
+  }
 
-      {/* Table Header */}
-      <div className="grid grid-cols-[40px_minmax(300px,2fr)_100px_100px_120px_120px_100px_80px_60px] items-center border-b border-border bg-muted/50 text-xs font-medium text-muted-foreground">
-        <div className="flex items-center justify-center h-9">
-          <Checkbox />
-        </div>
-        <div className="py-2 px-2">Task Name</div>
-        <div className="py-2">Status</div>
-        <div className="py-2">Priority</div>
-        <div className="py-2 flex items-center gap-1">
-          <Calendar className="h-3 w-3" />
-          Start
-        </div>
-        <div className="py-2 flex items-center gap-1">
-          <Calendar className="h-3 w-3" />
-          End
-        </div>
-        <div className="py-2">Duration</div>
-        <div className="py-2">Progress</div>
-        <div className="py-2"></div>
-      </div>
+  const listModeControls = (
+    <div className="flex items-center gap-2 shrink-0">
+      <Button variant="outline" size="sm" className="h-8 text-xs border-border/60">
+        <Link2 className="h-3.5 w-3.5 mr-1.5" />
+        Link
+      </Button>
+      <div className="w-px h-5 bg-border mx-2" />
+      <Button variant="ghost" size="sm" className="h-8 text-xs">
+        Indent
+      </Button>
+      <Button variant="ghost" size="sm" className="h-8 text-xs">
+        Outdent
+      </Button>
+    </div>
+  );
 
-      {/* Task List */}
-      <div className="flex-1 overflow-auto">
-        {visibleTasks.map((task) => (
-          <TaskRow
-            key={task.id}
-            task={task}
-            expanded={expandedTasks.has(task.id)}
-            onToggle={() => toggleTask(task.id)}
-            selected={selectedTasks.has(task.id)}
-            onSelect={(selected) => toggleSelection(task.id, selected)}
-          />
-        ))}
+  const toolbarFilters = (
+    <div className="flex items-center gap-2 h-8">
+      <Badge variant="outline" className="gap-1 h-full hidden sm:flex items-center">
+        <Flag className="h-3 w-3 text-destructive" />
+        Critical Path
+      </Badge>
+      <Button variant="outline" size="sm" className="hidden sm:flex h-full" onClick={handleBaseline} disabled={saveBaseline.isPending}>
+        {saveBaseline.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : null}
+        Baseline
+      </Button>
+    </div>
+  );
+
+  const listContent = (
+    <div className="flex flex-col h-full space-y-4">
+      <div className="flex-1 overflow-auto rounded-md border bg-background">
+        {/* Table Header */}
+        <div className="grid grid-cols-[40px_minmax(300px,2fr)_100px_100px_120px_120px_100px_80px_60px] items-center border-b border-border bg-muted/50 text-xs font-medium text-muted-foreground sticky top-0 z-10 shadow-sm">
+          <div className="flex items-center justify-center h-9">
+            <Checkbox />
+          </div>
+          <div className="py-2 px-2">Task Name</div>
+          <div className="py-2">Status</div>
+          <div className="py-2">Priority</div>
+          <div className="py-2 flex items-center gap-1">
+            <Calendar className="h-3 w-3" />
+            Start
+          </div>
+          <div className="py-2 flex items-center gap-1">
+            <Calendar className="h-3 w-3" />
+            End
+          </div>
+          <div className="py-2">Duration</div>
+          <div className="py-2">Progress</div>
+          <div className="py-2"></div>
+        </div>
+
+        {/* Task List */}
+        <div>
+          {visibleTasks.length > 0 ? (
+            visibleTasks.map((task) => (
+              <TaskRow
+                key={task.id}
+                task={task}
+                expanded={expandedTasks.has(task.id)}
+                onToggle={() => toggleTask(task.id)}
+                selected={selectedTasks.has(task.id)}
+                onSelect={(selected) => toggleSelection(task.id, !!selected)}
+                onDelete={() => handleTaskDelete(task.id)}
+              />
+            ))
+          ) : (
+            <div className="flex flex-col items-center justify-center h-64 text-center text-muted-foreground">
+              <AlertCircle className="h-12 w-12 mb-4 opacity-20" />
+              <p className="text-sm">No tasks found for this project.</p>
+              <Button variant="outline" size="sm" className="mt-4" onClick={handleAddTask}>
+                Create your first task
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* Footer */}
-      <div className="flex items-center justify-between p-3 border-t bg-muted/30 text-xs text-muted-foreground">
+      <div className="flex items-center justify-between p-3 border rounded-md bg-muted/30 text-xs text-muted-foreground">
         <div className="flex items-center gap-4">
           <span>{visibleTasks.length} tasks</span>
           <span>{selectedTasks.size} selected</span>
@@ -294,5 +483,43 @@ export function ProjectPlanView() {
         </div>
       </div>
     </div>
+  );
+
+  return (
+    <DataRegisterPage
+      title="Project Plan"
+      description="Manage project tasks and schedule"
+      icon={ListTodo}
+      iconBgClass="bg-primary/20"
+      iconColorClass="text-primary"
+      toolbarFilters={toolbarFilters}
+      listModeControls={listModeControls}
+      onAddRow={handleAddTask}
+      addLabel="Add Task"
+      pdfFilename="project-plan"
+      data={visibleTasks}
+      baseColumns={STANDARD_COLUMNS}
+      customColumns={customColumns}
+      idExtractor={(item) => item.id}
+      customFieldExtractor={(item, key) => {
+        const t = dbTasks.find(x => x.id === item.id);
+        return String(t?.custom_fields?.[key] ?? '');
+      }}
+      onCellSave={handleCellSave}
+      onAddColumn={(col) => {
+        if (customColumns.find(c => c.key === col.key)) {
+          toast.error('Column already exists');
+          return;
+        }
+        setCustomColumns(prev => [...prev, col]);
+        toast.success(`Column "${col.label}" added`);
+      }}
+      onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
+      onDeleteRows={(ids) => {
+        ids.forEach(id => deleteTask.mutateAsync({ taskId: id, projectId }));
+      }}
+      emptyStateMessage={visibleTasks.length === 0 ? 'No tasks found for this project.' : 'No tasks match filters.'}
+      listContent={listContent}
+    />
   );
 }

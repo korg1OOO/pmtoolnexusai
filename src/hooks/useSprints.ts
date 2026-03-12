@@ -5,8 +5,8 @@ import { toast } from 'sonner';
 
 export type SprintStatus = 'planning' | 'active' | 'completed' | 'cancelled';
 
-export interface Sprint { id: string; project_id: string | null; name: string; start_date: string; end_date: string; goal: string | null; velocity: number; capacity: number; status: SprintStatus; created_at: string; updated_at: string; }
-export interface SprintInput { name: string; start_date: string; end_date: string; goal?: string; capacity?: number; status?: SprintStatus; }
+export interface Sprint { id: string; project_id: string | null; name: string; start_date: string; end_date: string; goal: string | null; velocity: number; capacity: number; status: SprintStatus; created_at: string; updated_at: string; custom_fields?: Record<string, any>; }
+export interface SprintInput { name: string; start_date: string; end_date: string; goal?: string; capacity?: number; status?: SprintStatus; custom_fields?: Record<string, any>; }
 
 export function useSprints() {
   const { settings } = useProjectContext();
@@ -21,9 +21,16 @@ export function useSprints() {
       setLoading(true);
       const { data, error: e } = await supabase.from('sprints').select('*').eq('project_id', projectId).order('start_date', { ascending: false });
       if (e) throw e;
-      setSprints((data || []).map((s: any) => ({ ...s, status: s.status as SprintStatus })));
+      if (e) throw e;
+      setSprints((data || []).map((s) => ({ ...s, status: s.status as SprintStatus, custom_fields: s.custom_fields || {} })));
       setError(null);
-    } catch (err: any) { setError(err.message); } finally { setLoading(false); }
+    } catch (err: unknown) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An unknown error occurred');
+      }
+    } finally { setLoading(false); }
   }, [projectId]);
 
   useEffect(() => { fetchSprints(); }, [fetchSprints]);
@@ -37,7 +44,7 @@ export function useSprints() {
   const createSprint = async (input: SprintInput) => {
     if (!projectId) { toast.error('No project selected'); return null; }
     try {
-      const { data, error: e } = await supabase.from('sprints').insert({ project_id: projectId, name: input.name, start_date: input.start_date, end_date: input.end_date, goal: input.goal || null, capacity: input.capacity || 0, status: input.status || 'planning' }).select().single();
+      const { data, error: e } = await supabase.from('sprints').insert({ project_id: projectId, name: input.name, start_date: input.start_date, end_date: input.end_date, goal: input.goal || null, capacity: input.capacity || 0, status: input.status || 'planning', custom_fields: input.custom_fields || {} }).select().single();
       if (e) throw e;
       toast.success('Sprint created'); return data;
     } catch { toast.error('Failed to create sprint'); return null; }

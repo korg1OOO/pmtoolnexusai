@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
+import { usePermissions } from '@/hooks/usePermissions';
+import { useProjectContext } from '@/contexts/ProjectContext';
 import { motion } from 'framer-motion';
+import { cn } from '@/lib/utils';
 import { Target, Plus, Filter, User, Calendar, Link2, Search, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,6 +12,20 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useDecisions, Decision, DecisionInput, DecisionStatus } from '@/hooks/useDecisions';
+import { DynamicDataGrid, type DynamicColumnDef } from '@/components/ui/DynamicDataGrid';
+import { DataRegisterPage } from '@/components/ui/DataRegisterPage';
+import { toast } from 'sonner';
+
+const STANDARD_COLUMNS: DynamicColumnDef<Decision>[] = [
+  { key: 'key', label: 'Decision ID', width: 120, type: 'text', sticky: true },
+  { key: 'title', label: 'Title', width: 240, type: 'text' },
+  { key: 'decision', label: 'Decision Statement', width: 300, type: 'text' },
+  { key: 'status', label: 'Status', width: 130, type: 'select', options: ['pending', 'active', 'superseded', 'rejected'] },
+  { key: 'owner_name', label: 'Owner', width: 140, type: 'text' },
+  { key: 'date', label: 'Date', width: 130, type: 'date' },
+  { key: 'context', label: 'Context', width: 250, type: 'text' },
+  { key: 'impact', label: 'Impact', width: 250, type: 'text' },
+];
 import { LinkDialog, LinkableItem } from '@/components/linking/LinkDialog';
 import {
   Dialog,
@@ -379,18 +396,23 @@ function CreateDecisionDialog({ open, onOpenChange, onCreate }: CreateDecisionDi
   );
 }
 
-export function DecisionsView() {
+export default function DecisionsView() {
   const { decisions, loading, createDecision, updateDecision, activeDecisions, pendingDecisions, supersededDecisions } = useDecisions();
+  const { settings } = useProjectContext();
+  const { can } = usePermissions(settings?.id);
+  const canCreate = can('task.create');
+  const canEdit = can('task.edit');
   const [selectedDecision, setSelectedDecision] = useState<Decision | null>(null);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [customColumns, setCustomColumns] = useState<DynamicColumnDef<Decision>[]>([]);
 
   const filteredDecisions = decisions.filter(d => {
     if (statusFilter !== 'all' && d.status !== statusFilter) return false;
     if (searchQuery && !d.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !d.key?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
+      !d.key?.toLowerCase().includes(searchQuery.toLowerCase())) return false;
     return true;
   });
 
@@ -408,6 +430,19 @@ export function DecisionsView() {
     });
   };
 
+  const handleCellSave = async (rowId: string, key: string, value: string) => {
+    const isCustom = !STANDARD_COLUMNS.find(c => c.key === key);
+    const item = decisions.find(i => i.id === rowId);
+    if (!item) return;
+
+    if (isCustom) {
+      const cf = { ...(item.custom_fields ?? {}), [key]: value };
+      await updateDecision(rowId, { custom_fields: cf });
+    } else {
+      await updateDecision(rowId, { [key]: value });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -416,106 +451,78 @@ export function DecisionsView() {
     );
   }
 
-  return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between p-4 border-b bg-card">
-        <div className="flex items-center gap-3">
-          <Target className="h-6 w-6 text-primary" />
-          <h2 className="text-lg font-semibold">Decision Register</h2>
-          <Badge>{decisions.length} Decisions</Badge>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Filter className="h-4 w-4 mr-1" />Filter
-          </Button>
-          <Button size="sm" onClick={() => setCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-1" />Add Decision
-          </Button>
-        </div>
-      </div>
+  const kpiCards = (
+    <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8 shrink-0 w-full">
+      <Card>
+        <CardContent className="p-4">
+          <div className="text-3xl font-bold text-primary">{decisions.length}</div>
+          <p className="text-sm text-muted-foreground">Total Decisions</p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="p-4">
+          <div className="text-3xl font-bold text-success">{activeDecisions.length}</div>
+          <p className="text-sm text-muted-foreground">Active</p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="p-4">
+          <div className="text-3xl font-bold text-warning">{pendingDecisions.length}</div>
+          <p className="text-sm text-muted-foreground">Pending</p>
+        </CardContent>
+      </Card>
+      <Card>
+        <CardContent className="p-4">
+          <div className="text-3xl font-bold text-muted-foreground">{supersededDecisions.length}</div>
+          <p className="text-sm text-muted-foreground">Superseded</p>
+        </CardContent>
+      </Card>
+    </div>
+  );
 
-      {/* Search and Filters */}
-      <div className="p-4 border-b flex items-center gap-4">
-        <div className="relative flex-1 max-w-md">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search decisions..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+  const toolbarFilters = (
+    <Select value={statusFilter} onValueChange={setStatusFilter}>
+      <SelectTrigger className="w-40 h-8 text-xs">
+        <SelectValue placeholder="Filter by status" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">All Statuses</SelectItem>
+        <SelectItem value="pending">Pending</SelectItem>
+        <SelectItem value="active">Active</SelectItem>
+        <SelectItem value="superseded">Superseded</SelectItem>
+        <SelectItem value="rejected">Rejected</SelectItem>
+      </SelectContent>
+    </Select>
+  );
+
+  const listContent = (
+    <>
+      <h3 className="text-lg font-semibold mb-4">
+        {statusFilter === 'all' ? 'All Decisions' : `${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)} Decisions`}
+        <span className="text-muted-foreground font-normal ml-2">({filteredDecisions.length})</span>
+      </h3>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {filteredDecisions.map(decision => (
+          <DecisionCard
+            key={decision.id}
+            decision={decision}
+            onSelect={() => setSelectedDecision(decision)}
+            isSelected={selectedDecision?.id === decision.id}
           />
-        </div>
-        <div className="flex items-center gap-2">
-          {['all', 'active', 'pending', 'superseded'].map(status => (
-            <Button
-              key={status}
-              variant={statusFilter === status ? 'secondary' : 'ghost'}
-              size="sm"
-              onClick={() => setStatusFilter(status)}
-              className="capitalize"
-            >
-              {status}
-            </Button>
-          ))}
-        </div>
+        ))}
       </div>
 
-      <div className="flex-1 p-6 overflow-auto">
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-3xl font-bold text-primary">{decisions.length}</div>
-              <p className="text-sm text-muted-foreground">Total Decisions</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-3xl font-bold text-success">{activeDecisions.length}</div>
-              <p className="text-sm text-muted-foreground">Active</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-3xl font-bold text-warning">{pendingDecisions.length}</div>
-              <p className="text-sm text-muted-foreground">Pending</p>
-            </CardContent>
-          </Card>
-          <Card>
-            <CardContent className="p-4">
-              <div className="text-3xl font-bold text-muted-foreground">{supersededDecisions.length}</div>
-              <p className="text-sm text-muted-foreground">Superseded</p>
-            </CardContent>
-          </Card>
+      {filteredDecisions.length === 0 && (
+        <div className="text-center py-12 text-muted-foreground w-full">
+          <Target className="h-12 w-12 mx-auto mb-4 opacity-30" />
+          <p>No decisions found</p>
+          <Button size="sm" className="mt-4" onClick={() => canCreate && setCreateDialogOpen(true)} disabled={!canCreate}>
+            <Plus className="h-4 w-4 mr-1" />
+            Add First Decision
+          </Button>
         </div>
-
-        <h3 className="text-lg font-semibold mb-4">
-          {statusFilter === 'all' ? 'All Decisions' : `${statusFilter.charAt(0).toUpperCase() + statusFilter.slice(1)} Decisions`}
-          <span className="text-muted-foreground font-normal ml-2">({filteredDecisions.length})</span>
-        </h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {filteredDecisions.map(decision => (
-            <DecisionCard
-              key={decision.id}
-              decision={decision}
-              onSelect={() => setSelectedDecision(decision)}
-              isSelected={selectedDecision?.id === decision.id}
-            />
-          ))}
-        </div>
-
-        {filteredDecisions.length === 0 && (
-          <div className="text-center py-12 text-muted-foreground">
-            <Target className="h-12 w-12 mx-auto mb-4 opacity-30" />
-            <p>No decisions found</p>
-            <Button size="sm" className="mt-4" onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="h-4 w-4 mr-1" />
-              Add First Decision
-            </Button>
-          </div>
-        )}
-      </div>
+      )}
 
       {/* Decision Detail Panel */}
       {selectedDecision && (
@@ -549,6 +556,41 @@ export function DecisionsView() {
         onOpenChange={setCreateDialogOpen}
         onCreate={createDecision}
       />
-    </div>
+    </>
+  );
+
+  return (
+    <DataRegisterPage
+      title="Decision Register"
+      description="Track and manage project decisions"
+      icon={Target}
+      iconBgClass="bg-primary/20"
+      iconColorClass="text-primary"
+      searchQuery={searchQuery}
+      onSearchChange={setSearchQuery}
+      toolbarFilters={toolbarFilters}
+      onAddRow={canCreate ? () => setCreateDialogOpen(true) : undefined}
+      addLabel="Add Decision"
+      pdfFilename="decision-register"
+      data={filteredDecisions}
+      baseColumns={STANDARD_COLUMNS}
+      customColumns={customColumns}
+      idExtractor={(item) => item.id}
+      customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
+      onCellSave={canEdit ? handleCellSave : undefined}
+      onAddColumn={(col) => {
+        if (customColumns.find(c => c.key === col.key)) {
+          toast.error('Column already exists');
+          return;
+        }
+        setCustomColumns(prev => [...prev, col]);
+        toast.success(`Column "${col.label}" added`);
+      }}
+      onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
+      onDeleteRows={() => toast.error("Bulk deletion not supported for decisions yet.")}
+      emptyStateMessage={decisions.length === 0 ? 'No decisions added yet.' : 'No decisions match filters.'}
+      kpiCards={kpiCards}
+      listContent={listContent}
+    />
   );
 }

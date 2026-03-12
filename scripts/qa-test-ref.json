@@ -1,0 +1,65 @@
+{
+  "project": {
+    "id": "04eed42d-90c3-4d05-9738-faf5b49508ff",
+    "name": "TP-Alpha Software Delivery - Updated"
+  },
+  "users": {
+    "owner": {
+      "uid": "d85baa06-5c45-44ae-b280-6b832b1e3515",
+      "email": "user0_1771513165671@example.com",
+      "name": "User 0 Name",
+      "tier": "none"
+    },
+    "admin": {
+      "uid": "028ce0a2-0ae8-4b5c-b9c9-ef4482ee41e3",
+      "email": "user1_1771513168019@example.com",
+      "name": "User 1 Name",
+      "tier": "none"
+    },
+    "manager": {
+      "uid": "be816e1b-24f1-4304-99be-c54d50433e31",
+      "email": "user2_1771513168650@example.com",
+      "name": "User 2 Name",
+      "tier": "none"
+    },
+    "member": {
+      "uid": "240d53c7-d74b-4722-ab04-97db60def019",
+      "email": "user4_1771513169590@example.com",
+      "name": "User 4 Name",
+      "tier": "none"
+    },
+    "viewer": {
+      "uid": "78f245cc-78a2-4ed6-81f7-e349186f61de",
+      "email": "user3_1771513169166@example.com",
+      "name": "User 3 Name",
+      "tier": "none"
+    }
+  },
+  "tierUsers": {
+    "free": {
+      "uid": "54ade06c-3620-41ca-bb41-6074c0b3ddee",
+      "email": "user4_1771513625568@example.com",
+      "name": "User 4 Name",
+      "role": "viewer"
+    },
+    "pro": {
+      "uid": "bc754335-d145-4ef9-a536-1b9bcb33f312",
+      "email": "user9_1771513627802@example.com",
+      "name": "User 9 Name",
+      "role": "manager"
+    },
+    "business": {
+      "uid": "73c0787b-9eeb-4e86-bdb5-e999513100fe",
+      "email": "user7_1771513626820@example.com",
+      "name": "User 7 Name",
+      "role": "admin"
+    },
+    "agency": {
+      "uid": "72d85b3f-b18b-43ec-a1ce-c86e1a8021bf",
+      "email": "user1_1771513624288@example.com",
+      "name": "User 1 Name",
+      "role": "admin"
+    }
+  },
+  "password": "password123"
+}

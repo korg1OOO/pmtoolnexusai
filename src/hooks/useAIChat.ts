@@ -9,6 +9,9 @@ import type {
   AgentType,
   ClarifyingQuestion,
 } from '@/types/ai-agents';
+import { dispatchAIAction } from './useAIActionDispatcher';
+import { aiCreditsService } from '@/services/aiCreditsService';
+import { v4 as uuidv4 } from 'uuid';
 
 export type IntentMode = 'plan' | 'action';
 
@@ -17,6 +20,7 @@ interface UseAIChatOptions {
   currentView?: string;
   intentMode?: IntentMode;
   onNewMessage?: (message: AIMessage) => void;
+  onActionRequest?: (req: import('@/components/ai/AgentConfirmationDialog').AgentConfirmationRequest) => void;
 }
 
 interface UseAIChatReturn {
@@ -27,7 +31,7 @@ interface UseAIChatReturn {
   isSending: boolean;
   currentAgent: AgentType | null;
   pendingClarification: ClarifyingQuestion | null;
-  
+
   // Actions
   sendMessage: (content: string) => Promise<void>;
   createConversation: () => Promise<string | null>;
@@ -37,11 +41,12 @@ interface UseAIChatReturn {
   clearClarification: () => void;
 }
 
-export function useAIChat({ 
-  projectId, 
-  currentView = 'dashboard', 
+export function useAIChat({
+  projectId,
+  currentView = 'dashboard',
   intentMode = 'plan',
-  onNewMessage 
+  onNewMessage,
+  onActionRequest
 }: UseAIChatOptions): UseAIChatReturn {
   const { user } = useAuth();
   const [messages, setMessages] = useState<AIMessage[]>([]);
@@ -54,13 +59,8 @@ export function useAIChat({
   const onNewMessageRef = useRef(onNewMessage);
   onNewMessageRef.current = onNewMessage;
 
-  // Fetch conversations for the project
+  // Fetch conversations for the project (or global if no project)
   useEffect(() => {
-    if (!projectId) {
-      setConversations([]);
-      return;
-    }
-
     const fetchConversations = async () => {
       // Check if user is authenticated
       const { data: { user: currentUser } } = await supabase.auth.getUser();
@@ -69,18 +69,24 @@ export function useAIChat({
         return;
       }
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('ai_conversations')
         .select('*')
-        .eq('project_id', projectId)
-        .eq('user_id', currentUser.id)
-        .order('updated_at', { ascending: false });
+        .eq('user_id', currentUser.id);
+
+      if (projectId) {
+        query = query.eq('project_id', projectId);
+      } else {
+        query = query.is('project_id', null);
+      }
+
+      const { data, error } = await query.order('updated_at', { ascending: false });
 
       if (error) {
         console.error('Error fetching conversations:', error);
       } else {
         setConversations((data || []) as AIConversation[]);
-        
+
         // Auto-select most recent conversation or create new one
         if (data && data.length > 0 && !activeConversationId) {
           setActiveConversationId(data[0].id);
@@ -150,8 +156,6 @@ export function useAIChat({
 
   // Create a new conversation
   const createConversation = useCallback(async (): Promise<string | null> => {
-    if (!projectId) return null;
-
     // Get current user
     const { data: { user: currentUser } } = await supabase.auth.getUser();
     if (!currentUser) {
@@ -162,7 +166,7 @@ export function useAIChat({
     const { data, error } = await supabase
       .from('ai_conversations')
       .insert({
-        project_id: projectId,
+        project_id: projectId || null,
         user_id: currentUser.id,
         title: 'New Conversation',
       })
@@ -179,7 +183,7 @@ export function useAIChat({
     setConversations((prev) => [newConversation, ...prev]);
     setActiveConversationId(newConversation.id);
     setMessages([]);
-    
+
     return newConversation.id;
   }, [projectId]);
 
@@ -202,18 +206,18 @@ export function useAIChat({
     }
 
     setConversations((prev) => prev.filter((c) => c.id !== conversationId));
-    
+
     if (activeConversationId === conversationId) {
       setActiveConversationId(null);
       setMessages([]);
     }
-    
+
     toast.success('Conversation deleted');
   }, [activeConversationId]);
 
   // Send a message
   const sendMessage = useCallback(async (content: string) => {
-    if (!content.trim() || !projectId) return;
+    if (!content.trim()) return;
 
     let conversationId = activeConversationId;
 
@@ -251,7 +255,7 @@ export function useAIChat({
       if (userMsgError) throw userMsgError;
 
       // Replace temp message with real one
-      setMessages((prev) => 
+      setMessages((prev) =>
         prev.map((m) => m.id === tempUserMessage.id ? (userMsgData as AIMessage) : m)
       );
 
@@ -261,7 +265,83 @@ export function useAIChat({
         .slice(-10)
         .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
 
-      // Call the orchestrator with context and intent mode
+      // ── Action Mode: try local dispatcher first (bypasses edge function) ──
+      const isActionMode = content.includes('[Action Mode]');
+      if (isActionMode) {
+        // Get current user id
+        const { data: { user: currentUser } } = await supabase.auth.getUser();
+        const dispatchResult = await dispatchAIAction(
+          content,
+          projectId,
+          currentUser?.id
+        );
+
+        if (dispatchResult) {
+          // Save dispatcher result as assistant message
+          const dispatchContent = dispatchResult.executed
+            ? dispatchResult.summary
+            : `⚠️ ${dispatchResult.summary}`;
+
+          const { error: assistantError } = await supabase
+            .from('ai_messages')
+            .insert({
+              conversation_id: conversationId,
+              role: 'assistant' as const,
+              content: dispatchContent,
+              agent_type: 'project_manager',
+              metadata: {
+                intent: dispatchResult.actionType,
+                executed: dispatchResult.executed,
+                creditsDeducted: dispatchResult.creditsDeducted,
+                tokensDeducted: dispatchResult.tokensDeducted,
+                link: dispatchResult.link,
+              } as unknown as Record<string, unknown>,
+            } as any);
+
+          if (!assistantError) {
+            // Check for actual execution success to deduct credits
+            if (dispatchResult.executed && currentUser?.id) {
+              try {
+                const apiTokens = Math.floor(dispatchResult.tokensDeducted / 3);
+                await aiCreditsService.deductCredits({
+                  featureType: `ai_agent_${dispatchResult.actionType}`,
+                  requestId: uuidv4(),
+                  modelName: 'gpt-4-agent',
+                  promptTokens: Math.floor(apiTokens * 0.4),
+                  completionTokens: Math.floor(apiTokens * 0.6),
+                  userId: currentUser.id,
+                });
+              } catch (e) {
+                console.warn('Credit deduction failed (non-blocking):', e);
+              }
+            }
+
+            // Real-time listener will pick up the DB insertion to update the UI
+
+            if (dispatchResult.executed) {
+              toast.success(`✅ Action executed: ${dispatchResult.actionType.replace(/_/g, ' ')}`);
+            } else {
+              toast.warning(`⚠️ Action incomplete: ${dispatchResult.summary}`);
+            }
+            return; // Done — don't call edge function
+          }
+        }
+      }
+
+      // ── Credit pre-check: block if no credits ────────────────────────
+      try {
+        const hasCredits = await aiCreditsService.hasCredits(1);
+        if (!hasCredits) {
+          toast.error('Insufficient AI credits. Please purchase more to continue.');
+          setIsSending(false);
+          return;
+        }
+      } catch (creditErr) {
+        // Non-blocking: if credit check fails (e.g. no subscription row), allow through
+        console.warn('Credit check failed (non-blocking):', creditErr);
+      }
+
+      // ── Fallback: Call the ai-orchestrator edge function ────────────────
       const response = await supabase.functions.invoke('ai-orchestrator', {
         body: {
           message: content,
@@ -285,6 +365,16 @@ export function useAIChat({
         setPendingClarification(aiResponse.clarifyingQuestion);
       }
 
+      // Trigger confirmation dialog if action is pending
+      if (aiResponse.requiresConfirmation && aiResponse.pendingActionId && onActionRequest) {
+        onActionRequest({
+          pendingActionId: aiResponse.pendingActionId,
+          toolName: aiResponse.toolName ?? 'unknown_tool',
+          diff: aiResponse.diff ?? {},
+          summary: aiResponse.summary ?? `Execute ${aiResponse.toolName}`,
+        });
+      }
+
       // Insert assistant message
       const { error: assistantError } = await supabase
         .from('ai_messages')
@@ -295,7 +385,6 @@ export function useAIChat({
           agent_type: aiResponse.agentType,
           metadata: {
             intent: aiResponse.intent,
-            confidence: aiResponse.confidence,
             executionTime: aiResponse.executionTime,
             agentsUsed: aiResponse.agentsUsed,
             actions: aiResponse.actions,
@@ -316,7 +405,7 @@ export function useAIChat({
           .from('ai_conversations')
           .update({ title, updated_at: new Date().toISOString() })
           .eq('id', conversationId);
-        
+
         setConversations((prev) =>
           prev.map((c) => c.id === conversationId ? { ...c, title } : c)
         );
@@ -325,7 +414,7 @@ export function useAIChat({
     } catch (error) {
       console.error('Error sending message:', error);
       toast.error('Failed to get AI response');
-      
+
       // Remove optimistic message on error
       setMessages((prev) => prev.filter((m) => m.id !== tempUserMessage.id));
     } finally {

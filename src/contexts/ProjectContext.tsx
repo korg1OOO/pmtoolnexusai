@@ -37,10 +37,22 @@ export interface ProjectSettings {
   id: string | null;
   name: string;
   code: string;
+  startDate?: string;
+  endDate?: string;
   methodology: Methodology;
   modules: ModuleVisibility;
   defaultView: string;
 }
+
+// ... (keep GlobalPanelType and ProjectContextType)
+
+
+
+// ... (ProjectProvider logic)
+
+
+
+export type GlobalPanelType = 'chat' | 'ai' | 'settings' | null;
 
 interface ProjectContextType {
   settings: ProjectSettings;
@@ -51,6 +63,9 @@ interface ProjectContextType {
   getDefaultModules: (methodology: Methodology) => ModuleVisibility;
   loading: boolean;
   selectProject: (projectId: string) => void;
+  clearProject: () => void;
+  activeGlobalPanel: GlobalPanelType;
+  setActiveGlobalPanel: (panel: GlobalPanelType) => void;
 }
 
 const defaultModules: ModuleVisibility = {
@@ -120,25 +135,39 @@ const defaultSettings: ProjectSettings = {
   defaultView: 'dashboard',
 };
 
+
+
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
 
 const STORAGE_KEY = 'projectoye-settings';
 const SELECTED_PROJECT_KEY = 'projectoye-selected-project';
 
 export function ProjectProvider({ children }: { children: ReactNode }) {
-  const [settings, setSettings] = useState<ProjectSettings>(defaultSettings);
+  // Synchronously restore project ID from localStorage to prevent "No Project Selected" flash
+  const [settings, setSettings] = useState<ProjectSettings>(() => {
+    try {
+      const storedId = localStorage.getItem(SELECTED_PROJECT_KEY);
+      if (storedId) {
+        return { ...defaultSettings, id: storedId, name: 'Loading...' };
+      }
+    } catch { }
+    return defaultSettings;
+  });
   const [loading, setLoading] = useState(true);
+  const [activeGlobalPanel, setActiveGlobalPanel] = useState<GlobalPanelType>(null);
 
   // Load selected project on mount
   useEffect(() => {
     const loadProject = async () => {
+      console.log('[ProjectContext] Starting to load project...');
       try {
         // First try to get stored project ID
         const storedProjectId = localStorage.getItem(SELECTED_PROJECT_KEY);
-        
+        console.log('[ProjectContext] Stored project ID:', storedProjectId);
+
         // Get the first available project or the stored one
         let query = supabase.from('projects').select('*');
-        
+
         if (storedProjectId) {
           // Try to load the stored project first
           const { data: storedProject } = await supabase
@@ -146,25 +175,31 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
             .select('*')
             .eq('id', storedProjectId)
             .maybeSingle();
-          
+
+          console.log('[ProjectContext] Stored project query result:', storedProject);
+
           if (storedProject) {
             const methodology = (storedProject.methodology || 'hybrid') as Methodology;
             setSettings({
               id: storedProject.id,
               name: storedProject.name,
               code: storedProject.code,
+              startDate: storedProject.start_date,
+              endDate: storedProject.end_date,
               methodology,
               modules: getDefaultModulesInternal(methodology),
               defaultView: methodology === 'waterfall' ? 'gantt' : methodology === 'scrum' ? 'sprints' : 'dashboard',
             });
             setLoading(false);
+            console.log('[ProjectContext] Loaded stored project successfully');
             return;
           }
         }
-        
+
         // Fall back to first available project
         const { data: projects } = await query.order('created_at', { ascending: false }).limit(1);
-        
+        console.log('[ProjectContext] First available project query result:', projects);
+
         if (projects && projects.length > 0) {
           const project = projects[0];
           const methodology = (project.methodology || 'hybrid') as Methodology;
@@ -173,15 +208,21 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
             id: project.id,
             name: project.name,
             code: project.code,
+            startDate: project.start_date,
+            endDate: project.end_date,
             methodology,
             modules: getDefaultModulesInternal(methodology),
             defaultView: methodology === 'waterfall' ? 'gantt' : methodology === 'scrum' ? 'sprints' : 'dashboard',
           });
+          console.log('[ProjectContext] Loaded first available project');
+        } else {
+          console.log('[ProjectContext] No projects found in database');
         }
       } catch (error) {
-        console.error('Failed to load project:', error);
+        console.error('[ProjectContext] Failed to load project:', error);
       } finally {
         setLoading(false);
+        console.log('[ProjectContext] Loading complete');
       }
     };
 
@@ -208,13 +249,15 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
         .single();
 
       if (error) throw error;
-      
+
       const methodology = (project.methodology || 'hybrid') as Methodology;
       localStorage.setItem(SELECTED_PROJECT_KEY, project.id);
       setSettings({
         id: project.id,
         name: project.name,
         code: project.code,
+        startDate: project.start_date,
+        endDate: project.end_date,
         methodology,
         modules: getDefaultModulesInternal(methodology),
         defaultView: methodology === 'waterfall' ? 'gantt' : methodology === 'scrum' ? 'sprints' : 'dashboard',
@@ -222,6 +265,11 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
     } catch (error) {
       console.error('Failed to select project:', error);
     }
+  };
+
+  const clearProject = () => {
+    localStorage.removeItem(SELECTED_PROJECT_KEY);
+    setSettings(defaultSettings);
   };
 
   const updateMethodology = (methodology: Methodology) => {
@@ -266,6 +314,9 @@ export function ProjectProvider({ children }: { children: ReactNode }) {
         getDefaultModules,
         loading,
         selectProject,
+        clearProject,
+        activeGlobalPanel,
+        setActiveGlobalPanel,
       }}
     >
       {children}

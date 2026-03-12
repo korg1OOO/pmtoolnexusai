@@ -1,0 +1,1732 @@
+{
+  "timestamp": "2026-02-12T04:00:43.331Z",
+  "summary": {
+    "totalModules": 24,
+    "critical": 1,
+    "high": 0,
+    "medium": 2,
+    "low": 21,
+    "noGaps": 0
+  },
+  "modules": [
+    {
+      "moduleName": "ML",
+      "backendCapabilities": {
+        "tables": [
+          "ml_retraining_jobs",
+          "ml_accuracy_logs",
+          "ml_alerts",
+          "ml_predictions",
+          "ml_model_metadata",
+          "ml_training_data"
+        ],
+        "edgeFunctions": [
+          "ml-predict-delays",
+          "ml-retrain-model"
+        ],
+        "totalEndpoints": 8
+      },
+      "uiCapabilities": {
+        "components": [],
+        "hooks": [],
+        "exposedFeatures": []
+      },
+      "gap": {
+        "severity": "CRITICAL",
+        "backendNotExposedInUI": [
+          "Table: ml_retraining_jobs",
+          "Table: ml_accuracy_logs",
+          "Table: ml_alerts",
+          "Table: ml_predictions",
+          "Table: ml_model_metadata",
+          "Table: ml_training_data",
+          "Edge Function: ml-predict-delays",
+          "Edge Function: ml-retrain-model"
+        ],
+        "uiWithoutBackend": [],
+        "missingFeatures": []
+      }
+    },
+    {
+      "moduleName": "Affiliate",
+      "backendCapabilities": {
+        "tables": [
+          "affiliate_payouts",
+          "referral_codes",
+          "referral_conversions"
+        ],
+        "edgeFunctions": [],
+        "totalEndpoints": 3
+      },
+      "uiCapabilities": {
+        "components": [
+          "AdminReferrals"
+        ],
+        "hooks": [],
+        "exposedFeatures": [
+          "AdminReferrals"
+        ]
+      },
+      "gap": {
+        "severity": "MEDIUM",
+        "backendNotExposedInUI": [
+          "Table: affiliate_payouts",
+          "Table: referral_codes",
+          "Table: referral_conversions"
+        ],
+        "uiWithoutBackend": [],
+        "missingFeatures": []
+      }
+    },
+    {
+      "moduleName": "Marketing",
+      "backendCapabilities": {
+        "tables": [],
+        "edgeFunctions": [],
+        "totalEndpoints": 0
+      },
+      "uiCapabilities": {
+        "components": [
+          "EmailCampaignDetail",
+          "EmailCampaignBuilder"
+        ],
+        "hooks": [
+          "useMarketing"
+        ],
+        "exposedFeatures": [
+          "useMarketing",
+          "EmailCampaignDetail",
+          "EmailCampaignBuilder"
+        ]
+      },
+      "gap": {
+        "severity": "MEDIUM",
+        "backendNotExposedInUI": [],
+        "uiWithoutBackend": [],
+        "missingFeatures": []
+      }
+    },
+    {
+      "moduleName": "Project",
+      "backendCapabilities": {
+        "tables": [
+          "projects",
+          "tasks",
+          "task_dependencies",
+          "task_baselines",
+          "project_baselines",
+          "project_calendars",
+          "project_messages",
+          "spreadsheet_task_mappings",
+          "project_charters",
+          "project_budget_items",
+          "project_invoices",
+          "project_evm_snapshots",
+          "project_status_reports",
+          "deliverable_tasks",
+          "project_members",
+          "project_templates"
+        ],
+        "edgeFunctions": [],
+        "totalEndpoints": 16
+      },
+      "uiCapabilities": {
+        "components": [
+          "BaselineManager",
+          "TrackingView",
+          "TimelinePlannerTab",
+          "TeamManagementView",
+          "TeamChatView",
+          "StrategicDashboardView",
+          "StakeholderRegisterView",
+          "ScenariosView",
+          "ResourcesView",
+          "ReportsView",
+          "ProjectPlanView",
+          "ProjectCreationView",
+          "ProjectCharterView",
+          "ProjectAdminView",
+          "PresentationsView",
+          "PlanningView",
+          "NotesView",
+          "MorningBriefingView",
+          "MilestonesView",
+          "LessonsLearnedView",
+          "GanttView",
+          "FinancialsView",
+          "FinalReportView",
+          "ExecutiveDashboardView",
+          "EnhancedMeetingsView",
+          "EVMView",
+          "DocumentCenterView",
+          "DeliverablesView",
+          "DashboardView",
+          "CommunicationIntelligenceView",
+          "ChildPlansView",
+          "ChildGanttView",
+          "ChangeRequestsView",
+          "CalendarView",
+          "ResourceUsageView",
+          "ResourceSheet",
+          "SystemAuditReport",
+          "TaskInformationDialog",
+          "MSProjectColumns",
+          "DependencyContextMenu",
+          "DatabaseTaskGrid",
+          "DatabaseGantt",
+          "Sidebar",
+          "ProjectSwitcher",
+          "AppShell",
+          "AddInvoiceDialog",
+          "AddBudgetItemDialog",
+          "EmailAccountSettings",
+          "CommunicationsView",
+          "TaskLockIndicator",
+          "StrategicAISidebar",
+          "PMCoachSidebar",
+          "CommunicationAISidebar",
+          "MiniChatWindow"
+        ],
+        "hooks": [
+          "useTasks",
+          "useProjects",
+          "useProjectMembers",
+          "useProjectCharter",
+          "useProject",
+          "useGanttHistory"
+        ],
+        "exposedFeatures": [
+          "useTasks",
+          "useProjects",
+          "useProjectMembers",
+          "useProjectCharter",
+          "useProject",
+          "useGanttHistory",
+          "BaselineManager",
+          "TrackingView",
+          "TimelinePlannerTab",
+          "TeamManagementView",
+          "TeamChatView",
+          "StrategicDashboardView",
+          "StakeholderRegisterView",
+          "ScenariosView",
+          "ResourcesView",
+          "ReportsView",
+          "ProjectPlanView",
+          "ProjectCreationView",
+          "ProjectCharterView",
+          "ProjectAdminView",
+          "PresentationsView",
+          "PlanningView",
+          "NotesView",
+          "MorningBriefingView",
+          "MilestonesView",
+          "LessonsLearnedView",
+          "GanttView",
+          "FinancialsView",
+          "FinalReportView",
+          "ExecutiveDashboardView",
+          "EnhancedMeetingsView",
+          "EVMView",
+          "DocumentCenterView",
+          "DeliverablesView",
+          "DashboardView",
+          "CommunicationIntelligenceView",
+          "ChildPlansView",
+          "ChildGanttView",
+          "ChangeRequestsView",
+          "CalendarView",
+          "ResourceUsageView",
+          "ResourceSheet",
+          "SystemAuditReport",
+          "TaskInformationDialog",
+          "MSProjectColumns",
+          "DependencyContextMenu",
+          "DatabaseTaskGrid",
+          "DatabaseGantt",
+          "Sidebar",
+          "ProjectSwitcher",
+          "AppShell",
+          "AddInvoiceDialog",
+          "AddBudgetItemDialog",
+          "EmailAccountSettings",
+          "CommunicationsView",
+          "TaskLockIndicator",
+          "StrategicAISidebar",
+          "PMCoachSidebar",
+          "CommunicationAISidebar",
+          "MiniChatWindow"
+        ]
+      },
+      "gap": {
+        "severity": "LOW",
+        "backendNotExposedInUI": [
+          "Table: task_dependencies",
+          "Table: task_baselines",
+          "Table: spreadsheet_task_mappings"
+        ],
+        "uiWithoutBackend": [],
+        "missingFeatures": []
+      }
+    },
+    {
+      "moduleName": "Other",
+      "backendCapabilities": {
+        "tables": [
+          "calendar_exceptions",
+          "user_roles",
+          "briefing_preferences",
+          "actions",
+          "decisions",
+          "stakeholders",
+          "change_requests",
+          "lessons_learned",
+          "traceability_matrix",
+          "scenarios",
+          "strategic_insights",
+          "announcements",
+          "announcement_dismissals",
+          "feature_flags",
+          "content_categories",
+          "faqs",
+          "blog_posts",
+          "blog_tags",
+          "blog_post_tags",
+          "media_library",
+          "performance_thresholds",
+          "subscriptions",
+          "discount_codes",
+          "discount_code_usage",
+          "license_keys",
+          "license_key_activations",
+          "for",
+          "user_preferences",
+          "organizations",
+          "audit_logs",
+          "api_keys",
+          "deliverables",
+          "timeline_sites",
+          "timeline_teams",
+          "timeline_swimlanes",
+          "timeline_activities",
+          "timeline_dependencies",
+          "timeline_milestones",
+          "stage_gates",
+          "gate_criteria",
+          "gate_approvers"
+        ],
+        "edgeFunctions": [
+          "auto-schedule",
+          "calculate-critical-path",
+          "microsoft-sync",
+          "morning-briefing-generate",
+          "process-communication",
+          "simulate-scenarios",
+          "stripe-webhook"
+        ],
+        "totalEndpoints": 48
+      },
+      "uiCapabilities": {
+        "components": [
+          "ThemeToggle",
+          "TrackingGantt",
+          "BaselineManager",
+          "UserSettingsView",
+          "TrackingView",
+          "TraceabilityMatrixView",
+          "TimelinePlannerTab",
+          "TemplatesAdminView",
+          "TeamManagementView",
+          "TeamChatView",
+          "StrategicDashboardView",
+          "StakeholderRegisterView",
+          "SprintBoardView",
+          "ScenariosView",
+          "RisksView",
+          "ResourcesView",
+          "ReportsView",
+          "ProjectPlanView",
+          "ProjectCreationView",
+          "ProjectCharterView",
+          "ProjectAdminView",
+          "ProgramTimelineView",
+          "PresentationsView",
+          "PortfolioView",
+          "PortfolioManagement",
+          "PlatformAdminView",
+          "PlanningView",
+          "NotesView",
+          "MorningBriefingView",
+          "MilestonesView",
+          "MLAnalyticsHub",
+          "LessonsLearnedView",
+          "IssuesRegisterView",
+          "GanttView",
+          "FinancialsView",
+          "FinalReportView",
+          "ExecutiveDashboardView",
+          "EnhancedMeetingsView",
+          "EVMView",
+          "DocumentCenterView",
+          "DeliverablesView",
+          "DecisionsView",
+          "DashboardView",
+          "DashboardHub",
+          "CommunicationIntelligenceView",
+          "ChildPlansView",
+          "ChildGanttView",
+          "ChangeRequestsView",
+          "CalendarView",
+          "BacklogView",
+          "ActionsView",
+          "toggle-group",
+          "toaster",
+          "sonner",
+          "sidebar",
+          "input-otp",
+          "form",
+          "chart",
+          "carousel",
+          "RichTextEditor",
+          "SprintCard",
+          "SprintBurndownChart",
+          "ResourceUsageView",
+          "ResourceSheet",
+          "ResourceAssignmentDialog",
+          "TemplateGallery",
+          "SystemAuditReport",
+          "ScheduleReportDialog",
+          "ReportPreview",
+          "SpeakerNotesPanel",
+          "SlidePropertiesPanel",
+          "SlideEditor",
+          "ShapeLibrary",
+          "PresentationToolbar",
+          "PresentationSidebar",
+          "EmbeddedDashboardWidget",
+          "ComponentPicker",
+          "TaskInformationDialog",
+          "MSProjectColumns",
+          "LinkChildProjectDialog",
+          "DependencyContextMenu",
+          "DatabaseTaskGrid",
+          "DatabaseGantt",
+          "CalendarDialog",
+          "NotificationCenter",
+          "SpreadsheetEditor",
+          "PageList",
+          "PageEditor",
+          "NotebookSidebar",
+          "BacklinksSidebar",
+          "LinkDialog",
+          "ContactFormModal",
+          "TopBar",
+          "Sidebar",
+          "ProjectSwitcher",
+          "AppShell",
+          "AddInvoiceDialog",
+          "AddBudgetItemDialog",
+          "TranscriptUploadDialog",
+          "MiniCalendarSidebar",
+          "MeetingEditDialog",
+          "MeetingCreationDialog",
+          "VersionHistory",
+          "FolderCreateDialog",
+          "DocumentUploadDialog",
+          "DocumentSidebar",
+          "DocumentShareDialog",
+          "DocumentMoveDialog",
+          "DocumentGrid",
+          "DocumentApprovalWorkflow",
+          "EmailComposeDialog",
+          "EmailAccountSettings",
+          "CommunicationsView",
+          "PDFExporter",
+          "TaskLockIndicator",
+          "ProjectChat",
+          "PresenceIndicator",
+          "ConflictResolutionDialog",
+          "CollaboratorCursors",
+          "CheckoutWithDiscount",
+          "StrategicAISidebar",
+          "PMCoachSidebar",
+          "MeetingAISidebar",
+          "GlobalAISidebar",
+          "ContextSelector",
+          "CommunicationAISidebar",
+          "ClarifyingQuestion",
+          "ChatAttachments",
+          "ReadReceipts",
+          "PinnedMessages",
+          "MiniChatWindow",
+          "MessageSearch",
+          "MessageReactions",
+          "MessageForward",
+          "MessageEditor",
+          "MessageBubble",
+          "MentionInput",
+          "EmojiPicker",
+          "ChatAttachment",
+          "ProtectedRoute",
+          "AuthDialog",
+          "ResizableBriefingLayout",
+          "FlexibleBriefingGrid",
+          "BriefingSettingsPanel",
+          "BriefingSectionCard",
+          "ScheduleDelayPredictor",
+          "RiskPredictionDashboard",
+          "ModelPerformanceDashboard",
+          "CostForecastingPanel",
+          "ConvertToProjectPlanDialog",
+          "AdminSidebar",
+          "AdminPanel",
+          "AIProviderSettings",
+          "TicketDetail",
+          "EmailTemplateEditor",
+          "EmailCampaignDetail",
+          "EmailCampaignBuilder",
+          "AdminUsers",
+          "AdminRequests",
+          "AdminReferrals",
+          "AdminProUsers",
+          "AdminMedia",
+          "AdminMarketing",
+          "AdminManagement",
+          "AdminLicenseKeys",
+          "AdminHealthCheck",
+          "AdminFAQs",
+          "AdminEmailAutomation",
+          "AdminDocs",
+          "AdminDiscountCodes",
+          "AdminBlogPostEditor",
+          "AdminBlog",
+          "AdminAnalytics"
+        ],
+        "hooks": [
+          "useTraceability",
+          "useTimelineGenerator",
+          "useTemplates",
+          "useTeamMembers",
+          "useStrategicInsights",
+          "useStakeholders",
+          "useStageGates",
+          "useScheduleTrigger",
+          "useScenarios",
+          "usePresence",
+          "useMilestones",
+          "useMentionNotifications",
+          "useLessonsLearned",
+          "useEmbeddedComponents",
+          "useEVM",
+          "useDurationCalculator",
+          "useDeliverables",
+          "useDecisions",
+          "useCriticalPath",
+          "useCreateCalendar",
+          "useChangeRequests",
+          "useCalendars",
+          "useAutoScheduler",
+          "useActions",
+          "use-toast"
+        ],
+        "exposedFeatures": [
+          "useTraceability",
+          "useTimelineGenerator",
+          "useTemplates",
+          "useTeamMembers",
+          "useStrategicInsights",
+          "useStakeholders",
+          "useStageGates",
+          "useScheduleTrigger",
+          "useScenarios",
+          "usePresence",
+          "useMilestones",
+          "useMentionNotifications",
+          "useLessonsLearned",
+          "useEmbeddedComponents",
+          "useEVM",
+          "useDurationCalculator",
+          "useDeliverables",
+          "useDecisions",
+          "useCriticalPath",
+          "useCreateCalendar",
+          "useChangeRequests",
+          "useCalendars",
+          "useAutoScheduler",
+          "useActions",
+          "use-toast",
+          "ThemeToggle",
+          "TrackingGantt",
+          "BaselineManager",
+          "UserSettingsView",
+          "TrackingView",
+          "TraceabilityMatrixView",
+          "TimelinePlannerTab",
+          "TemplatesAdminView",
+          "TeamManagementView",
+          "TeamChatView",
+          "StrategicDashboardView",
+          "StakeholderRegisterView",
+          "SprintBoardView",
+          "ScenariosView",
+          "RisksView",
+          "ResourcesView",
+          "ReportsView",
+          "ProjectPlanView",
+          "ProjectCreationView",
+          "ProjectCharterView",
+          "ProjectAdminView",
+          "ProgramTimelineView",
+          "PresentationsView",
+          "PortfolioView",
+          "PortfolioManagement",
+          "PlatformAdminView",
+          "PlanningView",
+          "NotesView",
+          "MorningBriefingView",
+          "MilestonesView",
+          "MLAnalyticsHub",
+          "LessonsLearnedView",
+          "IssuesRegisterView",
+          "GanttView",
+          "FinancialsView",
+          "FinalReportView",
+          "ExecutiveDashboardView",
+          "EnhancedMeetingsView",
+          "EVMView",
+          "DocumentCenterView",
+          "DeliverablesView",
+          "DecisionsView",
+          "DashboardView",
+          "DashboardHub",
+          "CommunicationIntelligenceView",
+          "ChildPlansView",
+          "ChildGanttView",
+          "ChangeRequestsView",
+          "CalendarView",
+          "BacklogView",
+          "ActionsView",
+          "toggle-group",
+          "toaster",
+          "sonner",
+          "sidebar",
+          "input-otp",
+          "form",
+          "chart",
+          "carousel",
+          "RichTextEditor",
+          "SprintCard",
+          "SprintBurndownChart",
+          "ResourceUsageView",
+          "ResourceSheet",
+          "ResourceAssignmentDialog",
+          "TemplateGallery",
+          "SystemAuditReport",
+          "ScheduleReportDialog",
+          "ReportPreview",
+          "SpeakerNotesPanel",
+          "SlidePropertiesPanel",
+          "SlideEditor",
+          "ShapeLibrary",
+          "PresentationToolbar",
+          "PresentationSidebar",
+          "EmbeddedDashboardWidget",
+          "ComponentPicker",
+          "TaskInformationDialog",
+          "MSProjectColumns",
+          "LinkChildProjectDialog",
+          "DependencyContextMenu",
+          "DatabaseTaskGrid",
+          "DatabaseGantt",
+          "CalendarDialog",
+          "NotificationCenter",
+          "SpreadsheetEditor",
+          "PageList",
+          "PageEditor",
+          "NotebookSidebar",
+          "BacklinksSidebar",
+          "LinkDialog",
+          "ContactFormModal",
+          "TopBar",
+          "Sidebar",
+          "ProjectSwitcher",
+          "AppShell",
+          "AddInvoiceDialog",
+          "AddBudgetItemDialog",
+          "TranscriptUploadDialog",
+          "MiniCalendarSidebar",
+          "MeetingEditDialog",
+          "MeetingCreationDialog",
+          "VersionHistory",
+          "FolderCreateDialog",
+          "DocumentUploadDialog",
+          "DocumentSidebar",
+          "DocumentShareDialog",
+          "DocumentMoveDialog",
+          "DocumentGrid",
+          "DocumentApprovalWorkflow",
+          "EmailComposeDialog",
+          "EmailAccountSettings",
+          "CommunicationsView",
+          "PDFExporter",
+          "TaskLockIndicator",
+          "ProjectChat",
+          "PresenceIndicator",
+          "ConflictResolutionDialog",
+          "CollaboratorCursors",
+          "CheckoutWithDiscount",
+          "StrategicAISidebar",
+          "PMCoachSidebar",
+          "MeetingAISidebar",
+          "GlobalAISidebar",
+          "ContextSelector",
+          "CommunicationAISidebar",
+          "ClarifyingQuestion",
+          "ChatAttachments",
+          "ReadReceipts",
+          "PinnedMessages",
+          "MiniChatWindow",
+          "MessageSearch",
+          "MessageReactions",
+          "MessageForward",
+          "MessageEditor",
+          "MessageBubble",
+          "MentionInput",
+          "EmojiPicker",
+          "ChatAttachment",
+          "ProtectedRoute",
+          "AuthDialog",
+          "ResizableBriefingLayout",
+          "FlexibleBriefingGrid",
+          "BriefingSettingsPanel",
+          "BriefingSectionCard",
+          "ScheduleDelayPredictor",
+          "RiskPredictionDashboard",
+          "ModelPerformanceDashboard",
+          "CostForecastingPanel",
+          "ConvertToProjectPlanDialog",
+          "AdminSidebar",
+          "AdminPanel",
+          "AIProviderSettings",
+          "TicketDetail",
+          "EmailTemplateEditor",
+          "EmailCampaignDetail",
+          "EmailCampaignBuilder",
+          "AdminUsers",
+          "AdminRequests",
+          "AdminReferrals",
+          "AdminProUsers",
+          "AdminMedia",
+          "AdminMarketing",
+          "AdminManagement",
+          "AdminLicenseKeys",
+          "AdminHealthCheck",
+          "AdminFAQs",
+          "AdminEmailAutomation",
+          "AdminDocs",
+          "AdminDiscountCodes",
+          "AdminBlogPostEditor",
+          "AdminBlog",
+          "AdminAnalytics"
+        ]
+      },
+      "gap": {
+        "severity": "LOW",
+        "backendNotExposedInUI": [
+          "Table: calendar_exceptions",
+          "Table: user_roles",
+          "Table: briefing_preferences",
+          "Table: change_requests",
+          "Table: lessons_learned",
+          "Table: strategic_insights",
+          "Table: announcements",
+          "Table: announcement_dismissals",
+          "Table: feature_flags",
+          "Table: content_categories",
+          "Table: faqs",
+          "Table: blog_posts",
+          "Table: blog_tags",
+          "Table: blog_post_tags",
+          "Table: media_library",
+          "Table: performance_thresholds",
+          "Table: subscriptions",
+          "Table: discount_codes",
+          "Table: discount_code_usage",
+          "Table: license_keys",
+          "Table: license_key_activations",
+          "Table: for",
+          "Table: user_preferences",
+          "Table: organizations",
+          "Table: audit_logs",
+          "Table: api_keys",
+          "Table: timeline_sites",
+          "Table: timeline_teams",
+          "Table: timeline_swimlanes",
+          "Table: timeline_activities",
+          "Table: timeline_dependencies",
+          "Table: stage_gates",
+          "Table: gate_criteria",
+          "Table: gate_approvers",
+          "Edge Function: auto-schedule",
+          "Edge Function: calculate-critical-path",
+          "Edge Function: microsoft-sync",
+          "Edge Function: morning-briefing-generate",
+          "Edge Function: process-communication",
+          "Edge Function: simulate-scenarios",
+          "Edge Function: stripe-webhook"
+        ],
+        "uiWithoutBackend": [],
+        "missingFeatures": []
+      }
+    },
+    {
+      "moduleName": "Resource",
+      "backendCapabilities": {
+        "tables": [
+          "resources",
+          "resource_assignments"
+        ],
+        "edgeFunctions": [],
+        "totalEndpoints": 2
+      },
+      "uiCapabilities": {
+        "components": [
+          "ResourcesView",
+          "GanttView",
+          "FinancialsView",
+          "ResourceUsageView",
+          "ResourceSheet",
+          "ResourceAssignmentDialog",
+          "SystemAuditReport",
+          "TaskInformationDialog",
+          "DatabaseGantt",
+          "PMCoachSidebar"
+        ],
+        "hooks": [
+          "useResources",
+          "useResourceLeveling"
+        ],
+        "exposedFeatures": [
+          "useResources",
+          "useResourceLeveling",
+          "ResourcesView",
+          "GanttView",
+          "FinancialsView",
+          "ResourceUsageView",
+          "ResourceSheet",
+          "ResourceAssignmentDialog",
+          "SystemAuditReport",
+          "TaskInformationDialog",
+          "DatabaseGantt",
+          "PMCoachSidebar"
+        ]
+      },
+      "gap": {
+        "severity": "LOW",
+        "backendNotExposedInUI": [
+          "Table: resource_assignments"
+        ],
+        "uiWithoutBackend": [],
+        "missingFeatures": []
+      }
+    },
+    {
+      "moduleName": "Meeting",
+      "backendCapabilities": {
+        "tables": [
+          "meetings",
+          "meeting_participants",
+          "meeting_agenda_items",
+          "meeting_decisions",
+          "meeting_action_items",
+          "meeting_risks",
+          "meeting_scope_changes",
+          "meeting_conflicts",
+          "meeting_notes",
+          "mom_templates"
+        ],
+        "edgeFunctions": [
+          "meeting-ai-extract",
+          "meeting-generate-mom"
+        ],
+        "totalEndpoints": 12
+      },
+      "uiCapabilities": {
+        "components": [
+          "MorningBriefingView",
+          "EnhancedMeetingsView",
+          "DashboardView",
+          "CalendarView",
+          "SystemAuditReport",
+          "MeetingEditDialog",
+          "MeetingCreationDialog"
+        ],
+        "hooks": [
+          "useMeetings"
+        ],
+        "exposedFeatures": [
+          "useMeetings",
+          "MorningBriefingView",
+          "EnhancedMeetingsView",
+          "DashboardView",
+          "CalendarView",
+          "SystemAuditReport",
+          "MeetingEditDialog",
+          "MeetingCreationDialog"
+        ]
+      },
+      "gap": {
+        "severity": "LOW",
+        "backendNotExposedInUI": [
+          "Table: meeting_participants",
+          "Table: meeting_agenda_items",
+          "Table: meeting_decisions",
+          "Table: meeting_action_items",
+          "Table: meeting_risks",
+          "Table: meeting_scope_changes",
+          "Table: meeting_conflicts",
+          "Table: meeting_notes",
+          "Table: mom_templates",
+          "Edge Function: meeting-ai-extract",
+          "Edge Function: meeting-generate-mom"
+        ],
+        "uiWithoutBackend": [],
+        "missingFeatures": []
+      }
+    },
+    {
+      "moduleName": "Email",
+      "backendCapabilities": {
+        "tables": [
+          "email_accounts",
+          "email_folders",
+          "emails",
+          "email_drafts",
+          "email_templates",
+          "email_campaigns",
+          "email_campaign_recipients",
+          "email_preferences"
+        ],
+        "edgeFunctions": [
+          "email-send",
+          "email-sync",
+          "email-test-connection",
+          "gmail-oauth",
+          "gmail-sync",
+          "send-email"
+        ],
+        "totalEndpoints": 14
+      },
+      "uiCapabilities": {
+        "components": [
+          "CommunicationIntelligenceView",
+          "SystemAuditReport",
+          "EmailComposeDialog",
+          "EmailAccountSettings",
+          "CommunicationsView",
+          "EmailTemplateEditor",
+          "EmailCampaignDetail",
+          "EmailCampaignBuilder",
+          "AdminEmailAutomation"
+        ],
+        "hooks": [
+          "useEmails",
+          "useEmailAutomation",
+          "useEmailAccounts"
+        ],
+        "exposedFeatures": [
+          "useEmails",
+          "useEmailAutomation",
+          "useEmailAccounts",
+          "CommunicationIntelligenceView",
+          "SystemAuditReport",
+          "EmailComposeDialog",
+          "EmailAccountSettings",
+          "CommunicationsView",
+          "EmailTemplateEditor",
+          "EmailCampaignDetail",
+          "EmailCampaignBuilder",
+          "AdminEmailAutomation"
+        ]
+      },
+      "gap": {
+        "severity": "LOW",
+        "backendNotExposedInUI": [
+          "Table: email_accounts",
+          "Table: email_folders",
+          "Table: email_drafts",
+          "Table: email_templates",
+          "Table: email_campaigns",
+          "Table: email_campaign_recipients",
+          "Table: email_preferences",
+          "Edge Function: email-send",
+          "Edge Function: email-sync",
+          "Edge Function: email-test-connection",
+          "Edge Function: gmail-oauth",
+          "Edge Function: gmail-sync",
+          "Edge Function: send-email"
+        ],
+        "uiWithoutBackend": [],
+        "missingFeatures": []
+      }
+    },
+    {
+      "moduleName": "Notebook",
+      "backendCapabilities": {
+        "tables": [
+          "notebooks",
+          "notebook_sections",
+          "notebook_pages",
+          "notebook_page_links"
+        ],
+        "edgeFunctions": [],
+        "totalEndpoints": 4
+      },
+      "uiCapabilities": {
+        "components": [
+          "NotesView",
+          "SystemAuditReport",
+          "PageList",
+          "PageEditor",
+          "NotebookSidebar",
+          "BacklinksSidebar"
+        ],
+        "hooks": [
+          "useNotebooks"
+        ],
+        "exposedFeatures": [
+          "useNotebooks",
+          "NotesView",
+          "SystemAuditReport",
+          "PageList",
+          "PageEditor",
+          "NotebookSidebar",
+          "BacklinksSidebar"
+        ]
+      },
+      "gap": {
+        "severity": "LOW",
+        "backendNotExposedInUI": [
+          "Table: notebook_sections",
+          "Table: notebook_pages",
+          "Table: notebook_page_links"
+        ],
+        "uiWithoutBackend": [],
+        "missingFeatures": []
+      }
+    },
+    {
+      "moduleName": "Spreadsheet",
+      "backendCapabilities": {
+        "tables": [
+          "notebook_spreadsheets",
+          "spreadsheet_sheets"
+        ],
+        "edgeFunctions": [],
+        "totalEndpoints": 2
+      },
+      "uiCapabilities": {
+        "components": [
+          "SyncStatusIndicator",
+          "NotesView",
+          "SpreadsheetEditor",
+          "NotebookSidebar",
+          "ConvertToProjectPlanDialog"
+        ],
+        "hooks": [
+          "useSpreadsheets",
+          "useLinkedSpreadsheet"
+        ],
+        "exposedFeatures": [
+          "useSpreadsheets",
+          "useLinkedSpreadsheet",
+          "SyncStatusIndicator",
+          "NotesView",
+          "SpreadsheetEditor",
+          "NotebookSidebar",
+          "ConvertToProjectPlanDialog"
+        ]
+      },
+      "gap": {
+        "severity": "LOW",
+        "backendNotExposedInUI": [
+          "Table: spreadsheet_sheets"
+        ],
+        "uiWithoutBackend": [],
+        "missingFeatures": []
+      }
+    },
+    {
+      "moduleName": "Document",
+      "backendCapabilities": {
+        "tables": [
+          "document_folders",
+          "documents",
+          "document_versions",
+          "document_approvers",
+          "document_shares",
+          "presentation_folders",
+          "documentation",
+          "profiles"
+        ],
+        "edgeFunctions": [],
+        "totalEndpoints": 8
+      },
+      "uiCapabilities": {
+        "components": [
+          "UserSettingsView",
+          "ScenariosView",
+          "PresentationsView",
+          "DocumentCenterView",
+          "SystemAuditReport",
+          "PresentationSidebar",
+          "TopBar",
+          "FolderCreateDialog",
+          "DocumentUploadDialog",
+          "DocumentSidebar",
+          "DocumentShareDialog",
+          "DocumentMoveDialog",
+          "DocumentList",
+          "DocumentGrid",
+          "DocumentDetailsPanel",
+          "AdminDocs"
+        ],
+        "hooks": [
+          "useProfiles",
+          "useProfile",
+          "usePresentationFolders",
+          "useDocuments",
+          "useDocumentVersions",
+          "useDocumentSharing",
+          "useDocumentFolders"
+        ],
+        "exposedFeatures": [
+          "useProfiles",
+          "useProfile",
+          "usePresentationFolders",
+          "useDocuments",
+          "useDocumentVersions",
+          "useDocumentSharing",
+          "useDocumentFolders",
+          "UserSettingsView",
+          "ScenariosView",
+          "PresentationsView",
+          "DocumentCenterView",
+          "SystemAuditReport",
+          "PresentationSidebar",
+          "TopBar",
+          "FolderCreateDialog",
+          "DocumentUploadDialog",
+          "DocumentSidebar",
+          "DocumentShareDialog",
+          "DocumentMoveDialog",
+          "DocumentList",
+          "DocumentGrid",
+          "DocumentDetailsPanel",
+          "AdminDocs"
+        ]
+      },
+      "gap": {
+        "severity": "LOW",
+        "backendNotExposedInUI": [
+          "Table: document_folders",
+          "Table: document_versions",
+          "Table: document_approvers",
+          "Table: document_shares",
+          "Table: presentation_folders",
+          "Table: documentation"
+        ],
+        "uiWithoutBackend": [],
+        "missingFeatures": []
+      }
+    },
+    {
+      "moduleName": "Presentation",
+      "backendCapabilities": {
+        "tables": [
+          "presentations",
+          "presentation_slides",
+          "presentation_versions",
+          "presentation_collaborators",
+          "active_presentations"
+        ],
+        "edgeFunctions": [],
+        "totalEndpoints": 5
+      },
+      "uiCapabilities": {
+        "components": [
+          "PresentationsView",
+          "SystemAuditReport",
+          "SlidePropertiesPanel",
+          "SlideEditor",
+          "ShapeLibrary",
+          "PresentationToolbar",
+          "PresentationSidebar"
+        ],
+        "hooks": [
+          "useSlides",
+          "usePresentations",
+          "useActivePresentation"
+        ],
+        "exposedFeatures": [
+          "useSlides",
+          "usePresentations",
+          "useActivePresentation",
+          "PresentationsView",
+          "SystemAuditReport",
+          "SlidePropertiesPanel",
+          "SlideEditor",
+          "ShapeLibrary",
+          "PresentationToolbar",
+          "PresentationSidebar"
+        ]
+      },
+      "gap": {
+        "severity": "LOW",
+        "backendNotExposedInUI": [
+          "Table: presentation_versions",
+          "Table: presentation_collaborators"
+        ],
+        "uiWithoutBackend": [],
+        "missingFeatures": []
+      }
+    },
+    {
+      "moduleName": "AI",
+      "backendCapabilities": {
+        "tables": [
+          "ai_conversations",
+          "ai_messages",
+          "ai_agent_logs",
+          "ai_usage_logs",
+          "chat_channels",
+          "chat_channel_members",
+          "chat_messages"
+        ],
+        "edgeFunctions": [
+          "ai-orchestrator"
+        ],
+        "totalEndpoints": 8
+      },
+      "uiCapabilities": {
+        "components": [
+          "TeamChatView",
+          "SystemAuditReport",
+          "ProjectChat",
+          "GlobalAISidebar",
+          "MiniChatWindow",
+          "AdminAIUsage"
+        ],
+        "hooks": [
+          "useChatPresence",
+          "useChatEngine",
+          "useChatChannels",
+          "useAIUsage",
+          "useAIChat"
+        ],
+        "exposedFeatures": [
+          "useChatPresence",
+          "useChatEngine",
+          "useChatChannels",
+          "useAIUsage",
+          "useAIChat",
+          "TeamChatView",
+          "SystemAuditReport",
+          "ProjectChat",
+          "GlobalAISidebar",
+          "MiniChatWindow",
+          "AdminAIUsage"
+        ]
+      },
+      "gap": {
+        "severity": "LOW",
+        "backendNotExposedInUI": [
+          "Table: ai_conversations",
+          "Table: ai_messages",
+          "Table: ai_agent_logs",
+          "Table: ai_usage_logs",
+          "Table: chat_channels",
+          "Table: chat_channel_members",
+          "Table: chat_messages",
+          "Edge Function: ai-orchestrator"
+        ],
+        "uiWithoutBackend": [],
+        "missingFeatures": []
+      }
+    },
+    {
+      "moduleName": "Agile",
+      "backendCapabilities": {
+        "tables": [
+          "epics",
+          "sprints",
+          "backlog_items"
+        ],
+        "edgeFunctions": [],
+        "totalEndpoints": 3
+      },
+      "uiCapabilities": {
+        "components": [
+          "SprintBoardView",
+          "DashboardView",
+          "BacklogView",
+          "SprintCard",
+          "SystemAuditReport"
+        ],
+        "hooks": [
+          "useSprints",
+          "useEpics",
+          "useBacklogItems"
+        ],
+        "exposedFeatures": [
+          "useSprints",
+          "useEpics",
+          "useBacklogItems",
+          "SprintBoardView",
+          "DashboardView",
+          "BacklogView",
+          "SprintCard",
+          "SystemAuditReport"
+        ]
+      },
+      "gap": {
+        "severity": "LOW",
+        "backendNotExposedInUI": [
+          "Table: backlog_items"
+        ],
+        "uiWithoutBackend": [],
+        "missingFeatures": []
+      }
+    },
+    {
+      "moduleName": "Risk",
+      "backendCapabilities": {
+        "tables": [
+          "risks",
+          "issues"
+        ],
+        "edgeFunctions": [
+          "analyze-risks",
+          "ml-predict-risks"
+        ],
+        "totalEndpoints": 4
+      },
+      "uiCapabilities": {
+        "components": [
+          "RisksView",
+          "ProgramTimelineView",
+          "MorningBriefingView",
+          "IssuesRegisterView",
+          "ExecutiveDashboardView",
+          "DashboardView",
+          "SystemAuditReport"
+        ],
+        "hooks": [
+          "useRisks",
+          "useIssues"
+        ],
+        "exposedFeatures": [
+          "useRisks",
+          "useIssues",
+          "RisksView",
+          "ProgramTimelineView",
+          "MorningBriefingView",
+          "IssuesRegisterView",
+          "ExecutiveDashboardView",
+          "DashboardView",
+          "SystemAuditReport"
+        ]
+      },
+      "gap": {
+        "severity": "LOW",
+        "backendNotExposedInUI": [
+          "Edge Function: analyze-risks",
+          "Edge Function: ml-predict-risks"
+        ],
+        "uiWithoutBackend": [],
+        "missingFeatures": []
+      }
+    },
+    {
+      "moduleName": "Portfolio",
+      "backendCapabilities": {
+        "tables": [
+          "portfolios",
+          "programs"
+        ],
+        "edgeFunctions": [],
+        "totalEndpoints": 2
+      },
+      "uiCapabilities": {
+        "components": [
+          "ProjectAdminView",
+          "ProgramTimelineView",
+          "PortfolioView",
+          "PortfolioManagement",
+          "ExecutiveDashboardView"
+        ],
+        "hooks": [
+          "usePrograms",
+          "usePortfolios"
+        ],
+        "exposedFeatures": [
+          "usePrograms",
+          "usePortfolios",
+          "ProjectAdminView",
+          "ProgramTimelineView",
+          "PortfolioView",
+          "PortfolioManagement",
+          "ExecutiveDashboardView"
+        ]
+      },
+      "gap": {
+        "severity": "LOW",
+        "backendNotExposedInUI": [],
+        "uiWithoutBackend": [],
+        "missingFeatures": []
+      }
+    },
+    {
+      "moduleName": "Report",
+      "backendCapabilities": {
+        "tables": [
+          "final_reports",
+          "service_status",
+          "reports"
+        ],
+        "edgeFunctions": [
+          "generate-status"
+        ],
+        "totalEndpoints": 4
+      },
+      "uiCapabilities": {
+        "components": [
+          "ReportsView",
+          "FinalReportView",
+          "AdminHealthCheck"
+        ],
+        "hooks": [
+          "useReports",
+          "useFinalReport"
+        ],
+        "exposedFeatures": [
+          "useReports",
+          "useFinalReport",
+          "ReportsView",
+          "FinalReportView",
+          "AdminHealthCheck"
+        ]
+      },
+      "gap": {
+        "severity": "LOW",
+        "backendNotExposedInUI": [
+          "Table: service_status",
+          "Edge Function: generate-status"
+        ],
+        "uiWithoutBackend": [],
+        "missingFeatures": []
+      }
+    },
+    {
+      "moduleName": "Backup",
+      "backendCapabilities": {
+        "tables": [
+          "backup_jobs",
+          "backup_schedules"
+        ],
+        "edgeFunctions": [],
+        "totalEndpoints": 2
+      },
+      "uiCapabilities": {
+        "components": [],
+        "hooks": [
+          "useBackups"
+        ],
+        "exposedFeatures": [
+          "useBackups"
+        ]
+      },
+      "gap": {
+        "severity": "LOW",
+        "backendNotExposedInUI": [
+          "Table: backup_jobs",
+          "Table: backup_schedules"
+        ],
+        "uiWithoutBackend": [],
+        "missingFeatures": []
+      }
+    },
+    {
+      "moduleName": "Support",
+      "backendCapabilities": {
+        "tables": [
+          "support_tickets",
+          "ticket_replies"
+        ],
+        "edgeFunctions": [],
+        "totalEndpoints": 2
+      },
+      "uiCapabilities": {
+        "components": [
+          "TicketDetail",
+          "AdminRequests"
+        ],
+        "hooks": [
+          "useSupportTickets"
+        ],
+        "exposedFeatures": [
+          "useSupportTickets",
+          "TicketDetail",
+          "AdminRequests"
+        ]
+      },
+      "gap": {
+        "severity": "LOW",
+        "backendNotExposedInUI": [
+          "Table: support_tickets",
+          "Table: ticket_replies"
+        ],
+        "uiWithoutBackend": [],
+        "missingFeatures": []
+      }
+    },
+    {
+      "moduleName": "Financial",
+      "backendCapabilities": {
+        "tables": [
+          "ai_provider_costs",
+          "ai_budgets"
+        ],
+        "edgeFunctions": [
+          "ml-forecast-costs"
+        ],
+        "totalEndpoints": 3
+      },
+      "uiCapabilities": {
+        "components": [
+          "MorningBriefingView",
+          "FinancialsView",
+          "ExecutiveDashboardView",
+          "DashboardView",
+          "AddInvoiceDialog",
+          "AddBudgetItemDialog",
+          "CostOptimizationPanel",
+          "AdminAIUsage"
+        ],
+        "hooks": [
+          "useOrgFinancials",
+          "useFinancials",
+          "useCostOptimization",
+          "useAICostMonitoring"
+        ],
+        "exposedFeatures": [
+          "useOrgFinancials",
+          "useFinancials",
+          "useCostOptimization",
+          "useAICostMonitoring",
+          "MorningBriefingView",
+          "FinancialsView",
+          "ExecutiveDashboardView",
+          "DashboardView",
+          "AddInvoiceDialog",
+          "AddBudgetItemDialog",
+          "CostOptimizationPanel",
+          "AdminAIUsage"
+        ]
+      },
+      "gap": {
+        "severity": "LOW",
+        "backendNotExposedInUI": [
+          "Table: ai_provider_costs",
+          "Table: ai_budgets",
+          "Edge Function: ml-forecast-costs"
+        ],
+        "uiWithoutBackend": [],
+        "missingFeatures": []
+      }
+    },
+    {
+      "moduleName": "Health",
+      "backendCapabilities": {
+        "tables": [
+          "system_metrics"
+        ],
+        "edgeFunctions": [],
+        "totalEndpoints": 1
+      },
+      "uiCapabilities": {
+        "components": [
+          "AdminHealthCheck"
+        ],
+        "hooks": [
+          "useHealthMonitoring"
+        ],
+        "exposedFeatures": [
+          "useHealthMonitoring",
+          "AdminHealthCheck"
+        ]
+      },
+      "gap": {
+        "severity": "LOW",
+        "backendNotExposedInUI": [
+          "Table: system_metrics"
+        ],
+        "uiWithoutBackend": [],
+        "missingFeatures": []
+      }
+    },
+    {
+      "moduleName": "Admin",
+      "backendCapabilities": {
+        "tables": [
+          "admin_roles",
+          "admin_users",
+          "admin_activity_log"
+        ],
+        "edgeFunctions": [],
+        "totalEndpoints": 3
+      },
+      "uiCapabilities": {
+        "components": [
+          "PlatformAdminView",
+          "CheckoutWithDiscount",
+          "AdminUsers",
+          "AdminReferrals",
+          "AdminMedia",
+          "AdminManagement",
+          "AdminLicenseKeys",
+          "AdminFAQs",
+          "AdminDocs",
+          "AdminDiscountCodes",
+          "AdminDashboard",
+          "AdminBlogPostEditor",
+          "AdminBlog"
+        ],
+        "hooks": [
+          "useContentManagement",
+          "useAdvancedAdmin",
+          "useAdminServices",
+          "useAdminManagement",
+          "useAdmin"
+        ],
+        "exposedFeatures": [
+          "useContentManagement",
+          "useAdvancedAdmin",
+          "useAdminServices",
+          "useAdminManagement",
+          "useAdmin",
+          "PlatformAdminView",
+          "CheckoutWithDiscount",
+          "AdminUsers",
+          "AdminReferrals",
+          "AdminMedia",
+          "AdminManagement",
+          "AdminLicenseKeys",
+          "AdminFAQs",
+          "AdminDocs",
+          "AdminDiscountCodes",
+          "AdminDashboard",
+          "AdminBlogPostEditor",
+          "AdminBlog"
+        ]
+      },
+      "gap": {
+        "severity": "LOW",
+        "backendNotExposedInUI": [],
+        "uiWithoutBackend": [],
+        "missingFeatures": []
+      }
+    },
+    {
+      "moduleName": "Baseline",
+      "backendCapabilities": {
+        "tables": [
+          "timeline_snapshots"
+        ],
+        "edgeFunctions": [
+          "ml-create-snapshot"
+        ],
+        "totalEndpoints": 2
+      },
+      "uiCapabilities": {
+        "components": [
+          "VarianceTable",
+          "TrackingGantt",
+          "BaselineManager",
+          "TrackingView",
+          "SystemAuditReport",
+          "DatabaseGantt"
+        ],
+        "hooks": [
+          "useBaselines"
+        ],
+        "exposedFeatures": [
+          "useBaselines",
+          "VarianceTable",
+          "TrackingGantt",
+          "BaselineManager",
+          "TrackingView",
+          "SystemAuditReport",
+          "DatabaseGantt"
+        ]
+      },
+      "gap": {
+        "severity": "LOW",
+        "backendNotExposedInUI": [
+          "Table: timeline_snapshots",
+          "Edge Function: ml-create-snapshot"
+        ],
+        "uiWithoutBackend": [],
+        "missingFeatures": []
+      }
+    },
+    {
+      "moduleName": "Auth",
+      "backendCapabilities": {
+        "tables": [],
+        "edgeFunctions": [
+          "microsoft-oauth"
+        ],
+        "totalEndpoints": 1
+      },
+      "uiCapabilities": {
+        "components": [
+          "PortfolioView",
+          "PlatformAdminView",
+          "PlanningView",
+          "DashboardView",
+          "DatabaseGantt",
+          "GlobalAISidebar",
+          "AuthDialog"
+        ],
+        "hooks": [
+          "useUserRole",
+          "useUserPreferences",
+          "usePermissions",
+          "useAuth"
+        ],
+        "exposedFeatures": [
+          "useUserRole",
+          "useUserPreferences",
+          "usePermissions",
+          "useAuth",
+          "PortfolioView",
+          "PlatformAdminView",
+          "PlanningView",
+          "DashboardView",
+          "DatabaseGantt",
+          "GlobalAISidebar",
+          "AuthDialog"
+        ]
+      },
+      "gap": {
+        "severity": "LOW",
+        "backendNotExposedInUI": [
+          "Edge Function: microsoft-oauth"
+        ],
+        "uiWithoutBackend": [],
+        "missingFeatures": []
+      }
+    }
+  ]
+}

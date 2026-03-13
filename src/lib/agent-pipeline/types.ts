@@ -149,3 +149,90 @@ export const ACTIONS_REQUIRING_ISSUES: string[] = [
 export const PROJECT_INDEPENDENT_ACTIONS: string[] = [
     'create_project',
 ];
+
+// ─── Multi-Step Execution Plans ──────────────────────────────────────────────
+
+/** A single step in a multi-step execution plan */
+export interface PlanStep {
+    /** Unique step ID (1-indexed) */
+    stepId: number;
+    /** The action intent to execute */
+    action: string;
+    /** Human-readable description of what this step does */
+    description: string;
+    /** Parameters for the action */
+    params: Record<string, unknown>;
+    /**
+     * Dependencies on other steps using $ref syntax.
+     * Example: { "projectId": "$ref:step1.id" } means
+     * use the "id" field from step 1's result.
+     */
+    dependsOn?: number[];
+    /** Whether this step requires user confirmation before executing */
+    requiresConfirmation?: boolean;
+}
+
+/** A complete multi-step execution plan */
+export interface ExecutionPlan {
+    /** Unique plan ID */
+    planId: string;
+    /** Human-readable plan title */
+    title: string;
+    /** Original user request that generated this plan */
+    originalRequest: string;
+    /** Ordered list of steps to execute */
+    steps: PlanStep[];
+    /** Overall risk level */
+    risk: 'low' | 'medium' | 'high';
+    /** Whether the entire plan requires user approval */
+    requiresApproval: boolean;
+    /** Estimated total credits cost */
+    estimatedCredits?: number;
+}
+
+/** Status of a step during plan execution */
+export interface PlanStepResult {
+    stepId: number;
+    status: 'pending' | 'running' | 'success' | 'failed' | 'skipped';
+    result?: unknown;
+    error?: string;
+    /** Resolved output that can be referenced by later steps */
+    output?: Record<string, unknown>;
+}
+
+/** Status of the entire plan execution */
+export interface PlanExecutionStatus {
+    planId: string;
+    status: 'pending_approval' | 'running' | 'completed' | 'partial' | 'failed';
+    stepResults: PlanStepResult[];
+    summary: string;
+}
+
+// ─── Agent Memory ────────────────────────────────────────────────────────────
+
+/** A log entry for agent memory / reconciliation */
+export interface AgentMemoryEntry {
+    /** Unique entry ID */
+    id: string;
+    /** Project ID */
+    projectId: string;
+    /** User ID who triggered the action */
+    userId: string;
+    /** The action intent that was executed */
+    actionType: string;
+    /** Whether the action succeeded */
+    success: boolean;
+    /** The input parameters */
+    input: Record<string, unknown>;
+    /** The output / result */
+    output?: Record<string, unknown>;
+    /** Verification result (if available) */
+    verification?: VerificationResult;
+    /** Error message if failed */
+    error?: string;
+    /** Timestamp */
+    timestamp: string;
+    /** Credits used */
+    creditsUsed: number;
+}
+

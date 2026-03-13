@@ -28,6 +28,11 @@ import { classifyIntent } from '@/lib/agent-pipeline/intent-classifier';
 import { classifyError, formatErrorForChat } from '@/lib/agent-pipeline/error-handler';
 import { getQueryHints } from '@/lib/agent-pipeline/query-hints';
 import type { ActionContext } from '@/lib/agent-pipeline/types';
+import {
+    queryProjectStatus, queryTasks, queryTeam, queryRisksIssues, queryBudget, querySprint,
+    updateTaskStatus, updateTask, updateRiskStatus, updateIssueStatus, updateProject,
+    deleteTask, deletePhase, deleteRisk, deleteIssue, deleteMember,
+} from '@/lib/agent-pipeline/crud-handlers';
 
 const supabase = _supabase as any;
 
@@ -60,6 +65,25 @@ const ACTION_TOKEN_COSTS: Record<string, number> = {
     create_deliverables: 700,
     map_traceability: 600,
     complete_sprint: 400,
+    // Query operations (free — no credits)
+    query_project_status: 0,
+    query_tasks: 0,
+    query_team: 0,
+    query_risks_issues: 0,
+    query_budget: 0,
+    query_sprint: 0,
+    // Update operations
+    update_task_status: 200,
+    update_task: 300,
+    update_risk_status: 200,
+    update_issue_status: 200,
+    update_project: 300,
+    // Delete operations
+    delete_task: 200,
+    delete_phase: 250,
+    delete_risk: 200,
+    delete_issue: 200,
+    delete_member: 250,
     default: 500,
 };
 
@@ -139,6 +163,49 @@ function detectIntent(msg: string): string | null {
             return 'create_project';
         }
     }
+
+    // 8. Query / Read operations
+    if ((lower.includes('status') || lower.includes('dashboard') || lower.includes('overview') || lower.includes('summary')) &&
+        (lower.includes('project') || lower.includes('overall'))) return 'query_project_status';
+    if ((lower.includes('show') || lower.includes('list') || lower.includes('what') || lower.includes('get') || lower.includes('find')) &&
+        (lower.includes('task') || lower.includes('activit'))) return 'query_tasks';
+    if ((lower.includes('show') || lower.includes('list') || lower.includes('who') || lower.includes('team') || lower.includes('member'))) {
+        if (lower.includes('team') || lower.includes('member') || lower.includes('who')) return 'query_team';
+    }
+    if ((lower.includes('show') || lower.includes('list') || lower.includes('what') || lower.includes('any')) &&
+        (lower.includes('risk') || lower.includes('issue'))) {
+        if (!lower.includes('log') && !lower.includes('create') && !lower.includes('add')) return 'query_risks_issues';
+    }
+    if ((lower.includes('show') || lower.includes('what') || lower.includes('how much')) &&
+        (lower.includes('budget') || lower.includes('financ') || lower.includes('spent') || lower.includes('expense'))) {
+        if (!lower.includes('set') && !lower.includes('log') && !lower.includes('create')) return 'query_budget';
+    }
+    if ((lower.includes('show') || lower.includes('what') || lower.includes('current') || lower.includes('how')) &&
+        lower.includes('sprint')) {
+        if (!lower.includes('create') && !lower.includes('plan') && !lower.includes('complete')) return 'query_sprint';
+    }
+
+    // 9. Update operations
+    if ((lower.includes('mark') || lower.includes('set') || lower.includes('change') || lower.includes('move')) &&
+        (lower.includes('task') || lower.includes('activit')) &&
+        (lower.includes('complete') || lower.includes('done') || lower.includes('progress') || lower.includes('started') || lower.includes('status'))) return 'update_task_status';
+    if ((lower.includes('update') || lower.includes('edit') || lower.includes('change') || lower.includes('modify') || lower.includes('rename')) &&
+        (lower.includes('task') || lower.includes('activit')) &&
+        !lower.includes('status')) return 'update_task';
+    if ((lower.includes('close') || lower.includes('mitigat') || lower.includes('escalat') || lower.includes('accept')) &&
+        lower.includes('risk') && !lower.includes('create') && !lower.includes('log')) return 'update_risk_status';
+    if ((lower.includes('close') || lower.includes('reopen') || lower.includes('escalat')) &&
+        lower.includes('issue') && !lower.includes('create') && !lower.includes('log') && !lower.includes('resolve')) return 'update_issue_status';
+    if ((lower.includes('update') || lower.includes('change') || lower.includes('set') || lower.includes('rename') || lower.includes('pause') || lower.includes('put on hold')) &&
+        lower.includes('project') &&
+        (lower.includes('status') || lower.includes('name') || lower.includes('date') || lower.includes('hold') || lower.includes('cancel') || lower.includes('rename'))) return 'update_project';
+
+    // 10. Delete operations
+    if ((lower.includes('delete') || lower.includes('remove')) && (lower.includes('task') || lower.includes('activit'))) return 'delete_task';
+    if ((lower.includes('delete') || lower.includes('remove')) && lower.includes('phase')) return 'delete_phase';
+    if ((lower.includes('delete') || lower.includes('remove')) && lower.includes('risk')) return 'delete_risk';
+    if ((lower.includes('delete') || lower.includes('remove')) && lower.includes('issue')) return 'delete_issue';
+    if ((lower.includes('delete') || lower.includes('remove')) && (lower.includes('member') || lower.includes('teammate') || lower.includes('person'))) return 'delete_member';
 
     return null;
 }
@@ -1633,6 +1700,92 @@ export async function dispatchAIAction(
                         summary: `✅ Completed Sprint 1: ${doneCount} stories marked Done. Sprint velocity: **${velocity} story points**.`,
                         creditsDeducted: creditsUsed, tokensDeducted,
                     };
+                }
+
+                // ── Query Handlers ────────────────────────────────────────────
+                case 'query_project_status': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected. Please select a project first.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await queryProjectStatus(projectId, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: 0, tokensDeducted: 0 };
+                }
+                case 'query_tasks': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await queryTasks(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: 0, tokensDeducted: 0 };
+                }
+                case 'query_team': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await queryTeam(projectId, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: 0, tokensDeducted: 0 };
+                }
+                case 'query_risks_issues': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await queryRisksIssues(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: 0, tokensDeducted: 0 };
+                }
+                case 'query_budget': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await queryBudget(projectId, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: 0, tokensDeducted: 0 };
+                }
+                case 'query_sprint': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await querySprint(projectId, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: 0, tokensDeducted: 0 };
+                }
+
+                // ── Update Handlers ───────────────────────────────────────────
+                case 'update_task_status': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await updateTaskStatus(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+                case 'update_task': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await updateTask(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+                case 'update_risk_status': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await updateRiskStatus(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+                case 'update_issue_status': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await updateIssueStatus(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+                case 'update_project': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await updateProject(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+
+                // ── Delete Handlers ───────────────────────────────────────────
+                case 'delete_task': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await deleteTask(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+                case 'delete_phase': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await deletePhase(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+                case 'delete_risk': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await deleteRisk(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+                case 'delete_issue': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await deleteIssue(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+                case 'delete_member': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await deleteMember(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
                 }
 
                 default:

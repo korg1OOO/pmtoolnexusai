@@ -179,6 +179,47 @@ const ACTION_QUERY_KEYS: Record<string, string[][]> = {
         ['project-charter'],
         ['deliverables'],
     ],
+
+    // ── Update operations ────────────────────────────────────────────────
+    update_task_status: [
+        ['tasks'],
+    ],
+    update_task: [
+        ['tasks'],
+    ],
+    update_risk_status: [
+        ['risks'],
+        ['project-risks'],
+    ],
+    update_issue_status: [
+        ['issues'],
+        ['project-issues'],
+    ],
+    update_project: [
+        ['projects'],
+        ['project-stats'],
+    ],
+
+    // ── Delete operations ────────────────────────────────────────────────
+    delete_task: [
+        ['tasks'],
+    ],
+    delete_phase: [
+        ['tasks'],
+        ['project-phases'],
+    ],
+    delete_risk: [
+        ['risks'],
+        ['project-risks'],
+    ],
+    delete_issue: [
+        ['issues'],
+        ['project-issues'],
+    ],
+    delete_member: [
+        ['team-members'],
+        ['user-roles'],
+    ],
 };
 
 /**

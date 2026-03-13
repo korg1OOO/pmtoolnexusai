@@ -235,6 +235,21 @@ const ACTION_QUERY_KEYS: Record<string, string[][]> = {
         ['budgets'],
         ['project-financials'],
     ],
+
+    // ── Phase 3: Extended operations ─────────────────────────────────────
+    query_documents: [], update_document_status: [['documents']], delete_document: [['documents']],
+    query_deliverables: [], update_deliverable: [['deliverables']], delete_deliverable: [['deliverables']],
+    query_change_requests: [], update_change_request: [['change-requests']],
+    query_approvals: [], approve_item: [['approvals']], reject_item: [['approvals']],
+    query_stakeholders: [], delete_stakeholder: [['stakeholders']],
+    query_requirements: [], delete_requirement: [['requirements'], ['traceability']],
+    query_quality_items: [], create_quality_item: [['quality_items']],
+    query_notes: [], create_note: [['notes']], delete_note: [['notes']],
+    query_calendar: [],
+    query_lessons_learned: [], delete_lesson_learned: [['lessons-learned']],
+    query_resources: [],
+    query_action_items: [], update_action_item: [['meeting_action_items'], ['action-items']],
+    update_meeting: [['meetings']], cancel_meeting: [['meetings']],
 };
 
 /**

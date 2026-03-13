@@ -36,6 +36,22 @@ import {
     moveStoryToSprint, updateStoryStatus, queryMeetings, queryEVM,
     updateBudget, queryBacklog, queryMilestones, queryDecisions,
 } from '@/lib/agent-pipeline/crud-handlers';
+import {
+    // Phase 3
+    queryDocuments, updateDocumentStatus, deleteDocument,
+    queryDeliverables, updateDeliverable, deleteDeliverable,
+    queryChangeRequests, updateChangeRequest,
+    queryApprovals, approveItem, rejectItem,
+    queryStakeholders, deleteStakeholder,
+    queryRequirements, deleteRequirement,
+    queryQualityItems, createQualityItem,
+    queryNotes, createNote, deleteNote,
+    queryCalendar,
+    queryLessonsLearned, deleteLessonLearned,
+    queryResources,
+    queryActionItems, updateActionItem,
+    updateMeeting, cancelMeeting,
+} from '@/lib/agent-pipeline/crud-handlers-extended';
 
 const supabase = _supabase as any;
 
@@ -96,6 +112,17 @@ const ACTION_TOKEN_COSTS: Record<string, number> = {
     move_story_to_sprint: 200,
     update_story_status: 200,
     update_budget: 300,
+    // Phase 3 operations
+    query_documents: 0, query_deliverables: 0, query_change_requests: 0,
+    query_approvals: 0, query_stakeholders: 0, query_requirements: 0,
+    query_quality_items: 0, query_notes: 0, query_calendar: 0,
+    query_lessons_learned: 0, query_resources: 0, query_action_items: 0,
+    update_document_status: 200, update_deliverable: 250, update_change_request: 200,
+    approve_item: 200, reject_item: 200,
+    create_quality_item: 300, create_note: 200,
+    update_action_item: 200, update_meeting: 200, cancel_meeting: 200,
+    delete_document: 200, delete_deliverable: 200, delete_stakeholder: 200,
+    delete_requirement: 200, delete_note: 200, delete_lesson_learned: 200,
     default: 500,
 };
 
@@ -245,6 +272,46 @@ function detectIntent(msg: string): string | null {
     if ((lower.includes('update') || lower.includes('change') || lower.includes('increase') || lower.includes('set')) &&
         lower.includes('budget') &&
         (lower.includes('$') || lower.includes('total') || lower.includes('amount'))) return 'update_budget';
+
+    // 13. Phase 3: Documents, Deliverables, Change Requests
+    if ((lower.includes('show') || lower.includes('list') || lower.includes('what')) && lower.includes('document') && !lower.includes('create')) return 'query_documents';
+    if ((lower.includes('approve') || lower.includes('archive') || lower.includes('review')) && lower.includes('document')) return 'update_document_status';
+    if ((lower.includes('delete') || lower.includes('remove')) && lower.includes('document')) return 'delete_document';
+    if ((lower.includes('show') || lower.includes('list') || lower.includes('what')) && lower.includes('deliverable') && !lower.includes('create')) return 'query_deliverables';
+    if ((lower.includes('approve') || lower.includes('reject') || lower.includes('update') || lower.includes('progress')) && lower.includes('deliverable')) return 'update_deliverable';
+    if ((lower.includes('delete') || lower.includes('remove')) && lower.includes('deliverable')) return 'delete_deliverable';
+    if ((lower.includes('show') || lower.includes('list') || lower.includes('what')) && (lower.includes('change request') || lower.includes('cr ')) && !lower.includes('create')) return 'query_change_requests';
+    if ((lower.includes('approve') || lower.includes('reject') || lower.includes('defer')) && (lower.includes('change request') || lower.includes('cr '))) return 'update_change_request';
+
+    // 14. Phase 3: Approvals
+    if ((lower.includes('show') || lower.includes('list') || lower.includes('what') || lower.includes('pending')) && lower.includes('approval') && !lower.includes('approve') && !lower.includes('reject')) return 'query_approvals';
+    if (lower.includes('approve') && (lower.includes('approval') || lower.includes('request') || lower.includes('item'))) return 'approve_item';
+    if (lower.includes('reject') && (lower.includes('approval') || lower.includes('request') || lower.includes('item'))) return 'reject_item';
+
+    // 15. Phase 3: Stakeholders, Requirements, Quality
+    if ((lower.includes('show') || lower.includes('list') || lower.includes('who')) && lower.includes('stakeholder') && !lower.includes('create')) return 'query_stakeholders';
+    if ((lower.includes('delete') || lower.includes('remove')) && lower.includes('stakeholder')) return 'delete_stakeholder';
+    if ((lower.includes('show') || lower.includes('list') || lower.includes('what')) && (lower.includes('requirement') || lower.includes('rtm')) && !lower.includes('create') && !lower.includes('log')) return 'query_requirements';
+    if ((lower.includes('delete') || lower.includes('remove')) && (lower.includes('requirement') || lower.includes('rtm'))) return 'delete_requirement';
+    if ((lower.includes('show') || lower.includes('list') || lower.includes('what')) && (lower.includes('quality') || lower.includes('defect'))) return 'query_quality_items';
+    if ((lower.includes('create') || lower.includes('log') || lower.includes('add')) && (lower.includes('quality') || lower.includes('defect'))) return 'create_quality_item';
+
+    // 16. Phase 3: Notes, Calendar, Lessons, Resources, Action Items
+    if ((lower.includes('show') || lower.includes('list') || lower.includes('what')) && lower.includes('note') && !lower.includes('create')) return 'query_notes';
+    if ((lower.includes('create') || lower.includes('add') || lower.includes('write')) && lower.includes('note')) return 'create_note';
+    if ((lower.includes('delete') || lower.includes('remove')) && lower.includes('note')) return 'delete_note';
+    if ((lower.includes('show') || lower.includes('what') || lower.includes('upcoming') || lower.includes('next')) && (lower.includes('calendar') || lower.includes('event') || lower.includes('schedule'))) {
+        if (!lower.includes('meeting') && !lower.includes('create')) return 'query_calendar';
+    }
+    if ((lower.includes('show') || lower.includes('list') || lower.includes('what')) && lower.includes('lesson') && !lower.includes('create') && !lower.includes('log')) return 'query_lessons_learned';
+    if ((lower.includes('delete') || lower.includes('remove')) && lower.includes('lesson')) return 'delete_lesson_learned';
+    if ((lower.includes('show') || lower.includes('list') || lower.includes('what')) && lower.includes('resource') && !lower.includes('create')) return 'query_resources';
+    if ((lower.includes('show') || lower.includes('list') || lower.includes('what')) && (lower.includes('action item') || lower.includes('action items'))) return 'query_action_items';
+    if ((lower.includes('complete') || lower.includes('done') || lower.includes('update')) && lower.includes('action item')) return 'update_action_item';
+
+    // 17. Phase 3: Meeting management
+    if ((lower.includes('update') || lower.includes('reschedule') || lower.includes('complete')) && lower.includes('meeting') && !lower.includes('schedule') && !lower.includes('create')) return 'update_meeting';
+    if (lower.includes('cancel') && lower.includes('meeting')) return 'cancel_meeting';
 
     return null;
 }
@@ -1868,6 +1935,156 @@ export async function dispatchAIAction(
                 case 'update_budget': {
                     if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
                     const result = await updateBudget(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+
+                // ── Phase 3: Document Handlers ────────────────────────────────
+                case 'query_documents': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await queryDocuments(projectId, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: 0, tokensDeducted: 0 };
+                }
+                case 'update_document_status': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await updateDocumentStatus(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+                case 'delete_document': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await deleteDocument(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+                case 'query_deliverables': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await queryDeliverables(projectId, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: 0, tokensDeducted: 0 };
+                }
+                case 'update_deliverable': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await updateDeliverable(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+                case 'delete_deliverable': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await deleteDeliverable(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+                case 'query_change_requests': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await queryChangeRequests(projectId, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: 0, tokensDeducted: 0 };
+                }
+                case 'update_change_request': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await updateChangeRequest(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+
+                // ── Phase 3: Approval Handlers ────────────────────────────────
+                case 'query_approvals': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await queryApprovals(projectId, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: 0, tokensDeducted: 0 };
+                }
+                case 'approve_item': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await approveItem(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+                case 'reject_item': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await rejectItem(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+
+                // ── Phase 3: Stakeholders, Requirements, Quality ──────────────
+                case 'query_stakeholders': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await queryStakeholders(projectId, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: 0, tokensDeducted: 0 };
+                }
+                case 'delete_stakeholder': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await deleteStakeholder(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+                case 'query_requirements': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await queryRequirements(projectId, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: 0, tokensDeducted: 0 };
+                }
+                case 'delete_requirement': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await deleteRequirement(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+                case 'query_quality_items': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await queryQualityItems(projectId, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: 0, tokensDeducted: 0 };
+                }
+                case 'create_quality_item': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await createQualityItem(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+
+                // ── Phase 3: Notes, Calendar, Lessons, Resources ──────────────
+                case 'query_notes': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await queryNotes(projectId, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: 0, tokensDeducted: 0 };
+                }
+                case 'create_note': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await createNote(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+                case 'delete_note': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await deleteNote(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+                case 'query_calendar': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await queryCalendar(projectId, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: 0, tokensDeducted: 0 };
+                }
+                case 'query_lessons_learned': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await queryLessonsLearned(projectId, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: 0, tokensDeducted: 0 };
+                }
+                case 'delete_lesson_learned': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await deleteLessonLearned(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+                case 'query_resources': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await queryResources(projectId, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: 0, tokensDeducted: 0 };
+                }
+
+                // ── Phase 3: Action Items & Meeting Management ────────────────
+                case 'query_action_items': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await queryActionItems(projectId, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: 0, tokensDeducted: 0 };
+                }
+                case 'update_action_item': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await updateActionItem(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+                case 'update_meeting': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await updateMeeting(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+                case 'cancel_meeting': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await cancelMeeting(projectId, message, supabase);
                     return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
                 }
 

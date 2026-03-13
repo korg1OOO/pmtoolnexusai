@@ -25,6 +25,8 @@ import { v4 as uuidv4 } from 'uuid';
 import { auditAction } from '@/lib/agent-pipeline/auditor';
 import { verifyAction, extractEntityIds } from '@/lib/agent-pipeline/verifier';
 import { classifyIntent } from '@/lib/agent-pipeline/intent-classifier';
+import { classifyError, formatErrorForChat } from '@/lib/agent-pipeline/error-handler';
+import { getQueryHints } from '@/lib/agent-pipeline/query-hints';
 import type { ActionContext } from '@/lib/agent-pipeline/types';
 
 const supabase = _supabase as any;
@@ -71,6 +73,8 @@ export interface DispatchResult {
     data?: unknown;
     link?: string;
     error?: string;
+    /** React Query keys to invalidate after this action */
+    queryHints?: string[][];
 }
 
 // ─── Intent Pattern Matching ────────────────────────────────────────────────
@@ -1636,12 +1640,14 @@ export async function dispatchAIAction(
             }
         })();
     } catch (err: any) {
+        const structured = classifyError(err, intent);
         return {
             executed: false,
             actionType: intent,
-            summary: `❌ Action failed: ${err.message}`,
-            creditsDeducted: creditsUsed, tokensDeducted,
-            error: err.message,
+            summary: formatErrorForChat(structured),
+            creditsDeducted: structured.retryable ? 0 : creditsUsed,
+            tokensDeducted: structured.retryable ? 0 : tokensDeducted,
+            error: structured.internalMessage,
         };
     }
 
@@ -1707,23 +1713,27 @@ async function buildActionContext(
 
 // ─── Helper: Post-execution verification wrapper ─────────────────────────────
 async function verifyAndEnrich(result: DispatchResult): Promise<DispatchResult> {
+    // Attach query hints for cache invalidation
+    const hints = getQueryHints(result.actionType);
+    const enriched = { ...result, queryHints: hints };
+
     // Only verify successful executions that have data
-    if (!result.executed || !result.data) return result;
+    if (!enriched.executed || !enriched.data) return enriched;
 
-    const entityIds = extractEntityIds(result.data);
-    if (entityIds.length === 0) return result;
+    const entityIds = extractEntityIds(enriched.data);
+    if (entityIds.length === 0) return enriched;
 
-    const verification = await verifyAction(result.actionType, entityIds, supabase);
+    const verification = await verifyAction(enriched.actionType, entityIds, supabase);
 
     if (!verification.verified) {
         // Append verification warning to the summary
         return {
-            ...result,
-            summary: `${result.summary}\n\n${verification.userMessage}`,
+            ...enriched,
+            summary: `${enriched.summary}\n\n${verification.userMessage}`,
         };
     }
 
-    return result;
+    return enriched;
 }
 
 // ─── Helper: Derive phase names from description ─────────────────────────────

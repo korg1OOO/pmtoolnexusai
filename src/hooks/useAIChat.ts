@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
@@ -48,6 +49,7 @@ export function useAIChat({
   onNewMessage,
   onActionRequest
 }: UseAIChatOptions): UseAIChatReturn {
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const [messages, setMessages] = useState<AIMessage[]>([]);
   const [conversations, setConversations] = useState<AIConversation[]>([]);
@@ -320,6 +322,13 @@ export function useAIChat({
 
             if (dispatchResult.executed) {
               toast.success(`✅ Action executed: ${dispatchResult.actionType.replace(/_/g, ' ')}`);
+
+              // Invalidate React Query caches for affected entities
+              if (dispatchResult.queryHints?.length) {
+                for (const key of dispatchResult.queryHints) {
+                  queryClient.invalidateQueries({ queryKey: key });
+                }
+              }
             } else {
               toast.warning(`⚠️ Action incomplete: ${dispatchResult.summary}`);
             }

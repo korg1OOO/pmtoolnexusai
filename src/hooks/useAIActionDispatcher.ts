@@ -24,6 +24,7 @@ import { aiCreditsService } from '@/services/aiCreditsService';
 import { v4 as uuidv4 } from 'uuid';
 import { auditAction } from '@/lib/agent-pipeline/auditor';
 import { verifyAction, extractEntityIds } from '@/lib/agent-pipeline/verifier';
+import { classifyIntent } from '@/lib/agent-pipeline/intent-classifier';
 import type { ActionContext } from '@/lib/agent-pipeline/types';
 
 const supabase = _supabase as any;
@@ -199,7 +200,9 @@ export async function dispatchAIAction(
     userId?: string,
     tenantId?: string
 ): Promise<DispatchResult | null> {
-    const intent = detectIntent(message);
+    // ── Intent Classification (LLM-first, regex fallback) ────────────────
+    const classification = await classifyIntent(message, detectIntent);
+    const intent = classification.action;
     if (!intent) return null;
 
     const { creditsUsed, tokensDeducted, rawApiTokens } = calculateCreditsForAction(intent);

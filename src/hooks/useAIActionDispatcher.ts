@@ -52,6 +52,14 @@ import {
     queryActionItems, updateActionItem,
     updateMeeting, cancelMeeting,
 } from '@/lib/agent-pipeline/crud-handlers-extended';
+import {
+    // Phase 4
+    rescheduleTask, reorderTask, addDependency, removeDependency,
+    calculateCriticalPath, queryBaselines, createBaseline, deleteBaseline,
+    queryDashboard, queryVelocity,
+    bulkUpdateTaskStatus, bulkAssignTasks, bulkDeleteTasks,
+    queryDependencies, queryTimeline,
+} from '@/lib/agent-pipeline/crud-handlers-visual';
 
 const supabase = _supabase as any;
 
@@ -123,6 +131,14 @@ const ACTION_TOKEN_COSTS: Record<string, number> = {
     update_action_item: 200, update_meeting: 200, cancel_meeting: 200,
     delete_document: 200, delete_deliverable: 200, delete_stakeholder: 200,
     delete_requirement: 200, delete_note: 200, delete_lesson_learned: 200,
+    // Phase 4 operations
+    reschedule_task: 300, reorder_task: 200,
+    add_dependency: 300, remove_dependency: 200,
+    calculate_critical_path: 500,
+    query_baselines: 0, create_baseline: 500, delete_baseline: 300,
+    query_dashboard: 0, query_velocity: 0,
+    bulk_update_status: 500, bulk_assign: 500, bulk_delete: 500,
+    query_dependencies: 0, query_timeline: 0,
     default: 500,
 };
 
@@ -312,6 +328,31 @@ function detectIntent(msg: string): string | null {
     // 17. Phase 3: Meeting management
     if ((lower.includes('update') || lower.includes('reschedule') || lower.includes('complete')) && lower.includes('meeting') && !lower.includes('schedule') && !lower.includes('create')) return 'update_meeting';
     if (lower.includes('cancel') && lower.includes('meeting')) return 'cancel_meeting';
+
+    // 18. Phase 4: Gantt / Scheduling
+    if ((lower.includes('reschedule') || lower.includes('move date') || lower.includes('change date') || lower.includes('shift')) && (lower.includes('task') || lower.includes('activity'))) return 'reschedule_task';
+    if ((lower.includes('reorder') || lower.includes('move to position') || lower.includes('move to top') || lower.includes('move to bottom') || lower.includes('move after')) && (lower.includes('task') || lower.includes('activity'))) return 'reorder_task';
+    if ((lower.includes('add dependency') || lower.includes('depends on') || lower.includes('blocked by') || lower.includes('link task')) && !lower.includes('remove')) return 'add_dependency';
+    if ((lower.includes('remove dependency') || lower.includes('unlink') || lower.includes('remove link')) && (lower.includes('task') || lower.includes('dependency'))) return 'remove_dependency';
+
+    // 19. Phase 4: Critical Path & Baselines
+    if (lower.includes('critical path') || lower.includes('cpm')) return 'calculate_critical_path';
+    if ((lower.includes('show') || lower.includes('list') || lower.includes('what')) && lower.includes('baseline') && !lower.includes('create') && !lower.includes('delete')) return 'query_baselines';
+    if ((lower.includes('create') || lower.includes('save') || lower.includes('snapshot')) && lower.includes('baseline')) return 'create_baseline';
+    if ((lower.includes('delete') || lower.includes('remove')) && lower.includes('baseline')) return 'delete_baseline';
+
+    // 20. Phase 4: Dashboard & Analytics
+    if (lower.includes('dashboard') || lower.includes('project health') || lower.includes('project summary') || lower.includes('overview')) return 'query_dashboard';
+    if (lower.includes('velocity') || lower.includes('burndown') || lower.includes('sprint performance')) return 'query_velocity';
+    if ((lower.includes('show') || lower.includes('list') || lower.includes('what')) && lower.includes('dependenc')) return 'query_dependencies';
+    if (lower.includes('timeline') || lower.includes('gantt') || lower.includes('schedule overview')) return 'query_timeline';
+
+    // 21. Phase 4: Bulk operations
+    if (lower.includes('bulk') && (lower.includes('status') || lower.includes('mark') || lower.includes('complete') || lower.includes('update'))) return 'bulk_update_status';
+    if (lower.includes('mark all overdue') || lower.includes('complete all overdue')) return 'bulk_update_status';
+    if (lower.includes('bulk') && lower.includes('assign')) return 'bulk_assign';
+    if (lower.includes('bulk') && lower.includes('delete')) return 'bulk_delete';
+    if (lower.includes('delete all completed') || lower.includes('remove all completed')) return 'bulk_delete';
 
     return null;
 }
@@ -2085,6 +2126,89 @@ export async function dispatchAIAction(
                 case 'cancel_meeting': {
                     if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
                     const result = await cancelMeeting(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+
+                // ── Phase 4: Gantt / Scheduling ───────────────────────────────
+                case 'reschedule_task': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await rescheduleTask(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+                case 'reorder_task': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await reorderTask(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+                case 'add_dependency': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await addDependency(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+                case 'remove_dependency': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await removeDependency(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+
+                // ── Phase 4: Critical Path & Baselines ────────────────────────
+                case 'calculate_critical_path': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await calculateCriticalPath(projectId, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: creditsUsed, tokensDeducted };
+                }
+                case 'query_baselines': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await queryBaselines(projectId, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: 0, tokensDeducted: 0 };
+                }
+                case 'create_baseline': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await createBaseline(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+                case 'delete_baseline': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await deleteBaseline(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+
+                // ── Phase 4: Dashboard & Analytics ────────────────────────────
+                case 'query_dashboard': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await queryDashboard(projectId, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: 0, tokensDeducted: 0 };
+                }
+                case 'query_velocity': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await queryVelocity(projectId, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: 0, tokensDeducted: 0 };
+                }
+                case 'query_dependencies': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await queryDependencies(projectId, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: 0, tokensDeducted: 0 };
+                }
+                case 'query_timeline': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await queryTimeline(projectId, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: 0, tokensDeducted: 0 };
+                }
+
+                // ── Phase 4: Bulk Operations ──────────────────────────────────
+                case 'bulk_update_status': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await bulkUpdateTaskStatus(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+                case 'bulk_assign': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await bulkAssignTasks(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+                case 'bulk_delete': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await bulkDeleteTasks(projectId, message, supabase);
                     return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
                 }
 

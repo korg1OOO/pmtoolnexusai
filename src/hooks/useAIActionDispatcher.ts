@@ -32,6 +32,9 @@ import {
     queryProjectStatus, queryTasks, queryTeam, queryRisksIssues, queryBudget, querySprint,
     updateTaskStatus, updateTask, updateRiskStatus, updateIssueStatus, updateProject,
     deleteTask, deletePhase, deleteRisk, deleteIssue, deleteMember,
+    // Phase 2
+    moveStoryToSprint, updateStoryStatus, queryMeetings, queryEVM,
+    updateBudget, queryBacklog, queryMilestones, queryDecisions,
 } from '@/lib/agent-pipeline/crud-handlers';
 
 const supabase = _supabase as any;
@@ -84,6 +87,15 @@ const ACTION_TOKEN_COSTS: Record<string, number> = {
     delete_risk: 200,
     delete_issue: 200,
     delete_member: 250,
+    // Phase 2 operations
+    query_meetings: 0,
+    query_evm: 0,
+    query_backlog: 0,
+    query_milestones: 0,
+    query_decisions: 0,
+    move_story_to_sprint: 200,
+    update_story_status: 200,
+    update_budget: 300,
     default: 500,
 };
 
@@ -206,6 +218,33 @@ function detectIntent(msg: string): string | null {
     if ((lower.includes('delete') || lower.includes('remove')) && lower.includes('risk')) return 'delete_risk';
     if ((lower.includes('delete') || lower.includes('remove')) && lower.includes('issue')) return 'delete_issue';
     if ((lower.includes('delete') || lower.includes('remove')) && (lower.includes('member') || lower.includes('teammate') || lower.includes('person'))) return 'delete_member';
+
+    // 11. Phase 2: Extended queries
+    if ((lower.includes('show') || lower.includes('list') || lower.includes('what') || lower.includes('any')) &&
+        (lower.includes('meeting') || lower.includes('agenda'))) {
+        if (!lower.includes('schedule') && !lower.includes('create')) return 'query_meetings';
+    }
+    if ((lower.includes('show') || lower.includes('what') || lower.includes('how')) &&
+        (lower.includes('evm') || lower.includes('earned value') || lower.includes('spi') || lower.includes('cpi'))) return 'query_evm';
+    if ((lower.includes('show') || lower.includes('list') || lower.includes('what')) &&
+        (lower.includes('backlog') || lower.includes('board'))) {
+        if (!lower.includes('create') && !lower.includes('add')) return 'query_backlog';
+    }
+    if ((lower.includes('show') || lower.includes('list') || lower.includes('what')) &&
+        lower.includes('milestone') && !lower.includes('create') && !lower.includes('log')) return 'query_milestones';
+    if ((lower.includes('show') || lower.includes('list') || lower.includes('what')) &&
+        lower.includes('decision') && !lower.includes('log') && !lower.includes('create')) return 'query_decisions';
+
+    // 12. Phase 2: Extended updates
+    if ((lower.includes('move') || lower.includes('assign') || lower.includes('add')) &&
+        (lower.includes('story') || lower.includes('item') || lower.includes('ticket')) &&
+        lower.includes('sprint')) return 'move_story_to_sprint';
+    if ((lower.includes('mark') || lower.includes('set') || lower.includes('change') || lower.includes('move')) &&
+        (lower.includes('story') || lower.includes('item') || lower.includes('ticket')) &&
+        (lower.includes('done') || lower.includes('progress') || lower.includes('review') || lower.includes('todo'))) return 'update_story_status';
+    if ((lower.includes('update') || lower.includes('change') || lower.includes('increase') || lower.includes('set')) &&
+        lower.includes('budget') &&
+        (lower.includes('$') || lower.includes('total') || lower.includes('amount'))) return 'update_budget';
 
     return null;
 }
@@ -1785,6 +1824,50 @@ export async function dispatchAIAction(
                 case 'delete_member': {
                     if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
                     const result = await deleteMember(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+
+                // ── Phase 2: Extended Query Handlers ──────────────────────────
+                case 'query_meetings': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await queryMeetings(projectId, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: 0, tokensDeducted: 0 };
+                }
+                case 'query_evm': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await queryEVM(projectId, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: 0, tokensDeducted: 0 };
+                }
+                case 'query_backlog': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await queryBacklog(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: 0, tokensDeducted: 0 };
+                }
+                case 'query_milestones': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await queryMilestones(projectId, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: 0, tokensDeducted: 0 };
+                }
+                case 'query_decisions': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await queryDecisions(projectId, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: 0, tokensDeducted: 0 };
+                }
+
+                // ── Phase 2: Extended Update Handlers ─────────────────────────
+                case 'move_story_to_sprint': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await moveStoryToSprint(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+                case 'update_story_status': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await updateStoryStatus(projectId, message, supabase);
+                    return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
+                }
+                case 'update_budget': {
+                    if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
+                    const result = await updateBudget(projectId, message, supabase);
                     return { ...result, actionType: intent, creditsDeducted: result.executed ? creditsUsed : 0, tokensDeducted: result.executed ? tokensDeducted : 0 };
                 }
 

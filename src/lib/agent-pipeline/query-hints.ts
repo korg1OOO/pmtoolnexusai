@@ -220,6 +220,21 @@ const ACTION_QUERY_KEYS: Record<string, string[][]> = {
         ['team-members'],
         ['user-roles'],
     ],
+
+    // ── Phase 2: Extended operations ─────────────────────────────────────
+    move_story_to_sprint: [
+        ['backlog_items'],
+        ['sprints'],
+        ['agile-backlog'],
+    ],
+    update_story_status: [
+        ['backlog_items'],
+        ['agile-backlog'],
+    ],
+    update_budget: [
+        ['budgets'],
+        ['project-financials'],
+    ],
 };
 
 /**

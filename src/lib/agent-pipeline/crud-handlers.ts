@@ -820,3 +820,336 @@ function extractEntityName(message: string, entityWords: string[]): string | nul
 
     return null;
 }
+
+// ─── PHASE 2: EXTENDED HANDLERS ──────────────────────────────────────────────
+
+export async function moveStoryToSprint(
+    projectId: string,
+    message: string,
+    supabase: any,
+): Promise<HandlerResult> {
+    const storyName = extractEntityName(message, ['story', 'item', 'ticket']);
+    if (!storyName) {
+        return { executed: false, summary: '⚠️ Please specify the story name. Example: "Move story \'User Login\' to Sprint 2"' };
+    }
+
+    // Find the story
+    const { data: stories } = await supabase
+        .from('backlog_items')
+        .select('id, title, sprint_id')
+        .eq('project_id', projectId)
+        .ilike('title', `%${storyName}%`)
+        .limit(1);
+
+    if (!stories?.length) {
+        return { executed: false, summary: `🔍 No backlog item found matching "${storyName}".` };
+    }
+
+    // Find target sprint
+    const sprintMatch = message.match(/sprint\s+(\d+|[A-Za-z]+)/i);
+    let sprintId: string | null = null;
+
+    if (sprintMatch) {
+        const { data: sprints } = await supabase
+            .from('sprints')
+            .select('id, name')
+            .eq('project_id', projectId)
+            .ilike('name', `%${sprintMatch[1]}%`)
+            .limit(1);
+
+        sprintId = sprints?.[0]?.id || null;
+    }
+
+    const { error } = await supabase
+        .from('backlog_items')
+        .update({ sprint_id: sprintId })
+        .eq('id', stories[0].id);
+
+    if (error) throw error;
+
+    return {
+        executed: true,
+        summary: sprintId
+            ? `✅ Story "${stories[0].title}" moved to sprint.`
+            : `✅ Story "${stories[0].title}" moved back to backlog.`,
+        data: { storyId: stories[0].id, sprintId },
+    };
+}
+
+export async function updateStoryStatus(
+    projectId: string,
+    message: string,
+    supabase: any,
+): Promise<HandlerResult> {
+    const lower = message.toLowerCase();
+    let newStatus: string;
+    if (lower.includes('done') || lower.includes('complete')) newStatus = 'done';
+    else if (lower.includes('review') || lower.includes('testing')) newStatus = 'review';
+    else if (lower.includes('progress') || lower.includes('working') || lower.includes('start')) newStatus = 'in-progress';
+    else newStatus = 'todo';
+
+    const storyName = extractEntityName(message, ['story', 'item', 'ticket']);
+    if (!storyName) {
+        return { executed: false, summary: '⚠️ Please specify the story name.' };
+    }
+
+    const { data: stories } = await supabase
+        .from('backlog_items')
+        .select('id, title, status')
+        .eq('project_id', projectId)
+        .ilike('title', `%${storyName}%`)
+        .limit(1);
+
+    if (!stories?.length) {
+        return { executed: false, summary: `🔍 No backlog item found matching "${storyName}".` };
+    }
+
+    const story = stories[0];
+    const { error } = await supabase
+        .from('backlog_items')
+        .update({ status: newStatus })
+        .eq('id', story.id);
+
+    if (error) throw error;
+
+    return {
+        executed: true,
+        summary: `✅ Story "${story.title}" updated: **${story.status}** → **${newStatus}**`,
+        data: { storyId: story.id, oldStatus: story.status, newStatus },
+    };
+}
+
+export async function queryMeetings(
+    projectId: string,
+    supabase: any,
+): Promise<HandlerResult> {
+    const { data: meetings, error } = await supabase
+        .from('meetings')
+        .select('title, date, start_time, end_time, meeting_type, status')
+        .eq('project_id', projectId)
+        .order('date', { ascending: false })
+        .limit(10);
+
+    if (error) throw error;
+
+    if (!meetings?.length) {
+        return { executed: true, summary: 'No meetings found for this project.', data: [] };
+    }
+
+    const lines = [
+        `📅 **Meetings** (${meetings.length}):`,
+        '',
+        '| # | Meeting | Date | Time | Type | Status |',
+        '|---|---------|------|------|------|--------|',
+    ];
+
+    meetings.forEach((m: any, i: number) => {
+        lines.push(`| ${i + 1} | ${m.title} | ${m.date || '-'} | ${m.start_time || '-'} | ${m.meeting_type || '-'} | ${m.status || 'Scheduled'} |`);
+    });
+
+    return { executed: true, summary: lines.join('\n'), data: meetings };
+}
+
+export async function queryEVM(
+    projectId: string,
+    supabase: any,
+): Promise<HandlerResult> {
+    const { data: snapshots } = await supabase
+        .from('project_evm_snapshots')
+        .select('*')
+        .eq('project_id', projectId)
+        .order('snapshot_date', { ascending: false })
+        .limit(1);
+
+    if (!snapshots?.length) {
+        return { executed: true, summary: '📈 No EVM data available for this project yet.', data: null };
+    }
+
+    const latest = snapshots[0];
+    const spi = latest.spi?.toFixed(2) ?? '-';
+    const cpi = latest.cpi?.toFixed(2) ?? '-';
+    const sv = ((latest.ev || 0) - (latest.pv || 0));
+    const cv = ((latest.ev || 0) - (latest.ac || 0));
+    const fmt = (n: number) => `$${n.toLocaleString()}`;
+
+    const lines = [
+        `📈 **Earned Value Analysis**`,
+        '',
+        `| Metric | Value |`,
+        `|--------|-------|`,
+        `| Budget at Completion (BAC) | ${fmt(latest.bac || 0)} |`,
+        `| Planned Value (PV) | ${fmt(latest.pv || 0)} |`,
+        `| Earned Value (EV) | ${fmt(latest.ev || 0)} |`,
+        `| Actual Cost (AC) | ${fmt(latest.ac || 0)} |`,
+        `| Schedule Performance (SPI) | **${spi}** ${Number(spi) >= 1 ? '✅' : '⚠️'} |`,
+        `| Cost Performance (CPI) | **${cpi}** ${Number(cpi) >= 1 ? '✅' : '⚠️'} |`,
+        `| Schedule Variance (SV) | ${fmt(sv)} |`,
+        `| Cost Variance (CV) | ${fmt(cv)} |`,
+    ];
+
+    return { executed: true, summary: lines.join('\n'), data: latest };
+}
+
+export async function updateBudget(
+    projectId: string,
+    message: string,
+    supabase: any,
+): Promise<HandlerResult> {
+    const updates: Record<string, any> = {};
+
+    // Parse amount from message
+    const amountMatch = message.match(/\$?([\d,]+(?:\.\d{1,2})?)\s*([MmKk])?/);
+    if (amountMatch) {
+        let amount = parseFloat(amountMatch[1].replace(/,/g, ''));
+        if (amountMatch[2]?.toLowerCase() === 'm') amount *= 1_000_000;
+        if (amountMatch[2]?.toLowerCase() === 'k') amount *= 1_000;
+
+        const lower = message.toLowerCase();
+        if (lower.includes('total') || lower.includes('increase') || lower.includes('set budget')) {
+            updates.total_budget = amount;
+        } else if (lower.includes('remaining')) {
+            updates.remaining = amount;
+        }
+    }
+
+    if (Object.keys(updates).length === 0) {
+        return {
+            executed: false,
+            summary: '⚠️ Could not determine budget update. Try: "Set total budget to $500K" or "Update budget to $1M"',
+        };
+    }
+
+    const { data, error } = await supabase
+        .from('budgets')
+        .update(updates)
+        .eq('project_id', projectId)
+        .select()
+        .single();
+
+    if (error) {
+        // If no budget exists, create one
+        if (error.code === 'PGRST116') {
+            const { error: insertErr } = await supabase
+                .from('budgets')
+                .insert({ project_id: projectId, ...updates })
+                .select()
+                .single();
+            if (insertErr) throw insertErr;
+            return {
+                executed: true,
+                summary: `✅ Budget created: ${Object.entries(updates).map(([k, v]) => `${k}: $${v.toLocaleString()}`).join(', ')}`,
+                data: updates,
+            };
+        }
+        throw error;
+    }
+
+    return {
+        executed: true,
+        summary: `✅ Budget updated: ${Object.entries(updates).map(([k, v]) => `${k}: $${v.toLocaleString()}`).join(', ')}`,
+        data: { budgetId: data.id, updates },
+    };
+}
+
+export async function queryBacklog(
+    projectId: string,
+    message: string,
+    supabase: any,
+): Promise<HandlerResult> {
+    let query = supabase
+        .from('backlog_items')
+        .select('title, type, status, priority, story_points, sprint_id, assignee_name')
+        .eq('project_id', projectId)
+        .order('sort_order', { ascending: true })
+        .limit(20);
+
+    const lower = message.toLowerCase();
+    if (lower.includes('todo') || lower.includes('to do')) query = query.eq('status', 'todo');
+    else if (lower.includes('progress')) query = query.eq('status', 'in-progress');
+    else if (lower.includes('done')) query = query.eq('status', 'done');
+
+    const { data: items, error } = await query;
+    if (error) throw error;
+
+    if (!items?.length) {
+        return { executed: true, summary: 'No backlog items found.', data: [] };
+    }
+
+    const totalPoints = items.reduce((s: number, i: any) => s + (i.story_points || 0), 0);
+    const lines = [
+        `📋 **Backlog** (${items.length} items, ${totalPoints} points):`,
+        '',
+        '| # | Item | Type | Status | Points | Assignee |',
+        '|---|------|------|--------|--------|----------|',
+    ];
+
+    items.forEach((item: any, i: number) => {
+        lines.push(`| ${i + 1} | ${item.title} | ${item.type} | ${item.status} | ${item.story_points || '-'} | ${item.assignee_name || '-'} |`);
+    });
+
+    return { executed: true, summary: lines.join('\n'), data: items };
+}
+
+export async function queryMilestones(
+    projectId: string,
+    supabase: any,
+): Promise<HandlerResult> {
+    const { data: milestones, error } = await supabase
+        .from('tasks')
+        .select('name, status, end_date, progress')
+        .eq('project_id', projectId)
+        .eq('type', 'milestone')
+        .order('end_date', { ascending: true })
+        .limit(15);
+
+    if (error) throw error;
+
+    if (!milestones?.length) {
+        return { executed: true, summary: 'No milestones found for this project.', data: [] };
+    }
+
+    const lines = [
+        `🏁 **Milestones** (${milestones.length}):`,
+        '',
+        '| # | Milestone | Due Date | Status | Progress |',
+        '|---|-----------|----------|--------|----------|',
+    ];
+
+    milestones.forEach((m: any, i: number) => {
+        const isOverdue = m.end_date && new Date(m.end_date) < new Date() && m.status !== 'Complete';
+        lines.push(`| ${i + 1} | ${m.name} | ${m.end_date || '-'} | ${m.status}${isOverdue ? ' ⚠️' : ''} | ${m.progress || 0}% |`);
+    });
+
+    return { executed: true, summary: lines.join('\n'), data: milestones };
+}
+
+export async function queryDecisions(
+    projectId: string,
+    supabase: any,
+): Promise<HandlerResult> {
+    const { data: decisions, error } = await supabase
+        .from('decisions')
+        .select('title, status, decision_date, decided_by, rationale')
+        .eq('project_id', projectId)
+        .order('created_at', { ascending: false })
+        .limit(10);
+
+    if (error) throw error;
+
+    if (!decisions?.length) {
+        return { executed: true, summary: 'No decisions logged for this project.', data: [] };
+    }
+
+    const lines = [
+        `📝 **Decisions** (${decisions.length}):`,
+        '',
+        '| # | Decision | Status | Date | By |',
+        '|---|----------|--------|------|-----|',
+    ];
+
+    decisions.forEach((d: any, i: number) => {
+        lines.push(`| ${i + 1} | ${d.title} | ${d.status || '-'} | ${d.decision_date || '-'} | ${d.decided_by || '-'} |`);
+    });
+
+    return { executed: true, summary: lines.join('\n'), data: decisions };
+}

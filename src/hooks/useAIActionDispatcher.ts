@@ -178,18 +178,18 @@ function detectIntent(msg: string): string | null {
     }
 
     // 3. Document / Artifact Generation
-    if (lower.includes('change request') || lower.includes('cr ') || (lower.includes('create') && lower.includes('cr '))) return 'create_change_request';
-    if ((lower.includes('stakeholder') || lower.includes('load stakeholder'))) return 'create_stakeholder';
-    if ((lower.includes('lesson') && lower.includes('learn'))) return 'log_lesson_learned';
+    if ((lower.includes('change request') || lower.includes('cr ') || (lower.includes('create') && lower.includes('cr '))) && !lower.includes('show') && !lower.includes('list') && !lower.includes('what') && !lower.includes('query') && !lower.includes('approve') && !lower.includes('reject') && !lower.includes('defer')) return 'create_change_request';
+    if ((lower.includes('stakeholder') || lower.includes('load stakeholder')) && !lower.includes('show') && !lower.includes('list') && !lower.includes('who') && !lower.includes('what') && !lower.includes('delete') && !lower.includes('remove') && !lower.includes('query')) return 'create_stakeholder';
+    if ((lower.includes('lesson') && lower.includes('learn')) && !lower.includes('show') && !lower.includes('list') && !lower.includes('what') && !lower.includes('delete') && !lower.includes('remove') && !lower.includes('query')) return 'log_lesson_learned';
     if ((lower.includes('final report') || lower.includes('project report'))) return 'generate_final_report';
     if (lower.includes('charter')) return 'create_charter';
-    if (lower.includes('deliverable')) return 'create_deliverables';
+    if (lower.includes('deliverable') && !lower.includes('show') && !lower.includes('list') && !lower.includes('what') && !lower.includes('delete') && !lower.includes('remove') && !lower.includes('query') && !lower.includes('update') && !lower.includes('approve') && !lower.includes('reject') && !lower.includes('progress')) return 'create_deliverables';
     if (lower.includes('traceabilit') && (lower.includes('map') || lower.includes('link'))) return 'map_traceability';
     if ((lower.includes('generate') || lower.includes('prepare') || lower.includes('create') || lower.includes('build')) &&
         (lower.includes('presentation') || lower.includes('report') || lower.includes('steerco') || lower.includes('steering'))) return 'generate_presentation';
 
     // 4. Governance & Meetings
-    if ((lower.includes('schedule') || lower.includes('conduct') || lower.includes('create')) && lower.includes('meeting')) return 'schedule_meeting';
+    if ((lower.includes('schedule') || lower.includes('conduct') || lower.includes('create')) && lower.includes('meeting') && !lower.includes('note')) return 'schedule_meeting';
     if ((lower.includes('log') || lower.includes('create') || lower.includes('record')) && lower.includes('decision')) return 'log_decision';
 
     // 5. Generic Logging (Ensure log_leave doesnt hijack other logs)
@@ -220,12 +220,16 @@ function detectIntent(msg: string): string | null {
     }
 
     // 8. Query / Read operations
+    // Dashboard-specific query (must come before query_project_status to avoid "dashboard" hijack)
+    if ((lower.includes('dashboard') || lower.includes('project health') || lower.includes('project summary') || lower.includes('health')) && !lower.includes('what is the project status')) return 'query_dashboard';
     if ((lower.includes('status') || lower.includes('dashboard') || lower.includes('overview') || lower.includes('summary')) &&
-        (lower.includes('project') || lower.includes('overall'))) return 'query_project_status';
+        (lower.includes('project') || lower.includes('overall')) &&
+        !lower.includes('set') && !lower.includes('update') && !lower.includes('change') && !lower.includes('pause') && !lower.includes('put on hold')) return 'query_project_status';
     if ((lower.includes('show') || lower.includes('list') || lower.includes('what') || lower.includes('get') || lower.includes('find')) &&
         (lower.includes('task') || lower.includes('activit'))) return 'query_tasks';
     if ((lower.includes('show') || lower.includes('list') || lower.includes('who') || lower.includes('team') || lower.includes('member'))) {
-        if (lower.includes('team') || lower.includes('member') || lower.includes('who')) return 'query_team';
+        if ((lower.includes('team') || lower.includes('member') || lower.includes('who')) &&
+            !lower.includes('stakeholder') && !lower.includes('delete') && !lower.includes('remove')) return 'query_team';
     }
     if ((lower.includes('show') || lower.includes('list') || lower.includes('what') || lower.includes('any')) &&
         (lower.includes('risk') || lower.includes('issue'))) {
@@ -255,12 +259,19 @@ function detectIntent(msg: string): string | null {
         lower.includes('project') &&
         (lower.includes('status') || lower.includes('name') || lower.includes('date') || lower.includes('hold') || lower.includes('cancel') || lower.includes('rename'))) return 'update_project';
 
-    // 10. Delete operations
+    // 10. Bulk operations (must come before single deletes)
+    if (lower.includes('bulk') && (lower.includes('status') || lower.includes('mark') || lower.includes('complete') || lower.includes('update'))) return 'bulk_update_status';
+    if (lower.includes('mark all overdue') || lower.includes('complete all overdue')) return 'bulk_update_status';
+    if (lower.includes('bulk') && lower.includes('assign')) return 'bulk_assign';
+    if (lower.includes('bulk') && lower.includes('delete')) return 'bulk_delete';
+    if (lower.includes('delete all completed') || lower.includes('remove all completed')) return 'bulk_delete';
+
+    // 10b. Single delete operations
+    if ((lower.includes('delete') || lower.includes('remove')) && (lower.includes('member') || lower.includes('teammate') || lower.includes('person'))) return 'delete_member';
     if ((lower.includes('delete') || lower.includes('remove')) && (lower.includes('task') || lower.includes('activit'))) return 'delete_task';
     if ((lower.includes('delete') || lower.includes('remove')) && lower.includes('phase')) return 'delete_phase';
     if ((lower.includes('delete') || lower.includes('remove')) && lower.includes('risk')) return 'delete_risk';
     if ((lower.includes('delete') || lower.includes('remove')) && lower.includes('issue')) return 'delete_issue';
-    if ((lower.includes('delete') || lower.includes('remove')) && (lower.includes('member') || lower.includes('teammate') || lower.includes('person'))) return 'delete_member';
 
     // 11. Phase 2: Extended queries
     if ((lower.includes('show') || lower.includes('list') || lower.includes('what') || lower.includes('any')) &&
@@ -282,9 +293,9 @@ function detectIntent(msg: string): string | null {
     if ((lower.includes('move') || lower.includes('assign') || lower.includes('add')) &&
         (lower.includes('story') || lower.includes('item') || lower.includes('ticket')) &&
         lower.includes('sprint')) return 'move_story_to_sprint';
-    if ((lower.includes('mark') || lower.includes('set') || lower.includes('change') || lower.includes('move')) &&
+    if ((lower.includes('mark') || lower.includes('set') || lower.includes('change') || lower.includes('move') || lower.includes('update')) &&
         (lower.includes('story') || lower.includes('item') || lower.includes('ticket')) &&
-        (lower.includes('done') || lower.includes('progress') || lower.includes('review') || lower.includes('todo'))) return 'update_story_status';
+        (lower.includes('done') || lower.includes('progress') || lower.includes('review') || lower.includes('todo') || lower.includes('status'))) return 'update_story_status';
     if ((lower.includes('update') || lower.includes('change') || lower.includes('increase') || lower.includes('set')) &&
         lower.includes('budget') &&
         (lower.includes('$') || lower.includes('total') || lower.includes('amount'))) return 'update_budget';
@@ -341,18 +352,13 @@ function detectIntent(msg: string): string | null {
     if ((lower.includes('create') || lower.includes('save') || lower.includes('snapshot')) && lower.includes('baseline')) return 'create_baseline';
     if ((lower.includes('delete') || lower.includes('remove')) && lower.includes('baseline')) return 'delete_baseline';
 
-    // 20. Phase 4: Dashboard & Analytics
-    if (lower.includes('dashboard') || lower.includes('project health') || lower.includes('project summary') || lower.includes('overview')) return 'query_dashboard';
+    // 20. Phase 4: Dashboard & Analytics (dashboard early match is now in section 8)
     if (lower.includes('velocity') || lower.includes('burndown') || lower.includes('sprint performance')) return 'query_velocity';
     if ((lower.includes('show') || lower.includes('list') || lower.includes('what')) && lower.includes('dependenc')) return 'query_dependencies';
     if (lower.includes('timeline') || lower.includes('gantt') || lower.includes('schedule overview')) return 'query_timeline';
 
-    // 21. Phase 4: Bulk operations
-    if (lower.includes('bulk') && (lower.includes('status') || lower.includes('mark') || lower.includes('complete') || lower.includes('update'))) return 'bulk_update_status';
-    if (lower.includes('mark all overdue') || lower.includes('complete all overdue')) return 'bulk_update_status';
-    if (lower.includes('bulk') && lower.includes('assign')) return 'bulk_assign';
-    if (lower.includes('bulk') && lower.includes('delete')) return 'bulk_delete';
-    if (lower.includes('delete all completed') || lower.includes('remove all completed')) return 'bulk_delete';
+    // Fallback dashboard catch-all (if not matched earlier)
+    if (lower.includes('dashboard') || lower.includes('overview')) return 'query_dashboard';
 
     return null;
 }

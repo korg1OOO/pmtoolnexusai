@@ -1,5 +1,5 @@
 // =============================================================================
-// Agent Pipeline — Structured Error Handler
+// Agent Pipeline — Structured Error Handler (Edge Function Version)
 // =============================================================================
 //
 // Converts raw errors from Supabase, network failures, and validation issues

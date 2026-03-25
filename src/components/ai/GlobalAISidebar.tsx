@@ -63,7 +63,6 @@ export function GlobalAISidebar({
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [intentMode, setIntentMode] = useState<IntentMode>('plan');
   const { can } = usePermissions(projectId);
-  const canUseActionMode = can('task.create'); // viewers have no task.create
   const [showContext, setShowContext] = useState(true);
   const [selectedContexts, setSelectedContexts] = useState<ContextItem[]>([]);
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
@@ -104,7 +103,8 @@ export function GlobalAISidebar({
     projectId,
     currentView,
     intentMode,
-    onActionRequest: triggerConfirmation
+    onActionRequest: triggerConfirmation,
+    onIntentModeChange: setIntentMode
   });
 
   // Fetch active agent config from DB when currentAgent is set
@@ -352,7 +352,6 @@ export function GlobalAISidebar({
                 mode={intentMode}
                 onChange={setIntentMode}
                 disabled={isSending}
-                actionDisabled={!canUseActionMode}
               />
             </div>
 

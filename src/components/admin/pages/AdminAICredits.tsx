@@ -249,7 +249,7 @@ export function AdminAICredits() {
             <div className="flex items-center justify-between">
                 <div>
                     <h1 className="text-3xl font-bold">AI Credits Management</h1>
-                    <p className="text-muted-foreground">Monitor and manage user AI credit balances</p>
+                    <p className="text-muted-foreground">Monitor and manage user AI credit balances. $1 = 1,000 credits.</p>
                 </div>
                 <Button onClick={exportData} variant="outline">
                     <Download className="mr-2 h-4 w-4" />
@@ -345,7 +345,7 @@ export function AdminAICredits() {
                                             <TableCell className="text-right">{balance.total_credits.toLocaleString()}</TableCell>
                                             <TableCell className="text-right">{balance.used_credits.toLocaleString()}</TableCell>
                                             <TableCell className="text-right">
-                                                <Badge variant={balance.available_credits < 10 ? 'destructive' : 'default'}>
+                                                <Badge variant={balance.available_credits < 100 ? 'destructive' : 'default'}>
                                                     {balance.available_credits.toLocaleString()}
                                                 </Badge>
                                             </TableCell>
@@ -463,7 +463,7 @@ export function AdminAICredits() {
                                 id="amount"
                                 type="number"
                                 min="1"
-                                placeholder="e.g. 100"
+                                placeholder="e.g. 1000"
                                 value={adjustmentAmount}
                                 onChange={(e) => setAdjustmentAmount(e.target.value)}
                             />

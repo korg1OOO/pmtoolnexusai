@@ -11,6 +11,7 @@
  *     —OR— executes immediately for read/generation tools
  */
 
+import { classifyError, formatErrorForChat } from "./error-handler.ts";
 import { SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { requiresConfirmation, storePendingAction } from "./confirmationGate.ts";
 
@@ -356,6 +357,7 @@ export async function dispatchTool(
         return await executor(ctx, params);
     } catch (err: any) {
         console.error(`[toolExecutor] Error in ${toolName}:`, err);
-        return { requiresConfirmation: false, error: err.message };
+        const structured = classifyError(err, toolName);
+        return { requiresConfirmation: false, error: formatErrorForChat(structured) };
     }
 }

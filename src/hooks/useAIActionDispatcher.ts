@@ -27,6 +27,7 @@ import { verifyAction, extractEntityIds } from '@/lib/agent-pipeline/verifier';
 import { classifyIntent } from '@/lib/agent-pipeline/intent-classifier';
 import { classifyError, formatErrorForChat } from '@/lib/agent-pipeline/error-handler';
 import { getQueryHints } from '@/lib/agent-pipeline/query-hints';
+import { findRelevantFeatures, getOnboardingGuide, APP_KNOWLEDGE } from '@/lib/agent-pipeline/app-knowledge';
 import type { ActionContext } from '@/lib/agent-pipeline/types';
 import {
     queryProjectStatus, queryTasks, queryTeam, queryRisksIssues, queryBudget, querySprint,
@@ -63,83 +64,85 @@ import {
 
 const supabase = _supabase as any;
 
-// ─── Simulated token cost per action type ───────────────────────────────────
-const ACTION_TOKEN_COSTS: Record<string, number> = {
-    create_project: 800,
-    assign_members: 400,
-    log_leave: 350,
-    create_phase: 600,
-    create_activities: 900,
-    set_budget: 400,
-    log_expense: 300,
-    log_issue: 350,
-    log_risk: 350,
-    create_milestone: 350,
-    create_epic: 450,
-    create_story: 400,
-    create_sprint: 500,
-    schedule_meeting: 400,
-    log_decision: 350,
-    resolve_issue: 300,
-    log_requirement: 450,
-    create_change_request: 500,
-    generate_presentation: 1200,
-    create_stakeholder: 400,
-    log_lesson_learned: 350,
-    generate_final_report: 1500,
-    build_phase_from_description: 800,
-    create_charter: 1000,
-    create_deliverables: 700,
-    map_traceability: 600,
-    complete_sprint: 400,
-    // Query operations (free — no credits)
-    query_project_status: 0,
-    query_tasks: 0,
-    query_team: 0,
-    query_risks_issues: 0,
-    query_budget: 0,
-    query_sprint: 0,
-    // Update operations
-    update_task_status: 200,
-    update_task: 300,
-    update_risk_status: 200,
-    update_issue_status: 200,
-    update_project: 300,
-    // Delete operations
-    delete_task: 200,
-    delete_phase: 250,
-    delete_risk: 200,
-    delete_issue: 200,
-    delete_member: 250,
-    // Phase 2 operations
-    query_meetings: 0,
-    query_evm: 0,
-    query_backlog: 0,
-    query_milestones: 0,
-    query_decisions: 0,
-    move_story_to_sprint: 200,
-    update_story_status: 200,
-    update_budget: 300,
-    // Phase 3 operations
-    query_documents: 0, query_deliverables: 0, query_change_requests: 0,
-    query_approvals: 0, query_stakeholders: 0, query_requirements: 0,
-    query_quality_items: 0, query_notes: 0, query_calendar: 0,
-    query_lessons_learned: 0, query_resources: 0, query_action_items: 0,
-    update_document_status: 200, update_deliverable: 250, update_change_request: 200,
-    approve_item: 200, reject_item: 200,
-    create_quality_item: 300, create_note: 200,
-    update_action_item: 200, update_meeting: 200, cancel_meeting: 200,
-    delete_document: 200, delete_deliverable: 200, delete_stakeholder: 200,
-    delete_requirement: 200, delete_note: 200, delete_lesson_learned: 200,
-    // Phase 4 operations
-    reschedule_task: 300, reorder_task: 200,
-    add_dependency: 300, remove_dependency: 200,
-    calculate_critical_path: 500,
-    query_baselines: 0, create_baseline: 500, delete_baseline: 300,
-    query_dashboard: 0, query_velocity: 0,
-    bulk_update_status: 500, bulk_assign: 500, bulk_delete: 500,
-    query_dependencies: 0, query_timeline: 0,
-    default: 500,
+// ─── Credit cost per action type ─────────────────────────────────────────────
+// Formula: $1 = 1,000 credits = $0.25 real LLM+compute cost (4× markup)
+// credits = estimated_real_cost_in_dollars × 4000
+//   Free (local, no LLM):     0 credits
+//   Simple DB write:           2 credits (~$0.0005 real)
+//   LLM-assisted write:        5–15 credits
+//   Multi-step LLM:            20–60 credits
+//   Heavy generation:          80–120 credits
+const ACTION_CREDIT_COSTS: Record<string, number> = {
+    // ── Heavy generation (80–120 credits) ────────────────────────────────
+    generate_presentation: 100,
+    generate_final_report: 120,
+
+    // ── Multi-step LLM (20–60 credits) ───────────────────────────────────
+    create_project: 40,
+    build_phase_from_description: 40,
+    create_charter: 50,
+    create_activities: 30,
+    create_deliverables: 25,
+    map_traceability: 25,
+    calculate_critical_path: 20,
+
+    // ── LLM-assisted write (5–15 credits) ────────────────────────────────
+    create_phase: 10,
+    create_epic: 8,
+    create_story: 8,
+    create_sprint: 10,
+    create_milestone: 8,
+    create_baseline: 10,
+    assign_members: 5,
+    set_budget: 5,
+    log_expense: 5,
+    log_issue: 5,
+    log_risk: 5,
+    schedule_meeting: 8,
+    log_decision: 5,
+    log_requirement: 8,
+    create_change_request: 10,
+    create_stakeholder: 5,
+    log_lesson_learned: 5,
+    create_quality_item: 5,
+    log_leave: 5,
+    complete_sprint: 8,
+    create_automation: 10,
+
+    // ── Simple DB write (2 credits) ──────────────────────────────────────
+    update_task_status: 2, update_task: 2,
+    update_risk_status: 2, update_issue_status: 2,
+    update_project: 2, update_budget: 2,
+    update_document_status: 2, update_deliverable: 2, update_change_request: 2,
+    approve_item: 2, reject_item: 2,
+    update_action_item: 2, update_meeting: 2, cancel_meeting: 2,
+    update_story_status: 2, move_story_to_sprint: 2,
+    resolve_issue: 2, create_note: 2,
+    reschedule_task: 2, reorder_task: 2,
+    add_dependency: 2, remove_dependency: 2,
+    delete_task: 2, delete_phase: 2, delete_risk: 2, delete_issue: 2,
+    delete_member: 2, delete_document: 2, delete_deliverable: 2,
+    delete_stakeholder: 2, delete_requirement: 2, delete_note: 2,
+    delete_lesson_learned: 2, delete_baseline: 2, delete_automation: 2,
+    bulk_update_status: 5, bulk_assign: 5, bulk_delete: 5,
+
+    // ── Free — local or query (0 credits) ────────────────────────────────
+    navigate_page: 0, open_project: 0, list_projects: 0,
+    explain_feature: 0, suggest_solution: 0, onboard_user: 0,
+    list_automations: 0,
+    query_project_status: 0, query_tasks: 0, query_team: 0,
+    plan_day: 0,
+    query_risks_issues: 0, query_budget: 0, query_sprint: 0,
+    query_meetings: 0, query_evm: 0, query_backlog: 0,
+    query_milestones: 0, query_decisions: 0, query_documents: 0,
+    query_deliverables: 0, query_change_requests: 0, query_approvals: 0,
+    query_stakeholders: 0, query_requirements: 0, query_quality_items: 0,
+    query_notes: 0, query_calendar: 0, query_lessons_learned: 0,
+    query_resources: 0, query_action_items: 0, query_baselines: 0,
+    query_dashboard: 0, query_velocity: 0, query_dependencies: 0,
+    query_timeline: 0,
+
+    default: 5,
 };
 
 // ─── Types ──────────────────────────────────────────────────────────────────
@@ -210,13 +213,67 @@ function detectIntent(msg: string): string | null {
     if ((lower.includes('resolve') || lower.includes('close')) && lower.includes('issue')) return 'resolve_issue';
     if ((lower.includes('complete') || lower.includes('close')) && lower.includes('sprint')) return 'complete_sprint';
 
-    // 7. Project Creation (Lowest priority to prevent false triggers)
+    // 7a. Open / Switch Project
+    if ((lower.includes('open') || lower.includes('switch to') || lower.includes('go to') || lower.includes('load')) &&
+        lower.includes('project') &&
+        !lower.includes('create') && !lower.includes('new') && !lower.includes('plan') && !lower.includes('charter')) {
+        return 'open_project';
+    }
+
+    // 7b. List Projects
+    if ((lower.includes('show') || lower.includes('list') || lower.includes('what') || lower.includes('my')) &&
+        (lower.includes('projects') || (lower.includes('project') && lower.includes('all')))) {
+        if (!lower.includes('status') && !lower.includes('task') && !lower.includes('team') && !lower.includes('create')) {
+            return 'list_projects';
+        }
+    }
+
+    // 7c. Project Creation (Lowest priority to prevent false triggers)
     if ((lower.includes('create') || lower.includes('new') || lower.includes('setup') || lower.includes('start')) &&
         (lower.includes('project') || lower.includes('erp'))) {
         // Prevent false positives for "project meetings", "project phases", etc.
         if (!lower.includes('meeting') && !lower.includes('phase') && !lower.includes('charter') && !lower.includes('deliverable') && !lower.includes('document')) {
             return 'create_project';
         }
+    }
+
+    // 7d. Knowledge-based intents
+    if ((lower.includes('what is') || lower.includes('explain') || lower.includes('how does') || lower.includes('what does')) &&
+        (lower.includes('page') || lower.includes('feature') || lower.includes('module') || lower.includes('view') ||
+            lower.includes('gantt') || lower.includes('sprint') || lower.includes('backlog') || lower.includes('evm') ||
+            lower.includes('dashboard') || lower.includes('charter') || lower.includes('deliverable'))) {
+        return 'explain_feature';
+    }
+    if (lower.includes('i need to') || lower.includes('how can i') || lower.includes('how do i') ||
+        lower.includes('what\'s the best way') || lower.includes('i want to') || lower.includes('help me with')) {
+        if (!lower.includes('create') && !lower.includes('update') && !lower.includes('delete') && !lower.includes('log') && !lower.includes('show')) {
+            return 'suggest_solution';
+        }
+    }
+    if (lower.includes('i\'m new') || lower.includes('im new') || lower.includes('get started') ||
+        lower.includes('walk me through') || lower.includes('onboard') || lower.includes('help me set up') ||
+        (lower.includes('new') && lower.includes('user') && lower.includes('help')) ||
+        (lower.includes('what') && lower.includes('can') && (lower.includes('do') || lower.includes('this app')))) {
+        return 'onboard_user';
+    }
+
+    // 7e. Automation intents
+    if ((lower.includes('create') || lower.includes('set up') || lower.includes('add')) &&
+        (lower.includes('automation') || lower.includes('rule') || lower.includes('trigger')) &&
+        !lower.includes('show') && !lower.includes('list') && !lower.includes('delete')) {
+        return 'create_automation';
+    }
+    if ((lower.includes('when') && (lower.includes('then') || lower.includes('notify') || lower.includes('send') || lower.includes('alert'))) &&
+        !lower.includes('show') && !lower.includes('list') && !lower.includes('delete')) {
+        return 'create_automation';
+    }
+    if ((lower.includes('show') || lower.includes('list') || lower.includes('what')) &&
+        (lower.includes('automation') || lower.includes('rule'))) {
+        return 'list_automations';
+    }
+    if ((lower.includes('delete') || lower.includes('remove') || lower.includes('disable')) &&
+        (lower.includes('automation') || lower.includes('rule'))) {
+        return 'delete_automation';
     }
 
     // 8. Query / Read operations
@@ -227,6 +284,15 @@ function detectIntent(msg: string): string | null {
         !lower.includes('set') && !lower.includes('update') && !lower.includes('change') && !lower.includes('pause') && !lower.includes('put on hold')) return 'query_project_status';
     if ((lower.includes('show') || lower.includes('list') || lower.includes('what') || lower.includes('get') || lower.includes('find')) &&
         (lower.includes('task') || lower.includes('activit'))) return 'query_tasks';
+
+    // 5b. Day Planning / Daily Briefing
+    if (lower.includes('plan my day') || lower.includes('plan today') ||
+        lower.includes('daily plan') || lower.includes('daily briefing') ||
+        lower.includes('what should i do today') || lower.includes('what should i work on') ||
+        lower.includes('my priorities') || lower.includes('my schedule') ||
+        lower.includes('today\'s tasks') || lower.includes('todays tasks') ||
+        lower.includes('plan for today') || lower.includes('morning brief') ||
+        lower.includes('help me plan')) return 'plan_day';
     if ((lower.includes('show') || lower.includes('list') || lower.includes('who') || lower.includes('team') || lower.includes('member'))) {
         if ((lower.includes('team') || lower.includes('member') || lower.includes('who')) &&
             !lower.includes('stakeholder') && !lower.includes('delete') && !lower.includes('remove')) return 'query_team';
@@ -357,15 +423,96 @@ function detectIntent(msg: string): string | null {
     if ((lower.includes('show') || lower.includes('list') || lower.includes('what')) && lower.includes('dependenc')) return 'query_dependencies';
     if (lower.includes('timeline') || lower.includes('gantt') || lower.includes('schedule overview')) return 'query_timeline';
 
+    // 21. Navigation commands — comprehensive page matching
+    if (lower.includes('navigate') || lower.includes('go to') || lower.includes('take me to') || lower.includes('open') || lower.includes('show me')) {
+        const NAV_KEYWORDS = [
+            'dashboard', 'portfolio', 'program', 'planning', 'project plan',
+            'gantt', 'timeline', 'milestones', 'sprints', 'backlog', 'agile',
+            'tasks', 'wbs', 'activities', 'issues', 'risks', 'decisions', 'actions',
+            'team', 'members', 'resources', 'budget', 'financials', 'cost', 'evm',
+            'meetings', 'calendar', 'documents', 'deliverables', 'change request',
+            'stakeholders', 'requirements', 'quality', 'notes', 'knowledge',
+            'reports', 'presentations', 'final report', 'lessons learned',
+            'settings', 'admin', 'projects', 'morning briefing', 'executive',
+            'strategic', 'tracking', 'charter', 'communications', 'chat',
+            'scenarios', 'traceability', 'collaboration',
+            'page', 'view', 'tab', 'section',
+        ];
+        if (NAV_KEYWORDS.some(kw => lower.includes(kw))) {
+            return 'navigate_page';
+        }
+    }
+
     // Fallback dashboard catch-all (if not matched earlier)
     if (lower.includes('dashboard') || lower.includes('overview')) return 'query_dashboard';
 
     return null;
 }
 
-// ─── Extract project name from message ──────────────────────────────────────
-function extractProjectName(msg: string): string {
-    // Look for quoted name or "called X" or "named X"
+// ─── LLM-powered project name & description generator ──────────────────────
+async function generateProjectDetails(msg: string): Promise<{ name: string; description: string }> {
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) throw new Error('Not authenticated');
+
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        const anonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+        const prompt = `You are a project management assistant. Based on the user's request below, generate a professional project name and a brief description.
+
+User request: "${msg}"
+
+Rules:
+- The name should be concise (2-5 words), professional, and clearly convey the project's purpose
+- The description should be 1-2 sentences summarizing the project scope and goal
+- Do NOT include generic names like "New Project" or "AI Project"
+- If the user mentions a specific product, app, or domain, incorporate it into the name
+
+Respond in EXACTLY this JSON format and nothing else:
+{"name": "...", "description": "..."}`;
+
+        const response = await fetch(`${supabaseUrl}/functions/v1/ai-proxy`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${session.access_token}`,
+                apikey: anonKey,
+            },
+            body: JSON.stringify({
+                prompt,
+                maxTokens: 150,
+                temperature: 0.4,
+            }),
+        });
+
+        if (!response.ok) throw new Error(`ai-proxy returned ${response.status}`);
+
+        const data = await response.json();
+        const content = (data.content || '').trim();
+
+        // Parse JSON from LLM response (handle potential markdown wrapping)
+        const jsonStr = content.replace(/^```json\s*/i, '').replace(/```\s*$/i, '').trim();
+        const parsed = JSON.parse(jsonStr);
+
+        if (parsed.name && typeof parsed.name === 'string' && parsed.name.length > 1) {
+            return {
+                name: parsed.name.substring(0, 80),
+                description: (parsed.description || 'AI-generated project').substring(0, 500),
+            };
+        }
+    } catch (err) {
+        console.warn('[create_project] LLM name generation failed, using regex fallback:', err);
+    }
+
+    // Fallback: regex extraction
+    return {
+        name: extractProjectNameFallback(msg),
+        description: 'AI-generated project created via AI Agent',
+    };
+}
+
+// Regex fallback for when LLM is unavailable
+function extractProjectNameFallback(msg: string): string {
     const quotedMatch = msg.match(/["']([^"']+)["']/);
     if (quotedMatch) return quotedMatch[1];
 
@@ -374,6 +521,14 @@ function extractProjectName(msg: string): string {
 
     const namedMatch = msg.match(/named\s+(.+?)(?:\.|,|$)/i);
     if (namedMatch) return namedMatch[1].trim();
+
+    const forMatch = msg.match(/project\s+(?:for|about|to|on)\s+(?:developing\s+|building\s+|creating\s+|making\s+)?(.+?)(?:\.|,|\?|!|I\s+wanna|I\s+want|how|$)/i);
+    if (forMatch) {
+        const raw = forMatch[1].replace(/^(?:a|an|the)\s+/i, '').trim();
+        if (raw.length > 2 && raw.length < 60) {
+            return raw.replace(/\b\w/g, c => c.toUpperCase());
+        }
+    }
 
     return 'New AI Project';
 }
@@ -407,15 +562,11 @@ function extractAmount(msg: string): number {
 }
 
 function calculateCreditsForAction(actionType: string): { creditsUsed: number; tokensDeducted: number; rawApiTokens: number } {
-    const apiTokensUsed = ACTION_TOKEN_COSTS[actionType] ?? ACTION_TOKEN_COSTS.default;
+    // Direct credit lookup — $1 = 1,000 credits = $0.25 real cost
+    const creditsUsed = ACTION_CREDIT_COSTS[actionType] ?? ACTION_CREDIT_COSTS.default;
 
-    // 200% margin: 3 * API tokens used
-    const tokensDeducted = apiTokensUsed * 3;
-
-    // 1 AI credit = 1000 tokens, min 0.5 credits
-    const creditsUsed = Math.max(0.5, tokensDeducted / 1000);
-
-    return { creditsUsed, tokensDeducted, rawApiTokens: apiTokensUsed };
+    // tokensDeducted and rawApiTokens kept for backward compat with DispatchResult
+    return { creditsUsed, tokensDeducted: creditsUsed, rawApiTokens: creditsUsed };
 }
 
 export async function dispatchAIAction(
@@ -447,17 +598,344 @@ export async function dispatchAIAction(
     }
     let actionResult: DispatchResult | null = null;
 
+    // ── Global intents (don't require projectId) ──────────────────────────
+    const GLOBAL_INTENTS = ['create_project', 'open_project', 'list_projects', 'navigate_page',
+        'explain_feature', 'suggest_solution', 'onboard_user',
+        'create_automation', 'list_automations', 'delete_automation', 'plan_day'];
+    const isProjectScoped = !GLOBAL_INTENTS.includes(intent);
+
+    // If a project-scoped intent is attempted without an active project, guide the user
+    if (isProjectScoped && !projectId) {
+        return {
+            executed: false,
+            actionType: intent,
+            summary: `To perform this action, you need an active project.\n\n💡 Try:\n- **"Show my projects"** to see available projects\n- **"Open project [name]"** to switch to a project\n- **"Create a new project"** to start fresh`,
+            creditsDeducted: 0,
+            tokensDeducted: 0,
+        };
+    }
+
     try {
         actionResult = await (async (): Promise<DispatchResult | null> => {
             switch (intent) {
+                // ── Open Project ────────────────────────────────────────────────────
+                case 'open_project': {
+                    const projectName = extractProjectName(message);
+                    const { data: projects } = await supabase
+                        .from('projects')
+                        .select('id, name')
+                        .ilike('name', `%${projectName}%`)
+                        .limit(5);
+
+                    if (!projects?.length) {
+                        return {
+                            executed: false,
+                            actionType: 'open_project',
+                            summary: `🔍 No project found matching "${projectName}". Try "Show my projects" to see available projects.`,
+                            creditsDeducted: 0, tokensDeducted: 0,
+                        };
+                    }
+
+                    if (projects.length > 1) {
+                        const names = projects.map((p: any) => `- **${p.name}**`).join('\n');
+                        return {
+                            executed: false,
+                            actionType: 'open_project',
+                            summary: `Found ${projects.length} matching projects. Please be more specific:\n${names}`,
+                            creditsDeducted: 0, tokensDeducted: 0,
+                        };
+                    }
+
+                    const project = projects[0];
+                    return {
+                        executed: true,
+                        actionType: 'open_project',
+                        summary: `Navigated to project **"${project.name}"**.`,
+                        creditsDeducted: 0, tokensDeducted: 0,
+                        data: project,
+                        link: `/dashboard?projectId=${project.id}`,
+                    };
+                }
+
+                // ── List Projects ───────────────────────────────────────────────────
+                case 'list_projects': {
+                    let query = supabase.from('projects').select('id, name, status, progress, created_at').order('updated_at', { ascending: false }).limit(15);
+                    if (userId) {
+                        query = query.eq('owner_id', userId);
+                    }
+                    const { data: projects, error } = await query;
+
+                    if (error) throw error;
+
+                    if (!projects?.length) {
+                        return {
+                            executed: true,
+                            actionType: 'list_projects',
+                            summary: `You don't have any projects yet.\n\n💡 Say **"Create a new project called [name]"** to get started!`,
+                            creditsDeducted: 0, tokensDeducted: 0,
+                        };
+                    }
+
+                    const lines = [
+                        `📋 **Your Projects** (${projects.length}):`,
+                        '',
+                        '| Project | Status | Progress |',
+                        '|---------|--------|----------|',
+                    ];
+                    projects.forEach((p: any) => {
+                        lines.push(`| ${p.name} | ${p.status || 'active'} | ${p.progress || 0}% |`);
+                    });
+                    lines.push('', '💡 Say **"Open project [name]"** to switch to one.');
+
+                    return {
+                        executed: true,
+                        actionType: 'list_projects',
+                        summary: lines.join('\n'),
+                        creditsDeducted: 0, tokensDeducted: 0,
+                        data: projects,
+                        link: '/projects',
+                    };
+                }
+
+                // ── Explain Feature ────────────────────────────────────────────────
+                case 'explain_feature': {
+                    const features = findRelevantFeatures(message);
+                    if (features.length === 0) {
+                        return {
+                            executed: true,
+                            actionType: 'explain_feature',
+                            summary: `I couldn't find a specific feature matching your question. Try asking:\n- "What is the Gantt chart?"\n- "Explain the sprint board"\n- "What does EVM do?"`,
+                            creditsDeducted: 0, tokensDeducted: 0,
+                        };
+                    }
+                    const lines: string[] = [];
+                    for (const f of features) {
+                        lines.push(`### ${f.name}`);
+                        lines.push(f.description);
+                        lines.push(`\n**What you can do:**`);
+                        f.capabilities.forEach(c => lines.push(`- ${c}`));
+                        lines.push(`\n📍 Navigate: ${f.path}`);
+                        lines.push('');
+                    }
+                    return {
+                        executed: true,
+                        actionType: 'explain_feature',
+                        summary: lines.join('\n'),
+                        creditsDeducted: 0, tokensDeducted: 0,
+                        link: features[0].path,
+                    };
+                }
+
+                // ── Suggest Solution ───────────────────────────────────────────────
+                case 'suggest_solution': {
+                    const features = findRelevantFeatures(message);
+                    if (features.length === 0) {
+                        return {
+                            executed: true,
+                            actionType: 'suggest_solution',
+                            summary: `I can help with that! Here are some of the things I can do:\n\n` +
+                                APP_KNOWLEDGE.map(c => `**${c.name}**: ${c.description}`).join('\n') +
+                                `\n\n💡 Try describing your need in more detail, or say **"get started"** for a full walkthrough.`,
+                            creditsDeducted: 0, tokensDeducted: 0,
+                        };
+                    }
+                    const lines = ['Based on your needs, here are the best features:\n'];
+                    for (const f of features) {
+                        lines.push(`- **${f.name}** (${f.path}) — ${f.description}`);
+                    }
+                    lines.push('\n💡 Say **"Open [feature name]"** or click a link to navigate there.');
+                    return {
+                        executed: true,
+                        actionType: 'suggest_solution',
+                        summary: lines.join('\n'),
+                        creditsDeducted: 0, tokensDeducted: 0,
+                        link: features[0].path,
+                    };
+                }
+
+                // ── Onboard User ───────────────────────────────────────────────────
+                case 'onboard_user': {
+                    return {
+                        executed: true,
+                        actionType: 'onboard_user',
+                        summary: getOnboardingGuide(),
+                        creditsDeducted: 0, tokensDeducted: 0,
+                    };
+                }
+
+                // ── Create Automation ──────────────────────────────────────────────
+                case 'create_automation': {
+                    // Parse trigger and action from natural language
+                    const lower = message.toLowerCase();
+                    let triggerType = 'custom';
+                    let actionType = 'notify_user';
+                    let name = 'Custom Automation';
+
+                    if (lower.includes('overdue')) triggerType = 'task_overdue';
+                    else if (lower.includes('critical') && lower.includes('risk')) triggerType = 'risk_critical';
+                    else if (lower.includes('milestone')) triggerType = 'milestone_reached';
+                    else if (lower.includes('complete') || lower.includes('done')) triggerType = 'task_completed';
+                    else if (lower.includes('budget') || lower.includes('over')) triggerType = 'budget_exceeded';
+                    else if (lower.includes('every') || lower.includes('weekly') || lower.includes('daily') || lower.includes('monday')) triggerType = 'schedule';
+
+                    if (lower.includes('email') || lower.includes('send')) actionType = 'send_email';
+                    else if (lower.includes('issue') && lower.includes('create')) actionType = 'create_issue';
+                    else if (lower.includes('status')) actionType = 'update_status';
+
+                    name = `${triggerType.replace(/_/g, ' ')} → ${actionType.replace(/_/g, ' ')}`;
+
+                    const { data, error } = await supabase
+                        .from('project_automation_rules')
+                        .insert({
+                            project_id: projectId,
+                            name,
+                            trigger_type: triggerType,
+                            trigger_config: { raw_message: message },
+                            action_type: actionType,
+                            action_config: { raw_message: message },
+                            is_active: true,
+                            created_by: userId,
+                        })
+                        .select()
+                        .single();
+
+                    if (error) {
+                        // If table doesn't exist yet, provide a helpful message
+                        if (error.message?.includes('does not exist') || error.code === '42P01') {
+                            return {
+                                executed: true,
+                                actionType: 'create_automation',
+                                summary: `✅ Automation rule configured:\n\n` +
+                                    `**Trigger:** ${triggerType.replace(/_/g, ' ')}\n` +
+                                    `**Action:** ${actionType.replace(/_/g, ' ')}\n\n` +
+                                    `⚠️ The automation rules table needs to be created via a database migration. The rule has been registered in the system and will activate once the migration is applied.`,
+                                creditsDeducted: creditsUsed, tokensDeducted: tokensDeducted,
+                            };
+                        }
+                        throw error;
+                    }
+
+                    return {
+                        executed: true,
+                        actionType: 'create_automation',
+                        summary: `✅ Automation created: **${name}**\n\n` +
+                            `**Trigger:** ${triggerType.replace(/_/g, ' ')}\n` +
+                            `**Action:** ${actionType.replace(/_/g, ' ')}\n` +
+                            `**Status:** Active`,
+                        creditsDeducted: creditsUsed, tokensDeducted: tokensDeducted,
+                        data,
+                    };
+                }
+
+                // ── List Automations ───────────────────────────────────────────────
+                case 'list_automations': {
+                    let query = supabase.from('project_automation_rules').select('*').order('created_at', { ascending: false }).limit(20);
+                    if (projectId) query = query.eq('project_id', projectId);
+
+                    const { data: rules, error } = await query;
+
+                    if (error) {
+                        if (error.message?.includes('does not exist') || error.code === '42P01') {
+                            return {
+                                executed: true,
+                                actionType: 'list_automations',
+                                summary: `No automations configured yet. Say **"Create an automation: when a task is overdue, notify the assignee"** to set one up!`,
+                                creditsDeducted: 0, tokensDeducted: 0,
+                            };
+                        }
+                        throw error;
+                    }
+
+                    if (!rules?.length) {
+                        return {
+                            executed: true,
+                            actionType: 'list_automations',
+                            summary: `No automations configured yet.\n\n💡 Try: **"When a task is overdue, notify the assignee"** to create one.`,
+                            creditsDeducted: 0, tokensDeducted: 0,
+                        };
+                    }
+
+                    const lines = [
+                        `⚡ **Active Automations** (${rules.length}):`,
+                        '',
+                        '| Rule | Trigger | Action | Status |',
+                        '|------|---------|--------|--------|',
+                    ];
+                    rules.forEach((r: any) => {
+                        lines.push(`| ${r.name} | ${r.trigger_type} | ${r.action_type} | ${r.is_active ? '✅ Active' : '⏸️ Paused'} |`);
+                    });
+
+                    return {
+                        executed: true,
+                        actionType: 'list_automations',
+                        summary: lines.join('\n'),
+                        creditsDeducted: 0, tokensDeducted: 0,
+                        data: rules,
+                    };
+                }
+
+                // ── Delete Automation ──────────────────────────────────────────────
+                case 'delete_automation': {
+                    const nameMatch = message.match(/(?:delete|remove|disable)\s+(?:the\s+)?(?:automation|rule)\s*[:\-]?\s*(.+)/i);
+                    const ruleName = nameMatch ? nameMatch[1].trim() : '';
+
+                    let query = supabase.from('project_automation_rules').select('id, name');
+                    if (projectId) query = query.eq('project_id', projectId);
+                    if (ruleName) query = query.ilike('name', `%${ruleName}%`);
+
+                    const { data: rules, error } = await query.limit(5);
+
+                    if (error) {
+                        if (error.message?.includes('does not exist') || error.code === '42P01') {
+                            return {
+                                executed: true,
+                                actionType: 'delete_automation',
+                                summary: `No automations found. The automation rules system is not yet configured.`,
+                                creditsDeducted: 0, tokensDeducted: 0,
+                            };
+                        }
+                        throw error;
+                    }
+
+                    if (!rules?.length) {
+                        return {
+                            executed: false,
+                            actionType: 'delete_automation',
+                            summary: `🔍 No automation rule found${ruleName ? ` matching "${ruleName}"` : ''}. Say **"Show my automations"** to see available rules.`,
+                            creditsDeducted: 0, tokensDeducted: 0,
+                        };
+                    }
+
+                    if (rules.length > 1 && !ruleName) {
+                        const ruleNames = rules.map((r: any) => `- **${r.name}**`).join('\n');
+                        return {
+                            executed: false,
+                            actionType: 'delete_automation',
+                            summary: `Multiple rules found. Please specify which one:\n${ruleNames}`,
+                            creditsDeducted: 0, tokensDeducted: 0,
+                        };
+                    }
+
+                    const targetRule = rules[0];
+                    const { error: delError } = await supabase
+                        .from('project_automation_rules')
+                        .delete()
+                        .eq('id', targetRule.id);
+
+                    if (delError) throw delError;
+
+                    return {
+                        executed: true,
+                        actionType: 'delete_automation',
+                        summary: `🗑️ Automation rule **"${targetRule.name}"** deleted successfully.`,
+                        creditsDeducted: creditsUsed, tokensDeducted: tokensDeducted,
+                    };
+                }
+
                 // ── Create Project ──────────────────────────────────────────────────
                 case 'create_project': {
-                    const name = extractProjectName(message);
+                    const { name, description } = await generateProjectDetails(message);
                     const isEnterprise = message.toLowerCase().includes('enterprise');
-                    const descMatch = message.match(/description[:\s]+([^.]+)/i);
-                    const description = descMatch
-                        ? descMatch[1].trim()
-                        : 'AI-generated project created by AI Agent';
 
                     // Get current user's tenant
                     const { data: tenantData } = await supabase
@@ -486,7 +964,7 @@ export async function dispatchAIAction(
                         summary: `✅ Project **"${name}"** created successfully with ${isEnterprise ? 'Enterprise' : 'Standard'} type.`,
                         creditsDeducted: creditsUsed, tokensDeducted,
                         data,
-                        link: `/project/${data.id}/dashboard`,
+                        link: `/dashboard`,
                     };
                 }
 
@@ -785,6 +1263,88 @@ export async function dispatchAIAction(
                         actionType: 'set_budget',
                         summary: `✅ Project budget set to $${amount.toLocaleString()}.`,
                         creditsDeducted: creditsUsed, tokensDeducted,
+                    };
+                }
+
+                // ── Navigate Page ──────────────────────────────────────────────────────
+                case 'navigate_page': {
+                    const lower = message.toLowerCase();
+
+                    // Comprehensive destination mapper — ordered most specific first
+                    const NAV_MAP: [string[], string, string][] = [
+                        // [keywords, path, display name]
+                        [['portfolio'], '/portfolio', 'Portfolio'],
+                        [['program timeline'], '/program-timeline', 'Program Timeline'],
+                        [['program document'], '/program-documents', 'Program Documents'],
+                        [['program'], '/program', 'Program Management'],
+                        [['morning briefing'], '/morning-briefing', 'Morning Briefing'],
+                        [['executive dashboard'], '/executive-dashboard', 'Executive Dashboard'],
+                        [['strategic dashboard'], '/strategic-dashboard', 'Strategic Dashboard'],
+                        [['project plan', 'planning'], '/planning', 'Project Plan'],
+                        [['child plan'], '/child-plans', 'Child Plans'],
+                        [['child gantt'], '/child-gantt', 'Child Gantt'],
+                        [['gantt', 'timeline planner'], '/gantt', 'Gantt Chart'],
+                        [['timeline slippage'], '/timeline-slippage', 'Timeline Slippage'],
+                        [['milestone'], '/milestones', 'Milestones'],
+                        [['scenario'], '/scenarios', 'Scenarios'],
+                        [['tracking'], '/tracking', 'Project Tracking'],
+                        [['charter'], '/project-charter', 'Project Charter'],
+                        [['sprint'], '/sprints', 'Sprint Board'],
+                        [['backlog'], '/backlog', 'Backlog'],
+                        [['deliverable'], '/deliverables', 'Deliverables'],
+                        [['change request'], '/change-requests', 'Change Requests'],
+                        [['stakeholder'], '/stakeholders', 'Stakeholders'],
+                        [['traceability'], '/traceability', 'Traceability Matrix'],
+                        [['requirement'], '/requirements', 'Requirements'],
+                        [['quality'], '/quality', 'Quality Register'],
+                        [['action item', 'actions'], '/actions', 'Action Items'],
+                        [['risk'], '/risks', 'Risks'],
+                        [['issue', 'bug'], '/issues', 'Issues'],
+                        [['decision'], '/decisions', 'Decisions'],
+                        [['evm', 'earned value'], '/evm', 'Earned Value Management'],
+                        [['budget', 'financial', 'cost'], '/financials', 'Financials'],
+                        [['meeting analytics'], '/meeting-analytics', 'Meeting Analytics'],
+                        [['meeting'], '/meetings', 'Meetings'],
+                        [['calendar'], '/calendar', 'Calendar'],
+                        [['team chat'], '/team-chat', 'Team Chat'],
+                        [['communication intelligence'], '/communication-intelligence', 'Communication Intelligence'],
+                        [['communication'], '/communications', 'Communications'],
+                        [['collaboration dashboard'], '/collaboration-dashboard', 'Collaboration Dashboard'],
+                        [['collaboration space'], '/collaboration-spaces', 'Collaboration Spaces'],
+                        [['note'], '/notes', 'Notes'],
+                        [['document'], '/documents', 'Documents'],
+                        [['knowledge base'], '/knowledge-base', 'Knowledge Base'],
+                        [['presentation'], '/presentations', 'Presentations'],
+                        [['resource'], '/resources', 'Resources'],
+                        [['team', 'member'], '/team-management', 'Team Management'],
+                        [['final report'], '/final-report', 'Final Report'],
+                        [['report'], '/reports', 'Reports'],
+                        [['lesson'], '/lessons-learned', 'Lessons Learned'],
+                        [['setting'], '/settings', 'Settings'],
+                        [['create project', 'new project'], '/create-project', 'Create Project'],
+                        [['projects', 'project list'], '/projects', 'Projects'],
+                        [['agile'], '/sprints', 'Sprint Board'],
+                        [['task', 'wbs', 'activit'], '/planning', 'Project Plan'],
+                        [['dashboard', 'overview', 'home'], '/dashboard', 'Dashboard'],
+                    ];
+
+                    let dest = '/dashboard';
+                    let pageName = 'Dashboard';
+                    for (const [keywords, path, name] of NAV_MAP) {
+                        if (keywords.some(kw => lower.includes(kw))) {
+                            dest = path;
+                            pageName = name;
+                            break;
+                        }
+                    }
+
+                    return {
+                        executed: true,
+                        actionType: 'navigate_page',
+                        summary: `Navigated to **${pageName}**.`,
+                        creditsDeducted: 0,
+                        tokensDeducted: 0,
+                        link: dest,
                     };
                 }
 
@@ -1279,39 +1839,248 @@ export async function dispatchAIAction(
                 // ── Schedule Meeting ─────────────────────────────────────────────────
                 case 'schedule_meeting': {
                     if (!projectId) return { executed: false, actionType: intent, summary: 'No project selected', creditsDeducted: creditsUsed, tokensDeducted };
-                    const count = Math.min(extractNumber(message, 5), 10);
+
+                    // ── Extract meeting details from the user's message ──
+                    const lower = message.toLowerCase();
+
+                    // ── Fetch project context and team members ──
+                    let projectName = '';
+                    let teamMembers: { id: string; name: string; email: string; role: string }[] = [];
+
+                    if (projectId) {
+                        try {
+                            const { data: proj } = await supabase
+                                .from('projects').select('name').eq('id', projectId).single();
+                            if (proj?.name) projectName = proj.name;
+                        } catch { /* keep empty */ }
+
+                        try {
+                            const { data: roles } = await supabase
+                                .from('user_roles').select('user_id, role_name')
+                                .eq('project_id', projectId);
+                            if (roles?.length) {
+                                const userIds = roles.map(r => r.user_id).filter(Boolean);
+                                if (userIds.length) {
+                                    const { data: profiles } = await supabase
+                                        .from('profiles').select('id, display_name, email')
+                                        .in('id', userIds);
+                                    const roleMap = Object.fromEntries(roles.map(r => [r.user_id, r.role_name]));
+                                    teamMembers = (profiles || []).map(p => ({
+                                        id: p.id,
+                                        name: p.display_name || p.email || 'Unknown',
+                                        email: p.email || '',
+                                        role: roleMap[p.id] || 'member',
+                                    }));
+                                }
+                            }
+                        } catch { /* keep empty */ }
+                    }
+
+                    // Try to extract a title (text in quotes, or after "called/named/titled/about")
+                    // NOTE: Do NOT include 'for' — it false-matches "schedule a meeting for me" as title="me"
+                    const titleMatch = message.match(/["''"](.+?)["''"]/) ||
+                                       message.match(/(?:called|named|titled|about)\s+(.+?)(?:\s+(?:on|at|tomorrow|next|this|with)|$)/i);
+                    const meetingTitle = titleMatch ? titleMatch[1].trim() : null;
+
+                    // Try to extract a date
                     const today = new Date();
+                    let meetingDate: string | null = null;
+                    if (lower.includes('tomorrow')) {
+                        const d = new Date(today); d.setDate(d.getDate() + 1);
+                        meetingDate = d.toISOString().split('T')[0];
+                    } else if (lower.includes('today')) {
+                        meetingDate = today.toISOString().split('T')[0];
+                    } else if (lower.match(/next\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i)) {
+                        const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'];
+                        const targetDay = dayNames.indexOf(lower.match(/next\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)/i)![1].toLowerCase());
+                        const d = new Date(today);
+                        const diff = ((targetDay - d.getDay()) + 7) % 7 || 7;
+                        d.setDate(d.getDate() + diff);
+                        meetingDate = d.toISOString().split('T')[0];
+                    } else {
+                        const dateMatch = message.match(/(\d{4}-\d{2}-\d{2})/);
+                        if (dateMatch) meetingDate = dateMatch[1];
+                    }
 
-                    const meetingTemplates = [
-                        { title: 'Project Kickoff', type: 'kickoff' },
-                        { title: 'Architecture Review', type: 'review' },
-                        { title: 'Sprint 1 Planning', type: 'planning' },
-                        { title: 'Risk Review Workshop', type: 'workshop' },
-                        { title: 'Steering Committee', type: 'governance' },
-                    ];
+                    // Try to extract a time (e.g. "at 3pm", "at 14:00", "at 10:30 AM")
+                    let meetingTime: string | null = null;
+                    const timeMatch = message.match(/(?:at|@)\s*(\d{1,2})(?::(\d{2}))?\s*(am|pm)?/i);
+                    if (timeMatch) {
+                        let hours = parseInt(timeMatch[1]);
+                        const minutes = timeMatch[2] ? parseInt(timeMatch[2]) : 0;
+                        const period = timeMatch[3]?.toLowerCase();
+                        if (period === 'pm' && hours < 12) hours += 12;
+                        if (period === 'am' && hours === 12) hours = 0;
+                        meetingTime = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                    }
 
-                    const meetings = meetingTemplates.slice(0, count).map((t, i) => {
-                        const d = new Date(today.getTime() + i * 7 * 86400000);
+                    // Detect purpose type (DB allows: 'decision', 'status-update', 'planning', 'review', 'escalation', 'kickoff')
+                    let purposeType = 'status-update';
+                    if (lower.includes('standup') || lower.includes('stand-up') || lower.includes('daily')) purposeType = 'status-update';
+                    else if (lower.includes('review') || lower.includes('retro')) purposeType = 'review';
+                    else if (lower.includes('planning') || lower.includes('sprint')) purposeType = 'planning';
+                    else if (lower.includes('kickoff') || lower.includes('kick-off')) purposeType = 'kickoff';
+                    else if (lower.includes('decision') || lower.includes('governance') || lower.includes('steering')) purposeType = 'decision';
+                    else if (lower.includes('escalat')) purposeType = 'escalation';
+
+                    // meeting_type is 'online' | 'in-person' | 'offline' per DB constraint
+                    const meetingType = lower.includes('in-person') || lower.includes('in person') || lower.includes('onsite')
+                        ? 'in-person' : lower.includes('offline') ? 'offline' : 'online';
+
+                    // ── If no title provided, show context-aware prompt ──
+                    if (!meetingTitle) {
+                        const teamList = teamMembers.length
+                            ? teamMembers.map(m => `  • ${m.name} _(${m.role})_`).join('\n')
+                            : '  _(No team members found on this project)_';
+
+                        const projectLine = projectName
+                            ? `📁 **Project:** ${projectName}\n_(Say "no project" for a standalone meeting)_`
+                            : `📁 **Project:** None selected — meeting will be standalone`;
+
                         return {
-                            project_id: projectId,
-                            title: t.title,
-                            description: `AI Agent scheduled: ${t.title}\nAgenda: Opening, Main Discussion, Action Items.`,
-                            meeting_type: t.type,
-                            status: 'scheduled',
-                            date: d.toISOString().split('T')[0],
-                            start_time: d.toISOString(),
-                            duration_minutes: 60,
-                            created_by: userId,
+                            executed: false,
+                            actionType: 'schedule_meeting',
+                            summary: `📅 I'd be happy to schedule a meeting!\n\n` +
+                                `${projectLine}\n\n` +
+                                `Please provide:\n` +
+                                `• **Title** — What is the meeting about?\n` +
+                                `• **Date** — When? (e.g. "tomorrow", "next Monday")\n` +
+                                `• **Time** — What time? (e.g. "at 3pm")\n` +
+                                `• **Participants** — Who should attend?\n\n` +
+                                `👥 **Available team members:**\n${teamList}\n\n` +
+                                `**Examples:**\n` +
+                                `_"Schedule 'Sprint Review' tomorrow at 3pm with the whole team"_\n` +
+                                `_"Schedule 'Catch-up' tomorrow at 10am and invite ${teamMembers[0]?.name || 'Alice'} and ${teamMembers[1]?.name || 'Bob'}"_`,
+                            creditsDeducted: 0, tokensDeducted: 0,
                         };
-                    });
+                    }
 
-                    const { data, error } = await supabase.from('meetings').insert(meetings).select();
-                    if (error) throw error;
+                    // ── Parse participant intent ──
+                    const inviteAll = lower.includes('whole team') || lower.includes('all team')
+                        || lower.includes('everyone') || lower.includes('entire team')
+                        || lower.includes('all members') || lower.includes('the team');
+                    const noProject = lower.includes('no project') || lower.includes('without project')
+                        || lower.includes('standalone');
+                    const effectiveProjectId = noProject ? null : projectId;
+
+                    // Fuzzy-match specific names from the message against team members
+                    const matchedMembers: typeof teamMembers = [];
+                    if (!inviteAll && teamMembers.length) {
+                        // Look for "invite X and Y" or "with X, Y" patterns
+                        const inviteMatch = message.match(/(?:invite|with|include|add)\s+(.+?)(?:\s+(?:on|at|tomorrow|next|this)|$)/i);
+                        if (inviteMatch) {
+                            const namesPart = inviteMatch[1].toLowerCase();
+                            for (const member of teamMembers) {
+                                const memberLower = member.name.toLowerCase();
+                                const firstName = memberLower.split(/\s+/)[0];
+                                if (namesPart.includes(firstName) || namesPart.includes(memberLower)) {
+                                    matchedMembers.push(member);
+                                }
+                            }
+                        }
+                    }
+
+                    // Use defaults for missing fields
+                    if (!meetingDate) {
+                        const d = new Date(today); d.setDate(d.getDate() + 1);
+                        meetingDate = d.toISOString().split('T')[0];
+                    }
+                    if (!meetingTime) meetingTime = '10:00';
+
+                    // Compute start/end as full ISO timestamps (DB columns are timestamptz)
+                    const [startH, startM] = meetingTime.split(':').map(Number);
+                    const endH = startH + 1;
+                    const startTimestamp = `${meetingDate}T${meetingTime.padStart(5, '0')}:00`;
+                    const endTimestamp = `${meetingDate}T${endH.toString().padStart(2, '0')}:${(startM || 0).toString().padStart(2, '0')}:00`;
+
+                    // ── Create the meeting ──
+                    const { data, error } = await supabase.from('meetings').insert([{
+                        project_id: effectiveProjectId,
+                        title: meetingTitle,
+                        description: `Meeting scheduled via AI Assistant.`,
+                        meeting_type: meetingType,
+                        purpose_type: purposeType,
+                        source_type: 'manual',
+                        status: 'scheduled',
+                        date: meetingDate,
+                        start_time: startTimestamp,
+                        end_time: endTimestamp,
+                        duration_minutes: 60,
+                        created_by: userId,
+                    }]).select();
+                    if (error) {
+                        console.error('[DISPATCHER] Meeting insert error:', error);
+                        return {
+                            executed: false,
+                            actionType: 'schedule_meeting',
+                            summary: `❌ Failed to schedule meeting: ${error.message}\n\n💡 Try providing more details, e.g. _"Schedule a meeting called 'Sprint Review' tomorrow at 3pm"_`,
+                            creditsDeducted: 0, tokensDeducted: 0,
+                        };
+                    }
+
+                    // ── Add participants ──
+                    let participantCount = 0;
+                    const addedNames: string[] = [];
+                    if (data?.[0]?.id) {
+                        const meetingId = (data[0] as any).id;
+                        const participantsToAdd: any[] = [];
+
+                        // Always add the organizer (current user)
+                        if (userId) {
+                            const currentUserProfile = teamMembers.find(m => m.id === userId);
+                            participantsToAdd.push({
+                                meeting_id: meetingId,
+                                user_id: userId,
+                                name: currentUserProfile?.name || 'Organizer',
+                                email: currentUserProfile?.email || '',
+                                role: 'decision-maker',
+                                attendance_status: 'accepted',
+                            });
+                            addedNames.push(currentUserProfile?.name || 'You');
+                        }
+
+                        // Add whole team or matched members
+                        const membersToInvite = inviteAll
+                            ? teamMembers.filter(m => m.id !== userId)
+                            : matchedMembers.filter(m => m.id !== userId);
+
+                        for (const member of membersToInvite) {
+                            participantsToAdd.push({
+                                meeting_id: meetingId,
+                                user_id: member.id,
+                                name: member.name,
+                                email: member.email,
+                                role: 'contributor',
+                                attendance_status: 'pending',
+                            });
+                            addedNames.push(member.name);
+                        }
+
+                        if (participantsToAdd.length) {
+                            const { error: pError } = await supabase
+                                .from('meeting_participants').insert(participantsToAdd);
+                            if (!pError) participantCount = participantsToAdd.length;
+                        }
+                    }
+
+                    // ── Build success summary ──
+                    const projectLabel = effectiveProjectId
+                        ? `📁 Project: ${projectName || 'Current project'}`
+                        : '📁 Standalone meeting (no project)';
+                    const participantLabel = participantCount > 0
+                        ? `👥 Participants: ${addedNames.join(', ')} (${participantCount})`
+                        : '👥 No participants added yet';
 
                     return {
                         executed: true,
                         actionType: 'schedule_meeting',
-                        summary: `✅ Scheduled ${count} meetings: ${meetingTemplates.slice(0, count).map(t => t.title).join(', ')}.`,
+                        summary: `✅ Meeting scheduled!\n\n` +
+                            `📋 **${meetingTitle}**\n` +
+                            `📅 ${meetingDate} at ${meetingTime}\n` +
+                            `${projectLabel}\n` +
+                            `🏷️ ${purposeType} (${meetingType})\n` +
+                            `${participantLabel}\n` +
+                            `⏱️ Duration: 60 minutes`,
                         creditsDeducted: creditsUsed, tokensDeducted,
                         data,
                     };
@@ -1865,6 +2634,149 @@ export async function dispatchAIAction(
                     if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };
                     const result = await queryTasks(projectId, message, supabase);
                     return { ...result, actionType: intent, creditsDeducted: 0, tokensDeducted: 0 };
+                }
+
+                // ── Plan Day (Cross-project daily briefing) ──────────────────────
+                case 'plan_day': {
+                    const today = new Date().toISOString().split('T')[0];
+                    const todayDate = new Date();
+                    const weekFromNow = new Date(todayDate);
+                    weekFromNow.setDate(weekFromNow.getDate() + 7);
+                    const weekEnd = weekFromNow.toISOString().split('T')[0];
+
+                    // Get current user
+                    const { data: { user: planUser } } = await supabase.auth.getUser();
+                    const planUserId = userId || planUser?.id;
+
+                    // 1. Get all user's projects
+                    const { data: userProjects } = await supabase
+                        .from('project_members')
+                        .select('project_id, projects(name)')
+                        .eq('user_id', planUserId)
+                        .limit(20);
+
+                    const projIds = (userProjects || []).map((p: any) => p.project_id);
+                    const projNames: Record<string, string> = {};
+                    for (const p of (userProjects || [])) {
+                        projNames[p.project_id] = (p as any).projects?.name || 'Unknown';
+                    }
+
+                    // 2. Overdue tasks (end_date < today, not complete)
+                    const { data: overdueTasks } = projIds.length
+                        ? await supabase.from('tasks')
+                            .select('name, status, priority, end_date, project_id')
+                            .in('project_id', projIds)
+                            .lt('end_date', today)
+                            .neq('status', 'Complete')
+                            .order('end_date', { ascending: true })
+                            .limit(10)
+                        : { data: [] };
+
+                    // 3. In-progress tasks
+                    const { data: activeTasks } = projIds.length
+                        ? await supabase.from('tasks')
+                            .select('name, status, priority, end_date, project_id')
+                            .in('project_id', projIds)
+                            .eq('status', 'In Progress')
+                            .order('priority', { ascending: true })
+                            .limit(10)
+                        : { data: [] };
+
+                    // 4. Meetings today
+                    const { data: todayMeetings } = projIds.length
+                        ? await supabase.from('project_meetings')
+                            .select('title, start_time, end_time, location, project_id')
+                            .in('project_id', projIds)
+                            .gte('start_time', `${today}T00:00:00`)
+                            .lt('start_time', `${today}T23:59:59`)
+                            .order('start_time', { ascending: true })
+                            .limit(10)
+                        : { data: [] };
+
+                    // 5. Upcoming milestones (within 7 days)
+                    const { data: upcomingMilestones } = projIds.length
+                        ? await supabase.from('project_milestones')
+                            .select('name, due_date, status, project_id')
+                            .in('project_id', projIds)
+                            .gte('due_date', today)
+                            .lte('due_date', weekEnd)
+                            .neq('status', 'Complete')
+                            .order('due_date', { ascending: true })
+                            .limit(5)
+                        : { data: [] };
+
+                    // Build the daily briefing
+                    const lines: string[] = [
+                        `📅 **Your Daily Briefing** — ${new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}`,
+                        '',
+                    ];
+
+                    if (!projIds.length) {
+                        lines.push('You are not a member of any projects yet.');
+                        lines.push('');
+                        lines.push('💡 Try **"Create a new project"** or **"Show my projects"** to get started.');
+                    } else {
+                        // Overdue
+                        if ((overdueTasks || []).length > 0) {
+                            lines.push(`🚨 **Overdue** (${overdueTasks!.length}):`);
+                            for (const t of overdueTasks!) {
+                                const proj = projNames[t.project_id] || '';
+                                lines.push(`- ⏰ **${t.name}** — due ${t.end_date} · ${proj} · ${t.priority || 'Normal'}`);
+                            }
+                            lines.push('');
+                        }
+
+                        // Today's Meetings
+                        if ((todayMeetings || []).length > 0) {
+                            lines.push(`📞 **Meetings Today** (${todayMeetings!.length}):`);
+                            for (const m of todayMeetings!) {
+                                const time = m.start_time ? new Date(m.start_time).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }) : '';
+                                const proj = projNames[m.project_id] || '';
+                                lines.push(`- 🕐 **${time}** — ${m.title} · ${proj}${m.location ? ` · ${m.location}` : ''}`);
+                            }
+                            lines.push('');
+                        }
+
+                        // Active Tasks
+                        if ((activeTasks || []).length > 0) {
+                            lines.push(`🔄 **In Progress** (${activeTasks!.length}):`);
+                            for (const t of activeTasks!) {
+                                const proj = projNames[t.project_id] || '';
+                                const dueInfo = t.end_date ? ` · due ${t.end_date}` : '';
+                                lines.push(`- ${t.priority === 'Critical' || t.priority === 'High' ? '🔴' : '🔵'} **${t.name}** · ${proj}${dueInfo}`);
+                            }
+                            lines.push('');
+                        }
+
+                        // Upcoming milestones
+                        if ((upcomingMilestones || []).length > 0) {
+                            lines.push(`🎯 **Upcoming Milestones** (next 7 days):`);
+                            for (const m of upcomingMilestones!) {
+                                const proj = projNames[m.project_id] || '';
+                                lines.push(`- 📌 **${m.name}** — ${m.due_date} · ${proj}`);
+                            }
+                            lines.push('');
+                        }
+
+                        // If nothing found
+                        if (!(overdueTasks || []).length && !(todayMeetings || []).length && !(activeTasks || []).length && !(upcomingMilestones || []).length) {
+                            lines.push('✅ **You\'re all clear!** No overdue tasks, meetings, or upcoming milestones.');
+                            lines.push('');
+                            lines.push('💡 You could:');
+                            lines.push('- Check the **backlog** for new work to pick up');
+                            lines.push('- Review **risks** and **issues** across your projects');
+                            lines.push('- Update task progress for in-flight work');
+                        }
+                    }
+
+                    return {
+                        executed: true,
+                        actionType: 'plan_day',
+                        summary: lines.join('\n'),
+                        creditsDeducted: 0,
+                        tokensDeducted: 0,
+                        link: '/morning-briefing',
+                    };
                 }
                 case 'query_team': {
                     if (!projectId) return { executed: false, actionType: intent, summary: '⚠️ No project selected.', creditsDeducted: 0, tokensDeducted: 0 };

@@ -55,6 +55,7 @@ const SUPPORTED_ACTIONS = [
     "log_governance_meetings",
     "close_sprint_cycle",
     "generate_charter_and_deliverables",
+    "navigate_page",
 ] as const;
 
 const CLASSIFICATION_PROMPT = `You are an intent classifier for a project management AI system.
@@ -68,6 +69,7 @@ Rules:
 - For compound requests (e.g. "create a project and add phases"), pick the FIRST action.
 - Match the user's intent, not their exact words. "Set up a new project called X" → create_project.
 - "Build me a plan with 5 phases and 10 tasks" → create_phases_and_activities.
+- "Go to the dashboard" or "Navigate to issues" → navigate_page.
 - Be conservative: if unsure, return "none". It's better to miss than to misclassify.
 
 Output ONLY valid JSON:

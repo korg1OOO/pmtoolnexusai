@@ -1,5 +1,6 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Bot, User, CheckCircle, XCircle, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -76,6 +77,7 @@ export function ChatMessage({ message, onActionRequest }: ChatMessageProps) {
           ) : (
             <div className="prose prose-sm dark:prose-invert max-w-none">
               <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
                 components={{
                   p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
                   ul: ({ children }) => <ul className="mb-2 ml-4 list-disc">{children}</ul>,
@@ -150,7 +152,7 @@ export function ChatMessage({ message, onActionRequest }: ChatMessageProps) {
               size="sm"
               className="h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20"
               onClick={() => {
-                window.open(message.metadata!.link, '_blank');
+                window.location.href = message.metadata!.link as string;
               }}
             >
               View Record <ArrowRight className="h-3 w-3 ml-1.5" />

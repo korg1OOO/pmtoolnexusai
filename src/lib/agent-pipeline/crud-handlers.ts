@@ -236,7 +236,12 @@ export async function queryRisksIssues(
         }
     }
 
-    return { executed: true, summary: lines.join('\n'), data: allData };
+    let destinationLink = '/dashboard';
+    if (showRisks && showIssues) destinationLink = '/risks';
+    else if (showRisks) destinationLink = '/risks';
+    else if (showIssues) destinationLink = '/issues';
+
+    return { executed: true, summary: lines.join('\n'), data: allData, link: destinationLink };
 }
 
 export async function queryBudget(

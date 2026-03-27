@@ -33,6 +33,12 @@ import {
   TrendingUp,
   Brain,
   ClipboardCheck,
+  FlaskConical,
+  GraduationCap,
+  Activity,
+  ScrollText,
+  Flag,
+  Wrench,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
@@ -154,6 +160,22 @@ const navItems: NavItem[] = [
       { id: 'team-management', label: 'Team Management', icon: Users, alwaysShow: true },
       { id: 'presentations', label: 'Presentations', icon: Presentation, moduleKey: 'presentations' },
       { id: 'communication-intelligence', label: 'AI Intelligence', icon: BarChart3, alwaysShow: true },
+    ]
+  },
+  {
+    id: 'pmcc',
+    label: 'PMCC',
+    icon: Shield,
+    children: [
+      { id: 'raid', label: 'RAID Register', icon: Shield, alwaysShow: true },
+      { id: 'governance', label: 'Governance', icon: ClipboardCheck, alwaysShow: true },
+      { id: 'milestones-pmcc', label: 'Milestones & Penalty', icon: Flag, alwaysShow: true },
+      { id: 'resources-pmcc', label: 'Resources & Key Personnel', icon: Users, alwaysShow: true },
+      { id: 'testing', label: 'Testing', icon: FlaskConical, alwaysShow: true },
+      { id: 'training', label: 'Training Tracker', icon: GraduationCap, alwaysShow: true },
+      { id: 'change-readiness', label: 'Change Readiness', icon: Activity, alwaysShow: true },
+      { id: 'contract', label: 'Contract Reference', icon: ScrollText, alwaysShow: true },
+      { id: 'program-setup', label: 'Program Setup', icon: Wrench, alwaysShow: true },
     ]
   },
 ];

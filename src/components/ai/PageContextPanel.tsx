@@ -329,7 +329,105 @@ const VIEW_CONTEXT: Record<string, {
       'Help me configure notifications',
     ],
   },
+
+  // ── PMCC Phase 1 Views ──────────────────────────────────────────────────────
+  'raid': {
+    title: 'RAID Register',
+    icon: Shield,
+    description: 'Risks, Issues, Assumptions, and Dependencies in one view',
+    relevantData: ['Open risks', 'Active issues', 'Validated assumptions', 'Blocked dependencies'],
+    suggestedQuestions: [
+      'What are our top RAID items this week?',
+      'Which assumptions have not been validated?',
+      'Are there any dependencies at risk of missing their due date?',
+      'Summarize RAID status for the steering committee',
+    ],
+  },
+  'governance': {
+    title: 'Governance',
+    icon: Scale,
+    description: 'Decisions, Action Items, and Escalation Log',
+    relevantData: ['Pending decisions', 'Overdue actions', 'Open escalations', 'Stale escalations'],
+    suggestedQuestions: [
+      'Which escalations have been open for more than two weeks?',
+      'What decisions are pending approval?',
+      'Summarize governance actions for this period',
+      'Who has overdue action items?',
+    ],
+  },
+  'testing': {
+    title: 'Testing Command Centre',
+    icon: CheckCircle2,
+    description: 'Defect dashboard, triage log, and testing progress',
+    relevantData: ['P1/P2 defects', 'Closure rate', 'Defect aging', 'Triage decisions'],
+    suggestedQuestions: [
+      'How many P1 defects are still open?',
+      'What is our current defect closure rate?',
+      'Which defects have been open the longest?',
+      'Summarize the testing status for the weekly report',
+    ],
+  },
+  'training': {
+    title: 'Training Tracker',
+    icon: CheckCircle2,
+    description: 'Training sessions, attendance, and stream coverage',
+    relevantData: ['Sessions delivered', 'Attendance rate', 'Streams covered', 'Upcoming sessions'],
+    suggestedQuestions: [
+      'Which training streams still have zero sessions delivered?',
+      'What is the average attendance rate?',
+      'Are we on track to meet the training target?',
+      'Draft a training status summary',
+    ],
+  },
+  'change-readiness': {
+    title: 'Change Readiness (ADKAR)',
+    icon: TrendingUp,
+    description: 'ADKAR assessment scores and change readiness by business unit',
+    relevantData: ['Overall ADKAR score', 'Lowest dimension', 'Business units at risk', 'Trend'],
+    suggestedQuestions: [
+      'Which business units have the lowest readiness scores?',
+      'What is the weakest ADKAR dimension?',
+      'Suggest interventions to improve Awareness scores',
+      'Summarize change readiness for the sponsor',
+    ],
+  },
+  'milestones-pmcc': {
+    title: 'Milestones & Penalty Tracker',
+    icon: Flag,
+    description: 'Milestone tracking with contractual penalty exposure',
+    relevantData: ['Milestone status', 'Delayed milestones', 'Penalty exposure', 'Cap headroom'],
+    suggestedQuestions: [
+      'What is our total penalty exposure to date?',
+      'Which milestones are delayed and by how many weeks?',
+      'How much headroom do we have before penalty cap?',
+      'Draft a penalty clause commentary for the client update',
+    ],
+  },
+  'resources-pmcc': {
+    title: 'Resources & Key Personnel',
+    icon: Users,
+    description: 'Resource allocation plus contractual key personnel tracking',
+    relevantData: ['Key personnel status', 'Replacement events', 'Review deadlines', 'Allocation'],
+    suggestedQuestions: [
+      'Are there any key personnel replacement review deadlines coming up?',
+      'Who has been replaced since project start?',
+      'Summarize key personnel status for the contract review',
+    ],
+  },
+  'contract': {
+    title: 'Contract Quick Reference',
+    icon: FileText,
+    description: 'Contract terms, penalty clauses, and key document register',
+    relevantData: ['Contract value', 'Penalty rate', 'Acceptance period', 'Document register'],
+    suggestedQuestions: [
+      'What is the contractual penalty rate?',
+      'What is the acceptance period for deliverables?',
+      'Summarize the key contract obligations',
+      'What documents are in the contract register?',
+    ],
+  },
 };
+
 
 // Default context for unknown views
 const DEFAULT_CONTEXT = {

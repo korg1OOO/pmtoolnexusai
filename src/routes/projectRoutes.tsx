@@ -66,6 +66,17 @@ const RequirementsMatrixView = lazy(() => import('@/components/views/Requirement
 const QualityRegisterView = lazy(() => import('@/components/views/QualityRegisterView'));
 const ProjectsListView = lazy(() => import('@/components/views/ProjectsListView'));
 
+// ── PMCC Phase 1: New container views ─────────────────────────────────────────
+const RAIDView = lazy(() => import('@/components/views/RAIDView'));
+const GovernanceView = lazy(() => import('@/components/views/GovernanceView'));
+const MilestonesWithPenaltyView = lazy(() => import('@/components/views/MilestonesWithPenaltyView'));
+const ResourcesWithPersonnelView = lazy(() => import('@/components/views/ResourcesWithPersonnelView'));
+const TestingCommandCentreView = lazy(() => import('@/components/views/TestingCommandCentreView'));
+const TrainingTrackerView = lazy(() => import('@/components/views/TrainingTrackerView'));
+const ChangeReadinessView = lazy(() => import('@/components/views/ChangeReadinessView'));
+const ContractReferenceView = lazy(() => import('@/components/views/ContractReferenceView'));
+const ProgramSetupView = lazy(() => import('@/components/views/ProgramSetupView'));
+
 // ── Portfolio view (also used in ProtectedProjectRoute) ───────────────────────
 import { PortfolioView } from '@/components/workspace';
 
@@ -85,7 +96,7 @@ export function ProjectRoutes() {
             <Route path="/program-timeline" element={<ProtectedProjectRoute><ProgramTimelineView /></ProtectedProjectRoute>} />
             <Route path="/program-documents" element={<ProtectedProjectRoute><ProgramDocumentsView /></ProtectedProjectRoute>} />
 
-            {/* ── Planning & Tracking ───────────────────────────────────────── */}
+            {/* ── Planning & Tracking ─────────────────────────────────────────── */}
             <Route path="/project-plan" element={<ProtectedProjectRoute><PlanningView /></ProtectedProjectRoute>} />
             <Route path="/planning" element={<ProtectedProjectRoute><PlanningView /></ProtectedProjectRoute>} />
             <Route path="/child-plans" element={<ProtectedProjectRoute><ChildPlansView /></ProtectedProjectRoute>} />
@@ -93,6 +104,8 @@ export function ProjectRoutes() {
             <Route path="/child-gantt" element={<ProtectedProjectRoute><ChildGanttView /></ProtectedProjectRoute>} />
             <Route path="/timeline-planner" element={<ProtectedProjectRoute><TimelinePlannerTab /></ProtectedProjectRoute>} />
             <Route path="/milestones" element={<ProtectedProjectRoute><MilestonesView /></ProtectedProjectRoute>} />
+            {/* PMCC Milestones + Penalty Tracker */}
+            <Route path="/milestones-pmcc" element={<ProtectedProjectRoute><MilestonesWithPenaltyView /></ProtectedProjectRoute>} />
             <Route path="/scenarios" element={<ProtectedProjectRoute><ScenariosView /></ProtectedProjectRoute>} />
             <Route path="/tracking" element={<ProtectedProjectRoute><TrackingView /></ProtectedProjectRoute>} />
             <Route path="/project-charter" element={<ProtectedProjectRoute><ProjectCharterView /></ProtectedProjectRoute>} />
@@ -116,6 +129,10 @@ export function ProjectRoutes() {
             <Route path="/risks" element={<ProtectedProjectRoute><RisksView /></ProtectedProjectRoute>} />
             <Route path="/issues" element={<ProtectedProjectRoute><IssuesRegisterView /></ProtectedProjectRoute>} />
             <Route path="/decisions" element={<ProtectedProjectRoute><DecisionsView /></ProtectedProjectRoute>} />
+            {/* PMCC RAID container — wraps Risks + Issues + Assumptions + Dependencies */}
+            <Route path="/raid" element={<ProtectedProjectRoute><RAIDView /></ProtectedProjectRoute>} />
+            {/* PMCC Governance container — wraps Decisions + Actions + Escalations */}
+            <Route path="/governance" element={<ProtectedProjectRoute><GovernanceView /></ProtectedProjectRoute>} />
 
             {/* ── Financial ────────────────────────────────────────────────── */}
             <Route path="/financials" element={<ProtectedProjectRoute><FinancialsView /></ProtectedProjectRoute>} />
@@ -138,9 +155,19 @@ export function ProjectRoutes() {
             <Route path="/knowledge-base" element={<ProtectedProjectRoute><KnowledgeBaseView /></ProtectedProjectRoute>} />
             <Route path="/presentations" element={<ProtectedProjectRoute><PresentationsView /></ProtectedProjectRoute>} />
 
-            {/* ── Resources & Team ──────────────────────────────────────────── */}
+            {/* ── Resources & Team ─────────────────────────────────────────── */}
             <Route path="/resources" element={<ProtectedProjectRoute><ResourcesView /></ProtectedProjectRoute>} />
+            {/* PMCC Resources + Key Personnel */}
+            <Route path="/resources-pmcc" element={<ProtectedProjectRoute><ResourcesWithPersonnelView /></ProtectedProjectRoute>} />
             <Route path="/team-management" element={<ProtectedProjectRoute><TeamManagementView /></ProtectedProjectRoute>} />
+
+            {/* PMCC Phase 1: Standalone new views */}
+            <Route path="/testing" element={<ProtectedProjectRoute><TestingCommandCentreView /></ProtectedProjectRoute>} />
+            <Route path="/training" element={<ProtectedProjectRoute><TrainingTrackerView /></ProtectedProjectRoute>} />
+            <Route path="/change-readiness" element={<ProtectedProjectRoute><ChangeReadinessView /></ProtectedProjectRoute>} />
+            <Route path="/contract" element={<ProtectedProjectRoute><ContractReferenceView /></ProtectedProjectRoute>} />
+            {/* PMCC Setup Wizard */}
+            <Route path="/program-setup" element={<ProtectedProjectRoute><ProgramSetupView /></ProtectedProjectRoute>} />
 
             {/* ── Reports & Closure ─────────────────────────────────────────── */}
             <Route path="/reports" element={<ProtectedProjectRoute><ReportsView /></ProtectedProjectRoute>} />

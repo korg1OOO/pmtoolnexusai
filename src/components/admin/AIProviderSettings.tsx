@@ -77,6 +77,8 @@ const defaultProviders: AIProvider[] = [
     description: 'Claude models known for safety and helpfulness.',
     logo: <Bot className="h-5 w-5" />,
     models: [
+      { id: 'claude-sonnet-4-20250514', name: 'Claude Sonnet 4', description: 'Most capable' },
+      { id: 'claude-3-7-sonnet-20250219', name: 'Claude 3.7 Sonnet', description: 'Hybrid reasoning model' },
       { id: 'claude-3-5-sonnet-20241022', name: 'Claude 3.5 Sonnet', description: 'Best balance of speed and capability' },
       { id: 'claude-3-opus-20240229', name: 'Claude 3 Opus', description: 'Most powerful reasoning' },
       { id: 'claude-3-haiku-20240307', name: 'Claude 3 Haiku', description: 'Fastest responses' },

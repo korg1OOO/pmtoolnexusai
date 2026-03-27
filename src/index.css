@@ -91,6 +91,21 @@
     --sprint-progress: 217 91% 60%;
     --sprint-review: 280 87% 65%;
     --sprint-done: 142 71% 45%;
+
+    /* ── White-label Brand Tokens ─────────────────────────────────────────────
+       These are the ONLY variables the Setup Wizard writes.
+       Downstream components should use var(--brand-*) for tenant-specific
+       colours so the rest of the theme remains unchanged.
+    */
+    --brand-primary: 217 91% 60%;          /* matches --primary by default   */
+    --brand-primary-fg: 222 47% 6%;        /* text on brand-primary surface   */
+    --brand-accent: 280 87% 65%;           /* secondary accent / CTA          */
+    --brand-accent-fg: 222 47% 6%;
+    --brand-sidebar: 222 47% 5%;           /* sidebar background              */
+    --brand-sidebar-fg: 215 20% 65%;       /* sidebar text                    */
+    --brand-logo-url: none;                /* url('/logo.png') when set       */
+    --brand-app-name: "ProjectOye";        /* CSS string — display only       */
+    --brand-radius: 0.5rem;                /* border-radius override          */
   }
 
   .light {

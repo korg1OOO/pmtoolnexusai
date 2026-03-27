@@ -329,6 +329,15 @@ export function useAIChat({
       }
 
       // ── Fallback: Call the ai-orchestrator edge function ────────────────
+      const PMCC_VIEWS = new Set(['raid', 'governance', 'testing', 'training', 'change-readiness', 'milestones-pmcc', 'resources-pmcc', 'contract']);
+      const pmccContext = PMCC_VIEWS.has(currentView)
+        ? {
+            module: currentView,
+            domain: 'Program Management Command Centre (PMCC)',
+            note: 'Respond with awareness of PMCC terminology: RAID (Risks/Issues/Assumptions/Dependencies), ADKAR change readiness, contract penalty clauses, key personnel obligations, defect triage, and training trackers. Be concise and actionable.',
+          }
+        : undefined;
+
       const response = await supabase.functions.invoke('ai-orchestrator', {
         body: {
           message: content,
@@ -337,6 +346,7 @@ export function useAIChat({
           conversationHistory,
           currentView,
           intentMode,
+          ...(pmccContext && { pmccContext }),
         },
       });
 

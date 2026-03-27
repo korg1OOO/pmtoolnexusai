@@ -1,0 +1,693 @@
+Project Mosaic Command Centre — AI Application Build Prompt
+
+CONTEXT
+
+You are building a comprehensive, AI-powered Program Management Command Centre for a large-scale Oracle Fusion Cloud ERP transformation program called Project Mosaic at Emirates Group. The program:
+
+Involves 3 Phases, 6 Drops, 40+ countries, 100+ Legal Entities
+
+Covers modules: Financials, Procurement, SCM, HCM (incl. Payroll), EPM
+
+Is governed by a fixed-price contract (~$36M) with Oracle
+
+Follows Oracle True Cloud Methodology (TCM)
+
+Has multiple go-live dates across several years
+
+Involves two organizations: Emirates Group (client) and Oracle Consulting (SI)
+
+Uses Emirates Jira as the defect/issue tracking tool
+
+Has a critical milestone penalty clause (0.5%/week, 10% cap)
+
+The primary user is the Emirates Program Manager, who needs complete situational awareness and control across all program dimensions. The application must be their single source of truth, daily operating tool, and AI advisor.
+
+APPLICATION NAME
+
+Project Mosaic Command Centre (PMCC)
+
+DESIGN REQUIREMENTS
+
+Aesthetic: Professional, premium, aviation-inspired (Emirates brand awareness). Dark navy / gold / white color palette. Clean, data-dense but not cluttered. Think mission control, not spreadsheet.
+
+Framework: React with hooks and Tailwind CSS
+
+Charts: Recharts for all data visualizations
+
+Icons: Lucide React
+
+AI Integration: Anthropic Claude API (claude-sonnet-4-20250514) for all AI features
+
+Storage: Persistent key-value storage using window.storage API for all program data
+
+Layout: Left sidebar navigation, main content area, right contextual panel
+
+Responsive: Desktop-first (1440px design width)
+
+CORE MODULES — BUILD ALL OF THESE
+
+MODULE 1: PROGRAM DASHBOARD (Home)
+
+The first screen the PM sees every morning. Must display:
+
+Top KPI Bar (always visible):
+
+Overall program health: RAG status (Red/Amber/Green) with AI-calculated explanation
+
+Days to next critical milestone
+
+Open P1/P2 issues count
+
+Budget utilization % (actuals vs plan)
+
+Current active phase and drop
+
+Resources at risk count
+
+Milestone Timeline (Gantt-style):
+
+Visual Gantt chart showing all phases (Global Design, Phase 1 Drop 1, Phase 1 Drop 2, Phase 2 Drops 1-4, Phase 3)
+
+Each phase shows: PB1, PB2, SIT1, SIT2/UAT, Cutover, Go-Live, Hypercare sub-bars
+
+Color-coded: completed (green), in progress (blue), at risk (amber), overdue (red), not started (grey)
+
+Click on any bar to see details in right panel
+
+Show critical path dependencies as arrows between milestones
+
+Today's date line clearly marked
+
+Risk Heatmap:
+
+5x5 probability/impact grid
+
+Top 10 risks plotted as dots with labels
+
+Click any risk to see detail
+
+Daily Focus Panel:
+
+AI-generated "Top 3 things you must do today" based on open items, upcoming deadlines, unresolved risks
+
+Upcoming decisions required this week
+
+Key meetings scheduled today
+
+Stream Health Cards:
+
+One card per stream: Financials, Procurement, SCM, HCM, EPM
+
+Each shows: % complete, RAG, open issues, last update
+
+MODULE 2: PHASE & MILESTONE TRACKER
+
+Phase Overview Table: Columns: Phase | Drop | Scope (Countries/Entities) | Start Date | Planned Go-Live | Actual/Forecast Go-Live | Status | Variance (days) | PM Notes
+
+Milestone Detail View: For each milestone (PB1, PB2, SIT1, SIT2, UAT, Cutover, Go-Live, Hypercare per drop):
+
+Planned date | Forecast date | Actual date
+
+Milestone value (for penalty tracking)
+
+Entry criteria (checklist) — mark each as met/not met
+
+Exit criteria (checklist) — mark each as met/not met
+
+Owner (Oracle/Emirates)
+
+Blockers (linked to RAID log)
+
+Sign-off status and who signed
+
+Penalty calculation: if overdue, auto-calculate delay payment (0.5%/week of milestone value)
+
+Critical Milestone Penalty Dashboard:
+
+Table showing all critical milestones, their values, delay days (if any), and accrued penalties
+
+Running total of Oracle delay liability vs. cap (10% per milestone)
+
+Alert when penalty approaching cap — triggers contractual right to review
+
+Change Control Log:
+
+Table: Change Request ID | Description | Initiator | Date Submitted | Impact (scope/time/cost) | Status (submitted/under review/approved/rejected) | Approved Change in Days | Cost Delta
+
+Filter by status, phase, initiator
+
+"Add Change Request" form
+
+AI: "Assess this change" — paste description, AI evaluates schedule impact and suggests negotiation position
+
+MODULE 3: RISK, ASSUMPTION, ISSUE & DEPENDENCY (RAID) LOG
+
+Full RAID Register: Four tabs: Risks | Issues | Assumptions | Dependencies
+
+For each Risk entry:
+
+ID | Title | Description | Category (schedule/budget/resource/technical/organizational/vendor/regulatory)
+
+Probability (1-5) | Impact (1-5) | Risk Score (auto-calculated)
+
+Phase affected | Owner | Status (open/mitigated/closed/accepted)
+
+Mitigation plan | Contingency plan | Target close date | Last reviewed date
+
+Escalation flag (auto-set if score >15 or open >30 days without update)
+
+Link to related issues
+
+For each Issue entry:
+
+ID | Title | Description | Severity (P1-P4)
+
+Phase affected | Raised by | Assigned to | Date raised
+
+Status (open/in progress/resolved/closed)
+
+Resolution description | Resolution date
+
+Linked risks (did this issue materialize from a risk?)
+
+Escalation trail (who was informed, when)
+
+Risk Heatmap visualization (same as dashboard but full-screen with filters)
+
+AI Risk Advisor:
+
+"Analyze my risk register" — AI reads all open risks and provides: top 5 risks needing attention this week, risks trending worse, risks that should be escalated, suggested mitigations for top risks
+
+"Identify risks I may have missed" — AI suggests risks common to Oracle Fusion implementations of this scale (change management resistance, data quality issues, integration failures, resource attrition, quarterly update conflicts, regulatory surprises in specific countries, etc.)
+
+MODULE 4: BUDGET CONTROL CENTRE
+
+Budget Summary View:
+
+Total contracted value: $36,000,000
+
+Budget allocated by phase and by stream (enter values)
+
+Actuals to date (manual entry or import)
+
+Forecast at completion (FAC)
+
+Variance: under/over
+
+% utilized
+
+Budget Breakdown Table: Rows by phase/drop, columns: Budget | Committed | Actuals | Forecast | Variance | Notes
+
+Change Control Budget Impact:
+
+Track approved change requests and their budget impact
+
+Running total: original budget + approved changes = revised budget
+
+Invoice Tracker:
+
+Oracle milestone invoices: Invoice # | Milestone | Invoice Date | Amount | Status (pending/approved/paid/disputed) | Payment Due Date | Days to Payment (Net 60)
+
+Alert when invoice approaching Net 60 payment deadline
+
+Flag if invoice raised before milestone formally signed off
+
+Cost Trend Chart:
+
+Monthly actuals vs. budget line chart
+
+Forecast to completion line
+
+Variance trend
+
+Emirates Internal Cost Tracker:
+
+Track Emirates' own program costs (internal staff, travel, facilities, change management spend, AMS partner costs)
+
+Separate from Oracle fees but tracked together for total program cost
+
+AI Budget Advisor:
+
+"Assess my budget health" — AI reads all budget data and flags: phases at risk of overrun, months with high invoice concentration, suggested cost control measures
+
+"What should I watch this month?" — generates monthly budget focus areas
+
+MODULE 5: RESOURCE MANAGEMENT
+
+Resource Plan:
+
+Table: Resource Name | Role | Stream | Allocation % | Phase assigned | Start Date | End Date | Status (active/on-leave/at-risk/exited)
+
+Separate sections: Emirates team | Oracle team (Key Personnel)
+
+Oracle Key Personnel Tracker:
+
+List all Oracle Key Personnel named in contract
+
+For each: Name | Role | Start Date | Replacement History | Current Status
+
+Track any substitutions: Date notified | Reason | Replacement proposed | Emirates 10-day review deadline | Accepted/Rejected
+
+Alert when Oracle proposes Key Personnel change — start 10-day review countdown
+
+Resource Utilization:
+
+By stream: planned vs. actual resource utilization
+
+Over-allocated resources flagged in red
+
+Resources at risk (single point of failure, critical skills, approaching end of engagement)
+
+Subcontractor Register:
+
+Any Oracle subcontractors: Name | Company | Role | Written consent given (Y/N) | Date consent given | Emirates conditions attached
+
+Alert for any subcontractor performing on-site work without consent
+
+Resource Calendar:
+
+Monthly view of key resource availability
+
+Block out: public holidays by country, Emirates internal blackout periods, quarter-end busy periods, testing phases
+
+AI Resource Advisor:
+
+"Identify resource risks" — AI reads the plan and flags: gaps in coverage, over-allocated individuals, critical roles with no backup, phases where Emirates resource commitment is insufficient per contract obligations
+
+MODULE 6: DELIVERABLES & ACCEPTANCE TRACKER
+
+Deliverables Register: Full list of Oracle-committed deliverables by phase:
+
+Deliverable Name | Phase/Drop | Type (document/configuration/training/test) | Planned Delivery Date | Actual Delivery Date | Review Period | Acceptance Deadline | Status (not delivered/under review/accepted/rejected/disputed)
+
+Emirates reviewer assigned
+
+Review comments log
+
+Formal acceptance date and signatory
+
+Key deliverables pre-loaded (editable): Global Design Strategies, Solution Design Documents (by stream), Data Migration Strategy, Test Strategy, Test Plans (per drop), Test Completion Reports, Test Release Notes, Training Materials, Cutover Plans (per drop), Hypercare Reports, Knowledge Transfer Documentation
+
+Acceptance Workflow:
+
+When Oracle submits deliverable → status changes to "Under Review"
+
+Review period countdown starts (as per agreed plan)
+
+If Emirates doesn't respond within review window → track this as Emirates delay (important for SLA fairness)
+
+Formal acceptance: log who accepted and date
+
+Disputes: log dispute reason, Oracle response required, resolution timeline
+
+AI Review Assistant:
+
+Paste in a deliverable summary → AI checks it against contractual requirements and suggests what to look for, what questions to ask, and what gaps to probe
+
+MODULE 7: TESTING COMMAND CENTRE
+
+Test Phase Tracker per Drop: For each drop, track: SIT1 | SIT2 | UAT
+
+Start date | End date | Entry criteria status (checklist) | Exit criteria status (checklist)
+
+Test case count: planned | executed | passed | failed | blocked
+
+Defect counts by priority: P1 | P2 | P3 | P4
+
+Defect trend chart (daily defect open/close rate)
+
+Gate status: Open / Ready to proceed / Blocked
+
+Defect Dashboard:
+
+Total open defects by priority across all drops
+
+Defect aging: how many P1s open >24hrs, P2s open >8hrs
+
+Defect resolution rate trend
+
+Top 10 oldest open defects
+
+Link to Jira (external link per defect ID)
+
+Testing Entry/Exit Criteria Checklists: Pre-built per test phase (SIT1, SIT2, UAT) based on contractual requirements:
+
+Oracle responsibilities checklist
+
+Emirates responsibilities checklist
+
+Gate approval log: who approved, date
+
+Triage Session Log:
+
+Date | Participants | Defects triaged | Priority decisions made | Actions agreed | Next triage date
+
+AI Test Health Advisor:
+
+"Assess my test readiness" — based on defect counts, entry criteria status, and resource availability, AI gives a go/no-go recommendation with reasoning
+
+"Predict go-live risk from current test status" — AI extrapolates defect burn-down trend and estimates probability of meeting go-live date
+
+MODULE 8: CHANGE MANAGEMENT & COMMUNICATIONS
+
+Stakeholder Map:
+
+Stakeholder Name | Organization | Role | Influence (High/Med/Low) | Interest (High/Med/Low) | Current Sentiment (Champion/Supporter/Neutral/Resistant/Blocker)
+
+Engagement strategy per stakeholder
+
+Last engagement date and outcome
+
+Plotted on a 2x2 influence/interest grid
+
+Communication Plan:
+
+Communication | Audience | Frequency | Channel | Owner | Last sent | Next due
+
+Overdue communications flagged in red
+
+Templates for: Weekly Status Report, Steering Committee deck, Go-Live Readiness Communication, Hypercare Update, Phase Completion Report
+
+Training Tracker:
+
+Training sessions planned vs. delivered (600 hours / 100 sessions per contract)
+
+Sessions: Date | Module | Trainer | Participants (max 15) | Location | Status | Attendance rate
+
+Training hours consumed vs. remaining budget
+
+By stream completion %
+
+Change Readiness Assessment:
+
+Simple survey tool to track business readiness by entity/business unit
+
+Dimensions: awareness, desire, knowledge, ability, reinforcement (ADKAR model)
+
+Track over time to show improvement or flag deterioration
+
+AI Communications Assistant:
+
+"Draft my weekly status report" — AI reads program data (milestones, risks, issues, budget) and generates a draft status report in professional format
+
+"Draft Steering Committee deck bullets" — generates key talking points for next SteerCo
+
+"What do I need to communicate this week?" — identifies stakeholders needing updates based on recent events
+
+MODULE 9: GOVERNANCE & DECISION LOG
+
+Meeting Management:
+
+Meeting Name | Type (SteerCo/PMO/Design Authority/Workstream/Triage) | Frequency | Next Date | Chair | Minutes location
+
+One-click meeting prep: AI generates agenda based on open items
+
+Decision Log:
+
+Decision ID | Date | Decision description | Options considered | Decision made | Rationale | Decision maker | Impact | Status (pending/made/revisited)
+
+Filter by phase, status, decision maker
+
+Alert on decisions pending >5 business days
+
+Action Item Tracker:
+
+Action ID | Description | Owner | Due Date | Priority | Status (open/in progress/done/overdue) | Source (which meeting)
+
+My actions today: filtered view of PM's open actions
+
+Overdue actions highlighted, automatic reminder flagging
+
+Escalation Log:
+
+Date | Issue/Risk | Escalated to | Escalation reason | Response received | Outcome | Closed date
+
+Track Oracle escalations separately (Oracle PM → Program Director → Executive) per contract escalation matrix
+
+Governance Calendar:
+
+Monthly view of all recurring governance meetings
+
+Integration with action due dates and decision deadlines
+
+AI Governance Advisor:
+
+"Prepare my SteerCo update" — generates executive summary of program status, key decisions required, and forward look
+
+"Am I missing any governance action this week?" — scans open decisions, overdue actions, and upcoming meetings
+
+MODULE 10: AI PROGRAM ADVISOR (Main AI Chat Interface)
+
+Dedicated AI chat interface powered by Claude API with full program context injected:
+
+System prompt includes:
+
+Program summary (Project Mosaic, Emirates Group, Oracle Cloud, 3 phases, fixed price)
+
+Current program status (pulled from storage: milestone dates, open risks, budget, issues)
+
+Key contractual terms (penalty clause, Key Personnel, change control, acceptance procedures)
+
+User role: Emirates Program Manager
+
+Pre-built quick prompts (one-click):
+
+"Give me my morning briefing" — summary of everything needing attention today
+
+"What are my top 3 risks right now?" — AI analyzes RAID log
+
+"Am I on track to meet my next milestone?" — AI assesses milestone tracker and blockers
+
+"Draft a response to Oracle on [issue]" — AI helps draft firm but professional vendor communications
+
+"What should I escalate to SteerCo this month?" — AI identifies items requiring executive attention
+
+"Identify what I'm missing" — AI suggests program management gaps based on what hasn't been updated
+
+"Summarize program status for [audience]" — generates audience-specific summaries
+
+"What does the contract say about [topic]?" — AI answers based on built-in contract knowledge
+
+Context-aware: When user is on any module, "Ask AI about this" button sends current module data as context
+
+MODULE 11: DOCUMENT VAULT & CONTRACT QUICK REFERENCE
+
+Key Contract Terms Quick Reference Card (always accessible):
+
+Payment: Net 60 days from invoice
+
+Currency: USD
+
+Penalty: 0.5%/week delay, max 10% per milestone
+
+Key Personnel replacement: 7 business days for underperformance, 10 days Emirates review
+
+Subcontractor consent: required in writing, 10-day review
+
+Change control: required for any scope increase/decrease
+
+Training: 600 hours / 100 sessions / max 15 participants
+
+Hypercare: 3 months (13 weeks) per drop
+
+Governing law: Master Agreement AE-OMA-QT5431697
+
+Document Links Register:
+
+Store links/references to: contract, exhibits, appendices, project plans, design documents, test documents, meeting minutes
+
+Tag by phase, type, and status
+
+Oracle Delivery Policies Reference:
+
+Link to Oracle Professional Services Delivery Policies
+
+Key policy flags relevant to this program
+
+TECHNICAL IMPLEMENTATION REQUIREMENTS
+
+Data Architecture (window.storage keys):
+
+program:config           — Program metadata (name, phases, budget, contract ref)
+milestones:all           — All milestone records with dates, values, status
+risks:all                — Full RAID log
+issues:all               — Issue register
+deliverables:all         — Deliverables register
+budget:summary           — Budget allocations and actuals
+resources:all            — Resource register (Emirates + Oracle)
+decisions:all            — Decision log
+actions:all              — Action item tracker
+test:phases              — Test phase data per drop
+training:sessions        — Training delivery log
+stakeholders:all         — Stakeholder map
+communications:log       — Communication plan entries
+oracle-personnel:all     — Oracle Key Personnel tracker
+change-requests:all      — Change control log
+invoices:all             — Invoice tracker
+
+
+AI Integration:
+
+All AI calls use: claude-sonnet-4-20250514, max_tokens: 1000
+
+Inject program context in every system prompt from storage data
+
+Include key contract terms as background knowledge in system prompt
+
+Show loading states during AI calls
+
+Handle errors gracefully with retry option
+
+Navigation:
+
+Left sidebar with icons and labels:
+
+Dashboard (Home icon)
+
+Milestones (Calendar icon)
+
+RAID Log (AlertTriangle icon)
+
+Budget (DollarSign icon)
+
+Resources (Users icon)
+
+Deliverables (FileCheck icon)
+
+Testing (FlaskConical icon)
+
+Change & Comms (MessageSquare icon)
+
+Governance (Gavel icon)
+
+AI Advisor (Brain icon)
+
+Contract Reference (BookOpen icon)
+
+Settings (Settings icon)
+
+Right Panel:
+
+Contextual detail view that slides in when clicking any item (milestone, risk, issue, resource, etc.)
+
+Header:
+
+Program name: Project Mosaic
+
+Current date (live)
+
+Phase indicator: "Currently in: Global Design + Phase 1 Drop 1"
+
+Overall RAG status badge
+
+Notification bell (open actions overdue, approaching deadlines)
+
+User name: Program Manager
+
+STARTUP EXPERIENCE
+
+On first load:
+
+Show welcome screen: "Welcome to Project Mosaic Command Centre"
+
+Run a 5-step setup wizard:
+
+Step 1: Confirm program details (pre-filled with Mosaic data)
+
+Step 2: Set current phase and go-live dates
+
+Step 3: Enter budget allocation by phase
+
+Step 4: Add key team members
+
+Step 5: Import/enter first set of milestones
+
+After setup, go to Dashboard
+
+On subsequent loads:
+
+Load directly to Dashboard
+
+Show "Morning Briefing" modal with AI-generated daily priorities (dismissible)
+
+PROGRAM-SPECIFIC DATA TO PRE-LOAD
+
+Phases:
+
+Global Design (parallel to Phase 1)
+
+Phase 1 Drop 1: Catering (USA/Canada) — 5 entities
+
+Phase 1 Drop 2: Airport Ops (UK, Azerbaijan) + Travel (UAE) — 4 entities
+
+Phase 2 Drops 1-4: dnata rollout (35 countries, 89 entities)
+
+Phase 3: Emirates HQ + dnata HQ + Outstations (single go-live)
+
+Streams:
+
+Financials | EPM | Procurement & SCM | HCM (+ Payroll in Phase 3)
+
+Module list (for tracking):
+
+GL | Receivables | Payables (incl. IDR) | Assets | Cash Management | Expense Management | Lease Accounting | Tax | Advanced Collections | Project Costing | ERP Analytics | EDMCS | Self-Service Procurement | Purchasing | Supplier Portal | Supplier Qualification | Procurement Contracts | Sourcing | Inventory | Order Management | Item Master | SCM Analytics | Core Shared HCM | HCM Base (P3) | Payroll UAE (P3) | HCM Analytics (P3)
+
+Pre-populated risks to include in RAID log at startup:
+
+Data quality in legacy systems delays data migration (High probability, High impact)
+
+Business unit resistance to process standardization delays design sign-off (High, High)
+
+Oracle Key Personnel turnover disrupts continuity (Medium, High)
+
+Oracle quarterly cloud updates conflict with drop release windows (Medium, High)
+
+Regulatory/localization requirements submitted late by Emirates (Medium, High)
+
+Training attendance insufficient leading to low adoption at go-live (Medium, High)
+
+Integration testing with third-party systems reveals interface issues (Medium, High)
+
+UAE Payroll go-live risk — parallel run not completed before cutover (Low, Critical)
+
+Resource fatigue in Phase 2 due to sustained high utilization (High, Medium)
+
+Emirates AMS partner not ready for post-hypercare handover (Low, High)
+
+REPORTING OUTPUTS
+
+The application must be able to generate (as formatted printable views):
+
+Weekly Program Status Report — RAG, milestone summary, top 5 risks, open issues, budget snapshot, decisions needed
+
+Monthly Steering Committee Report — Executive summary, phase progress, financial status, key risks, decisions required, forward look
+
+Go-Live Readiness Report — Checklist-based assessment across: technical, data, testing, training, cutover, support model, stakeholder readiness
+
+Oracle Performance Report — Milestone delivery compliance, Key Personnel stability, defect resolution rates, invoice vs. milestone alignment
+
+Phase Completion Report — Lessons learned, what went well, improvements for next phase
+
+QUALITY STANDARDS
+
+All dates shown in DD-MMM-YYYY format (consistent with contract style)
+
+All amounts in USD with comma formatting
+
+RAG status always explained with one-line reason (never just a color)
+
+Every AI response includes a "confidence" qualifier if data is incomplete
+
+Mobile-responsive at minimum for Dashboard and AI Advisor modules
+
+Loading states on all async operations
+
+Empty state designs for modules with no data yet (helpful prompts to get started)
+
+All inputs validated before storage
+
+Confirmation dialogs before any delete operation
+
+Export to CSV for all data tables
+
+End of PMCC Application Build Prompt Build this as a single React JSX file with all modules, persistent storage, and full Claude API integration.

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { cn } from '@/lib/utils';
-import { Target, Plus, Filter, User, Calendar, Link2, Search, Loader2 } from 'lucide-react';
+import { cn, formatDate, exportToCSV } from '@/lib/utils';
+import { Target, Plus, Filter, User, Calendar, Link2, Search, Loader2, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -77,7 +77,7 @@ function DecisionCard({ decision, onSelect, isSelected }: DecisionCardProps) {
             <User className="h-3 w-3" />{decision.owner_name || 'Unassigned'}
           </div>
           <div className="flex items-center gap-1 text-muted-foreground">
-            <Calendar className="h-3 w-3" />{new Date(decision.date).toLocaleDateString()}
+            <Calendar className="h-3 w-3" />{formatDate(decision.date)}
           </div>
         </div>
         <div className="flex items-center gap-1 text-muted-foreground">
@@ -133,7 +133,7 @@ function DecisionDetailPanel({ decision, onClose, onOpenLinkDialog, onUpdate }: 
               <h2 className="text-lg font-semibold mb-2">{decision.title}</h2>
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1"><User className="h-3 w-3" />{decision.owner_name || 'Unassigned'}</span>
-                <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{new Date(decision.date).toLocaleDateString()}</span>
+                <span className="flex items-center gap-1"><Calendar className="h-3 w-3" />{formatDate(decision.date)}</span>
               </div>
             </div>
 
@@ -475,7 +475,18 @@ export default function DecisionsView() {
   );
 
   const toolbarFilters = (
-    <Select value={statusFilter} onValueChange={setStatusFilter}>
+    <div className="flex items-center gap-2">
+      <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => {
+        const headers = ['Decision ID', 'Title', 'Status', 'Owner', 'Date', 'Decision Statement'];
+        const rows = filteredDecisions.map(d => [
+          d.key || d.id.slice(0,8), d.title, d.status, d.owner_name || '',
+          formatDate(d.date), d.decision,
+        ]);
+        exportToCSV([headers, ...rows], 'decision-register');
+      }}>
+        <Download className="h-3.5 w-3.5 mr-1.5" />Export CSV
+      </Button>
+      <Select value={statusFilter} onValueChange={setStatusFilter}>
       <SelectTrigger className="w-40 h-8 text-xs">
         <SelectValue placeholder="Filter by status" />
       </SelectTrigger>
@@ -487,6 +498,7 @@ export default function DecisionsView() {
         <SelectItem value="rejected">Rejected</SelectItem>
       </SelectContent>
     </Select>
+    </div>
   );
 
   const listContent = (

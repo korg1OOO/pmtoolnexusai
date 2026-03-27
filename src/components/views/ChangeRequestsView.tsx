@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { cn, formatDate, formatCurrency, exportToCSV } from '@/lib/utils';
 import {
   FileEdit,
   Plus,
@@ -20,6 +20,7 @@ import {
   Loader2,
   List,
   Table,
+  Download,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -197,7 +198,7 @@ export default function ChangeRequestsView() {
             "text-2xl font-bold",
             stats.totalCostImpact > 0 ? 'text-destructive' : 'text-success'
           )}>
-            {stats.totalCostImpact > 0 ? '+' : ''}${(stats.totalCostImpact / 1000).toFixed(0)}K
+            {stats.totalCostImpact > 0 ? '+' : ''}{formatCurrency(stats.totalCostImpact)}
           </div>
           <p className="text-sm text-muted-foreground">Cost Impact</p>
         </CardContent>
@@ -259,7 +260,7 @@ export default function ChangeRequestsView() {
               </div>
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Calendar className="h-4 w-4" />
-                {cr.requested_at ? new Date(cr.requested_at).toLocaleDateString() : 'N/A'}
+                {formatDate(cr.requested_at, 'N/A')}
               </div>
               <div className="flex items-center gap-2">
                 <Badge variant={cr.priority === 'critical' ? 'destructive' : cr.priority === 'high' ? 'warning' : 'secondary'}>
@@ -281,9 +282,9 @@ export default function ChangeRequestsView() {
               <div className="flex items-center gap-2">
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
                 <span className={cn(
-                  (Number((cr.impact_details as any)?.cost) || 0) > 0 ? 'text-destructive' : (Number((cr.impact_details as any)?.cost) || 0) < 0 ? 'text-success' : ''
+                   (Number((cr.impact_details as any)?.cost) || 0) > 0 ? 'text-destructive' : (Number((cr.impact_details as any)?.cost) || 0) < 0 ? 'text-success' : ''
                 )}>
-                  {(Number((cr.impact_details as any)?.cost) || 0) > 0 ? '+' : ''}${Math.abs((Number((cr.impact_details as any)?.cost) || 0) / 1000).toFixed(0)}K
+                  {(Number((cr.impact_details as any)?.cost) || 0) > 0 ? '+' : ''}{formatCurrency(Number((cr.impact_details as any)?.cost) || 0)}
                 </span>
               </div>
               <Badge variant={
@@ -383,7 +384,7 @@ export default function ChangeRequestsView() {
                       "font-semibold",
                       (Number((selectedCR.impact_details as any)?.cost) || 0) > 0 ? 'text-destructive' : 'text-success'
                     )}>
-                      {(Number((selectedCR.impact_details as any)?.cost) || 0) > 0 ? '+' : ''}${(Number((selectedCR.impact_details as any)?.cost) || 0) / 1000}K
+                      {(Number((selectedCR.impact_details as any)?.cost) || 0) > 0 ? '+' : ''}{formatCurrency(Number((selectedCR.impact_details as any)?.cost) || 0)}
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
@@ -451,10 +452,22 @@ export default function ChangeRequestsView() {
       searchQuery={searchQuery}
       onSearchChange={setSearchQuery}
       toolbarFilters={
-        <Button variant="outline" size="sm" className="h-8 text-xs border-border/60">
-          <Filter className="h-3.5 w-3.5 mr-1.5" />
-          Filter
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="h-8 text-xs border-border/60" onClick={() => {
+            const headers = ['Title', 'Type', 'Priority', 'Status', 'Requested By', 'Requested At', 'Justification'];
+            const rows = changeRequests.map(cr => [
+              cr.title, cr.type || '', cr.priority || '', cr.status || '',
+              cr.requested_by_name || '', formatDate(cr.requested_at), cr.justification || '',
+            ]);
+            exportToCSV([headers, ...rows], 'change-requests');
+          }}>
+            <Download className="h-3.5 w-3.5 mr-1.5" />Export CSV
+          </Button>
+          <Button variant="outline" size="sm" className="h-8 text-xs border-border/60">
+            <Filter className="h-3.5 w-3.5 mr-1.5" />
+            Filter
+          </Button>
+        </div>
       }
       onAddRow={() => setAddDialogOpen(true)}
       addLabel="New Change Request"

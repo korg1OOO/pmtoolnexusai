@@ -332,57 +332,97 @@ export default function StakeholderRegisterView() {
 
       <TabsContent value="matrix" className="m-0 border-0 p-0">
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Power/Interest Matrix</CardTitle>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">Influence / Interest Matrix</CardTitle>
+            <p className="text-sm text-muted-foreground">Stakeholders plotted by influence (power) and interest level</p>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 gap-4 max-w-3xl mx-auto">
-              {[
-                { label: 'Keep Satisfied', influence: 'high', interest: 'not-high', direction: 'up', color: 'warning' },
-                { label: 'Manage Closely', influence: 'high', interest: 'high', direction: 'up', color: 'destructive' },
-                { label: 'Monitor', influence: 'not-high', interest: 'not-high', direction: 'down', color: 'muted' },
-                { label: 'Keep Informed', influence: 'not-high', interest: 'high', direction: 'right', color: 'info' },
-              ].map(({ label, influence, interest, direction, color }) => (
-                <div
-                  key={label}
-                  className={cn(
-                    'p-4 rounded-lg border',
-                    color === 'warning' && 'bg-warning/10 border-warning/30',
-                    color === 'destructive' && 'bg-destructive/10 border-destructive/30',
-                    color === 'info' && 'bg-info/10 border-info/30',
-                    color === 'muted' && 'bg-muted/50 border',
-                  )}
-                >
-                  <div className="flex items-center gap-2 mb-3">
-                    {direction === 'up' && <ArrowUp className={`h-4 w-4 text-${color}`} />}
-                    {direction === 'down' && <ArrowDown className="h-4 w-4 text-muted-foreground" />}
-                    {direction === 'right' && <ArrowRight className={`h-4 w-4 text-${color}`} />}
-                    <span className={cn('font-medium', color !== 'muted' && `text-${color}`)}>
-                      {label}
-                    </span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mb-3">
-                    {influence === 'high' ? 'High' : 'Low'} Influence,{' '}
-                    {interest === 'high' ? 'High' : 'Low'} Interest
-                  </p>
-                  <div className="space-y-2">
-                    {filteredStakeholders
-                      .filter((s) => {
-                        const inf = influence === 'high' ? s.influence === 'high' : s.influence !== 'high';
-                        const int_ = interest === 'high' ? s.interest === 'high' : s.interest !== 'high';
-                        return inf && int_;
-                      })
-                      .map((s) => (
-                        <div key={s.id} className="flex items-center gap-2 p-2 rounded bg-background">
-                          <Avatar className="h-6 w-6">
-                            <AvatarFallback className="text-xs">
-                              {s.name.split(' ').map((n) => n[0]).join('')}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span className="text-sm">{s.name}</span>
+            <div className="relative w-full" style={{ height: 480 }}>
+              {/* Quadrant backgrounds */}
+              <div className="absolute inset-0 grid grid-cols-2 grid-rows-2 rounded-lg overflow-hidden border">
+                <div className="bg-blue-500/5 border-r border-b flex items-start justify-start p-3">
+                  <span className="text-[11px] font-semibold text-blue-600/70 uppercase tracking-wide">Keep Satisfied</span>
+                </div>
+                <div className="bg-destructive/5 border-b flex items-start justify-end p-3">
+                  <span className="text-[11px] font-semibold text-destructive/70 uppercase tracking-wide">Manage Closely</span>
+                </div>
+                <div className="bg-muted/30 border-r flex items-end justify-start p-3">
+                  <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wide">Monitor</span>
+                </div>
+                <div className="bg-amber-500/5 flex items-end justify-end p-3">
+                  <span className="text-[11px] font-semibold text-amber-600/70 uppercase tracking-wide">Keep Informed</span>
+                </div>
+              </div>
+
+              {/* Axis dividers */}
+              <div className="absolute inset-0 flex items-center pointer-events-none">
+                <div className="w-full h-px bg-border" />
+              </div>
+              <div className="absolute inset-0 flex justify-center pointer-events-none">
+                <div className="h-full w-px bg-border" />
+              </div>
+
+              {/* Axis labels */}
+              <div className="absolute -left-8 inset-y-0 flex items-center">
+                <span className="text-xs text-muted-foreground -rotate-90 whitespace-nowrap font-medium">↑ Influence</span>
+              </div>
+              <div className="absolute bottom-[-28px] inset-x-0 flex justify-center">
+                <span className="text-xs text-muted-foreground font-medium">Interest →</span>
+              </div>
+
+              {/* Stakeholder dots */}
+              {filteredStakeholders.map((s) => {
+                // Map influence/interest to x/y positions (0-100%)
+                const xMap: Record<string, number> = { low: 20, medium: 50, high: 80 };
+                const yMap: Record<string, number> = { high: 15, medium: 50, low: 82 }; // y is inverted (top = high)
+                const x = xMap[s.interest || 'low'] ?? 50;
+                const y = yMap[s.influence || 'low'] ?? 50;
+                const quadrantColor =
+                  s.influence === 'high' && s.interest === 'high' ? 'bg-destructive text-white' :
+                  s.influence === 'high' ? 'bg-blue-600 text-white' :
+                  s.interest === 'high' ? 'bg-amber-500 text-white' :
+                  'bg-muted-foreground text-white';
+                const initials = s.name.split(' ').map((n) => n[0]).join('').slice(0, 2);
+                return (
+                  <TooltipProvider key={s.id}>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          className={cn(
+                            'absolute w-9 h-9 rounded-full flex items-center justify-center text-[11px] font-bold shadow-md border-2 border-white transition-transform hover:scale-110 hover:z-20 cursor-pointer z-10',
+                            quadrantColor
+                          )}
+                          style={{ left: `calc(${x}% - 18px)`, top: `calc(${y}% - 18px)` }}
+                        >
+                          {initials}
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top" className="max-w-[200px]">
+                        <p className="font-semibold">{s.name}</p>
+                        <p className="text-xs text-muted-foreground">{s.role}</p>
+                        <div className="flex gap-3 mt-1 text-xs">
+                          <span>Influence: <strong className="capitalize">{s.influence}</strong></span>
+                          <span>Interest: <strong className="capitalize">{s.interest}</strong></span>
                         </div>
-                      ))}
-                  </div>
+                        <p className="text-xs mt-1 font-medium text-primary">{getInfluenceInterestQuadrant(s.influence || 'low', s.interest || 'low')}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                );
+              })}
+            </div>
+
+            {/* Legend */}
+            <div className="flex flex-wrap gap-4 mt-10 text-xs">
+              {[
+                { color: 'bg-destructive', label: 'Manage Closely (High / High)' },
+                { color: 'bg-blue-600', label: 'Keep Satisfied (High Influence)' },
+                { color: 'bg-amber-500', label: 'Keep Informed (High Interest)' },
+                { color: 'bg-muted-foreground', label: 'Monitor (Low / Low)' },
+              ].map(({ color, label }) => (
+                <div key={label} className="flex items-center gap-1.5">
+                  <span className={cn('w-3 h-3 rounded-full', color)} />
+                  <span className="text-muted-foreground">{label}</span>
                 </div>
               ))}
             </div>

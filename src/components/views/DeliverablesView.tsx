@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { formatDate, exportToCSV } from '@/lib/utils';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
@@ -181,10 +182,22 @@ export default function DeliverablesView() {
   }
 
   const toolbarFilters = (
-    <Button variant="outline" size="sm" className="h-8" onClick={downloadTraceability}>
-      <Download className="h-3.5 w-3.5 mr-2" />
-      Export Traceability
-    </Button>
+    <div className="flex items-center gap-2">
+      <Button variant="outline" size="sm" className="h-8" onClick={() => {
+        const headers = ['Name', 'Type', 'Status', 'Phase', 'Owner', 'Due Date', 'Progress (%)'];
+        const rows = (deliverables || []).map(d => [
+          d.name, d.type || '', d.status, d.phase || '',
+          d.owner?.full_name || '', formatDate(d.due_date), d.progress ?? 0,
+        ]);
+        exportToCSV([headers, ...rows], 'deliverables');
+      }}>
+        <Download className="h-3.5 w-3.5 mr-2" />Export CSV
+      </Button>
+      <Button variant="outline" size="sm" className="h-8" onClick={downloadTraceability}>
+        <Download className="h-3.5 w-3.5 mr-2" />
+        Export Traceability
+      </Button>
+    </div>
   );
 
   const kpiCards = (
@@ -278,7 +291,7 @@ export default function DeliverablesView() {
                   </div>
                   <div className="flex items-center gap-2 text-muted-foreground h-4">
                     <Calendar className="h-4 w-4" />
-                    {deliverable.due_date ? `Due: ${new Date(deliverable.due_date).toLocaleDateString()}` : 'No due date'}
+                    {deliverable.due_date ? `Due: ${formatDate(deliverable.due_date)}` : 'No due date'}
                   </div>
                 </div>
 
@@ -357,12 +370,12 @@ export default function DeliverablesView() {
                 </div>
                 <div>
                   <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-1.5">Due Date</label>
-                  <p className="text-sm font-medium">{selectedDeliverable.due_date ? new Date(selectedDeliverable.due_date).toLocaleDateString() : 'None'}</p>
+                  <p className="text-sm font-medium">{formatDate(selectedDeliverable.due_date, 'None')}</p>
                 </div>
                 {selectedDeliverable.completed_date && (
                   <div>
                     <label className="text-xs font-medium text-muted-foreground uppercase tracking-wider block mb-1.5">Completed</label>
-                    <p className="text-sm font-medium">{new Date(selectedDeliverable.completed_date).toLocaleDateString()}</p>
+                    <p className="text-sm font-medium">{formatDate(selectedDeliverable.completed_date)}</p>
                   </div>
                 )}
               </div>

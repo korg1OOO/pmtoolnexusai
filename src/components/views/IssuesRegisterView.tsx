@@ -1,6 +1,6 @@
 import React, { useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { cn, formatDate, exportToCSV } from '@/lib/utils';
 import {
   AlertCircle,
   AlertTriangle,
@@ -13,7 +13,8 @@ import {
   Zap,
   Timer,
   Save,
-  X
+  X,
+  Download,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -402,7 +403,18 @@ export default function IssuesRegisterView() {
   );
 
   const toolbarFilters = (
-    <Tabs value={activeTab} onValueChange={setActiveTab}>
+    <div className="flex items-center gap-2">
+      <Button variant="outline" size="sm" className="h-8 text-xs" onClick={() => {
+        const headers = ['Issue ID', 'Title', 'Type', 'Severity', 'Priority', 'Assignee', 'Status'];
+        const rows = filteredIssues.map(i => [
+          i.key || i.id.slice(0,8), i.title, i.type, i.severity, i.priority,
+          i.assignee_name || '', i.status,
+        ]);
+        exportToCSV([headers, ...rows], 'issues-register');
+      }}>
+        <Download className="h-3.5 w-3.5 mr-1.5" />Export CSV
+      </Button>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
       <TabsList className="h-8">
         <TabsTrigger value="all" className="h-6 px-3 text-xs">All ({issues.length})</TabsTrigger>
         <TabsTrigger value="open" className="h-6 px-3 text-xs">Open ({openIssues.length})</TabsTrigger>
@@ -410,6 +422,7 @@ export default function IssuesRegisterView() {
         <TabsTrigger value="sla-breached" className="h-6 px-3 text-xs">SLA Breached ({slaBreachedIssues.length})</TabsTrigger>
       </TabsList>
     </Tabs>
+  </div>
   );
 
   const listContent = (

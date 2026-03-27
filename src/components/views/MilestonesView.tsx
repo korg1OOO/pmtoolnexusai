@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatDate, exportToCSV } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Target,
@@ -28,6 +29,7 @@ import {
   Trash2,
   Table,
   List,
+  Download,
 } from 'lucide-react';
 import { DataRegisterPage } from '@/components/ui/DataRegisterPage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -226,6 +228,17 @@ export default function MilestonesView() {
     );
   }
 
+  const handleExportCSV = () => {
+    const headers = ['Name', 'Status', 'Progress (%)', 'Due Date'];
+    const rows = (milestones || []).map(m => [
+      m.name,
+      m.status,
+      m.progress ?? 0,
+      formatDate(m.due_date),
+    ]);
+    exportToCSV([headers, ...rows], 'milestones');
+  };
+
   const toolbarFilters = (
     <div className="flex items-center gap-2 h-8">
       <Badge
@@ -267,16 +280,21 @@ export default function MilestonesView() {
   );
 
   const listModeControls = (
-    <div className="flex gap-1 p-1 bg-muted rounded-lg h-8 items-center border">
-      {(['timeline', 'list', 'gates'] as const).map((mode) => (
-        <button
-          key={mode}
-          onClick={() => setSubViewMode(mode)}
-          className={cn('px-3 py-1 rounded text-[10px] font-medium transition-all capitalize', subViewMode === mode ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground')}
-        >
-          {mode === 'gates' ? 'Stage Gates' : mode}
-        </button>
-      ))}
+    <div className="flex items-center gap-2">
+      <Button variant="outline" size="sm" className="h-8 text-xs" onClick={handleExportCSV}>
+        <Download className="h-3.5 w-3.5 mr-1.5" />Export CSV
+      </Button>
+      <div className="flex gap-1 p-1 bg-muted rounded-lg h-8 items-center border">
+        {(['timeline', 'list', 'gates'] as const).map((mode) => (
+          <button
+            key={mode}
+            onClick={() => setSubViewMode(mode)}
+            className={cn('px-3 py-1 rounded text-[10px] font-medium transition-all capitalize', subViewMode === mode ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground')}
+          >
+            {mode === 'gates' ? 'Stage Gates' : mode}
+          </button>
+        ))}
+      </div>
     </div>
   );
 
@@ -441,7 +459,7 @@ export default function MilestonesView() {
                         <span className="text-xs font-mono">{milestone.progress}%</span>
                       </div>
                     </td>
-                    <td className="p-3 text-xs font-mono text-muted-foreground">{milestone.due_date ? new Date(milestone.due_date).toLocaleDateString() : '—'}</td>
+                    <td className="p-3 text-xs font-mono text-muted-foreground">{formatDate(milestone.due_date)}</td>
                     <td className="p-3 text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -513,7 +531,7 @@ export default function MilestonesView() {
                     <div className="text-right space-y-2 shrink-0">
                       <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground font-mono">
                         <Calendar className="h-3.5 w-3.5" />
-                        <span>{milestone.due_date ? new Date(milestone.due_date).toLocaleDateString() : '—'}</span>
+                        <span>{formatDate(milestone.due_date)}</span>
                       </div>
                       <div className="mt-3">
                         <div className="flex items-center justify-end gap-2 mb-1.5">

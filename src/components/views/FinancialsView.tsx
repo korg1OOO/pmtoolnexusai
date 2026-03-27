@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { cn, formatDate, formatCurrency, exportToCSV } from '@/lib/utils';
 import {
   DollarSign,
   TrendingUp,
@@ -14,8 +14,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Loader2,
-} from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+} from 'lucide-react';import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -35,15 +34,7 @@ const budgetColors = {
   Contingency: 'bg-gray-500',
 } as const;
 
-function formatCurrency(value: number): string {
-  if (value >= 1000000) {
-    return `$${(value / 1000000).toFixed(2)}M`;
-  }
-  if (value >= 1000) {
-    return `$${(value / 1000).toFixed(0)}K`;
-  }
-  return `$${value.toFixed(0)}`;
-}
+// formatCurrency imported from @/lib/utils — removed local definition
 
 export default function FinancialsView() {
   const { settings } = useProjectContext();
@@ -345,7 +336,7 @@ export default function FinancialsView() {
                       <div className="text-right">
                         <p className="font-semibold font-mono">{formatCurrency(invoice.amount)}</p>
                         <p className="text-sm text-muted-foreground">
-                          {new Date(invoice.date).toLocaleDateString()}
+                          {formatDate(invoice.date)}
                         </p>
                       </div>
                     </div>

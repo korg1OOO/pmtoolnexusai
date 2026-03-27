@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils';
-import { AlertTriangle, Shield, Plus, Filter, User, MoreHorizontal, X, Loader2, Calendar, Link2, CheckCircle2 } from 'lucide-react';
+import { cn, formatDate, exportToCSV } from '@/lib/utils';
+import { AlertTriangle, Shield, Plus, Filter, User, MoreHorizontal, X, Loader2, Calendar, Link2, CheckCircle2, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -175,7 +175,7 @@ export default function RisksView() {
               </div>
               <div>
                 <span className="text-xs font-medium text-muted-foreground">Due Date</span>
-                <p className="text-sm">{risk.due_date ? new Date(risk.due_date).toLocaleDateString() : 'Not set'}</p>
+                <p className="text-sm">{formatDate(risk.due_date, 'Not set')}</p>
               </div>
             </div>
 
@@ -377,6 +377,23 @@ export default function RisksView() {
       { id: 'list', name: 'All Risks', selector: '[data-section="list"]' },
     ];
 
+    const handleExportCSV = () => {
+      const headers = ['Risk ID', 'Title', 'Category', 'Impact', 'Probability', 'Owner', 'Due Date', 'Status', 'Mitigation Plan', 'Contingency Plan'];
+      const rows = risks.map(r => [
+        r.id.slice(-6).toUpperCase(),
+        r.title,
+        r.category || '',
+        r.impact,
+        r.probability,
+        r.owner_name || '',
+        formatDate(r.due_date),
+        r.status,
+        r.mitigation_plan || '',
+        r.contingency_plan || '',
+      ]);
+      exportToCSV([headers, ...rows], 'risk-register');
+    };
+
     if (loading) {
       return (
         <div className="flex items-center justify-center h-full">
@@ -520,7 +537,7 @@ export default function RisksView() {
                               className="h-8 text-sm w-36"
                             />
                           ) : (
-                            <span className="text-muted-foreground">{risk.due_date ? new Date(risk.due_date).toLocaleDateString() : '-'}</span>
+                            <span className="text-muted-foreground">{formatDate(risk.due_date)}</span>
                           )}
                         </td>
                         <td className="px-4 py-3 whitespace-nowrap">
@@ -601,7 +618,11 @@ export default function RisksView() {
         iconBgClass="bg-destructive/20"
         iconColorClass="text-destructive"
         listModeControls={
-          <div className="flex bg-muted/50 p-1 rounded-md mb-4 md:mb-0">
+          <div className="flex items-center gap-2 mb-4 md:mb-0">
+            <Button variant="outline" size="sm" className="h-7 text-xs px-3" onClick={handleExportCSV}>
+              <Download className="h-3.5 w-3.5 mr-1.5" />Export CSV
+            </Button>
+            <div className="flex bg-muted/50 p-1 rounded-md">
             <Button
               variant={viewMode === 'list' ? 'secondary' : 'ghost'}
               size="sm"
@@ -618,6 +639,7 @@ export default function RisksView() {
             >
               Spreadsheet
             </Button>
+            </div>
           </div>
         }
         toolbarFilters={

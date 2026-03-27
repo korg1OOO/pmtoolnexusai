@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cn } from '@/lib/utils';
+import { cn, formatDate, exportToCSV } from '@/lib/utils';
 import {
   CheckCircle2,
   Clock,
@@ -22,6 +22,7 @@ import {
   Loader2,
   Table,
   List,
+  Download,
 } from 'lucide-react';
 import { DataRegisterPage } from '@/components/ui/DataRegisterPage';
 import { Button } from '@/components/ui/button';
@@ -215,7 +216,7 @@ function ActionCard({ action, isSelected, onClick }: ActionCardProps) {
               )}>
                 <Calendar className="h-3 w-3" />
                 {isOverdue ? 'OVERDUE: ' : ''}
-                {new Date(action.due_date).toLocaleDateString()}
+                {formatDate(action.due_date)}
               </span>
             )}
           </div>
@@ -321,11 +322,11 @@ function ActionDetailPanel({ action, onClose, onUpdate, onDelete }: ActionDetail
             </div>
             <div>
               <span className="text-xs font-medium text-muted-foreground">Due Date</span>
-              <p className="text-sm">{action.due_date ? new Date(action.due_date).toLocaleDateString() : 'Not set'}</p>
+              <p className="text-sm">{formatDate(action.due_date, 'Not set')}</p>
             </div>
             <div>
               <span className="text-xs font-medium text-muted-foreground">Created</span>
-              <p className="text-sm">{new Date(action.created_at).toLocaleDateString()}</p>
+              <p className="text-sm">{formatDate(action.created_at)}</p>
             </div>
           </div>
 
@@ -514,6 +515,15 @@ export default function ActionsView() {
     { id: 'list', name: 'Actions List', selector: '[data-section="list"]' },
   ];
 
+  const handleExportCSV = () => {
+    const headers = ['Title', 'Priority', 'Status', 'Owner', 'Due Date', 'Progress (%)', 'Created'];
+    const rows = filteredActions.map(a => [
+      a.title, a.priority, a.status, a.owner_name || '',
+      formatDate(a.due_date), a.progress ?? 0, formatDate(a.created_at),
+    ]);
+    exportToCSV([headers, ...rows], 'actions-tracker');
+  };
+
   const owners = [...new Set(actions.map(a => a.owner_name).filter(Boolean))];
 
   const filteredActions = actions.filter(action => {
@@ -564,7 +574,11 @@ export default function ActionsView() {
   );
 
   const listModeControls = (
-    <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
+    <div className="flex items-center gap-2">
+      <Button variant="outline" size="sm" className="h-8 text-xs" onClick={handleExportCSV}>
+        <Download className="h-3.5 w-3.5 mr-1.5" />Export CSV
+      </Button>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
       <TabsList className="h-full bg-transparent p-0">
         <TabsTrigger value="all" className="h-full text-xs px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md">All ({actions.length})</TabsTrigger>
         <TabsTrigger value="pending" className="h-full text-xs px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md">Pending ({pendingActions.length})</TabsTrigger>
@@ -572,6 +586,7 @@ export default function ActionsView() {
         <TabsTrigger value="sla-breached" className="h-full text-xs px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md">SLA Breached ({slaBreachedActions.length})</TabsTrigger>
       </TabsList>
     </Tabs>
+  </div>
   );
 
   const listContent = (

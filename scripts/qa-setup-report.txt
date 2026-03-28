@@ -1,0 +1,36 @@
+=== QA DATA SETUP ===
+
+── Step 1: Map subscriptions → profiles ──
+
+Testable users per tier:
+  free: user4_1771513625568@example.com (role=viewer, id=54ade06c)
+  pro: user9_1771513627802@example.com (role=manager, id=bc754335)
+  business: user7_1771513626820@example.com (role=admin, id=73c0787b)
+  agency: user1_1771513624288@example.com (role=admin, id=72d85b3f)
+
+── Step 2: Seed workspace_members ──
+  Using workspace: b87ec119 (tenant: 0afbec77)
+  ✅ workspace admin: Added user7_1771513626820@example.com as admin
+  ✅ workspace manager: Added user16_1771513630919@example.com as manager
+  ✅ workspace member: Added user6_1771513626422@example.com as member
+
+── Step 3: Seed program_members ──
+  Using program: e47ac10b (tenant: 0afbec77)
+  ✅ program manager: Added user4_1771513625568@example.com
+  ✅ program lead: Added user6_1771513626422@example.com
+  ✅ program member: Added user11_1771513628843@example.com
+  ✅ program viewer: Added user14_1771513630083@example.com
+
+── Step 4: Seed user_tenants ──
+  Using tenant: Default Company (0afbec77)
+  ✅ tenant admin: Added user0_1771513165671@example.com
+  ✅ tenant member: Added user4_1771513169590@example.com
+
+── Step 5: Test User Reference ──
+
+  ✅ Test user reference saved to scripts/qa-test-users.json
+
+
+Password for all test users: password123
+
+=== SETUP COMPLETE ===

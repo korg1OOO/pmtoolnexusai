@@ -56,8 +56,10 @@ import {
   useDependencies,
   useCreateDependency,
   useDeleteDependency,
+  useBulkUpdateTasks,
 } from '@/hooks/useTasks';
 import { useScheduleTrigger } from '@/hooks/useScheduleTrigger';
+import { recalculateWBS } from './utils/wbs';
 import { Skeleton } from '@/components/ui/skeleton';
 import {
   PredecessorColumn,
@@ -458,6 +460,7 @@ export function DatabaseTaskGrid({
   const createTask = useCreateTask();
   const updateTask = useUpdateTask();
   const deleteTask = useDeleteTask();
+  const bulkUpdateTasks = useBulkUpdateTasks();
   const { triggerSchedule } = useScheduleTrigger(projectId);
 
   const [expandedTasks, setExpandedTasks] = useState<Set<string>>(new Set());
@@ -514,7 +517,14 @@ export function DatabaseTaskGrid({
     if (focusedTaskId === taskId) {
       setFocusedTaskId(null);
     }
-  }, [deleteTask, projectId, focusedTaskId]);
+
+    // Recalculate WBS after deletion
+    const remainingTasks = tasks.filter(t => t.id !== taskId);
+    const wbsUpdates = recalculateWBS(remainingTasks);
+    if (wbsUpdates.length > 0) {
+      bulkUpdateTasks.mutate({ tasks: wbsUpdates, projectId });
+    }
+  }, [deleteTask, bulkUpdateTasks, projectId, focusedTaskId, tasks]);
 
   const handleTaskUpdate = useCallback(async (taskId: string, updates: Partial<DbTask>) => {
     setSavingTasks(prev => new Set([...prev, taskId]));
@@ -653,7 +663,7 @@ export function DatabaseTaskGrid({
       sortOrder = siblings.length;
     }
 
-    await createTask.mutateAsync({
+    const newTaskData = await createTask.mutateAsync({
       project_id: projectId,
       parent_id: parentId,
       wbs,
@@ -676,6 +686,39 @@ export function DatabaseTaskGrid({
 
     if (parentId) {
       setExpandedTasks(prev => new Set([...prev, parentId]));
+    }
+
+    // Recalculate WBS after addition to adjust anything that was shifted down
+    const newTasksList = [...tasks];
+
+    // Shift siblings down if we inserted in the middle
+    if (afterTaskId) {
+      newTasksList.forEach(t => {
+        if (t.parent_id === parentId && (t.sort_order || 0) >= sortOrder) {
+          t.sort_order = (t.sort_order || 0) + 1;
+        }
+      });
+    }
+
+    newTasksList.push(newTaskData as any);
+    const wbsUpdates = recalculateWBS(newTasksList);
+
+    // Also include sort_order updates if shifting occurred
+    if (afterTaskId) {
+      newTasksList.forEach(t => {
+        if (t.parent_id === parentId && t.id !== (newTaskData as any).id && (t.sort_order || 0) > sortOrder) {
+          const existingUpdate = wbsUpdates.find(u => u.id === t.id);
+          if (existingUpdate) {
+            existingUpdate.sort_order = t.sort_order;
+          } else {
+            wbsUpdates.push({ id: t.id, sort_order: t.sort_order });
+          }
+        }
+      });
+    }
+
+    if (wbsUpdates.length > 0) {
+      bulkUpdateTasks.mutate({ tasks: wbsUpdates, projectId });
     }
   };
 

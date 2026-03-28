@@ -23,7 +23,7 @@ ALTER TABLE notification_preferences
 
 -- 2. Notification Log Table
 CREATE TABLE IF NOT EXISTS notification_log (
-    id          UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    id          UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id     UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
     event_type  TEXT NOT NULL,
     event_id    UUID NOT NULL,

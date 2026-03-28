@@ -20,6 +20,10 @@ import {
   ExternalLink,
   Maximize2,
   Loader2,
+  FileText,
+  Flag,
+  ListTodo,
+  Plus
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -28,15 +32,25 @@ import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { useTraceability, TraceabilityItem } from '@/hooks/useTraceability';
+import { useTraceability, TraceabilityItem, TraceabilityAvailableItem } from '@/hooks/useTraceability';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 
 const typeConfig: Record<string, { color: string; icon: React.ElementType; label: string }> = {
   sprint: { color: 'bg-sprint-todo', icon: Clock, label: 'Sprint' },
@@ -46,6 +60,9 @@ const typeConfig: Record<string, { color: string; icon: React.ElementType; label
   risk: { color: 'bg-warning', icon: AlertTriangle, label: 'Risk' },
   meeting: { color: 'bg-info', icon: Users, label: 'Meeting' },
   task: { color: 'bg-success', icon: Calendar, label: 'Task' },
+  deliverable: { color: 'bg-emerald-500', icon: FileText, label: 'Deliverable' },
+  milestone: { color: 'bg-amber-500', icon: Flag, label: 'Milestone' },
+  backlog_item: { color: 'bg-blue-500', icon: ListTodo, label: 'Backlog Item' },
 };
 
 interface MatrixCellProps {
@@ -124,17 +141,24 @@ export default function TraceabilityMatrixView() {
   });
 
   const projectId = projects?.[0]?.id;
-  const { data: traceabilityData, isLoading } = useTraceability(projectId);
+  const { data: traceabilityData, isLoading, createLink } = useTraceability(projectId);
   const [selectedItem, setSelectedItem] = useState<TraceabilityItem | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<string>('all');
   const [viewMode, setViewMode] = useState<'graph' | 'matrix'>('graph');
 
-  const types = ['sprint', 'task', 'issue', 'action', 'decision', 'risk', 'meeting'];
+  // Link Dialog State
+  const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
+  const [linkSourceType, setLinkSourceType] = useState<string>('');
+  const [linkSourceId, setLinkSourceId] = useState<string>('');
+  const [linkTargetType, setLinkTargetType] = useState<string>('');
+  const [linkTargetId, setLinkTargetId] = useState<string>('');
+
+  const types = ['sprint', 'task', 'deliverable', 'milestone', 'backlog_item', 'issue', 'action', 'decision', 'risk', 'meeting'];
 
   const filteredItems = useMemo(() => {
-    if (!traceabilityData) return [];
-    return traceabilityData.filter(item => {
+    if (!traceabilityData?.linkedItems) return [];
+    return traceabilityData.linkedItems.filter(item => {
       const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
         item.id.toLowerCase().includes(searchQuery.toLowerCase());
       const matchesType = filterType === 'all' || item.type === filterType;
@@ -144,14 +168,45 @@ export default function TraceabilityMatrixView() {
 
   const linkStats = useMemo(() => {
     const stats: Record<string, number> = {};
-    if (!traceabilityData) return stats;
+    if (!traceabilityData?.linkedItems) return stats;
     types.forEach(type => {
-      stats[type] = traceabilityData.filter(i => i.type === type).length;
+      stats[type] = traceabilityData.linkedItems?.filter(i => i.type === type).length || 0;
     });
     return stats;
   }, [traceabilityData]);
 
-  const totalLinks = traceabilityData?.reduce((sum, item) => sum + item.linkedTo.length, 0) || 0;
+  const totalLinks = traceabilityData?.linkedItems?.reduce((sum, item) => sum + item.linkedTo.length, 0) || 0;
+
+  const handleCreateLink = async () => {
+    if (!linkSourceType || !linkSourceId || !linkTargetType || !linkTargetId) {
+      toast.error("Please fill out all mapping fields.");
+      return;
+    }
+    if (linkSourceType === linkTargetType && linkSourceId === linkTargetId) {
+      toast.error("Source and target cannot be the same item.");
+      return;
+    }
+
+    try {
+      await createLink.mutateAsync({
+        sourceId: linkSourceId,
+        sourceType: linkSourceType,
+        targetId: linkTargetId,
+        targetType: linkTargetType,
+        relationshipType: 'relates_to'
+      });
+      setIsLinkDialogOpen(false);
+      setLinkSourceId('');
+      setLinkSourceType('');
+      setLinkTargetId('');
+      setLinkTargetType('');
+    } catch {
+      // Error handled by the mutation toast
+    }
+  };
+
+  const getSourceOptions = () => traceabilityData?.availableItems?.filter(i => i.type === linkSourceType) || [];
+  const getTargetOptions = () => traceabilityData?.availableItems?.filter(i => i.type === linkTargetType) || [];
 
   if (isLoading) {
     return (
@@ -173,11 +228,84 @@ export default function TraceabilityMatrixView() {
           <div>
             <h1 className="text-lg font-semibold">Traceability Matrix</h1>
             <p className="text-sm text-muted-foreground">
-              {traceabilityData?.length || 0} items • {totalLinks} relationships
+              {traceabilityData?.linkedItems?.length || 0} items • {totalLinks} relationships
             </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Dialog open={isLinkDialogOpen} onOpenChange={setIsLinkDialogOpen}>
+            <DialogTrigger asChild>
+              <Button size="sm">
+                <Plus className="h-4 w-4 mr-1" />
+                Add Link
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Map Requirement or Artifact</DialogTitle>
+                <DialogDescription>Link two distinct items inside the project ecosystem to track their execution context.</DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 py-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium">Source Type</label>
+                    <Select value={linkSourceType} onValueChange={setLinkSourceType}>
+                      <SelectTrigger><SelectValue placeholder="Type..." /></SelectTrigger>
+                      <SelectContent>
+                        {types.map(t => (
+                          <SelectItem key={t} value={t}>{typeConfig[t]?.label || t}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium">Source Item</label>
+                    <Select value={linkSourceId} onValueChange={setLinkSourceId} disabled={!linkSourceType}>
+                      <SelectTrigger><SelectValue placeholder="Select item..." /></SelectTrigger>
+                      <SelectContent>
+                        {getSourceOptions().map(opt => (
+                          <SelectItem key={opt.id} value={opt.id}>{opt.title}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium">Target Type</label>
+                    <Select value={linkTargetType} onValueChange={setLinkTargetType}>
+                      <SelectTrigger><SelectValue placeholder="Type..." /></SelectTrigger>
+                      <SelectContent>
+                        {types.map(t => (
+                          <SelectItem key={t} value={t}>{typeConfig[t]?.label || t}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-medium">Target Item</label>
+                    <Select value={linkTargetId} onValueChange={setLinkTargetId} disabled={!linkTargetType}>
+                      <SelectTrigger><SelectValue placeholder="Select item..." /></SelectTrigger>
+                      <SelectContent>
+                        {getTargetOptions().map(opt => (
+                          <SelectItem key={opt.id} value={opt.id}>{opt.title}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setIsLinkDialogOpen(false)}>Cancel</Button>
+                <Button onClick={handleCreateLink} disabled={createLink.isPending}>
+                  {createLink.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Save Link
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
           <Tabs value={viewMode} onValueChange={(v) => setViewMode(v as any)}>
             <TabsList>
               <TabsTrigger value="graph">Graph</TabsTrigger>

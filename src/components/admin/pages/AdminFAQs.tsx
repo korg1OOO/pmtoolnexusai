@@ -38,6 +38,7 @@ import {
     FAQ,
 } from '@/hooks/useContentManagement';
 import { toast } from 'sonner';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 export function AdminFAQs() {
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -57,6 +58,13 @@ export function AdminFAQs() {
     const updateFAQ = useUpdateFAQ();
     const deleteFAQ = useDeleteFAQ();
     const togglePublish = useToggleFAQPublish();
+    const { confirm, ConfirmDialog } = useConfirmDialog();
+
+    const handleDeleteFAQ = async (id: string) => {
+        if (await confirm('Are you sure you want to delete this FAQ?', { confirmLabel: 'Delete', variant: 'destructive' })) {
+            deleteFAQ.mutate(id);
+        }
+    };
 
     // Filter FAQs by search
     const filteredFAQs = faqs.filter((faq) => {
@@ -167,11 +175,7 @@ export function AdminFAQs() {
                                     key={faq.id}
                                     faq={faq}
                                     onEdit={setEditingFAQ}
-                                    onDelete={(id) => {
-                                        if (confirm('Are you sure you want to delete this FAQ?')) {
-                                            deleteFAQ.mutate(id);
-                                        }
-                                    }}
+                                    onDelete={handleDeleteFAQ}
                                     onTogglePublish={(id, published) => {
                                         togglePublish.mutate({ id, is_published: published });
                                     }}
@@ -212,6 +216,7 @@ export function AdminFAQs() {
                 }}
                 categories={categories}
             />
+            <ConfirmDialog />
         </div>
     );
 }

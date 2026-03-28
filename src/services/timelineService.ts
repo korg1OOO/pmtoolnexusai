@@ -147,9 +147,20 @@ export const timelineService = {
     },
 
     async saveSwimlane(swimlane: Partial<TimelineSwimlane>) {
+        const dbSwimlane: any = { ...swimlane };
+        
+        // Remove nested activities to prevent confusing Supabase or overwriting JSON column incorrectly
+        delete dbSwimlane.activities;
+        
+        // Map order_index to sort_order
+        if (dbSwimlane.order_index !== undefined) {
+            dbSwimlane.sort_order = dbSwimlane.order_index;
+            delete dbSwimlane.order_index;
+        }
+
         const { data, error } = await (supabase as any)
             .from('timeline_swimlanes')
-            .upsert(swimlane)
+            .upsert(dbSwimlane)
             .select()
             .single();
         if (error) throw error;
@@ -165,9 +176,28 @@ export const timelineService = {
     },
 
     async saveActivity(activity: Partial<TimelineActivity>) {
+        const dbActivity: any = { ...activity };
+        
+        // Map frontend 'name' to DB 'label'
+        if (dbActivity.name !== undefined) {
+            dbActivity.label = dbActivity.name;
+            delete dbActivity.name;
+        }
+        
+        // Filter out order_index if DB doesn't support it for activities
+        if (dbActivity.order_index !== undefined) {
+             delete dbActivity.order_index;
+        }
+        
+        // Filter out arrays
+        delete dbActivity.tags;
+        delete dbActivity.notes;
+        delete dbActivity.resources_per_month;
+        delete dbActivity.dependencies;
+
         const { data, error } = await (supabase as any)
             .from('timeline_activities')
-            .upsert(activity)
+            .upsert(dbActivity)
             .select()
             .single();
         if (error) throw error;

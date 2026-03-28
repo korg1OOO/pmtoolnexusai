@@ -55,6 +55,7 @@ export interface DbTask {
   // Baseline fields
   baseline_start?: string | null;
   baseline_end?: string | null;
+  custom_fields?: Record<string, any>;
 }
 
 export interface DbDependency {

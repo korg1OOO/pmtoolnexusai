@@ -2,6 +2,7 @@
 -- Extends subscription system with feature flags and tier enforcement
 
 -- Create subscription_features table
+DROP TABLE IF EXISTS subscription_features CASCADE;
 CREATE TABLE IF NOT EXISTS subscription_features (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     tier TEXT NOT NULL CHECK (tier IN ('free', 'pro', 'business', 'agency')),

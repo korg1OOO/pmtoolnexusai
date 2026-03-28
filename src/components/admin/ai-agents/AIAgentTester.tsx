@@ -39,13 +39,68 @@ export function AIAgentTester({ agentId, onClose }: AIAgentTesterProps) {
     const logInteraction = useLogAIInteraction();
     const updateFeedback = useUpdateInteractionFeedback();
 
-    const sampleQueries = [
-        "What are the current project risks?",
-        "Show me the budget status",
-        "What tasks are due this week?",
-        "Who is over-allocated on the team?",
-        "Generate a status update for stakeholders",
-    ];
+    const getContextualQueries = (agentType: string | undefined): string[] => {
+        switch (agentType) {
+            case 'project_manager':
+                return [
+                    'What tasks are overdue and who owns them?',
+                    'Which milestones are at risk this sprint?',
+                    'Summarise project health for stakeholders',
+                    'Who is blocked and needs unblocking?',
+                    'Generate a sprint retrospective summary',
+                ];
+            case 'financial_advisor':
+                return [
+                    'What is our current budget burn rate?',
+                    'Which cost centres are over budget this quarter?',
+                    'Show me the MRR trend for the last 6 months',
+                    'Forecast cash position for the next 90 days',
+                    'Identify top 5 revenue risk items',
+                ];
+            case 'risk_analyzer':
+                return [
+                    'List all high-severity open risks',
+                    'Which risks have escalated since last week?',
+                    'What is the overall risk score for this project?',
+                    'Identify risks with no mitigation plans',
+                    'Generate a risk summary for the board report',
+                ];
+            case 'hr_assistant':
+                return [
+                    'Who is over-allocated on the team this week?',
+                    'Show upcoming leave clashes with key deadlines',
+                    'Which roles are currently understaffed?',
+                    'Summarise recent team performance metrics',
+                    'What is the average team utilisation rate?',
+                ];
+            case 'procurement_agent':
+                return [
+                    'Which purchase orders are pending approval?',
+                    'Show me contracts expiring in the next 60 days',
+                    'Identify suppliers with late deliveries',
+                    'What is our top spending category this month?',
+                    'Generate a procurement status report',
+                ];
+            case 'customer_support':
+                return [
+                    'How many open support tickets are critical?',
+                    'What is the average resolution time this week?',
+                    'Which issues are most frequently reported?',
+                    'List tickets that have breached SLA',
+                    'Summarise customer satisfaction scores',
+                ];
+            default:
+                return [
+                    'What is the current status of this work?',
+                    'What are the key risks and blockers?',
+                    'Show me the latest performance metrics',
+                    'What tasks are due this week?',
+                    'Generate a concise executive summary',
+                ];
+        }
+    };
+
+    const sampleQueries = getContextualQueries(agent?.agent_type);
 
     const handleTest = async (testQuery: string) => {
         if (!agent || !testQuery.trim()) return;

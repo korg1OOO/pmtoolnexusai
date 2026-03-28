@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Tables } from '@/integrations/supabase/types';
 
-export type LessonLearned = Tables<'lessons_learned'>;
+export type LessonLearned = Tables<'lessons_learned'> & { custom_fields?: Record<string, any> };
 
 export function useLessonsLearned(projectId: string | null) {
     return useQuery({

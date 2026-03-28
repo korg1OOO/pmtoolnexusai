@@ -206,6 +206,9 @@ export function PricingPage() {
                                                     <span className="font-medium">{plan.max_ai_credits === -1 ? 'Unlimited' : plan.max_ai_credits.toLocaleString()}</span>
                                                 </div>
                                             )}
+                                            <div className="flex justify-between text-xs">
+                                                <span className="text-green-600 dark:text-green-400">✨ 1,000 free credits/mo included</span>
+                                            </div>
                                         </div>
 
                                         {/* Features from cache */}

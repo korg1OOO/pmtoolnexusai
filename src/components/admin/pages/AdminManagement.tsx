@@ -3,7 +3,7 @@
  * Manage admin roles, permissions, and activity logging
  */
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
     useAdminRoles,
     useAdminUsers,
@@ -45,6 +45,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { Shield, UserPlus, Users, Activity, Key, AlertCircle, CheckCircle2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 export function AdminManagement() {
     const [searchQuery, setSearchQuery] = useState('');
@@ -59,6 +60,7 @@ export function AdminManagement() {
     const revokeAccess = useRevokeAdminAccess();
     const updateRole = useUpdateAdminRole_User();
     const createRole = useCreateAdminRole();
+    const { confirm, ConfirmDialog } = useConfirmDialog();
 
     // Grant Admin Form State
     const [grantForm, setGrantForm] = useState({
@@ -82,7 +84,7 @@ export function AdminManagement() {
     };
 
     const handleRevokeAccess = async (userId: string) => {
-        if (confirm('Are you sure you want to revoke admin access?')) {
+        if (await confirm('Are you sure you want to revoke admin access?', { confirmLabel: 'Revoke', variant: 'destructive' })) {
             await revokeAccess.mutateAsync(userId);
         }
     };
@@ -90,6 +92,16 @@ export function AdminManagement() {
     const handleUpdateRole = async (userId: string, roleId: string) => {
         await updateRole.mutateAsync({ userId, roleId });
     };
+
+    // Compute how many unique resource types are defined across all role permission sets
+    const uniqueResourceTypes = useMemo(() => {
+        if (!roles) return 0;
+        const keys = new Set<string>();
+        roles.forEach(role => {
+            Object.keys(role.permissions ?? {}).forEach(k => keys.add(k));
+        });
+        return keys.size;
+    }, [roles]);
 
     const filteredAdmins = adminUsers?.filter((admin) =>
         admin.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -213,7 +225,7 @@ export function AdminManagement() {
                         <Key className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
-                        <div className="text-2xl font-bold">8</div>
+                        <div className="text-2xl font-bold">{uniqueResourceTypes}</div>
                         <p className="text-xs text-muted-foreground">Resource types</p>
                     </CardContent>
                 </Card>

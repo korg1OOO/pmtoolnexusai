@@ -45,6 +45,7 @@ import { cn } from '@/lib/utils';
 
 export function AdminDiscountCodes() {
     const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [selectedCode, setSelectedCode] = useState<any | null>(null);
     const { data: discountCodes, isLoading } = useDiscountCodes();
     const createCode = useCreateDiscountCode();
     const deactivateCode = useDeactivateDiscountCode();
@@ -415,7 +416,7 @@ export function AdminDiscountCodes() {
                                     </TableCell>
                                     <TableCell>
                                         <div className="flex items-center gap-2">
-                                            <Button variant="ghost" size="sm">
+                                            <Button variant="ghost" size="sm" onClick={() => setSelectedCode(code)}>
                                                 <Eye className="h-4 w-4" />
                                             </Button>
                                             {code.is_active && (
@@ -438,6 +439,63 @@ export function AdminDiscountCodes() {
                     </Table>
                 </CardContent>
             </Card>
+            {/* Discount Code Detail Dialog */}
+            <Dialog open={!!selectedCode} onOpenChange={(open) => !open && setSelectedCode(null)}>
+                <DialogContent className="sm:max-w-[480px]">
+                    <DialogHeader>
+                        <DialogTitle>Discount Code Details</DialogTitle>
+                        <DialogDescription>Full details for code <span className="font-mono font-bold">{selectedCode?.code}</span></DialogDescription>
+                    </DialogHeader>
+                    {selectedCode && (
+                        <div className="space-y-3 text-sm">
+                            <div className="grid grid-cols-2 gap-2">
+                                <span className="text-muted-foreground">Description</span>
+                                <span>{selectedCode.description || '—'}</span>
+
+                                <span className="text-muted-foreground">Type</span>
+                                <span className="capitalize">{selectedCode.discount_type?.replace('_', ' ')}</span>
+
+                                <span className="text-muted-foreground">Value</span>
+                                <span>
+                                    {selectedCode.discount_type === 'percentage'
+                                        ? `${selectedCode.discount_value}%`
+                                        : `$${selectedCode.discount_value}`}
+                                </span>
+
+                                <span className="text-muted-foreground">Status</span>
+                                <Badge variant={selectedCode.is_active ? 'default' : 'secondary'} className="w-fit">
+                                    {selectedCode.is_active ? 'Active' : 'Inactive'}
+                                </Badge>
+
+                                <span className="text-muted-foreground">Uses</span>
+                                <span>{selectedCode.current_uses ?? 0} / {selectedCode.max_uses ?? '∞'}</span>
+
+                                <span className="text-muted-foreground">Per User</span>
+                                <span>{selectedCode.max_uses_per_user ?? '∞'}</span>
+
+                                <span className="text-muted-foreground">Valid Until</span>
+                                <span>{selectedCode.valid_until ? new Date(selectedCode.valid_until).toLocaleDateString() : '—'}</span>
+
+                                <span className="text-muted-foreground">First-time Only</span>
+                                <span>{selectedCode.first_time_user_only ? 'Yes' : 'No'}</span>
+
+                                <span className="text-muted-foreground">Referral Code</span>
+                                <span>{selectedCode.is_referral_code ? 'Yes' : 'No'}</span>
+
+                                {selectedCode.tier_restrictions?.length > 0 && (
+                                    <>
+                                        <span className="text-muted-foreground">Tier Restrictions</span>
+                                        <span>{selectedCode.tier_restrictions.join(', ')}</span>
+                                    </>
+                                )}
+
+                                <span className="text-muted-foreground">Created</span>
+                                <span>{new Date(selectedCode.created_at).toLocaleDateString()}</span>
+                            </div>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

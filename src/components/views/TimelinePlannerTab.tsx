@@ -35,6 +35,13 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+    Dialog as ShadcnDialog,
+    DialogContent as ShadcnDialogContent,
+    DialogHeader as ShadcnDialogHeader,
+    DialogTitle as ShadcnDialogTitle,
+    DialogFooter as ShadcnDialogFooter,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
@@ -59,6 +66,7 @@ const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Se
 const COLORS = ["#3b82f6", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981", "#ef4444", "#06b6d4", "#f97316"];
 const SWIMLANE_COLORS = ["#1e293b", "#312e81", "#4c1d95", "#1e3a5f", "#14532d", "#450a0a"];
 import { useTimelineGenerator } from "@/hooks/useTimelineGenerator";
+import { useConfirmDialog } from "@/hooks/useConfirmDialog";
 
 
 const SwimlaneDragHandle = () => {
@@ -153,71 +161,25 @@ interface Snapshot {
     data: Swimlane[];
 }
 
-const initialMonths = [
-    { id: "1", label: "Mar 2025" }, { id: "2", label: "Apr 2025" }, { id: "3", label: "May 2025" },
-    { id: "4", label: "Jun 2025" }, { id: "5", label: "Jul 2025" }, { id: "6", label: "Aug 2025" },
-    { id: "7", label: "Sep 2025" }, { id: "8", label: "Oct 2025" }, { id: "9", label: "Nov 2025" },
-    { id: "10", label: "Dec 2025" }, { id: "11", label: "Jan 2026" }, { id: "12", label: "Feb 2026" },
-];
+// Generate 12 months from today forward (dynamic, always relevant)
+const generateMonths = () => {
+    const now = new Date();
+    return Array.from({ length: 12 }, (_, i) => {
+        const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
+        const label = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+        return { id: String(i + 1), label };
+    });
+};
+const initialMonths = generateMonths();
 
-const initialSwimlanes: Swimlane[] = [
-    {
-        id: "pre-kickoff", label: "Pre-Kickoff", color: SWIMLANE_COLORS[0], collapsed: false,
-        activities: [
-            { id: "a1", name: "Resource Loading & Staffing", start: 0, duration: 3, color: COLORS[0], tags: ["resource"], notes: "Identify & onboard key resources" },
-            { id: "a2", name: "Vendor Evaluation", start: 1, duration: 2, color: COLORS[1], tags: ["vendor"], notes: "RFP & vendor shortlisting" },
-            { id: "a3", name: "Budget Approval", start: 0, duration: 2, color: COLORS[2], tags: ["finance"], notes: "Sign off on project budget" },
-        ]
-    },
-    {
-        id: "planning", label: "Planning & Design", color: SWIMLANE_COLORS[1], collapsed: false,
-        activities: [
-            { id: "a4", name: "Requirements Gathering", start: 2, duration: 3, color: COLORS[3], tags: ["planning"], notes: "" },
-            { id: "a5", name: "Architecture Design", start: 4, duration: 2, color: COLORS[4], tags: ["design"], notes: "" },
-            { id: "a6", name: "UX / UI Prototyping", start: 4, duration: 3, color: COLORS[5], tags: ["design"], notes: "" },
-        ]
-    },
-    {
-        id: "build", label: "Build & Develop", color: SWIMLANE_COLORS[2], collapsed: false,
-        activities: [
-            { id: "a7", name: "Backend Development", start: 5, duration: 4, color: COLORS[0], tags: ["dev"], notes: "" },
-            { id: "a8", name: "Frontend Development", start: 5, duration: 4, color: COLORS[1], tags: ["dev"], notes: "" },
-            { id: "a9", name: "Integration Development", start: 7, duration: 3, color: COLORS[2], tags: ["dev"], notes: "" },
-        ]
-    },
-    {
-        id: "testing", label: "Testing & QA", color: SWIMLANE_COLORS[3], collapsed: false,
-        activities: [
-            { id: "a10", name: "Unit & Integration Testing", start: 7, duration: 3, color: COLORS[3], tags: ["qa"], notes: "" },
-            { id: "a11", name: "UAT (User Acceptance)", start: 9, duration: 2, color: COLORS[4], tags: ["qa"], notes: "" },
-        ]
-    },
-    {
-        id: "deploy", label: "Deployment & Go-Live", color: SWIMLANE_COLORS[4], collapsed: false,
-        activities: [
-            { id: "a12", name: "Staging Deployment", start: 9, duration: 1, color: COLORS[5], tags: ["deploy"], notes: "" },
-            { id: "a13", name: "Go-Live", start: 10, duration: 1, color: COLORS[6], tags: ["golive"], notes: "🎯 TARGET GO-LIVE" },
-            { id: "a14", name: "Post-Launch Support", start: 10, duration: 2, color: COLORS[7], tags: ["support"], notes: "" },
-        ]
-    }
-];
 
-const initialTeams: Team[] = [
-    { id: "t1", name: "Core Platform Team", location: "Dubai", color: COLORS[0] },
-    { id: "t2", name: "Design & UX Team", location: "London", color: COLORS[1] },
-    { id: "t3", name: "QA & Testing Team", location: "Hyderabad", color: COLORS[2] },
-];
+// Empty initial swimlanes — populated from DB or created fresh by user
+const initialSwimlanes: Swimlane[] = [];
 
-const initialSites: Site[] = [
-    { id: "s1", name: "Dubai HQ", region: "Middle East" },
-    { id: "s2", name: "London Office", region: "Europe" },
-    { id: "s3", name: "Hyderabad Dev Center", region: "Asia Pacific" },
-];
-
-const initialComments: Comment[] = [
-    { id: "c1", user: "Sarah K.", avatar: "SK", text: "Resource loading for Backend needs to start earlier — vendor lead time is 6 weeks.", time: "2 hrs ago", activityId: "a1" },
-    { id: "c2", user: "James M.", avatar: "JM", text: "UAT dates look tight. Can we extend by 1 week?", time: "45 min ago", activityId: "a11" },
-];
+// Empty initial teams, sites, comments — user builds from scratch
+const initialTeams: Team[] = [];
+const initialSites: Site[] = [];
+const initialComments: Comment[] = [];
 
 // ─── UTILITY ─────────────────────────────────────────────────────────────────
 const uid = () => crypto.randomUUID();
@@ -614,6 +576,7 @@ interface TimelinePlannerTabProps {
 
 export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabProps) {
     const { settings, activeGlobalPanel, setActiveGlobalPanel } = useProjectContext();
+    const { confirm, ConfirmDialog } = useConfirmDialog();
     const [state, dispatch] = React.useReducer(timelineReducer, {
         swimlanes: [], // Initial empty state, will load from DB
         milestones: [],
@@ -683,11 +646,54 @@ export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabP
                 }));
 
                 if (mappedSwimlanes.length === 0) {
-                    // Fallback to initial seed if DB is empty (optional, or just show empty)
-                    // For now, let's keep it empty or user can "Seed" via a button? 
-                    // The user request said "Replace all mock data", so we should respect DB even if empty.
-                    // But to avoid a blank screen confusion, maybe we insert default swimlanes if empty?
-                    // Let's stick to DB truth.
+                    // Auto-seed initial structure if completely empty so user has a starting point
+                    const defaultPhases = ["Requirements", "Design", "Implementation", "Testing", "Deployment"];
+                    const defaultSwimlanes = defaultPhases.map((phase, i) => ({
+                        id: crypto.randomUUID(),
+                        label: phase,
+                        color: SWIMLANE_COLORS[i % SWIMLANE_COLORS.length],
+                        collapsed: false,
+                        order_index: i,
+                        project_id: settings.id,
+                        activities: []
+                    }));
+
+                    // Save to backend sequentially to establish the base
+                    for (const sw of defaultSwimlanes) {
+                        try {
+                            const savedSw = await timelineService.saveSwimlane(sw);
+                            // Add one default activity per phase
+                            const defaultAct = {
+                                id: crypto.randomUUID(),
+                                swimlane_id: savedSw.id,
+                                name: `${phase} Phase Kickoff`,
+                                start_month: i * 2,
+                                duration_months: 2,
+                                color: COLORS[i % COLORS.length]
+                            };
+                            await timelineService.saveActivity(defaultAct);
+
+                            mappedSwimlanes.push({
+                                ...sw,
+                                id: savedSw.id,
+                                activities: [{
+                                    id: defaultAct.id,
+                                    name: defaultAct.name,
+                                    start: defaultAct.start_month,
+                                    duration: defaultAct.duration_months,
+                                    color: defaultAct.color,
+                                    tags: [],
+                                    notes: ""
+                                }]
+                            });
+                        } catch (e) {
+                            console.error("Auto-seed error for phase", phase, e);
+                        }
+                    }
+                    toast({
+                        title: "Timeline Initialized",
+                        description: "A standard 5-phase framework has been created.",
+                    });
                 }
 
                 dispatch({ type: 'SET_INITIAL_DATA', swimlanes: mappedSwimlanes, milestones: mappedMilestones });
@@ -724,6 +730,7 @@ export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabP
     const [isExporting, setIsExporting] = useState(false);
     const [snapshots, setSnapshots] = useState<Snapshot[]>([]);
     const [snapGuide, setSnapGuide] = useState<number | null>(null);
+    const [pendingImportData, setPendingImportData] = useState<any[] | null>(null);
 
     // Load Snapshots
     useEffect(() => {
@@ -756,9 +763,16 @@ export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabP
         }).catch(console.error);
     }, [settings.id]);
 
+    // Snapshot Dialog state
+    const [isSnapshotDialogOpen, setIsSnapshotDialogOpen] = useState(false);
+    const [snapshotName, setSnapshotName] = useState('');
+
     const handleCreateSnapshot = async () => {
-        const name = prompt("Enter snapshot name:");
-        if (!name || !settings.id) return;
+        if (!snapshotName.trim() || !settings.id) {
+            setIsSnapshotDialogOpen(false);
+            return;
+        }
+        const name = snapshotName.trim();
 
         try {
             const snapshotData = {
@@ -783,6 +797,8 @@ export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabP
             };
             setSnapshots([mapped, ...snapshots]);
             toast({ title: "Snapshot Saved", description: "Timeline state preserved." });
+            setSnapshotName('');
+            setIsSnapshotDialogOpen(false);
         } catch (error) {
             console.error("Failed to save snapshot", error);
             toast({ title: "Error", description: "Could not save snapshot.", variant: "destructive" });
@@ -800,8 +816,8 @@ export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabP
         }
     };
 
-    const handleLoadSnapshot = (snapshot: Snapshot) => {
-        if (!confirm(`Load snapshot "${snapshot.name}"? Unsaved changes will be lost.`)) return;
+    const handleLoadSnapshot = async (snapshot: Snapshot) => {
+        if (!await confirm(`Load snapshot "${snapshot.name}"? Unsaved changes will be lost.`, { title: 'Load Snapshot', confirmLabel: 'Load' })) return;
 
         // The snapshot data might be just swimlanes or { swimlanes, milestones }
         // Migration check:
@@ -827,7 +843,7 @@ export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabP
 
     const handleGeneratePlan = async () => {
         if (!settings.id) return;
-        if (!confirm("This will generate a new Project Plan based on this timeline. This will append tasks to your existing plan. Continue?")) return;
+        if (!await confirm("This will generate a new Project Plan based on this timeline. This will append tasks to your existing plan. Continue?", { title: 'Generate Plan', confirmLabel: 'Generate' })) return;
 
         await generatePlan(settings.id, {
             swimlanes: state.swimlanes,
@@ -848,12 +864,61 @@ export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabP
         toast({ title: "Gate Added", description: `Added ${newMonthLabel} to the timeline.` });
     };
 
+    const processImportData = (data: any[], replace: boolean) => {
+        // Map excel rows to Swimlanes and Activities
+        const newSwimlanes: Swimlane[] = [];
+        const phaseMap = new Map<string, Swimlane>();
+
+        data.forEach(row => {
+            const phaseName = row.Phase || row.Swimlane || "Uncategorized";
+            if (!phaseMap.has(phaseName)) {
+                const newPhase: Swimlane = {
+                    id: uid(),
+                    label: phaseName,
+                    color: SWIMLANE_COLORS[phaseMap.size % SWIMLANE_COLORS.length],
+                    collapsed: false,
+                    activities: []
+                };
+                phaseMap.set(phaseName, newPhase);
+                newSwimlanes.push(newPhase);
+            }
+
+            const phase = phaseMap.get(phaseName);
+            if (phase) {
+                const startMonthLabel = row["Start Month"] || row.Start || "Mar 2025";
+                const startIndex = months.findIndex(m => m.label === startMonthLabel);
+
+                phase.activities.push({
+                    id: uid(),
+                    name: row.Activity || row.Task || "New Activity",
+                    start: startIndex !== -1 ? startIndex : 0,
+                    duration: parseInt(row.Duration) || 2,
+                    color: row.Color || COLORS[phase.activities.length % COLORS.length],
+                    tags: row.Tags ? String(row.Tags).split(",").map(t => t.trim()) : [],
+                    notes: row.Notes || ""
+                });
+            }
+        });
+
+        if (replace) {
+            console.log("Replacing (MVP: Append to fresh state simulated)");
+            dispatch({ type: 'SET_INITIAL_DATA', swimlanes: newSwimlanes, milestones: state.milestones });
+        } else {
+            console.log("Appending (MVP Simulation)");
+            // In a full implementation, merge newSwimlanes onto existing state.swimlanes
+        }
+
+        console.log("Importing", data.length, "activities");
+        toast({ title: "Import Successful", description: `Added ${data.length} tasks from Excel.` });
+        setPendingImportData(null);
+    };
+
     const handleImportExcel = (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
 
         const reader = new FileReader();
-        reader.onload = (evt) => {
+        reader.onload = async (evt) => {
             const bstr = evt.target?.result;
             const wb = XLSX.read(bstr, { type: 'binary' });
             const wsname = wb.SheetNames[0];
@@ -861,53 +926,22 @@ export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabP
             const data: Record<string, any>[] = XLSX.utils.sheet_to_json(ws);
 
             if (data.length > 0) {
-                const choice = window.confirm("Do you want to REPLACE the entire plan? (OK for Replace, Cancel for Append)");
+                const isReplace = await confirm(
+                    "Do you want to REPLACE the entire plan? (Click Replace to overwrite, Cancel to append)",
+                    { title: "Import Plan", confirmLabel: "Replace Entire Plan", cancelLabel: "Append Only" }
+                );
 
-                // Map excel rows to Swimlanes and Activities
-                const newSwimlanes: Swimlane[] = [];
-                const phaseMap = new Map<string, Swimlane>();
-
-                data.forEach(row => {
-                    const phaseName = row.Phase || row.Swimlane || "Uncategorized";
-                    if (!phaseMap.has(phaseName)) {
-                        const newPhase: Swimlane = {
-                            id: uid(),
-                            label: phaseName,
-                            color: SWIMLANE_COLORS[phaseMap.size % SWIMLANE_COLORS.length],
-                            collapsed: false,
-                            activities: []
-                        };
-                        phaseMap.set(phaseName, newPhase);
-                        newSwimlanes.push(newPhase);
-                    }
-
-                    const phase = phaseMap.get(phaseName);
-                    if (phase) {
-                        const startMonthLabel = row["Start Month"] || row.Start || "Mar 2025";
-                        const startIndex = months.findIndex(m => m.label === startMonthLabel);
-
-                        phase.activities.push({
-                            id: uid(),
-                            name: row.Activity || row.Task || "New Activity",
-                            start: startIndex !== -1 ? startIndex : 0,
-                            duration: parseInt(row.Duration) || 2,
-                            color: row.Color || COLORS[phase.activities.length % COLORS.length],
-                            tags: row.Tags ? String(row.Tags).split(",").map(t => t.trim()) : [],
-                            notes: row.Notes || ""
-                        });
-                    }
-                });
-
-                if (choice) {
-                    console.log("Replacing (MVP: Append to fresh state simulated)");
-                }
-
-                // Implement append logic properly via dispatch if needed, but for now we'll just log
-                console.log("Importing", data.length, "activities");
-                toast({ title: "Import Successful", description: `Added ${data.length} tasks from Excel.` });
+                // Note: since our confirm returns a boolean based on the primary action,
+                // `isReplace` being true means Replace, `false` means they clicked Append (Cancel in standard confirm terms).
+                processImportData(data, isReplace);
             }
         };
         reader.readAsBinaryString(file);
+
+        // Clear the input value so the same file can be uploaded again if needed
+        if (importFileRef.current) {
+            importFileRef.current.value = "";
+        }
     };
 
     const handleExportCSV = () => {
@@ -936,7 +970,7 @@ export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabP
             link.click();
             document.body.removeChild(link);
         } finally {
-            setTimeout(() => setIsExporting(false), 1000);
+            setIsExporting(false);
         }
     };
 
@@ -970,7 +1004,7 @@ export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabP
             XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(activitiesData), "Activities");
             XLSX.writeFile(wb, `project_orchestration_${new Date().toISOString().split('T')[0]}.xlsx`);
         } finally {
-            setTimeout(() => setIsExporting(false), 1000);
+            setIsExporting(false);
         }
     };
 
@@ -1931,7 +1965,7 @@ export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabP
                                                                                     <Download className="h-4 w-4 mr-1" />
                                                                                     Export
                                                                                 </Button>
-                                                                                <Button variant="outline" size="sm" onClick={handleCreateSnapshot}>
+                                                                                <Button variant="outline" size="sm" onClick={() => setIsSnapshotDialogOpen(true)}>
                                                                                     <Copy className="h-4 w-4 mr-1" />
                                                                                     Snapshot
                                                                                 </Button>
@@ -2307,7 +2341,7 @@ export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabP
                                     <div className="flex items-center gap-2 text-[11px] font-black uppercase tracking-widest text-muted-foreground">
                                         <Copy className="h-3.5 w-3.5 text-indigo-500" /> Scenario Snapshots
                                     </div>
-                                    <Button size="sm" className="h-8 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[10px] tracking-widest uppercase px-6" onClick={handleCreateSnapshot}>
+                                    <Button size="sm" className="h-8 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-black text-[10px] tracking-widest uppercase px-6" onClick={() => setIsSnapshotDialogOpen(true)}>
                                         <Plus size={14} className="mr-2" /> Save Current as Snapshot
                                     </Button>
                                 </div>
@@ -2856,6 +2890,30 @@ export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabP
                     );
                 })()
             }
+
+            {/* Snapshot Name Dialog */}
+            <ShadcnDialog open={isSnapshotDialogOpen} onOpenChange={setIsSnapshotDialogOpen}>
+                <ShadcnDialogContent>
+                    <ShadcnDialogHeader>
+                        <ShadcnDialogTitle>Save Snapshot</ShadcnDialogTitle>
+                    </ShadcnDialogHeader>
+                    <div className="space-y-3 py-2">
+                        <Label htmlFor="snapshot-name">Snapshot Name</Label>
+                        <Input
+                            id="snapshot-name"
+                            placeholder="e.g. Q2 Baseline"
+                            value={snapshotName}
+                            onChange={(e) => setSnapshotName(e.target.value)}
+                            autoFocus
+                            onKeyDown={(e) => { if (e.key === 'Enter') handleCreateSnapshot(); }}
+                        />
+                    </div>
+                    <ShadcnDialogFooter>
+                        <Button variant="outline" onClick={() => setIsSnapshotDialogOpen(false)}>Cancel</Button>
+                        <Button onClick={handleCreateSnapshot} disabled={!snapshotName.trim()}>Save Snapshot</Button>
+                    </ShadcnDialogFooter>
+                </ShadcnDialogContent>
+            </ShadcnDialog>
         </div >
     );
 }

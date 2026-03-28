@@ -56,6 +56,7 @@ import {
     Documentation,
 } from '@/hooks/useContentManagement';
 import { toast } from 'sonner';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 export function AdminDocs() {
     const [selectedVersion, setSelectedVersion] = useState<string>('v1.0');
@@ -66,12 +67,15 @@ export function AdminDocs() {
 
     // Fetch data
     const { data: categories = [] } = useCategories('docs');
+    // Fetch all docs (across all versions) to derive version list
+    const { data: allDocs = [] } = useDocumentation('', false);   // empty string = no version filter
     const { data: docs = [], isLoading } = useDocumentation(selectedVersion, false);
 
     // Mutations
     const createDoc = useCreateDoc();
     const updateDoc = useUpdateDoc();
     const deleteDoc = useDeleteDoc();
+    const { confirm, ConfirmDialog } = useConfirmDialog();
 
     // Toggle expanded nodes
     const toggleExpand = (id: string) => {
@@ -106,8 +110,12 @@ export function AdminDocs() {
 
     const docTree = buildTree(docs);
 
-    // Versions list (for demo, would ideally come from DB)
-    const versions = ['v1.0', 'v1.1', 'v2.0'];
+    // Versions list — derived dynamically from what exists in the DB
+    const versions = Array.from(
+        new Set(allDocs.map((d: any) => d.version).filter(Boolean))
+    ).sort() as string[];
+    // Always ensure the current selection is in the list (e.g. data still loading)
+    const versionOptions = versions.length > 0 ? versions : [selectedVersion];
 
     return (
         <div className="space-y-6">
@@ -126,7 +134,7 @@ export function AdminDocs() {
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            {versions.map(v => (
+                            {versionOptions.map(v => (
                                 <SelectItem key={v} value={v}>{v}</SelectItem>
                             ))}
                         </SelectContent>
@@ -176,8 +184,8 @@ export function AdminDocs() {
                                             expandedNodes={expandedNodes}
                                             toggleExpand={toggleExpand}
                                             onEdit={setEditingDoc}
-                                            onDelete={(id) => {
-                                                if (confirm('Delete this document? Children will be detached.')) {
+                                            onDelete={async (id) => {
+                                                if (await confirm('Delete this document? Children will be detached.', { confirmLabel: 'Delete', variant: 'destructive' })) {
                                                     deleteDoc.mutate(id);
                                                 }
                                             }}
@@ -271,6 +279,7 @@ export function AdminDocs() {
                 categories={categories}
                 documents={docs}
             />
+            <ConfirmDialog />
         </div>
     );
 }

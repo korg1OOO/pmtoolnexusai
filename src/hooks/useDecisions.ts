@@ -23,6 +23,7 @@ export interface Decision {
   linked_meetings: string[];
   linked_items: any[];
   tags: string[];
+  custom_fields?: Record<string, any>;
   created_at: string;
   updated_at: string;
 }
@@ -40,6 +41,7 @@ export interface DecisionInput {
   linked_risks?: string[];
   linked_meetings?: string[];
   tags?: string[];
+  custom_fields?: Record<string, any>;
 }
 
 export function useDecisions() {
@@ -76,6 +78,7 @@ export function useDecisions() {
           linked_meetings: Array.isArray(d.linked_meetings) ? d.linked_meetings.map(String) : [],
           linked_items: Array.isArray(d.linked_items) ? d.linked_items : [],
           tags: Array.isArray(d.tags) ? d.tags.map(String) : [],
+          custom_fields: d.custom_fields || {},
         }))
       );
       setError(null);
@@ -144,6 +147,7 @@ export function useDecisions() {
           linked_risks: input.linked_risks || [],
           linked_meetings: input.linked_meetings || [],
           tags: input.tags || [],
+          custom_fields: input.custom_fields || {},
         } as any)
         .select()
         .single();
@@ -159,6 +163,7 @@ export function useDecisions() {
         linked_meetings: Array.isArray(data.linked_meetings) ? data.linked_meetings.map(String) : [],
         linked_items: Array.isArray(data.linked_items) ? data.linked_items : [],
         tags: Array.isArray(data.tags) ? data.tags.map(String) : [],
+        custom_fields: data.custom_fields || {},
       };
 
       toast.success('Decision created');

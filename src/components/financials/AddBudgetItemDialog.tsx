@@ -41,9 +41,9 @@ const formSchema = z.object({
         'Travel',
         'Other',
     ]),
-    planned: z.string().transform((val) => Number(val)),
-    actual: z.string().transform((val) => Number(val)).optional(),
-    forecast: z.string().transform((val) => Number(val)).optional(),
+    planned: z.coerce.number(),
+    actual: z.coerce.number().optional(),
+    forecast: z.coerce.number().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;

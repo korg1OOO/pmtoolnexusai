@@ -26,49 +26,57 @@ interface BurndownDataPoint {
   remaining: number | null;
 }
 
-const generateBurndownData = (): BurndownDataPoint[] => {
-  const totalPoints = 53;
-  const sprintDays = 10;
-  const idealDecrement = totalPoints / sprintDays;
-
-  const data: BurndownDataPoint[] = [];
-  const startDate = new Date('2024-08-05');
-
-  // Simulated actual progress
-  const actualProgress = [53, 50, 48, 42, 38, 35, 31, null, null, null];
-
-  for (let i = 0; i <= sprintDays; i++) {
-    const currentDate = new Date(startDate);
-    currentDate.setDate(currentDate.getDate() + i);
-
-    data.push({
-      day: `Day ${i}`,
-      date: currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      ideal: Math.max(0, totalPoints - idealDecrement * i),
-      actual: actualProgress[i] !== undefined ? actualProgress[i] : null,
-      remaining: actualProgress[i] !== undefined ? actualProgress[i] : null,
-    });
-  }
-
-  return data;
-};
-
 interface SprintBurndownChartProps {
   sprintName?: string;
   totalPoints?: number;
   completedPoints?: number;
   daysRemaining?: number;
+  /** One entry per elapsed sprint day: remaining story points at end of that day.
+   *  Day 0 = start (full points). Pass undefined to render ideal line only. */
+  sprintDailyProgress?: (number | null)[];
+  /** Sprint start date to label chart X-axis. Defaults to today minus elapsed days. */
+  sprintStartDate?: string;
+  sprintDurationDays?: number;
   className?: string;
 }
 
 export function SprintBurndownChart({
-  sprintName = 'Sprint 12',
-  totalPoints = 53,
-  completedPoints = 22,
-  daysRemaining = 4,
+  sprintName = 'Current Sprint',
+  totalPoints = 0,
+  completedPoints = 0,
+  daysRemaining = 0,
+  sprintDailyProgress,
+  sprintStartDate,
+  sprintDurationDays = 10,
   className,
 }: SprintBurndownChartProps) {
-  const burndownData = useMemo(() => generateBurndownData(), []);
+  const burndownData = useMemo((): BurndownDataPoint[] => {
+    const idealDecrement = totalPoints / sprintDurationDays;
+    const startDate = sprintStartDate
+      ? new Date(sprintStartDate)
+      : (() => {
+        const d = new Date();
+        d.setDate(d.getDate() - (sprintDurationDays - daysRemaining));
+        return d;
+      })();
+
+    const data: BurndownDataPoint[] = [];
+    for (let i = 0; i <= sprintDurationDays; i++) {
+      const currentDate = new Date(startDate);
+      currentDate.setDate(currentDate.getDate() + i);
+      const actualVal = sprintDailyProgress
+        ? (sprintDailyProgress[i] !== undefined ? sprintDailyProgress[i] : null)
+        : null;
+      data.push({
+        day: `Day ${i}`,
+        date: currentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        ideal: Math.max(0, totalPoints - idealDecrement * i),
+        actual: actualVal,
+        remaining: actualVal,
+      });
+    }
+    return data;
+  }, [totalPoints, sprintDurationDays, sprintStartDate, daysRemaining, sprintDailyProgress]);
 
   const lastActualPoint = burndownData.filter(d => d.actual !== null).slice(-1)[0];
   const velocityStatus = lastActualPoint && lastActualPoint.actual! > lastActualPoint.ideal

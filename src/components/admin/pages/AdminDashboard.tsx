@@ -3,7 +3,7 @@
  * Main landing page for admin panel with key metrics and overview
  */
 
-import React from 'react';
+import React, { useState } from 'react';
 import { MetricCard } from '../components/MetricCard';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,34 +17,70 @@ import {
     AlertCircle,
     CheckCircle,
     RefreshCw,
+    Loader2,
 } from 'lucide-react';
 import { useAdminUsers } from '@/hooks/useAdmin';
 import { useRecentActivity, useSystemStatus } from '@/hooks/useAdminDashboard';
 import { useSubscriptionMetrics } from '@/hooks/useSubscriptions';
 import { useProjects } from '@/hooks/useProjects';
+import { useAdminMetricsTrend } from '@/hooks/useAdminMetricsTrend';
 import { SubscriptionAnalyticsDashboard } from '@/components/subscription/SubscriptionAnalyticsDashboard';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+
+const supabase = _supabase as any;
 
 export function AdminDashboard() {
     const navigate = useNavigate();
+    const queryClient = useQueryClient();
+    const [isSyncingStripe, setIsSyncingStripe] = useState(false);
+
+    const handleRefresh = () => {
+        queryClient.invalidateQueries({ queryKey: ['admin-users'] });
+        queryClient.invalidateQueries({ queryKey: ['recent-activity'] });
+        queryClient.invalidateQueries({ queryKey: ['system-status'] });
+        queryClient.invalidateQueries({ queryKey: ['subscription-metrics'] });
+        queryClient.invalidateQueries({ queryKey: ['projects'] });
+        queryClient.invalidateQueries({ queryKey: ['admin-metrics-trend'] });
+        toast.success('Dashboard refreshed');
+    };
+
+    const handleStripeSync = async () => {
+        setIsSyncingStripe(true);
+        try {
+            const { error } = await supabase.functions.invoke('stripe-sync', {});
+            if (error) throw error;
+            queryClient.invalidateQueries({ queryKey: ['subscription-metrics'] });
+            queryClient.invalidateQueries({ queryKey: ['admin-metrics-trend'] });
+            toast.success('Stripe data synced successfully');
+        } catch (err: any) {
+            toast.error('Stripe sync failed: ' + (err?.message || 'Unknown error'));
+        } finally {
+            setIsSyncingStripe(false);
+        }
+    };
     const { data: users } = useAdminUsers();
     const { data: recentActivity = [], isLoading: activityLoading } = useRecentActivity(4);
     const { data: systemStatus = [], isLoading: statusLoading } = useSystemStatus();
-
-    // Fetch subscription metrics to wire MRR
     const { data: subscriptionMetrics } = useSubscriptionMetrics();
-
-    // Fetch total projects count
     const { data: allProjects } = useProjects();
+    const { data: trend } = useAdminMetricsTrend();
 
-    // Metrics - derived from live data
+    // Metrics — all derived from live DB data
     const metrics = {
         totalUsers: users?.length || 0,
-        activeUsers: Math.floor((users?.length || 0) * 0.42),
-        mrr: subscriptionMetrics?.total_mrr || 0, // Wired to billing system
-        totalProjects: allProjects?.length || 0, // Wired to projects count
+        activeUsers: trend?.activeUsersCount ?? 0,          // real: updated_at within 7 days
+        mrr: subscriptionMetrics?.total_mrr || 0,
+        totalProjects: allProjects?.length || 0,
     };
+
+    // Helper: format trend for MetricCard — shows null as undefined (card hides the badge)
+    const fmtTrend = (val: number | null | undefined, label: string, positive = true) =>
+        val != null
+            ? { value: Math.abs(val), label, positive: val >= 0 ? positive : !positive }
+            : undefined;
 
     // Format relative time for activity
     const formatRelativeTime = (timestamp: string) => {
@@ -71,7 +107,7 @@ export function AdminDashboard() {
                         Overview of platform metrics and activity
                     </p>
                 </div>
-                <Button variant="outline" size="sm" onClick={() => window.location.reload()}>
+                <Button variant="outline" size="sm" onClick={handleRefresh}>
                     <RefreshCw className="h-4 w-4 mr-2" />
                     Refresh
                 </Button>
@@ -84,28 +120,28 @@ export function AdminDashboard() {
                     value={metrics.totalUsers}
                     subtitle="All registered users"
                     icon={Users}
-                    trend={{ value: 12.5, label: 'vs last month', positive: true }}
+                    trend={fmtTrend(trend?.usersTrend, 'vs last 30 days')}
                 />
                 <MetricCard
                     title="Active Users (7d)"
                     value={metrics.activeUsers}
-                    subtitle="Users active in last 7 days"
+                    subtitle="Signed in within 7 days"
                     icon={Activity}
-                    trend={{ value: 8.2, label: 'vs last week', positive: true }}
+                    trend={fmtTrend(trend?.activeUsersTrend, 'vs prior 7 days')}
                 />
                 <MetricCard
                     title="Monthly Revenue"
                     value={`$${metrics.mrr.toLocaleString()}`}
                     subtitle="MRR from subscriptions"
                     icon={DollarSign}
-                    trend={{ value: 15.3, label: 'vs last month', positive: true }}
+                    trend={fmtTrend(trend?.mrrTrend, 'vs last 30 days')}
                 />
                 <MetricCard
                     title="Total Projects"
                     value={metrics.totalProjects}
                     subtitle="Projects created"
                     icon={FolderKanban}
-                    trend={{ value: 22.1, label: 'vs last month', positive: true }}
+                    trend={fmtTrend(trend?.projectsTrend, 'vs last 30 days')}
                 />
             </div>
 
@@ -206,8 +242,12 @@ export function AdminDashboard() {
                             <Users className="h-4 w-4 mr-2" />
                             Add User
                         </Button>
-                        <Button variant="outline" size="sm" onClick={() => toast.success('Syncing Stripe data...')}>
-                            <RefreshCw className="h-4 w-4 mr-2" />
+                        <Button variant="outline" size="sm" onClick={handleStripeSync} disabled={isSyncingStripe}>
+                            {isSyncingStripe ? (
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            ) : (
+                                <RefreshCw className="h-4 w-4 mr-2" />
+                            )}
                             Sync Stripe
                         </Button>
                         <Button variant="outline" size="sm" onClick={async () => {

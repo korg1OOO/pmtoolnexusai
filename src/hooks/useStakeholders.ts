@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Tables } from '@/integrations/supabase/types';
 
-export type Stakeholder = Tables<'stakeholders'>;
+export type Stakeholder = Tables<'stakeholders'> & { custom_fields?: Record<string, any> };
 
 export function useStakeholders(projectId: string | null) {
     return useQuery({

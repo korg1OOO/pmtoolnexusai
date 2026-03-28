@@ -1,7 +1,7 @@
 import { supabase as _supabase } from '@/integrations/supabase/client';
 const supabase = _supabase as any;
 import { aiCreditsService } from './aiCreditsService';
-import { stripePaymentService } from './stripePaymentService';
+import { createCreditPaymentIntent, confirmCreditPurchase } from './stripeService';
 
 // =====================================================
 // AUTO-RECHARGE SERVICE
@@ -48,11 +48,10 @@ class AutoRechargeService {
                 return currentDiff < closestDiff ? tier : closest;
             });
 
-            // Create payment intent
-            const paymentIntent = await stripePaymentService.createPaymentIntent(targetTier.id);
+            const paymentIntent = await createCreditPaymentIntent(targetTier.id);
 
             // Auto-confirm payment (in production, this would use saved payment method)
-            const result = await stripePaymentService.confirmPurchase(
+            const result = await confirmCreditPurchase(
                 paymentIntent.id,
                 targetTier.id
             );

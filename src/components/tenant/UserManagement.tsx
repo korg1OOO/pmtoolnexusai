@@ -9,12 +9,14 @@ import { Badge } from '@/components/ui/badge';
 import { getUsers, createUser, updateUser, deleteUser, updateUserStatus, User } from '@/services/userService';
 import { toast } from 'sonner';
 import { useTenant } from '@/contexts/TenantContext';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 export function UserManagement() {
     const [searchQuery, setSearchQuery] = useState('');
     const [createDialogOpen, setCreateDialogOpen] = useState(false);
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const queryClient = useQueryClient();
+    const { confirm, ConfirmDialog } = useConfirmDialog();
 
     const { tenantId } = useTenant();
 
@@ -254,8 +256,8 @@ export function UserManagement() {
                                                 <Button
                                                     variant="ghost"
                                                     size="sm"
-                                                    onClick={() => {
-                                                        if (confirm('Are you sure you want to delete this user?')) {
+                                                    onClick={async () => {
+                                                        if (await confirm('Are you sure you want to delete this user?', { confirmLabel: 'Delete', variant: 'destructive' })) {
                                                             deleteMutation.mutate(user.id);
                                                         }
                                                     }}
@@ -303,6 +305,7 @@ export function UserManagement() {
                     }
                 }}
             />
+            <ConfirmDialog />
         </div>
     );
 }

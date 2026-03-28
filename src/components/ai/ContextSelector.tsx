@@ -112,14 +112,14 @@ export function ContextSelector({ selectedContexts, onContextChange, currentView
 
   const handleAddCustomText = () => {
     if (!customText.trim()) return;
-    
+
     const newContext: ContextItem = {
       id: `text-${Date.now()}`,
       type: 'text',
       label: customText.trim().slice(0, 50) + (customText.length > 50 ? '...' : ''),
       description: customText.trim(),
     };
-    
+
     onContextChange([...selectedContexts, newContext]);
     setCustomText('');
     setShowTextInput(false);
@@ -218,14 +218,16 @@ export function ContextSelector({ selectedContexts, onContextChange, currentView
                       className="min-h-[60px] text-xs resize-none"
                     />
                     <div className="flex gap-2">
-                      <Button size="sm" className="flex-1 text-xs" onClick={handleAddCustomText}>
+                      <Button size="sm" className="flex-1 text-xs" onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); handleAddCustomText(); }}>
                         Add
                       </Button>
                       <Button
                         size="sm"
                         variant="outline"
                         className="text-xs"
-                        onClick={() => {
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
                           setShowTextInput(false);
                           setCustomText('');
                         }}
@@ -362,14 +364,16 @@ export function ContextSelector({ selectedContexts, onContextChange, currentView
                   className="min-h-[60px] text-xs resize-none"
                 />
                 <div className="flex gap-2">
-                  <Button size="sm" className="flex-1 text-xs" onClick={handleAddCustomText}>
+                  <Button size="sm" className="flex-1 text-xs" onPointerDown={(e) => { e.preventDefault(); e.stopPropagation(); handleAddCustomText(); }}>
                     Add
                   </Button>
                   <Button
                     size="sm"
                     variant="outline"
                     className="text-xs"
-                    onClick={() => {
+                    onPointerDown={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
                       setShowTextInput(false);
                       setCustomText('');
                     }}
@@ -424,14 +428,14 @@ export function formatContextsForAI(contexts: ContextItem[]): string {
   const texts = contexts.filter(c => c.type === 'text');
 
   let contextString = '';
-  
+
   if (pages.length > 0) {
     contextString += `[Context Pages: ${pages.map(p => p.label).join(', ')}] `;
   }
-  
+
   if (texts.length > 0) {
     contextString += `[Additional Context: ${texts.map(t => t.description).join('; ')}] `;
   }
-  
+
   return contextString;
 }

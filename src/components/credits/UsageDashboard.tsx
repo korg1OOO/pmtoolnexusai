@@ -76,12 +76,11 @@ export function UsageDashboard() {
         if (!usage) return;
 
         // Convert to CSV
-        const headers = ['Date', 'Feature', 'Model', 'Tokens', 'Credits', 'Success'];
+        const headers = ['Date', 'Feature', 'Model', 'Credits Used', 'Success'];
         const rows = usage.map(log => [
             new Date(log.created_at).toLocaleString(),
             log.feature_type,
             log.model_name,
-            log.total_tokens,
             log.credits_used,
             log.success ? 'Yes' : 'No'
         ]);
@@ -143,20 +142,14 @@ export function UsageDashboard() {
                         color="text-purple-600"
                     />
                     <StatsCard
-                        label="Total Tokens"
-                        value={stats?.total_tokens.toLocaleString() || '0'}
-                        icon={Hash}
-                        color="text-blue-600"
-                    />
-                    <StatsCard
                         label="AI Requests"
                         value={stats?.total_requests.toLocaleString() || '0'}
                         icon={Activity}
                         color="text-green-600"
                     />
                     <StatsCard
-                        label="Avg per Request"
-                        value={stats?.avg_credits_per_request.toFixed(3) || '0'}
+                        label="Avg Credits / Request"
+                        value={stats?.avg_credits_per_request.toFixed(2) || '0'}
                         icon={TrendingUp}
                         color="text-orange-600"
                         suffix=" credits"
@@ -270,8 +263,7 @@ export function UsageDashboard() {
                                 <TableHead>Feature</TableHead>
                                 <TableHead className="text-right">Requests</TableHead>
                                 <TableHead className="text-right">Credits Used</TableHead>
-                                <TableHead className="text-right">Avg Tokens</TableHead>
-                                <TableHead className="text-right">Avg Credits</TableHead>
+                                <TableHead className="text-right">Avg Credits/Request</TableHead>
                             </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -284,10 +276,7 @@ export function UsageDashboard() {
                                         <TableCell className="text-right">{feature.count}</TableCell>
                                         <TableCell className="text-right">{feature.credits.toFixed(2)}</TableCell>
                                         <TableCell className="text-right">
-                                            {Math.round(feature.avg_tokens).toLocaleString()}
-                                        </TableCell>
-                                        <TableCell className="text-right">
-                                            {(feature.credits / feature.count).toFixed(3)}
+                                            {(feature.credits / feature.count).toFixed(2)}
                                         </TableCell>
                                     </TableRow>
                                 ))

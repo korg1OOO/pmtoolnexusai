@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { usePermissions } from '@/hooks/usePermissions';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -33,6 +34,9 @@ import { useProjectContext } from '@/contexts/ProjectContext';
 import { useTeamMembers, useAddTeamMember, useRemoveTeamMember } from '@/hooks/useTeamMembers';
 import { ProjectRole } from '@/types/ai-agents';
 import { RoleManagementDialog } from '@/components/team/RoleManagementDialog';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
+import { AttendanceReportView } from '@/components/analytics/AttendanceReportView';
+import { useSubscriptionLimits } from '@/hooks/useSubscriptionLimits';
 
 interface Team {
   id: string;
@@ -108,9 +112,13 @@ const roles: Role[] = [
 
 export default function TeamManagementView() {
   const { settings } = useProjectContext();
+  const { confirm, ConfirmDialog } = useConfirmDialog();
   const { data: members, isLoading } = useTeamMembers(settings.id);
   const addMember = useAddTeamMember();
   const removeMember = useRemoveTeamMember();
+  const { can } = usePermissions(settings?.id);
+  const canManageMembers = can('project.members.manage');
+  const { canAddTeamMember, requireLimit, usage, limits } = useSubscriptionLimits();
 
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
@@ -125,6 +133,9 @@ export default function TeamManagementView() {
   const getRoleInfo = (roleId: string) => roles.find((r) => r.id === roleId) || roles[5];
 
   const handleAddMember = async () => {
+    // Enforce subscription team member limit
+    if (!requireLimit('teamMembers')) return;
+
     try {
       await addMember.mutateAsync({
         projectId: settings.id,
@@ -138,8 +149,8 @@ export default function TeamManagementView() {
     }
   };
 
-  const handleRemoveMember = (userId: string) => {
-    if (confirm('Are you sure you want to remove this member?')) {
+  const handleRemoveMember = async (userId: string) => {
+    if (await confirm('Are you sure you want to remove this member?', { confirmLabel: 'Remove', variant: 'destructive' })) {
       removeMember.mutate({ projectId: settings.id, userId });
     }
   };
@@ -169,15 +180,15 @@ export default function TeamManagementView() {
           <p className="text-muted-foreground">Manage project team members, roles, and permissions</p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setIsRoleManagementOpen(true)}>
+          {canManageMembers && <Button variant="outline" onClick={() => setIsRoleManagementOpen(true)}>
             <Settings className="h-4 w-4 mr-2" />
             Manage Roles
-          </Button>
-          <Dialog open={isAddMemberOpen} onOpenChange={setIsAddMemberOpen}>
+          </Button>}
+          {canManageMembers && <Dialog open={isAddMemberOpen} onOpenChange={setIsAddMemberOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2">
+              <Button className="gap-2" disabled={!canAddTeamMember}>
                 <UserPlus className="h-4 w-4" />
-                Add Member
+                Add Member{!canAddTeamMember && ` (${limits.teamMembers} limit)`}
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">
@@ -224,7 +235,7 @@ export default function TeamManagementView() {
                 </Button>
               </DialogFooter>
             </DialogContent>
-          </Dialog>
+          </Dialog>}
         </div>
       </div>
 
@@ -237,7 +248,7 @@ export default function TeamManagementView() {
                 <Users className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-foreground">{members?.length || 0}</p>
+                <p className="text-2xl font-bold text-foreground">{members?.length || 0}{limits.teamMembers !== -1 && <span className="text-sm font-normal text-muted-foreground"> / {limits.teamMembers}</span>}</p>
                 <p className="text-sm text-muted-foreground">Total Members</p>
               </div>
             </div>
@@ -269,6 +280,10 @@ export default function TeamManagementView() {
           <TabsTrigger value="roles" className="gap-2">
             <Shield className="h-4 w-4" />
             Roles & Permissions
+          </TabsTrigger>
+          <TabsTrigger value="attendance" className="gap-2">
+            <UserCheck className="h-4 w-4" />
+            Attendance Report
           </TabsTrigger>
         </TabsList>
 
@@ -340,10 +355,10 @@ export default function TeamManagementView() {
                             </Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem className="text-destructive" onClick={() => handleRemoveMember(member.id)}>
+                            {canManageMembers && <DropdownMenuItem className="text-destructive" onClick={() => handleRemoveMember(member.id)}>
                               <Trash2 className="h-4 w-4 mr-2" />
                               Remove from Project
-                            </DropdownMenuItem>
+                            </DropdownMenuItem>}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </div>
@@ -383,6 +398,11 @@ export default function TeamManagementView() {
             ))}
           </div>
         </TabsContent>
+
+        {/* Attendance Report Tab */}
+        <TabsContent value="attendance" className="flex-1 mt-4">
+          <AttendanceReportView programId={settings.id} />
+        </TabsContent>
       </Tabs>
 
       {/* Role Management Dialog */}
@@ -391,6 +411,7 @@ export default function TeamManagementView() {
         onOpenChange={setIsRoleManagementOpen}
         projectId={settings.id}
       />
+      <ConfirmDialog />
     </div >
   );
 }

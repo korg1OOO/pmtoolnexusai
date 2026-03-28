@@ -51,6 +51,9 @@ export interface AIMessageMetadata {
   executionTime?: number;
   agentsUsed?: AgentType[];
   permissionDenied?: boolean;
+  creditsDeducted?: number;
+  tokensDeducted?: number;
+  link?: string;
 }
 
 export interface IntentClassification {
@@ -103,6 +106,12 @@ export interface AIOrchestratorResponse {
   needsClarification?: boolean;
   clarifyingQuestion?: ClarifyingQuestion;
   error?: string;
+  requiresConfirmation?: boolean;
+  pendingActionId?: string;
+  toolName?: string;
+  toolResult?: unknown;
+  diff?: Record<string, unknown>;
+  summary?: string;
 }
 
 // Agent display configuration

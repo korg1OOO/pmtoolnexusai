@@ -143,7 +143,8 @@ CREATE POLICY "Authenticated users can manage shares" ON public.document_shares
   FOR ALL USING (auth.uid() IS NOT NULL);
 
 -- Create storage bucket for project documents
-INSERT INTO storage.buckets (id, name, public) VALUES ('project-documents', 'project-documents', true);
+INSERT INTO storage.buckets (id, name, public) VALUES ('project-documents', 'project-documents', true)
+ON CONFLICT (id) DO NOTHING;
 
 -- Storage RLS policies
 CREATE POLICY "Authenticated users can upload documents" ON storage.objects

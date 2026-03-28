@@ -25,6 +25,7 @@ import {
 } from '@/hooks/useContentManagement';
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 export function AdminBlog() {
     const navigate = useNavigate();
@@ -36,6 +37,7 @@ export function AdminBlog() {
     const { data: categories = [] } = useCategories('blog');
     const { data: allPosts = [], isLoading } = useBlogPosts();
     const deleteBlogPost = useDeleteBlogPost();
+    const { confirm, ConfirmDialog } = useConfirmDialog();
 
     // Filter posts
     const filteredPosts = allPosts.filter((post) => {
@@ -176,8 +178,8 @@ export function AdminBlog() {
                             key={post.id}
                             post={post}
                             onEdit={() => navigate(`/admin/blog/${post.id}/edit`)}
-                            onDelete={(id) => {
-                                if (confirm('Are you sure you want to delete this post?')) {
+                            onDelete={async (id) => {
+                                if (await confirm('Are you sure you want to delete this post?', { confirmLabel: 'Delete', variant: 'destructive' })) {
                                     deleteBlogPost.mutate(id);
                                 }
                             }}
@@ -185,6 +187,7 @@ export function AdminBlog() {
                     ))
                 )}
             </div>
+            <ConfirmDialog />
         </div>
     );
 }

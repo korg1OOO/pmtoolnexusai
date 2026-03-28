@@ -2,6 +2,7 @@
 -- Email notifications, in-app notifications, and user preferences
 
 -- In-app notifications
+DROP TABLE IF EXISTS notifications CASCADE;
 CREATE TABLE IF NOT EXISTS notifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID NOT NULL REFERENCES profiles(id) ON DELETE CASCADE,
@@ -42,6 +43,7 @@ CREATE INDEX IF NOT EXISTS idx_email_queue_status ON email_queue(status) WHERE s
 CREATE INDEX IF NOT EXISTS idx_email_queue_scheduled ON email_queue(scheduled_for) WHERE status = 'pending';
 
 -- Notification preferences
+DROP TABLE IF EXISTS notification_preferences CASCADE;
 CREATE TABLE IF NOT EXISTS notification_preferences (
     user_id UUID PRIMARY KEY REFERENCES profiles(id) ON DELETE CASCADE,
     
@@ -63,6 +65,7 @@ CREATE TABLE IF NOT EXISTS notification_preferences (
 );
 
 -- Email templates metadata
+DROP TABLE IF EXISTS email_templates CASCADE;
 CREATE TABLE IF NOT EXISTS email_templates (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,

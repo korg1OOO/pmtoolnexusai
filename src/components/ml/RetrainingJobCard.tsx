@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ interface RetrainingJobCardProps {
  * Displays retraining job status in a card format
  */
 export const RetrainingJobCard = ({ job }: RetrainingJobCardProps) => {
+    const navigate = useNavigate();
     const getStatusIcon = () => {
         switch (job.status) {
             case 'completed':
@@ -41,7 +43,7 @@ export const RetrainingJobCard = ({ job }: RetrainingJobCardProps) => {
         ? Math.round((new Date(job.completed_at).getTime() - new Date(job.started_at).getTime()) / 1000 / 60)
         : null;
 
-    const progress = job.status === 'running' ? 50 : job.status === 'completed' ? 100 : 0;
+    const progress = job.status === 'completed' ? 100 : job.status === 'running' ? ((job as any).progress_percent ?? 50) : 0;
 
     return (
         <Card className="p-4">
@@ -120,10 +122,7 @@ export const RetrainingJobCard = ({ job }: RetrainingJobCardProps) => {
                     size="sm"
                     variant="outline"
                     className="w-full mt-4"
-                    onClick={() => {
-                        // Navigate to model details
-                        window.location.href = `/admin/ml/models/${job.new_model_id}`;
-                    }}
+                    onClick={() => navigate(`/admin/ml/models/${job.new_model_id}`)}
                 >
                     View New Model
                 </Button>

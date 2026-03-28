@@ -57,7 +57,6 @@ export default function ProjectCharterView() {
     if (!project?.id) return;
     await updateCharter.mutateAsync({
       project_id: project.id,
-      name: `${project.name} Charter`,
       status: 'Draft',
       version: '1.0',
       vision: '',

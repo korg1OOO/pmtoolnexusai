@@ -71,15 +71,36 @@ export const useUserPreferences = () => {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) throw new Error("No user");
 
-            const { error } = await supabase
+            // Check if a row already exists for this user+key pair
+            const { data: existing, error: selectError } = await supabase
                 .from("user_preferences")
-                .upsert({
-                    user_id: user.id,
-                    preference_key: key,
-                    preference_value: value as any
-                }, { onConflict: 'user_id, preference_key' });
+                .select("id")
+                .eq("user_id", user.id)
+                .eq("preference_key", key)
+                .maybeSingle();
 
-            if (error) throw error;
+            if (selectError) throw selectError;
+
+            if (existing) {
+                // Row exists — update it
+                const { error } = await supabase
+                    .from("user_preferences")
+                    .update({ preference_value: value as any })
+                    .eq("user_id", user.id)
+                    .eq("preference_key", key);
+                if (error) throw error;
+            } else {
+                // No row yet — insert it
+                const { error } = await supabase
+                    .from("user_preferences")
+                    .insert({
+                        user_id: user.id,
+                        preference_key: key,
+                        preference_value: value as any,
+                    });
+                if (error) throw error;
+            }
+
             return { key, value };
         },
         onSuccess: (data) => {

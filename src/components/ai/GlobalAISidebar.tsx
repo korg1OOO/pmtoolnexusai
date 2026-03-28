@@ -28,6 +28,7 @@ import { cn } from '@/lib/utils';
 import { useAIChat } from '@/hooks/useAIChat';
 import { useAIAgent } from '@/hooks/useAIAgents';
 import { useUserRole } from '@/hooks/useUserRole';
+import { usePermissions } from '@/hooks/usePermissions';
 import { ChatMessage } from './ChatMessage';
 import { AgentIndicator } from './AgentIndicator';
 import { ActionConfirmDialog } from './ActionConfirmDialog';
@@ -38,6 +39,8 @@ import { ContextSelector, formatContextsForAI, type ContextItem } from './Contex
 import { ChatAttachments, AttachmentPreviewBar, VoiceInputButton, type ChatAttachment } from './ChatAttachments';
 import { ROLE_DISPLAY_NAMES, type ProjectRole, type AIAction } from '@/types/ai-agents';
 import { toast } from 'sonner';
+import { AgentConfirmationDialog } from './AgentConfirmationDialog';
+import { useAgentActions } from '@/hooks/useAgentActions';
 
 interface GlobalAISidebarProps {
   isOpen: boolean;
@@ -59,6 +62,7 @@ export function GlobalAISidebar({
   const [pendingAction, setPendingAction] = useState<AIAction | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [intentMode, setIntentMode] = useState<IntentMode>('plan');
+  const { can } = usePermissions(projectId);
   const [showContext, setShowContext] = useState(true);
   const [selectedContexts, setSelectedContexts] = useState<ContextItem[]>([]);
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
@@ -74,6 +78,14 @@ export function GlobalAISidebar({
   const viewContext = getViewContext(currentView);
   const suggestedQuestions = getSuggestedQuestions(currentView);
 
+  // Agentic tool-calling confirmation (real DB writes via make-checker)
+  const {
+    confirmationRequest,
+    executeApprovedAction,
+    dismissConfirmation,
+    triggerConfirmation,
+  } = useAgentActions();
+
   const {
     messages,
     conversations,
@@ -87,7 +99,13 @@ export function GlobalAISidebar({
     selectConversation,
     deleteConversation,
     clearClarification,
-  } = useAIChat({ projectId, currentView, intentMode });
+  } = useAIChat({
+    projectId,
+    currentView,
+    intentMode,
+    onActionRequest: triggerConfirmation,
+    onIntentModeChange: setIntentMode
+  });
 
   // Fetch active agent config from DB when currentAgent is set
   const { data: activeAgentConfig } = useAIAgent(currentAgent || '');
@@ -184,6 +202,8 @@ export function GlobalAISidebar({
 
   const handleNewChat = async () => {
     await createConversation();
+    setInput('');
+    setAttachments([]);
     setShowHistory(false);
     setShowContext(true);
   };
@@ -265,9 +285,14 @@ export function GlobalAISidebar({
                   <Bot className="h-5 w-5 text-primary" />
                 </div>
                 <div>
-                  <h2 className="font-semibold">
-                    {activeAgentConfig ? activeAgentConfig.label : 'AI Assistant'}
-                  </h2>
+                  <div className="flex items-center gap-2">
+                    <h2 className="font-semibold">
+                      {activeAgentConfig ? activeAgentConfig.label : 'AI Assistant'}
+                    </h2>
+                    <Badge variant="secondary" className="capitalize text-[10px] px-1.5 py-0 h-4">
+                      {ROLE_DISPLAY_NAMES[userRole as ProjectRole] || userRole}
+                    </Badge>
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     {activeAgentConfig
                       ? `${activeAgentConfig.model_provider} · ${activeAgentConfig.model_name}`
@@ -289,6 +314,27 @@ export function GlobalAISidebar({
                   </TooltipTrigger>
                   <TooltipContent>History</TooltipContent>
                 </Tooltip>
+                {activeConversationId && (
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                        onClick={() => {
+                          if (activeConversationId) {
+                            deleteConversation(activeConversationId);
+                            setInput('');
+                            setAttachments([]);
+                          }
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>Clear chat</TooltipContent>
+                  </Tooltip>
+                )}
                 <Button
                   variant="ghost"
                   size="icon"
@@ -298,20 +344,6 @@ export function GlobalAISidebar({
                   <X className="h-4 w-4" />
                 </Button>
               </div>
-            </div>
-
-            {/* Context Banner - Current View */}
-            <div className="px-3 py-2 border-b bg-muted/20 flex items-center justify-between">
-              <div className="flex items-center gap-2 text-sm">
-                <Badge variant="outline" className="gap-1">
-                  <IconComponent className="h-3 w-3" />
-                  {viewContext.title}
-                </Badge>
-                <span className="text-muted-foreground text-xs">Active context</span>
-              </div>
-              <Badge variant="secondary" className="capitalize text-xs">
-                {ROLE_DISPLAY_NAMES[userRole as ProjectRole] || userRole}
-              </Badge>
             </div>
 
             {/* Intent Mode Toggle */}
@@ -500,33 +532,7 @@ export function GlobalAISidebar({
 
             {/* Input Area */}
             <div className="border-t bg-muted/20">
-              {/* Context Attachment Bar - Compact inline display */}
-              <div className="px-3 pt-2 pb-1 flex items-center gap-2 flex-wrap">
-                <span className="text-xs text-muted-foreground">Context:</span>
-                {selectedContexts.map((ctx) => (
-                  <Badge
-                    key={ctx.id}
-                    variant="secondary"
-                    className="gap-1 pr-1 text-xs h-5"
-                  >
-                    {ctx.type === 'page' ? ctx.icon : <Lightbulb className="h-3 w-3" />}
-                    <span className="max-w-[60px] truncate">{ctx.label}</span>
-                    <button
-                      onClick={() => setSelectedContexts(selectedContexts.filter(c => c.id !== ctx.id))}
-                      className="ml-0.5 hover:bg-muted rounded p-0.5"
-                      aria-label="Remove context"
-                    >
-                      <X className="h-2.5 w-2.5" />
-                    </button>
-                  </Badge>
-                ))}
-                <ContextSelector
-                  selectedContexts={selectedContexts}
-                  onContextChange={setSelectedContexts}
-                  currentView={currentView}
-                  compact
-                />
-              </div>
+              {/* Context Attachment Bar (Removed) */}
 
               {/* Attachment preview bar */}
               <AttachmentPreviewBar
@@ -539,14 +545,23 @@ export function GlobalAISidebar({
                   <Textarea
                     ref={textareaRef}
                     value={input}
-                    onChange={(e) => setInput(e.target.value)}
+                    onChange={(e) => {
+                      setInput(e.target.value);
+                      e.target.style.height = 'auto';
+                      e.target.style.height = `${Math.min(e.target.scrollHeight, 240)}px`;
+                    }}
                     onKeyDown={handleKeyDown}
                     placeholder={
                       intentMode === 'plan'
                         ? "Ask about your project..."
                         : "What would you like to do?"
                     }
-                    className="min-h-[60px] max-h-[120px] resize-none text-sm"
+                    className={cn(
+                      "min-h-[60px] max-h-[240px] resize-none text-sm transition-colors",
+                      intentMode === 'plan'
+                        ? "bg-blue-500/5 border-blue-500/30 focus-visible:ring-blue-500/30"
+                        : "bg-amber-500/5 border-amber-500/30 focus-visible:ring-amber-500/30"
+                    )}
                     disabled={isSending}
                   />
                   {/* Attachment and voice buttons */}
@@ -600,7 +615,7 @@ export function GlobalAISidebar({
         )}
       </AnimatePresence>
 
-      {/* Action Confirmation Dialog */}
+      {/* Original Action Confirmation Dialog (legacy chat-action pattern) */}
       <ActionConfirmDialog
         action={pendingAction}
         open={!!pendingAction}
@@ -608,6 +623,15 @@ export function GlobalAISidebar({
         isLoading={isActionLoading}
         onConfirm={handleConfirmAction}
         onCancel={handleCancelAction}
+      />
+
+      {/* Agentic Tool-Calling Confirmation Dialog (real DB writes with maker-checker) */}
+      <AgentConfirmationDialog
+        request={confirmationRequest}
+        onClose={dismissConfirmation}
+        onApproved={({ pendingActionId, toolName }) =>
+          executeApprovedAction(pendingActionId as string, toolName as string)
+        }
       />
     </>
   );

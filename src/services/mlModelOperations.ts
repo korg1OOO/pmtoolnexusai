@@ -160,15 +160,27 @@ export async function getModelPerformance(
         const cutoffDate = new Date(Date.now() - timeRangeHours * 60 * 60 * 1000).toISOString();
 
         // Get predictions from the specified time range
-        const { data: predictions, error } = await supabase
-            .from('ml_predictions')
-            .select('confidence_score, created_at')
-            .eq('prediction_type', modelType)
-            .gte('created_at', cutoffDate);
+        const [predictionsResult, executionLogsResult] = await Promise.all([
+            supabase
+                .from('ml_predictions')
+                .select('confidence_score, created_at')
+                .eq('prediction_type', modelType)
+                .gte('created_at', cutoffDate),
+            // Query ml_execution_logs for real telemetry (table created via migration)
+            (supabase as any)
+                .from('ml_execution_logs')
+                .select('execution_time_ms, cache_hit, error_occurred')
+                .eq('prediction_type', modelType)
+                .gte('created_at', cutoffDate),
+        ]);
 
-        if (error) throw error;
+        if (predictionsResult.error) throw predictionsResult.error;
 
-        if (!predictions || predictions.length === 0) {
+        const predictions = predictionsResult.data ?? [];
+        const execLogs: Array<{ execution_time_ms: number; cache_hit: boolean; error_occurred: boolean }>
+            = executionLogsResult.error ? [] : (executionLogsResult.data ?? []);
+
+        if (predictions.length === 0) {
             return {
                 data: {
                     model_id: 'current',
@@ -183,22 +195,28 @@ export async function getModelPerformance(
             };
         }
 
-        // Calculate metrics
+        // Calculate confidence metrics from ml_predictions
         const totalPredictions = predictions.length;
-        const avgConfidence = predictions.reduce((sum, p) => sum + p.confidence_score, 0) / totalPredictions;
-        const lowConfidenceCount = predictions.filter(p => p.confidence_score < 0.7).length;
+        const avgConfidence = predictions.reduce((sum: number, p: any) => sum + p.confidence_score, 0) / totalPredictions;
+        const lowConfidenceCount = predictions.filter((p: any) => p.confidence_score < 0.7).length;
 
-        // Performance metrics require ml_execution_logs table
-        // Current Schema: ml_predictions (confidence_score, prediction_data) only.
-        // Partial Wiring: We return real counts/confidence, but 0 for execution metrics until schema is updated.
+        // Calculate execution telemetry from ml_execution_logs
+        const totalLogs = execLogs.length;
+        const errorCount = execLogs.filter(l => l.error_occurred).length;
+        const cacheHits = execLogs.filter(l => l.cache_hit).length;
+        const cacheHitRate = totalLogs > 0 ? cacheHits / totalLogs : 0;
+        const avgExecutionTime = totalLogs > 0
+            ? execLogs.reduce((sum, l) => sum + l.execution_time_ms, 0) / totalLogs
+            : 0;
+
         const performance: ModelPerformance = {
             model_id: 'current',
             prediction_count: totalPredictions,
             average_confidence: Math.round(avgConfidence * 1000) / 1000,
             low_confidence_count: lowConfidenceCount,
-            error_count: 0, // Not available in current schema
-            cache_hit_rate: 0, // Not available in current schema
-            avg_execution_time_ms: 0, // Not available in current schema
+            error_count: errorCount,
+            cache_hit_rate: Math.round(cacheHitRate * 1000) / 1000,
+            avg_execution_time_ms: Math.round(avgExecutionTime),
         };
 
         return { data: performance, error: null };

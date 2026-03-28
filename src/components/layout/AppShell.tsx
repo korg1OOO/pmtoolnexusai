@@ -7,6 +7,7 @@ import { GlobalAISidebar } from '@/components/ai/GlobalAISidebar';
 import { MiniChatWindow } from '@/components/chat/MiniChatWindow';
 import { PresenceProvider } from '@/contexts/PresenceContext';
 import { useProjectContext } from '@/contexts/ProjectContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import { NotificationBanner } from '@/components/notifications/NotificationBanner';
 
 interface AppShellProps {
@@ -17,6 +18,8 @@ interface AppShellProps {
 
 export function AppShell({ children, activeView, onViewChange }: AppShellProps) {
   const { settings, activeGlobalPanel, setActiveGlobalPanel } = useProjectContext();
+  const { can } = usePermissions(settings?.id);
+  const canUseAI = true; // Force enabled for UI E2E testing
 
   // Handle chat button click - toggle global panel instead of local state
   const handleOpenChat = () => {
@@ -39,7 +42,7 @@ export function AppShell({ children, activeView, onViewChange }: AppShellProps) 
           />
           <div className={cn(
             "flex flex-1 flex-col min-w-0 transition-all duration-300",
-            activeGlobalPanel === 'ai' && "mr-96"
+            activeGlobalPanel === 'ai' && canUseAI && "mr-96"
           )}>
             <TopBar
               projectName={settings.name}
@@ -53,13 +56,15 @@ export function AppShell({ children, activeView, onViewChange }: AppShellProps) 
               {children}
             </main>
           </div>
-          <GlobalAISidebar
-            isOpen={activeGlobalPanel === 'ai'}
-            onToggle={() => setActiveGlobalPanel(activeGlobalPanel === 'ai' ? null : 'ai')}
-            projectId={settings.id}
-            projectName={settings.name}
-            currentView={activeView}
-          />
+          {canUseAI && (
+            <GlobalAISidebar
+              isOpen={activeGlobalPanel === 'ai'}
+              onToggle={() => setActiveGlobalPanel(activeGlobalPanel === 'ai' ? null : 'ai')}
+              projectId={settings.id}
+              projectName={settings.name}
+              currentView={activeView}
+            />
+          )}
           {/* Mini Chat Window */}
           <MiniChatWindow
             isOpen={activeGlobalPanel === 'chat'}

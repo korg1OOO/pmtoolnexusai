@@ -17,6 +17,7 @@ interface ProtectedProjectRouteProps {
 
 // Map routes to view IDs for sidebar active state
 const routeToViewMap: Record<string, string> = {
+    '/projects': 'projects',
     '/dashboard': 'dashboard',
     '/morning-briefing': 'morning-briefing',
     '/executive-dashboard': 'executive-dashboard',
@@ -25,7 +26,7 @@ const routeToViewMap: Record<string, string> = {
     '/program-timeline': 'program-timeline',
     '/program-documents': 'program-documents',
     '/planning': 'planning',
-    '/project-plan': 'planning',
+    '/project-plan': 'project-plan',
     '/child-plans': 'child-plans',
     '/gantt': 'gantt',
     '/child-gantt': 'child-gantt',
@@ -40,6 +41,7 @@ const routeToViewMap: Record<string, string> = {
     '/change-requests': 'change-requests',
     '/stakeholders': 'stakeholders',
     '/traceability': 'traceability',
+    '/requirements': 'requirements',
     '/actions': 'actions',
     '/risks': 'risks',
     '/issues': 'issues',
@@ -66,10 +68,17 @@ const routeToViewMap: Record<string, string> = {
     '/admin/templates': 'admin-templates',
     '/settings': 'settings',
     '/create-project': 'create-project',
+    '/meeting-analytics': 'meeting-analytics',
+    '/timeline-slippage': 'timeline-slippage',
+    '/collaboration-dashboard': 'collaboration-dashboard',
+    '/purchase-credits': 'purchase-credits',
+    '/usage-dashboard': 'usage-dashboard',
+    '/auto-recharge': 'auto-recharge',
 };
 
 // Reverse mapping: view ID to route path
 const viewToRouteMap: Record<string, string> = {
+    'projects': '/projects',
     'dashboard': '/dashboard',
     'morning-briefing': '/morning-briefing',
     'executive-dashboard': '/executive-dashboard',
@@ -78,6 +87,7 @@ const viewToRouteMap: Record<string, string> = {
     'program-timeline': '/program-timeline',
     'program-documents': '/program-documents',
     'planning': '/planning',
+    'project-plan': '/project-plan',
     'child-plans': '/child-plans',
     'gantt': '/gantt',
     'child-gantt': '/child-gantt',
@@ -92,6 +102,7 @@ const viewToRouteMap: Record<string, string> = {
     'change-requests': '/change-requests',
     'stakeholders': '/stakeholders',
     'traceability': '/traceability',
+    'requirements': '/requirements',
     'actions': '/actions',
     'risks': '/risks',
     'issues': '/issues',
@@ -118,6 +129,12 @@ const viewToRouteMap: Record<string, string> = {
     'admin-templates': '/admin/templates',
     'settings': '/settings',
     'create-project': '/create-project',
+    'meeting-analytics': '/meeting-analytics',
+    'timeline-slippage': '/timeline-slippage',
+    'collaboration-dashboard': '/collaboration-dashboard',
+    'purchase-credits': '/purchase-credits',
+    'usage-dashboard': '/usage-dashboard',
+    'auto-recharge': '/auto-recharge',
 };
 
 export function ProtectedProjectRoute({ children }: ProtectedProjectRouteProps) {

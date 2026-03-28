@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { motion } from 'framer-motion';
 import {
     BookOpen,
@@ -24,12 +24,23 @@ import {
     SelectValue,
 } from '@/components/ui/select';
 import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+    DialogTrigger,
+} from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import {
     getKnowledgeArticles,
     getFeaturedArticles,
     getPopularArticles,
     getArticleCategories,
     incrementViewCount,
-    markArticleHelpful
+    markArticleHelpful,
+    createKnowledgeArticle
 } from '@/services/knowledgeBaseService';
 
 interface KnowledgeBaseBrowserProps {
@@ -41,6 +52,12 @@ export function KnowledgeBaseBrowser({ scope, scopeId }: KnowledgeBaseBrowserPro
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string>('all');
     const [selectedType, setSelectedType] = useState<string>('all');
+
+    // Create Article State
+    const [isCreateOpen, setIsCreateOpen] = useState(false);
+    const [newTitle, setNewTitle] = useState('');
+    const [newContent, setNewContent] = useState('');
+    const queryClient = useQueryClient();
 
     // Fetch data
     const { data: articles = [], isLoading } = useQuery({
@@ -89,6 +106,31 @@ export function KnowledgeBaseBrowser({ scope, scopeId }: KnowledgeBaseBrowserPro
         { value: 'tutorial', label: 'Tutorial' }
     ];
 
+    const handleCreateArticle = async () => {
+        try {
+            await createKnowledgeArticle({
+                title: newTitle || 'Untitled Article',
+                content: newContent,
+                article_type: 'how-to',
+                scope: scope as any,
+                program_id: scope === 'program' ? scopeId : undefined,
+                workspace_id: scope === 'workspace' ? scopeId : undefined,
+                tenant_id: scope === 'tenant' ? scopeId : undefined,
+                status: 'published',
+                view_count: 0,
+                helpful_count: 0,
+                not_helpful_count: 0,
+                tags: []
+            });
+            setIsCreateOpen(false);
+            setNewTitle('');
+            setNewContent('');
+            queryClient.invalidateQueries({ queryKey: ['knowledge-articles'] });
+        } catch (error) {
+            console.error("Failed to create article:", error);
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Header */}
@@ -99,10 +141,34 @@ export function KnowledgeBaseBrowser({ scope, scopeId }: KnowledgeBaseBrowserPro
                         Searchable knowledge articles and best practices
                     </p>
                 </div>
-                <Button>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Create Article
-                </Button>
+                <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+                    <DialogTrigger asChild>
+                        <Button>
+                            <Plus className="w-4 h-4 mr-2" />
+                            Create Article
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                        <DialogHeader>
+                            <DialogTitle>Create New Article</DialogTitle>
+                            <DialogDescription>Add a new article to the knowledge base.</DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Title</label>
+                                <Input value={newTitle} onChange={(e) => setNewTitle(e.target.value)} placeholder="e.g. Coding Standards" />
+                            </div>
+                            <div className="space-y-2">
+                                <label className="text-sm font-medium">Content</label>
+                                <Textarea value={newContent} onChange={(e) => setNewContent(e.target.value)} placeholder="Write article content here..." rows={6} />
+                            </div>
+                        </div>
+                        <DialogFooter>
+                            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+                            <Button onClick={handleCreateArticle}>Create Article</Button>
+                        </DialogFooter>
+                    </DialogContent>
+                </Dialog>
             </div>
 
             {/* Featured Articles */}
@@ -199,8 +265,8 @@ export function KnowledgeBaseBrowser({ scope, scopeId }: KnowledgeBaseBrowserPro
                             whileTap={{ scale: 0.98 }}
                             onClick={() => setSelectedType(type.value)}
                             className={`p-3 rounded-lg border text-left transition-colors ${selectedType === type.value
-                                    ? 'bg-primary text-primary-foreground border-primary'
-                                    : 'bg-card hover:bg-accent'
+                                ? 'bg-primary text-primary-foreground border-primary'
+                                : 'bg-card hover:bg-accent'
                                 }`}
                         >
                             <div className="flex items-center gap-2 mb-1">

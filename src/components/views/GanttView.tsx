@@ -91,9 +91,11 @@ export default function GanttView() {
 
     dbTasks.forEach(t => {
       const task = taskMap.get(t.id)!;
+      // Only attach as child if parent exists in the map AND the current task is not somehow a root
       if (t.parent_id && taskMap.has(t.parent_id)) {
         taskMap.get(t.parent_id)!.children!.push(task);
       } else {
+        // If it doesn't have a parent, or parent isn't loaded, it's a root
         roots.push(task);
       }
     });
@@ -280,7 +282,10 @@ export default function GanttView() {
     const end = new Date(task.endDate);
     const totalDays = Math.max(1, (dateRange.end.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24));
     const startOffset = (start.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24);
-    const duration = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+
+    // Ensure duration is always at least 1 visual day if start == end
+    let duration = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+    if (duration < 0.5 && task.type !== 'milestone') duration = 1;
 
     const left = (startOffset / totalDays) * 100;
     const width = (duration / totalDays) * 100;

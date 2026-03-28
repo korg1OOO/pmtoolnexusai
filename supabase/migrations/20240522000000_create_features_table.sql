@@ -15,30 +15,38 @@ create table if not exists public.features (
 alter table public.features enable row level security;
 
 -- Policies
-create policy "Public features are viewable by everyone"
-    on public.features for select
-    using (true);
+do $$
+begin
+  -- Public read policy (no dependency)
+  if not exists (select 1 from pg_policies where policyname = 'Public features are viewable by everyone' and tablename = 'features') then
+    create policy "Public features are viewable by everyone" on public.features for select using (true);
+  end if;
 
-create policy "Admins can insert features"
-    on public.features for insert
-    with check (
-        auth.role() = 'service_role' 
-        or exists (select 1 from public.user_roles where user_id = auth.uid() and role = 'admin')
-    );
+  -- Admin policies (depend on user_roles) - only create if user_roles exists
+  if exists (select 1 from information_schema.tables where table_schema = 'public' and table_name = 'user_roles') then
+      if not exists (select 1 from pg_policies where policyname = 'Admins can insert features' and tablename = 'features') then
+        create policy "Admins can insert features" on public.features for insert with check (
+            auth.role() = 'service_role' 
+            or exists (select 1 from public.user_roles where user_id = auth.uid() and role = 'admin')
+        );
+      end if;
 
-create policy "Admins can update features"
-    on public.features for update
-    using (
-        auth.role() = 'service_role' 
-        or exists (select 1 from public.user_roles where user_id = auth.uid() and role = 'admin')
-    );
+      if not exists (select 1 from pg_policies where policyname = 'Admins can update features' and tablename = 'features') then
+        create policy "Admins can update features" on public.features for update using (
+            auth.role() = 'service_role' 
+            or exists (select 1 from public.user_roles where user_id = auth.uid() and role = 'admin')
+        );
+      end if;
 
-create policy "Admins can delete features"
-    on public.features for delete
-    using (
-        auth.role() = 'service_role' 
-        or exists (select 1 from public.user_roles where user_id = auth.uid() and role = 'admin')
-    );
+      if not exists (select 1 from pg_policies where policyname = 'Admins can delete features' and tablename = 'features') then
+        create policy "Admins can delete features" on public.features for delete using (
+            auth.role() = 'service_role' 
+            or exists (select 1 from public.user_roles where user_id = auth.uid() and role = 'admin')
+        );
+      end if;
+  end if;
+end
+$$;
 
 -- Seed Data (ProjectOye Features)
 insert into public.features (key, name, category, min_plan_tier, sort_order) values

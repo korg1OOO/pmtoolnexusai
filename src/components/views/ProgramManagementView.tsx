@@ -1,6 +1,10 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
+import { CrossProjectDependencyManager } from '@/components/program/CrossProjectDependencyManager';
+import { ProgramMilestoneTracker } from '@/components/program/ProgramMilestoneTracker';
+import { SharedTaskBoard } from '@/components/program/SharedTaskBoard';
+import { ProgramInsightsDashboard } from '@/components/analytics/ProgramInsightsDashboard';
 import {
     Building2,
     Plus,
@@ -394,11 +398,23 @@ function ProgramDashboard({
                     </TabsTrigger>
                     <TabsTrigger value="milestones">
                         <Target className="h-4 w-4 mr-2" />
-                        Milestones ({milestones.length})
+                        Milestones
+                    </TabsTrigger>
+                    <TabsTrigger value="shared-tasks">
+                        <BarChart3 className="h-4 w-4 mr-2" />
+                        Shared Tasks
+                    </TabsTrigger>
+                    <TabsTrigger value="dependencies">
+                        <Settings className="h-4 w-4 mr-2" />
+                        Dependencies
                     </TabsTrigger>
                     <TabsTrigger value="members">
                         <Users className="h-4 w-4 mr-2" />
                         Members ({members.length})
+                    </TabsTrigger>
+                    <TabsTrigger value="insights">
+                        <TrendingUp className="h-4 w-4 mr-2" />
+                        Insights
                     </TabsTrigger>
                 </TabsList>
 
@@ -446,45 +462,15 @@ function ProgramDashboard({
                 </TabsContent>
 
                 <TabsContent value="milestones" className="space-y-4">
-                    {milestones.map(milestone => (
-                        <Card key={milestone.id}>
-                            <CardHeader>
-                                <div className="flex items-start justify-between">
-                                    <div>
-                                        <CardTitle className="text-base">{milestone.name}</CardTitle>
-                                        {milestone.description && (
-                                            <CardDescription>{milestone.description}</CardDescription>
-                                        )}
-                                    </div>
-                                    <Badge className={getStatusColor(milestone.status)}>
-                                        {milestone.status}
-                                    </Badge>
-                                </div>
-                            </CardHeader>
-                            <CardContent>
-                                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                                    <div className="flex items-center gap-2">
-                                        <Calendar className="h-4 w-4" />
-                                        Target: {new Date(milestone.target_date).toLocaleDateString()}
-                                    </div>
-                                    {milestone.actual_date && (
-                                        <div className="flex items-center gap-2">
-                                            <CheckCircle2 className="h-4 w-4" />
-                                            Actual: {new Date(milestone.actual_date).toLocaleDateString()}
-                                        </div>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    ))}
-                    {milestones.length === 0 && (
-                        <Card className="border-dashed">
-                            <CardContent className="flex flex-col items-center justify-center py-8">
-                                <Target className="h-8 w-8 text-muted-foreground mb-2" />
-                                <p className="text-muted-foreground">No milestones defined yet</p>
-                            </CardContent>
-                        </Card>
-                    )}
+                    <ProgramMilestoneTracker programId={program.id} />
+                </TabsContent>
+
+                <TabsContent value="shared-tasks" className="space-y-4">
+                    <SharedTaskBoard programId={program.id} />
+                </TabsContent>
+
+                <TabsContent value="dependencies" className="space-y-4">
+                    <CrossProjectDependencyManager programId={program.id} tenantId={program.portfolio_id ?? ''} />
                 </TabsContent>
 
                 <TabsContent value="members" className="space-y-4">
@@ -512,6 +498,10 @@ function ProgramDashboard({
                             </CardContent>
                         </Card>
                     )}
+                </TabsContent>
+
+                <TabsContent value="insights" className="space-y-4">
+                    <ProgramInsightsDashboard programId={program.id} />
                 </TabsContent>
             </Tabs>
         </div>
@@ -751,3 +741,5 @@ function formatCurrency(value: number) {
         maximumFractionDigits: 0,
     }).format(value);
 }
+
+export default ProgramManagementView;

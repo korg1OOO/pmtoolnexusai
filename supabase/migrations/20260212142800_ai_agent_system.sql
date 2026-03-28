@@ -10,7 +10,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 -- ========================================
 -- Core table storing all AI agent definitions
 CREATE TABLE IF NOT EXISTS public.ai_agents (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   agent_type TEXT UNIQUE NOT NULL, -- 'scheduler', 'finance', 'risk', etc.
   label TEXT NOT NULL,
   description TEXT,
@@ -46,7 +46,7 @@ COMMENT ON COLUMN public.ai_agents.system_prompt IS 'AI instructions defining ag
 -- ========================================
 -- Defines what each agent can do and who can use those capabilities
 CREATE TABLE IF NOT EXISTS public.ai_agent_capabilities (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   agent_id UUID NOT NULL REFERENCES public.ai_agents(id) ON DELETE CASCADE,
   capability_key TEXT NOT NULL, -- 'SCHEDULE_EDIT', 'FINANCE_VIEW', etc.
   description TEXT,
@@ -66,7 +66,7 @@ COMMENT ON COLUMN public.ai_agent_capabilities.requires_role IS 'Array of user r
 -- ========================================
 -- Flexible key-value storage for agent-specific configuration
 CREATE TABLE IF NOT EXISTS public.ai_agent_settings (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   agent_id UUID NOT NULL REFERENCES public.ai_agents(id) ON DELETE CASCADE,
   setting_key TEXT NOT NULL,
   setting_value JSONB NOT NULL, -- Flexible JSON storage
@@ -86,7 +86,7 @@ COMMENT ON COLUMN public.ai_agent_settings.setting_value IS 'JSON blob for any a
 -- ========================================
 -- Track different versions of agents for A/B testing and rollback
 CREATE TABLE IF NOT EXISTS public.ai_agent_versions (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   agent_id UUID NOT NULL REFERENCES public.ai_agents(id) ON DELETE CASCADE,
   version INTEGER NOT NULL,
   system_prompt TEXT,

@@ -3,9 +3,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Tables, TablesInsert, TablesUpdate } from '@/integrations/supabase/types';
 
-export type ChangeRequest = Tables<'change_requests'>;
-export type ChangeRequestInsert = TablesInsert<'change_requests'>;
-export type ChangeRequestUpdate = TablesUpdate<'change_requests'>;
+export type ChangeRequest = Tables<'change_requests'> & { custom_fields?: Record<string, any> };
+export type ChangeRequestInsert = TablesInsert<'change_requests'> & { custom_fields?: Record<string, any> };
+export type ChangeRequestUpdate = TablesUpdate<'change_requests'> & { custom_fields?: Record<string, any> };
 
 export function useChangeRequests(projectId: string | null) {
     return useQuery({

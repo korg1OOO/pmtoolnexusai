@@ -1,6 +1,7 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
-import { Bot, User, CheckCircle, XCircle } from 'lucide-react';
+import remarkGfm from 'remark-gfm';
+import { Bot, User, CheckCircle, XCircle, ArrowRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { AgentIndicator } from './AgentIndicator';
@@ -56,8 +57,8 @@ export function ChatMessage({ message, onActionRequest }: ChatMessageProps) {
       >
         {/* Agent Indicator (for assistant messages) */}
         {!isUser && message.agent_type && (
-          <AgentIndicator 
-            agentType={message.agent_type} 
+          <AgentIndicator
+            agentType={message.agent_type}
             metadata={message.metadata}
           />
         )}
@@ -76,11 +77,13 @@ export function ChatMessage({ message, onActionRequest }: ChatMessageProps) {
           ) : (
             <div className="prose prose-sm dark:prose-invert max-w-none">
               <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
                 components={{
                   p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
                   ul: ({ children }) => <ul className="mb-2 ml-4 list-disc">{children}</ul>,
                   ol: ({ children }) => <ol className="mb-2 ml-4 list-decimal">{children}</ol>,
-                  li: ({ children }) => <li className="mb-1">{children}</li>,
+                  // eslint-disable-next-line jsx-a11y/no-redundant-roles
+                  li: ({ children, ...props }) => <li className="mb-1" {...props}>{children}</li>,
                   strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
                   code: ({ children }) => (
                     <code className="px-1 py-0.5 rounded bg-muted-foreground/10 text-xs">
@@ -141,6 +144,22 @@ export function ChatMessage({ message, onActionRequest }: ChatMessageProps) {
           </div>
         )}
 
+        {/* Action Link / View Button */}
+        {!isUser && message.metadata?.link && (
+          <div className="mt-3">
+            <Button
+              variant="default"
+              size="sm"
+              className="h-8 text-xs bg-primary/10 text-primary hover:bg-primary/20"
+              onClick={() => {
+                window.location.href = message.metadata!.link as string;
+              }}
+            >
+              View Record <ArrowRight className="h-3 w-3 ml-1.5" />
+            </Button>
+          </div>
+        )}
+
         {/* Permission Denied Warning */}
         {message.metadata?.permissionDenied && (
           <div className="mt-2 text-xs text-destructive flex items-center gap-1">
@@ -156,17 +175,25 @@ export function ChatMessage({ message, onActionRequest }: ChatMessageProps) {
           </div>
         )}
 
-        {/* Timestamp */}
+        {/* Timestamp & Credits */}
         <div
           className={cn(
-            "text-xs text-muted-foreground mt-1",
-            isUser && "text-right"
+            "flex items-center gap-2 mt-1",
+            isUser ? "justify-end" : "justify-between"
           )}
         >
-          {new Date(message.created_at).toLocaleTimeString([], {
-            hour: '2-digit',
-            minute: '2-digit',
-          })}
+          <div className="text-[10px] text-muted-foreground">
+            {new Date(message.created_at).toLocaleTimeString([], {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </div>
+
+          {!isUser && message.metadata?.creditsDeducted !== undefined && (
+            <div className="text-[11px] text-muted-foreground font-normal">
+              Credits Used: {message.metadata.creditsDeducted as number}
+            </div>
+          )}
         </div>
       </div>
     </div>

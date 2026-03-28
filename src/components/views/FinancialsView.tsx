@@ -24,6 +24,7 @@ import { useFinancials } from '@/hooks/useFinancials';
 import { useResources } from '@/hooks/useResources';
 import { AddBudgetItemDialog } from '@/components/financials/AddBudgetItemDialog';
 import { AddInvoiceDialog } from '@/components/financials/AddInvoiceDialog';
+import { BudgetVarianceDetail } from '@/components/analytics/BudgetVarianceDetail';
 
 const budgetColors = {
   Personnel: 'bg-blue-500',
@@ -173,6 +174,7 @@ export default function FinancialsView() {
           <TabsTrigger value="budget">Budget</TabsTrigger>
           <TabsTrigger value="billing">Billing</TabsTrigger>
           <TabsTrigger value="forecast">Forecast</TabsTrigger>
+          <TabsTrigger value="variance">Budget Variance</TabsTrigger>
         </TabsList>
 
         <TabsContent value="budget" className="mt-6">
@@ -370,6 +372,10 @@ export default function FinancialsView() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="variance" className="mt-6">
+          <BudgetVarianceDetail projectId={settings.id} />
         </TabsContent>
       </Tabs>
 

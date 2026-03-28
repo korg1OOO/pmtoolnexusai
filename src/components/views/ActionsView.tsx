@@ -20,7 +20,10 @@ import {
   Timer,
   Bell,
   Loader2,
+  Table,
+  List,
 } from 'lucide-react';
+import { DataRegisterPage } from '@/components/ui/DataRegisterPage';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -56,6 +59,21 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useActions, Action, ActionInput, ActionPriority, ActionStatus } from '@/hooks/useActions';
 import { toast } from 'sonner';
+import { DynamicDataGrid, type DynamicColumnDef } from '@/components/ui/DynamicDataGrid';
+import { usePermissions } from '@/hooks/usePermissions';
+import { useProjectContext } from '@/contexts/ProjectContext';
+
+const STANDARD_COLUMNS: DynamicColumnDef<Action>[] = [
+  { key: 'title', label: 'Title', width: 240, type: 'text', sticky: true },
+  { key: 'description', label: 'Description', width: 300, type: 'text' },
+  { key: 'priority', label: 'Priority', width: 120, type: 'select', options: ['low', 'medium', 'high', 'critical'] },
+  { key: 'status', label: 'Status', width: 130, type: 'select', options: ['pending', 'in-progress', 'completed', 'deferred', 'cancelled'] },
+  { key: 'owner_name', label: 'Owner', width: 140, type: 'text' },
+  { key: 'due_date', label: 'Due Date', width: 130, type: 'date' },
+  { key: 'progress', label: 'Progress (%)', width: 120, type: 'text' },
+  { key: 'sla_target_hours', label: 'SLA Target (h)', width: 130, type: 'text' },
+  { key: 'created_by_name', label: 'Created By', width: 140, type: 'text' },
+];
 
 const getPriorityColor = (priority: ActionPriority) => {
   switch (priority) {
@@ -94,7 +112,7 @@ function SLATimer({ action }: { action: Action }) {
       setTimeRemaining(null);
       return;
     }
-    
+
     const calculateRemaining = () => {
       const startTime = new Date(action.sla_started_at!).getTime();
       const targetTime = startTime + (action.sla_target_hours! * 3600000);
@@ -102,7 +120,7 @@ function SLATimer({ action }: { action: Action }) {
     };
 
     setTimeRemaining(calculateRemaining());
-    
+
     const timer = setInterval(() => {
       setTimeRemaining(calculateRemaining());
     }, 60000);
@@ -121,8 +139,8 @@ function SLATimer({ action }: { action: Action }) {
     <div className={cn(
       'flex items-center gap-1.5 px-2 py-1 rounded-md text-xs font-medium',
       isBreached ? 'bg-destructive/10 text-destructive' :
-      isWarning ? 'bg-warning/10 text-warning' :
-      'bg-muted text-muted-foreground'
+        isWarning ? 'bg-warning/10 text-warning' :
+          'bg-muted text-muted-foreground'
     )}>
       <Timer className="h-3 w-3" />
       {isBreached ? (
@@ -143,7 +161,7 @@ interface ActionCardProps {
 function ActionCard({ action, isSelected, onClick }: ActionCardProps) {
   const StatusIcon = getStatusIcon(action.status);
   const isOverdue = action.due_date && new Date(action.due_date) < new Date() && action.status !== 'completed' && action.status !== 'cancelled';
-  
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -161,18 +179,18 @@ function ActionCard({ action, isSelected, onClick }: ActionCardProps) {
       <div className="flex items-start gap-3">
         <div className={cn(
           'h-10 w-10 rounded-lg flex items-center justify-center shrink-0',
-          action.status === 'completed' ? 'bg-success/10' : 
-          action.status === 'deferred' ? 'bg-warning/10' : 
-          action.sla_breached ? 'bg-destructive/10' : 'bg-muted'
+          action.status === 'completed' ? 'bg-success/10' :
+            action.status === 'deferred' ? 'bg-warning/10' :
+              action.sla_breached ? 'bg-destructive/10' : 'bg-muted'
         )}>
           <StatusIcon className={cn(
             'h-5 w-5',
             action.status === 'completed' ? 'text-success' :
-            action.status === 'deferred' ? 'text-warning' : 
-            action.sla_breached ? 'text-destructive' : 'text-muted-foreground'
+              action.status === 'deferred' ? 'text-warning' :
+                action.sla_breached ? 'text-destructive' : 'text-muted-foreground'
           )} />
         </div>
-        
+
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1 flex-wrap">
             <Badge variant={getPriorityColor(action.priority)}>{action.priority}</Badge>
@@ -184,9 +202,9 @@ function ActionCard({ action, isSelected, onClick }: ActionCardProps) {
               </Badge>
             )}
           </div>
-          
+
           <h3 className="font-medium text-sm line-clamp-1 mb-1">{action.title}</h3>
-          
+
           <div className="flex items-center gap-3 text-xs text-muted-foreground mb-2">
             <span className="flex items-center gap-1">
               <User className="h-3 w-3" />
@@ -227,12 +245,14 @@ interface ActionDetailPanelProps {
   onClose: () => void;
   onUpdate: (id: string, updates: Partial<ActionInput & { blocked_by?: string }>) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
+  canEdit: boolean;
+  canDelete: boolean;
 }
 
-function ActionDetailPanel({ action, onClose, onUpdate, onDelete }: ActionDetailPanelProps) {
+function ActionDetailPanel({ action, onClose, onUpdate, onDelete, canEdit, canDelete }: ActionDetailPanelProps) {
   const StatusIcon = getStatusIcon(action.status);
   const isOverdue = action.due_date && new Date(action.due_date) < new Date() && action.status !== 'completed' && action.status !== 'cancelled';
-  
+
   const handleStatusChange = async (status: ActionStatus) => {
     await onUpdate(action.id, { status });
   };
@@ -326,36 +346,40 @@ function ActionDetailPanel({ action, onClose, onUpdate, onDelete }: ActionDetail
               <Progress value={action.progress} className="flex-1" />
               <span className="text-sm font-medium">{action.progress}%</span>
             </div>
-            <div className="flex gap-2">
-              {[0, 25, 50, 75, 100].map(p => (
-                <Button
-                  key={p}
-                  variant={action.progress === p ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => handleProgressChange(p)}
-                >
-                  {p}%
-                </Button>
-              ))}
-            </div>
+            {canEdit && (
+              <div className="flex gap-2">
+                {[0, 25, 50, 75, 100].map(p => (
+                  <Button
+                    key={p}
+                    variant={action.progress === p ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleProgressChange(p)}
+                  >
+                    {p}%
+                  </Button>
+                ))}
+              </div>
+            )}
           </div>
 
-          <div className="space-y-2">
-            <span className="text-xs font-medium text-muted-foreground">Status Actions</span>
-            <div className="flex flex-wrap gap-2">
-              {(['pending', 'in-progress', 'completed', 'deferred', 'cancelled'] as ActionStatus[]).map(status => (
-                <Button
-                  key={status}
-                  variant={action.status === status ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => handleStatusChange(status)}
-                  className="capitalize"
-                >
-                  {status}
-                </Button>
-              ))}
+          {canEdit && (
+            <div className="space-y-2">
+              <span className="text-xs font-medium text-muted-foreground">Status Actions</span>
+              <div className="flex flex-wrap gap-2">
+                {(['pending', 'in-progress', 'completed', 'deferred', 'cancelled'] as ActionStatus[]).map(status => (
+                  <Button
+                    key={status}
+                    variant={action.status === status ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleStatusChange(status)}
+                    className="capitalize"
+                  >
+                    {status}
+                  </Button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {action.notes && (
             <div>
@@ -364,11 +388,13 @@ function ActionDetailPanel({ action, onClose, onUpdate, onDelete }: ActionDetail
             </div>
           )}
 
-          <div className="pt-4 border-t">
-            <Button variant="destructive" size="sm" onClick={() => onDelete(action.id)}>
-              Delete Action
-            </Button>
-          </div>
+          {canDelete && (
+            <div className="pt-4 border-t">
+              <Button variant="destructive" size="sm" onClick={() => onDelete(action.id)}>
+                Delete Action
+              </Button>
+            </div>
+          )}
         </div>
       </ScrollArea>
     </motion.div>
@@ -467,12 +493,33 @@ function AddActionDialog({ open, onOpenChange, onSubmit }: AddActionDialogProps)
 
 export default function ActionsView() {
   const { actions, loading, createAction, updateAction, deleteAction, pendingActions, inProgressActions, completedActions, slaBreachedActions, overdueActions } = useActions();
+  const { settings } = useProjectContext();
+  const { can } = usePermissions(settings.id);
   const [selectedAction, setSelectedAction] = useState<Action | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeTab, setActiveTab] = useState('all');
   const [ownerFilter, setOwnerFilter] = useState<string>('all');
+  const [customColumns, setCustomColumns] = useState<DynamicColumnDef<Action>[]>([]);
   const contentRef = useRef<HTMLDivElement>(null);
+
+  const handleCellSave = async (rowId: string, key: string, value: string) => {
+    const isCustom = !STANDARD_COLUMNS.find(c => c.key === key);
+    const item = actions.find(i => i.id === rowId);
+    if (!item) return;
+
+    if (isCustom) {
+      const cf = { ...(item.custom_fields ?? {}), [key]: value };
+      await updateAction(rowId, { custom_fields: cf });
+    } else {
+      if (key === 'progress' || key === 'sla_target_hours') {
+        const numVal = parseInt(value, 10);
+        await updateAction(rowId, { [key]: isNaN(numVal) ? undefined : numVal });
+      } else {
+        await updateAction(rowId, { [key]: value });
+      }
+    }
+  };
 
   const pdfSections: PDFExportSection[] = [
     { id: 'kpis', name: 'KPI Summary', selector: '[data-section="kpis"]' },
@@ -485,9 +532,9 @@ export default function ActionsView() {
     const matchesSearch = action.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (action.description?.toLowerCase().includes(searchQuery.toLowerCase()));
     const matchesOwner = ownerFilter === 'all' || action.owner_name === ownerFilter;
-    
+
     if (!matchesSearch || !matchesOwner) return false;
-    
+
     if (activeTab === 'all') return true;
     if (activeTab === 'pending') return action.status === 'pending';
     if (activeTab === 'in-progress') return action.status === 'in-progress';
@@ -503,112 +550,118 @@ export default function ActionsView() {
     );
   }
 
-  return (
-    <div className="flex h-full">
-      <div className="flex-1 flex flex-col" ref={contentRef}>
-        <div className="flex items-center justify-between p-4 border-b bg-card">
-          <div className="flex items-center gap-3">
-            <CheckCircle2 className="h-6 w-6 text-primary" />
-            <h2 className="text-lg font-semibold">Actions Tracker</h2>
-            <Badge>{actions.length} Actions</Badge>
-          </div>
-          <div className="flex items-center gap-2">
-            <PDFExporter
-              title="Actions Tracker"
-              filename="actions-tracker"
-              contentRef={contentRef}
-              sections={pdfSections}
-              showSectionPicker
-              variant="dropdown"
+  const kpiCards = (
+    <>
+      <KPICard title="Total Actions" value={actions.length.toString()} subtitle="All time" icon={CheckCircle2} status="neutral" />
+      <KPICard title="Pending" value={pendingActions.length.toString()} subtitle="Not started" icon={CircleDot} status="neutral" />
+      <KPICard title="In Progress" value={inProgressActions.length.toString()} subtitle="Active" icon={PlayCircle} status="success" />
+      <KPICard title="SLA Breached" value={slaBreachedActions.length.toString()} subtitle="Overdue SLA" icon={Bell} status={slaBreachedActions.length > 0 ? 'warning' : 'success'} />
+      <KPICard title="Overdue" value={overdueActions.length.toString()} subtitle="Past due date" icon={Clock} status={overdueActions.length > 0 ? 'warning' : 'success'} />
+    </>
+  );
+
+  const toolbarFilters = (
+    <Select value={ownerFilter} onValueChange={setOwnerFilter}>
+      <SelectTrigger className="w-40 h-8 text-xs">
+        <User className="h-3.5 w-3.5 mr-2" />
+        <SelectValue placeholder="Filter by owner" />
+      </SelectTrigger>
+      <SelectContent>
+        <SelectItem value="all">All Owners</SelectItem>
+        {owners.map(owner => (
+          <SelectItem key={owner} value={owner!}>{owner}</SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+
+  const listModeControls = (
+    <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
+      <TabsList className="h-full bg-transparent p-0">
+        <TabsTrigger value="all" className="h-full text-xs px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md">All ({actions.length})</TabsTrigger>
+        <TabsTrigger value="pending" className="h-full text-xs px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md">Pending ({pendingActions.length})</TabsTrigger>
+        <TabsTrigger value="in-progress" className="h-full text-xs px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md">In Progress ({inProgressActions.length})</TabsTrigger>
+        <TabsTrigger value="sla-breached" className="h-full text-xs px-3 data-[state=active]:bg-background data-[state=active]:shadow-sm rounded-md">SLA Breached ({slaBreachedActions.length})</TabsTrigger>
+      </TabsList>
+    </Tabs>
+  );
+
+  const listContent = (
+    <>
+      <div className="space-y-3" data-section="list">
+        {filteredActions.length === 0 ? (
+          <Card className="p-8 text-center">
+            <p className="text-muted-foreground">No actions found. Create your first action to get started.</p>
+          </Card>
+        ) : (
+          filteredActions.map(action => (
+            <ActionCard
+              key={action.id}
+              action={action}
+              isSelected={selectedAction?.id === action.id}
+              onClick={() => setSelectedAction(action)}
             />
-            <Button variant="outline" size="sm"><Filter className="h-4 w-4 mr-1" />Filter</Button>
-            <Button size="sm" onClick={() => setAddDialogOpen(true)}><Plus className="h-4 w-4 mr-1" />New Action</Button>
-          </div>
-        </div>
-
-        <div className="flex-1 overflow-auto">
-          <div className="p-6 space-y-6">
-            {/* KPIs */}
-            <div className="grid grid-cols-5 gap-4" data-section="kpis">
-              <KPICard title="Total Actions" value={actions.length.toString()} subtitle="All time" icon={CheckCircle2} status="neutral" />
-              <KPICard title="Pending" value={pendingActions.length.toString()} subtitle="Not started" icon={CircleDot} status="neutral" />
-              <KPICard title="In Progress" value={inProgressActions.length.toString()} subtitle="Active" icon={PlayCircle} status="success" />
-              <KPICard title="SLA Breached" value={slaBreachedActions.length.toString()} subtitle="Overdue SLA" icon={Bell} status={slaBreachedActions.length > 0 ? 'warning' : 'success'} />
-              <KPICard title="Overdue" value={overdueActions.length.toString()} subtitle="Past due date" icon={Clock} status={overdueActions.length > 0 ? 'warning' : 'success'} />
-            </div>
-
-            {/* Filters */}
-            <div className="flex items-center justify-between">
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList>
-                  <TabsTrigger value="all">All ({actions.length})</TabsTrigger>
-                  <TabsTrigger value="pending">Pending ({pendingActions.length})</TabsTrigger>
-                  <TabsTrigger value="in-progress">In Progress ({inProgressActions.length})</TabsTrigger>
-                  <TabsTrigger value="sla-breached">SLA Breached ({slaBreachedActions.length})</TabsTrigger>
-                </TabsList>
-              </Tabs>
-              <div className="flex items-center gap-3">
-                <Select value={ownerFilter} onValueChange={setOwnerFilter}>
-                  <SelectTrigger className="w-40">
-                    <User className="h-4 w-4 mr-2" />
-                    <SelectValue placeholder="Filter by owner" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Owners</SelectItem>
-                    {owners.map(owner => (
-                      <SelectItem key={owner} value={owner!}>{owner}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <div className="relative w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search actions..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-9"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Actions List */}
-            <div className="space-y-3" data-section="list">
-              {filteredActions.length === 0 ? (
-                <Card className="p-8 text-center">
-                  <p className="text-muted-foreground">No actions found. Create your first action to get started.</p>
-                </Card>
-              ) : (
-                filteredActions.map(action => (
-                  <ActionCard
-                    key={action.id}
-                    action={action}
-                    isSelected={selectedAction?.id === action.id}
-                    onClick={() => setSelectedAction(action)}
-                  />
-                ))
-              )}
-            </div>
-          </div>
-        </div>
+          ))
+        )}
       </div>
 
       <AnimatePresence>
         {selectedAction && (
-          <ActionDetailPanel
-            action={selectedAction}
-            onClose={() => setSelectedAction(null)}
-            onUpdate={updateAction}
-            onDelete={async (id) => {
-              const result = await deleteAction(id);
-              if (result) setSelectedAction(null);
-              return result;
-            }}
-          />
+          <div className="fixed inset-y-0 right-0 z-50 shadow-2xl">
+            <ActionDetailPanel
+              action={selectedAction}
+              onClose={() => setSelectedAction(null)}
+              onUpdate={updateAction}
+              onDelete={async (id) => {
+                const result = await deleteAction(id);
+                if (result) setSelectedAction(null);
+                return result;
+              }}
+              canEdit={can('task.edit')}
+              canDelete={can('task.delete')}
+            />
+          </div>
         )}
       </AnimatePresence>
 
       <AddActionDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} onSubmit={createAction} />
-    </div>
+    </>
+  );
+
+  return (
+    <DataRegisterPage
+      title="Actions Tracker"
+      description="Manage, track, and close project actions"
+      icon={CheckCircle2}
+      iconBgClass="bg-primary/20"
+      iconColorClass="text-primary"
+      searchQuery={searchQuery}
+      onSearchChange={setSearchQuery}
+      toolbarFilters={toolbarFilters}
+      listModeControls={listModeControls}
+      onAddRow={can('task.create') ? () => setAddDialogOpen(true) : undefined}
+      addLabel="New Action"
+      pdfFilename="actions-tracker"
+      pdfSections={pdfSections}
+      data={filteredActions}
+      baseColumns={STANDARD_COLUMNS}
+      customColumns={customColumns}
+      idExtractor={(item) => item.id}
+      customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
+      onCellSave={handleCellSave}
+      onAddColumn={(col) => {
+        if (customColumns.find(c => c.key === col.key)) {
+          toast.error('Column already exists');
+          return;
+        }
+        setCustomColumns(prev => [...prev, col]);
+        toast.success(`Column "${col.label}" added`);
+      }}
+      onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
+      onDeleteRows={can('task.delete') ? (ids) => Array.from(ids).forEach(id => deleteAction(id)) : undefined}
+      emptyStateMessage={actions.length === 0 ? 'No actions added yet.' : 'No actions match filters.'}
+      kpiCards={kpiCards}
+      listContent={listContent}
+    />
   );
 }

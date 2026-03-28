@@ -1,0 +1,2381 @@
+{
+  "profiles": [
+    {
+      "id": "d85baa06...",
+      "full_id": "d85baa06-5c45-44ae-b280-6b832b1e3515",
+      "name": "User 0 Name",
+      "role": "admin",
+      "email": "user0_1771513165671@example.com"
+    },
+    {
+      "id": "028ce0a2...",
+      "full_id": "028ce0a2-0ae8-4b5c-b9c9-ef4482ee41e3",
+      "name": "User 1 Name",
+      "role": "admin",
+      "email": "user1_1771513168019@example.com"
+    },
+    {
+      "id": "be816e1b...",
+      "full_id": "be816e1b-24f1-4304-99be-c54d50433e31",
+      "name": "User 2 Name",
+      "role": "manager",
+      "email": "user2_1771513168650@example.com"
+    },
+    {
+      "id": "78f245cc...",
+      "full_id": "78f245cc-78a2-4ed6-81f7-e349186f61de",
+      "name": "User 3 Name",
+      "role": "viewer",
+      "email": "user3_1771513169166@example.com"
+    },
+    {
+      "id": "240d53c7...",
+      "full_id": "240d53c7-d74b-4722-ab04-97db60def019",
+      "name": "User 4 Name",
+      "role": "member",
+      "email": "user4_1771513169590@example.com"
+    },
+    {
+      "id": "ebc36f5c...",
+      "full_id": "ebc36f5c-6bb5-4aed-8a53-e4fff81ecaf6",
+      "name": "User 5 Name",
+      "role": "manager",
+      "email": "user5_1771513170011@example.com"
+    },
+    {
+      "id": "48b3d7ed...",
+      "full_id": "48b3d7ed-c704-4baa-bb65-220680e436e0",
+      "name": "User 6 Name",
+      "role": "admin",
+      "email": "user6_1771513170422@example.com"
+    },
+    {
+      "id": "593e3989...",
+      "full_id": "593e3989-ce7f-4d85-baef-eb49d95d08ae",
+      "name": "User 7 Name",
+      "role": "viewer",
+      "email": "user7_1771513170850@example.com"
+    },
+    {
+      "id": "bcd1811a...",
+      "full_id": "bcd1811a-5230-44fc-9e1a-b09e9bea1793",
+      "name": "User 8 Name",
+      "role": "member",
+      "email": "user8_1771513171303@example.com"
+    },
+    {
+      "id": "e6aa1815...",
+      "full_id": "e6aa1815-2231-4caf-a1d4-14f7f9632f9e",
+      "name": "User 9 Name",
+      "role": "admin",
+      "email": "user9_1771513171727@example.com"
+    },
+    {
+      "id": "9e9eb229...",
+      "full_id": "9e9eb229-c466-46ab-ab55-c486f7de4ee2",
+      "name": "User 10 Name",
+      "role": "manager",
+      "email": "user10_1771513172143@example.com"
+    },
+    {
+      "id": "238fcc85...",
+      "full_id": "238fcc85-3e50-474d-9e92-d5443f460738",
+      "name": "User 11 Name",
+      "role": "admin",
+      "email": "user11_1771513172567@example.com"
+    },
+    {
+      "id": "dbc6ff7b...",
+      "full_id": "dbc6ff7b-116d-4e9a-a166-facadabe4630",
+      "name": "User 12 Name",
+      "role": "admin",
+      "email": "user12_1771513172977@example.com"
+    },
+    {
+      "id": "ff3a4692...",
+      "full_id": "ff3a4692-b21c-49c8-83e9-c737b4083bf5",
+      "name": "User 13 Name",
+      "role": "manager",
+      "email": "user13_1771513173398@example.com"
+    },
+    {
+      "id": "6bb189b4...",
+      "full_id": "6bb189b4-e0b6-4bcb-b267-3f580a2338f1",
+      "name": "User 14 Name",
+      "role": "manager",
+      "email": "user14_1771513173838@example.com"
+    },
+    {
+      "id": "5cfb0911...",
+      "full_id": "5cfb0911-9164-4ac1-9a1e-218cf76379dd",
+      "name": "User 15 Name",
+      "role": "member",
+      "email": "user15_1771513174252@example.com"
+    },
+    {
+      "id": "9b47259d...",
+      "full_id": "9b47259d-a3bc-42db-bccd-54cd8097a5bc",
+      "name": "User 16 Name",
+      "role": "member",
+      "email": "user16_1771513174669@example.com"
+    },
+    {
+      "id": "7ef83170...",
+      "full_id": "7ef83170-d5a5-495f-bb8c-5d6bc641f6ef",
+      "name": "User 17 Name",
+      "role": "member",
+      "email": "user17_1771513175085@example.com"
+    },
+    {
+      "id": "04a86b4a...",
+      "full_id": "04a86b4a-6f11-4cce-bacf-34bc0ecaace0",
+      "name": "User 18 Name",
+      "role": "manager",
+      "email": "user18_1771513175495@example.com"
+    },
+    {
+      "id": "c7e201e0...",
+      "full_id": "c7e201e0-36c5-4b24-b6ff-28527cc2f0e5",
+      "name": "User 19 Name",
+      "role": "viewer",
+      "email": "user19_1771513175911@example.com"
+    },
+    {
+      "id": "a91d0f43...",
+      "full_id": "a91d0f43-e5fc-4c55-a6ab-e031d51d4a8f",
+      "name": "User 0 Name",
+      "role": "admin",
+      "email": "user0_1771513325617@example.com"
+    },
+    {
+      "id": "a5f8a820...",
+      "full_id": "a5f8a820-d84f-4b7b-a1a5-0608b7ef2e6c",
+      "name": "User 0 Name",
+      "role": "admin",
+      "email": "user0_1771510977896@example.com"
+    },
+    {
+      "id": "62ff5bb4...",
+      "full_id": "62ff5bb4-945d-44cf-acbb-bc0a72d9d1f2",
+      "name": "User 1 Name",
+      "role": "viewer",
+      "email": "user1_1771510978504@example.com"
+    },
+    {
+      "id": "9afefa9f...",
+      "full_id": "9afefa9f-96ca-4a75-84fb-824ca5317c5f",
+      "name": "User 2 Name",
+      "role": "admin",
+      "email": "user2_1771510978974@example.com"
+    },
+    {
+      "id": "f5848d08...",
+      "full_id": "f5848d08-3d1e-4059-8227-704e03c7effd",
+      "name": "User 3 Name",
+      "role": "viewer",
+      "email": "user3_1771510979398@example.com"
+    },
+    {
+      "id": "f6550639...",
+      "full_id": "f6550639-bf35-45e5-b74a-dc84f1bf7d19",
+      "name": "User 4 Name",
+      "role": "admin",
+      "email": "user4_1771510979797@example.com"
+    },
+    {
+      "id": "f545d383...",
+      "full_id": "f545d383-969b-4534-bf39-d8a4c0113200",
+      "name": "User 5 Name",
+      "role": "manager",
+      "email": "user5_1771510980198@example.com"
+    },
+    {
+      "id": "1bc4b250...",
+      "full_id": "1bc4b250-d86c-4ae5-a1cb-7aea4db49091",
+      "name": "User 6 Name",
+      "role": "admin",
+      "email": "user6_1771510980601@example.com"
+    },
+    {
+      "id": "462b9c55...",
+      "full_id": "462b9c55-a871-498a-88d5-38dafc0c9f75",
+      "name": "User 7 Name",
+      "role": "manager",
+      "email": "user7_1771510981004@example.com"
+    },
+    {
+      "id": "19b52d37...",
+      "full_id": "19b52d37-c21d-46d1-9127-55d681190070",
+      "name": "User 8 Name",
+      "role": "manager",
+      "email": "user8_1771510981428@example.com"
+    },
+    {
+      "id": "0ab0ac35...",
+      "full_id": "0ab0ac35-ce4a-415d-9c6e-fc465c6cce74",
+      "name": "User 9 Name",
+      "role": "admin",
+      "email": "user9_1771510981848@example.com"
+    },
+    {
+      "id": "6e20c81e...",
+      "full_id": "6e20c81e-ddc5-42b6-a03e-f203ecaf8b5f",
+      "name": "User 10 Name",
+      "role": "manager",
+      "email": "user10_1771510982316@example.com"
+    },
+    {
+      "id": "e5796934...",
+      "full_id": "e5796934-1b8d-46b7-a546-928de5feb35b",
+      "name": "User 11 Name",
+      "role": "member",
+      "email": "user11_1771510982718@example.com"
+    },
+    {
+      "id": "ca64844d...",
+      "full_id": "ca64844d-02a0-4879-b028-759c03858e1a",
+      "name": "User 12 Name",
+      "role": "manager",
+      "email": "user12_1771510983126@example.com"
+    },
+    {
+      "id": "ca0f79d7...",
+      "full_id": "ca0f79d7-77b3-4219-92b8-66d18624fa12",
+      "name": "User 13 Name",
+      "role": "member",
+      "email": "user13_1771510983538@example.com"
+    },
+    {
+      "id": "e3db7254...",
+      "full_id": "e3db7254-1ce1-4890-8328-bfbe8b4abba9",
+      "name": "User 14 Name",
+      "role": "viewer",
+      "email": "user14_1771510984038@example.com"
+    },
+    {
+      "id": "4608d634...",
+      "full_id": "4608d634-34d7-473e-930c-d3fb28c53ece",
+      "name": "User 15 Name",
+      "role": "viewer",
+      "email": "user15_1771510984442@example.com"
+    },
+    {
+      "id": "499fb34c...",
+      "full_id": "499fb34c-1452-4563-b305-beeafffc7bf8",
+      "name": "User 16 Name",
+      "role": "manager",
+      "email": "user16_1771510984847@example.com"
+    },
+    {
+      "id": "52c565ab...",
+      "full_id": "52c565ab-64b0-468f-a3ad-6e84171429ac",
+      "name": "User 17 Name",
+      "role": "member",
+      "email": "user17_1771510985258@example.com"
+    },
+    {
+      "id": "dc823071...",
+      "full_id": "dc823071-28e6-4bb4-8116-b3b17b564720",
+      "name": "User 18 Name",
+      "role": "viewer",
+      "email": "user18_1771510985678@example.com"
+    },
+    {
+      "id": "e927fecb...",
+      "full_id": "e927fecb-2190-45d3-84eb-a061cee8bba5",
+      "name": "User 19 Name",
+      "role": "viewer",
+      "email": "user19_1771510986077@example.com"
+    },
+    {
+      "id": "27e0bd80...",
+      "full_id": "27e0bd80-3116-4454-8849-8f546e319bcc",
+      "name": "User 1 Name",
+      "role": "member",
+      "email": "user1_1771513326793@example.com"
+    },
+    {
+      "id": "9ef91e56...",
+      "full_id": "9ef91e56-aec6-4eed-bbb1-8b00e99e66b3",
+      "name": "User 2 Name",
+      "role": "member",
+      "email": "user2_1771513327299@example.com"
+    },
+    {
+      "id": "54b0f663...",
+      "full_id": "54b0f663-26e8-49bc-921f-47b165595a61",
+      "name": "User 3 Name",
+      "role": "manager",
+      "email": "user3_1771513327746@example.com"
+    },
+    {
+      "id": "9f1e61ca...",
+      "full_id": "9f1e61ca-d2ae-4c86-964e-19056dadb8f1",
+      "name": "User 4 Name",
+      "role": "viewer",
+      "email": "user4_1771513328283@example.com"
+    },
+    {
+      "id": "322d7a78...",
+      "full_id": "322d7a78-2b2f-4356-84fe-d7a7cc4214db",
+      "name": "User 5 Name",
+      "role": "viewer",
+      "email": "user5_1771513328700@example.com"
+    },
+    {
+      "id": "011d2a9e...",
+      "full_id": "011d2a9e-eea4-407b-8659-bec89fa00e2e",
+      "name": "User 6 Name",
+      "role": "admin",
+      "email": "user6_1771513329125@example.com"
+    },
+    {
+      "id": "5621ceea...",
+      "full_id": "5621ceea-5a5e-4175-ab43-4c9ee1158956",
+      "name": "User 7 Name",
+      "role": "viewer",
+      "email": "user7_1771513329542@example.com"
+    },
+    {
+      "id": "a06ed0ea...",
+      "full_id": "a06ed0ea-7b82-4a3d-b531-dea009021f71",
+      "name": "User 8 Name",
+      "role": "admin",
+      "email": "user8_1771513330040@example.com"
+    },
+    {
+      "id": "4a09a34a...",
+      "full_id": "4a09a34a-d33a-4da5-9a3b-f399f6ba37f9",
+      "name": "User 9 Name",
+      "role": "admin",
+      "email": "user9_1771513330544@example.com"
+    },
+    {
+      "id": "80cc46bc...",
+      "full_id": "80cc46bc-11a3-47f0-a61e-642560fd107e",
+      "name": "User 10 Name",
+      "role": "member",
+      "email": "user10_1771513330958@example.com"
+    },
+    {
+      "id": "2f1e85da...",
+      "full_id": "2f1e85da-cd02-4c0f-b491-09379b056838",
+      "name": "User 11 Name",
+      "role": "admin",
+      "email": "user11_1771513331438@example.com"
+    },
+    {
+      "id": "433a78e5...",
+      "full_id": "433a78e5-5477-4ef3-bf6f-60ea18bca3f9",
+      "name": "User 12 Name",
+      "role": "member",
+      "email": "user12_1771513331866@example.com"
+    },
+    {
+      "id": "e3cae3ee...",
+      "full_id": "e3cae3ee-9a46-40f1-b0a2-a70e4e70066c",
+      "name": "User 13 Name",
+      "role": "viewer",
+      "email": "user13_1771513332389@example.com"
+    },
+    {
+      "id": "2ad5b353...",
+      "full_id": "2ad5b353-1733-4964-a694-39c49b73b191",
+      "name": "User 14 Name",
+      "role": "manager",
+      "email": "user14_1771513332911@example.com"
+    },
+    {
+      "id": "35f16687...",
+      "full_id": "35f16687-8dbd-4b3f-affc-bc71f9fd74ff",
+      "name": "User 15 Name",
+      "role": "manager",
+      "email": "user15_1771513333318@example.com"
+    },
+    {
+      "id": "5169aca7...",
+      "full_id": "5169aca7-6d60-422e-81bb-3edfc6815d9d",
+      "name": "User 16 Name",
+      "role": "viewer",
+      "email": "user16_1771513333731@example.com"
+    },
+    {
+      "id": "1037d806...",
+      "full_id": "1037d806-d33e-4979-aa4d-de6a1a38ad1d",
+      "name": "User 17 Name",
+      "role": "admin",
+      "email": "user17_1771513334253@example.com"
+    },
+    {
+      "id": "bb56bf52...",
+      "full_id": "bb56bf52-0dda-4bcd-b30b-421660ca875b",
+      "name": "User 18 Name",
+      "role": "member",
+      "email": "user18_1771513334665@example.com"
+    },
+    {
+      "id": "93bdf57e...",
+      "full_id": "93bdf57e-ba20-40d0-9e29-5db66797f425",
+      "name": "User 19 Name",
+      "role": "admin",
+      "email": "user19_1771513335202@example.com"
+    },
+    {
+      "id": "402eaa28...",
+      "full_id": "402eaa28-d05c-4371-9123-c19bc2d422fb",
+      "name": "User 0 Name",
+      "role": "admin",
+      "email": "user0_1771513622964@example.com"
+    },
+    {
+      "id": "72d85b3f...",
+      "full_id": "72d85b3f-b18b-43ec-a1ce-c86e1a8021bf",
+      "name": "User 1 Name",
+      "role": "admin",
+      "email": "user1_1771513624288@example.com"
+    },
+    {
+      "id": "b93c7aae...",
+      "full_id": "b93c7aae-d251-405c-9489-e26bab986bc1",
+      "name": "User 2 Name",
+      "role": "member",
+      "email": "user2_1771513624762@example.com"
+    },
+    {
+      "id": "3d21016c...",
+      "full_id": "3d21016c-e060-4e82-b713-6c3c94c4f3d1",
+      "name": "User 3 Name",
+      "role": "manager",
+      "email": "user3_1771513625164@example.com"
+    },
+    {
+      "id": "54ade06c...",
+      "full_id": "54ade06c-3620-41ca-bb41-6074c0b3ddee",
+      "name": "User 4 Name",
+      "role": "viewer",
+      "email": "user4_1771513625568@example.com"
+    },
+    {
+      "id": "20d898eb...",
+      "full_id": "20d898eb-36ba-423c-9fd9-4010d7e15354",
+      "name": "User 5 Name",
+      "role": "viewer",
+      "email": "user5_1771513625997@example.com"
+    },
+    {
+      "id": "bdc68bea...",
+      "full_id": "bdc68bea-2367-4cd4-a96b-558bee0e3cff",
+      "name": "User 6 Name",
+      "role": "member",
+      "email": "user6_1771513626422@example.com"
+    },
+    {
+      "id": "73c0787b...",
+      "full_id": "73c0787b-9eeb-4e86-bdb5-e999513100fe",
+      "name": "User 7 Name",
+      "role": "admin",
+      "email": "user7_1771513626820@example.com"
+    },
+    {
+      "id": "6f9e6bb2...",
+      "full_id": "6f9e6bb2-f665-4591-8db5-13b0aa99484e",
+      "name": "User 8 Name",
+      "role": "viewer",
+      "email": "user8_1771513627299@example.com"
+    },
+    {
+      "id": "bc754335...",
+      "full_id": "bc754335-d145-4ef9-a536-1b9bcb33f312",
+      "name": "User 9 Name",
+      "role": "manager",
+      "email": "user9_1771513627802@example.com"
+    },
+    {
+      "id": "c4c034ea...",
+      "full_id": "c4c034ea-872d-4db4-ba57-8feab3ca9902",
+      "name": "User 10 Name",
+      "role": "member",
+      "email": "user10_1771513628313@example.com"
+    },
+    {
+      "id": "b0373809...",
+      "full_id": "b0373809-82fd-4005-88b2-1e16fb90fc78",
+      "name": "User 11 Name",
+      "role": "admin",
+      "email": "user11_1771513628843@example.com"
+    },
+    {
+      "id": "1c7e57e3...",
+      "full_id": "1c7e57e3-b34f-440d-b646-eaa5c48317a9",
+      "name": "User 12 Name",
+      "role": "manager",
+      "email": "user12_1771513629264@example.com"
+    },
+    {
+      "id": "43f77104...",
+      "full_id": "43f77104-e2ba-483b-be96-0d9a0f804aa5",
+      "name": "User 13 Name",
+      "role": "member",
+      "email": "user13_1771513629685@example.com"
+    },
+    {
+      "id": "b30a9b42...",
+      "full_id": "b30a9b42-4290-4165-8f88-796e619d8690",
+      "name": "User 14 Name",
+      "role": "admin",
+      "email": "user14_1771513630083@example.com"
+    },
+    {
+      "id": "662c58a3...",
+      "full_id": "662c58a3-1d1f-421a-9ae1-1bf2b04b9a48",
+      "name": "User 15 Name",
+      "role": "viewer",
+      "email": "user15_1771513630497@example.com"
+    },
+    {
+      "id": "8664b850...",
+      "full_id": "8664b850-c437-4117-9774-0f8940db77f7",
+      "name": "User 16 Name",
+      "role": "manager",
+      "email": "user16_1771513630919@example.com"
+    },
+    {
+      "id": "5be26826...",
+      "full_id": "5be26826-719a-459b-8d70-c97aa1dc4cbd",
+      "name": "User 17 Name",
+      "role": "manager",
+      "email": "user17_1771513631330@example.com"
+    },
+    {
+      "id": "55311c66...",
+      "full_id": "55311c66-576b-4f38-8a84-e170ed41b3fd",
+      "name": "User 18 Name",
+      "role": "admin",
+      "email": "user18_1771513631747@example.com"
+    },
+    {
+      "id": "42fd1312...",
+      "full_id": "42fd1312-7b18-4dad-a34c-d228d4521b5e",
+      "name": "User 19 Name",
+      "role": "member",
+      "email": "user19_1771513632147@example.com"
+    },
+    {
+      "id": "3a6889fe...",
+      "full_id": "3a6889fe-2932-4004-9bfb-65a4b34a93ea",
+      "name": "Super Admin",
+      "role": "admin",
+      "email": "admin@projectoye.com"
+    }
+  ],
+  "user_roles": {
+    "data": [
+      {
+        "id": "79e8c90f-76a0-41d4-be05-87b9a10e5c20",
+        "user_id": "d85baa06-5c45-44ae-b280-6b832b1e3515",
+        "project_id": "c2e943a3-c7f1-4516-9276-092036e45066",
+        "role": "viewer",
+        "created_at": "2026-02-22T14:45:18.561135+00:00",
+        "role_name": "developer",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-22T14:45:18.561135+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-22T14:45:18.561135+00:00"
+      },
+      {
+        "id": "2d65d079-4bee-4670-8ce0-9224171854d7",
+        "user_id": "028ce0a2-0ae8-4b5c-b9c9-ef4482ee41e3",
+        "project_id": "c2e943a3-c7f1-4516-9276-092036e45066",
+        "role": "viewer",
+        "created_at": "2026-02-22T14:45:18.561135+00:00",
+        "role_name": "developer",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-22T14:45:18.561135+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-22T14:45:18.561135+00:00"
+      },
+      {
+        "id": "11d51114-0a12-436b-8f76-3a4a526e8c61",
+        "user_id": "be816e1b-24f1-4304-99be-c54d50433e31",
+        "project_id": "c2e943a3-c7f1-4516-9276-092036e45066",
+        "role": "viewer",
+        "created_at": "2026-02-22T14:45:18.561135+00:00",
+        "role_name": "developer",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-22T14:45:18.561135+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-22T14:45:18.561135+00:00"
+      },
+      {
+        "id": "a29713d4-c592-41ab-a3e2-7b3293ef6d69",
+        "user_id": "78f245cc-78a2-4ed6-81f7-e349186f61de",
+        "project_id": "c2e943a3-c7f1-4516-9276-092036e45066",
+        "role": "viewer",
+        "created_at": "2026-02-22T14:45:18.561135+00:00",
+        "role_name": "developer",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-22T14:45:18.561135+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-22T14:45:18.561135+00:00"
+      },
+      {
+        "id": "12225975-ceaa-46bb-bce7-f6b9e109129b",
+        "user_id": "240d53c7-d74b-4722-ab04-97db60def019",
+        "project_id": "c2e943a3-c7f1-4516-9276-092036e45066",
+        "role": "viewer",
+        "created_at": "2026-02-22T14:45:18.561135+00:00",
+        "role_name": "developer",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-22T14:45:18.561135+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-22T14:45:18.561135+00:00"
+      },
+      {
+        "id": "c32e855d-eca9-4807-b0da-297b1a5df60e",
+        "user_id": "d85baa06-5c45-44ae-b280-6b832b1e3515",
+        "project_id": "8a5abcc6-d567-46cd-9724-7fda2e465ba7",
+        "role": "viewer",
+        "created_at": "2026-02-23T04:19:13.609492+00:00",
+        "role_name": "developer",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-23T04:19:13.609492+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-23T04:19:13.609492+00:00"
+      },
+      {
+        "id": "857ee7ca-4c7d-4e91-9b4f-a059c620456c",
+        "user_id": "028ce0a2-0ae8-4b5c-b9c9-ef4482ee41e3",
+        "project_id": "8a5abcc6-d567-46cd-9724-7fda2e465ba7",
+        "role": "viewer",
+        "created_at": "2026-02-23T04:19:13.609492+00:00",
+        "role_name": "developer",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-23T04:19:13.609492+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-23T04:19:13.609492+00:00"
+      },
+      {
+        "id": "d269da27-effa-48fe-9184-1299d2af4e6c",
+        "user_id": "be816e1b-24f1-4304-99be-c54d50433e31",
+        "project_id": "8a5abcc6-d567-46cd-9724-7fda2e465ba7",
+        "role": "viewer",
+        "created_at": "2026-02-23T04:19:13.609492+00:00",
+        "role_name": "developer",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-23T04:19:13.609492+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-23T04:19:13.609492+00:00"
+      },
+      {
+        "id": "55099220-e37d-4773-b569-8644903f9c04",
+        "user_id": "78f245cc-78a2-4ed6-81f7-e349186f61de",
+        "project_id": "8a5abcc6-d567-46cd-9724-7fda2e465ba7",
+        "role": "viewer",
+        "created_at": "2026-02-23T04:19:13.609492+00:00",
+        "role_name": "developer",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-23T04:19:13.609492+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-23T04:19:13.609492+00:00"
+      },
+      {
+        "id": "895ae510-0349-48a5-b9d3-210a1d832c69",
+        "user_id": "240d53c7-d74b-4722-ab04-97db60def019",
+        "project_id": "8a5abcc6-d567-46cd-9724-7fda2e465ba7",
+        "role": "viewer",
+        "created_at": "2026-02-23T04:19:13.609492+00:00",
+        "role_name": "developer",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-23T04:19:13.609492+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-23T04:19:13.609492+00:00"
+      },
+      {
+        "id": "1477b3f1-23c2-404e-a3bb-81a0b706e345",
+        "user_id": "72d85b3f-b18b-43ec-a1ce-c86e1a8021bf",
+        "project_id": "04eed42d-90c3-4d05-9738-faf5b49508ff",
+        "role": "admin",
+        "created_at": "2026-02-24T09:44:06.607074+00:00",
+        "role_name": "Admin",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-24T09:44:06.607074+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-24T09:44:06.607074+00:00"
+      },
+      {
+        "id": "f412d494-2572-48b2-9552-c3ac3bd6f8e2",
+        "user_id": "54ade06c-3620-41ca-bb41-6074c0b3ddee",
+        "project_id": "04eed42d-90c3-4d05-9738-faf5b49508ff",
+        "role": "viewer",
+        "created_at": "2026-02-24T09:44:07.515715+00:00",
+        "role_name": "Viewer",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-24T09:44:07.515715+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-24T09:44:07.515715+00:00"
+      },
+      {
+        "id": "c32b465b-d3b7-4ef9-abd0-483cb736926f",
+        "user_id": "d85baa06-5c45-44ae-b280-6b832b1e3515",
+        "project_id": "e9a1d48f-01d2-40fa-99eb-ee09932c7cfd",
+        "role": "viewer",
+        "created_at": "2026-02-22T14:46:31.651109+00:00",
+        "role_name": "developer",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-22T14:46:31.651109+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-22T14:46:31.651109+00:00"
+      },
+      {
+        "id": "bf054511-31e5-4c0c-9a4a-3ef03795f6d9",
+        "user_id": "028ce0a2-0ae8-4b5c-b9c9-ef4482ee41e3",
+        "project_id": "e9a1d48f-01d2-40fa-99eb-ee09932c7cfd",
+        "role": "viewer",
+        "created_at": "2026-02-22T14:46:31.651109+00:00",
+        "role_name": "developer",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-22T14:46:31.651109+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-22T14:46:31.651109+00:00"
+      },
+      {
+        "id": "761614b5-e682-4d7e-b114-fb3eb1f401bf",
+        "user_id": "be816e1b-24f1-4304-99be-c54d50433e31",
+        "project_id": "e9a1d48f-01d2-40fa-99eb-ee09932c7cfd",
+        "role": "viewer",
+        "created_at": "2026-02-22T14:46:31.651109+00:00",
+        "role_name": "developer",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-22T14:46:31.651109+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-22T14:46:31.651109+00:00"
+      },
+      {
+        "id": "92c25251-671a-4962-bd36-260fdb99b45c",
+        "user_id": "78f245cc-78a2-4ed6-81f7-e349186f61de",
+        "project_id": "e9a1d48f-01d2-40fa-99eb-ee09932c7cfd",
+        "role": "viewer",
+        "created_at": "2026-02-22T14:46:31.651109+00:00",
+        "role_name": "developer",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-22T14:46:31.651109+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-22T14:46:31.651109+00:00"
+      },
+      {
+        "id": "4fe1487b-ce81-4cb1-94b4-0c6eacf8cf5c",
+        "user_id": "240d53c7-d74b-4722-ab04-97db60def019",
+        "project_id": "e9a1d48f-01d2-40fa-99eb-ee09932c7cfd",
+        "role": "viewer",
+        "created_at": "2026-02-22T14:46:31.651109+00:00",
+        "role_name": "developer",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-22T14:46:31.651109+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-22T14:46:31.651109+00:00"
+      },
+      {
+        "id": "2abe43ba-668a-4af6-83fe-d22a4d27f4c9",
+        "user_id": "3a6889fe-2932-4004-9bfb-65a4b34a93ea",
+        "project_id": "04eed42d-90c3-4d05-9738-faf5b49508ff",
+        "role": "admin",
+        "created_at": "2026-02-21T12:01:35.188814+00:00",
+        "role_name": "Project Admin",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-21T12:01:35.188814+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-21T12:01:35.188814+00:00"
+      },
+      {
+        "id": "8ed27f81-0bf6-40d1-a07e-cbf24ba28453",
+        "user_id": "3a6889fe-2932-4004-9bfb-65a4b34a93ea",
+        "project_id": "81675c53-554e-4384-8092-212d05b79425",
+        "role": "admin",
+        "created_at": "2026-02-22T20:21:33.304755+00:00",
+        "role_name": "Project Admin",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-22T20:21:33.304755+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-22T20:21:33.304755+00:00"
+      },
+      {
+        "id": "24ca047d-a1ca-41bd-989a-51311c900bb8",
+        "user_id": "3a6889fe-2932-4004-9bfb-65a4b34a93ea",
+        "project_id": "01a92453-58b6-4dee-920c-467a3bd8b21e",
+        "role": "admin",
+        "created_at": "2026-02-22T20:21:33.449427+00:00",
+        "role_name": "Project Admin",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-22T20:21:33.449427+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-22T20:21:33.449427+00:00"
+      },
+      {
+        "id": "f7583215-2ab2-404d-b743-594dbc53734a",
+        "user_id": "3a6889fe-2932-4004-9bfb-65a4b34a93ea",
+        "project_id": "eb018624-595e-4059-9a13-234f311aff6a",
+        "role": "admin",
+        "created_at": "2026-02-22T20:21:33.564044+00:00",
+        "role_name": "Project Admin",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-22T20:21:33.564044+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-22T20:21:33.564044+00:00"
+      },
+      {
+        "id": "78882066-278a-48ec-8b4a-31d26fdf48bb",
+        "user_id": "3a6889fe-2932-4004-9bfb-65a4b34a93ea",
+        "project_id": "898f9d74-89a0-4539-bafd-d705f100d9ce",
+        "role": "admin",
+        "created_at": "2026-02-22T20:21:33.715412+00:00",
+        "role_name": "Project Admin",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-22T20:21:33.715412+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-22T20:21:33.715412+00:00"
+      },
+      {
+        "id": "d1748769-f7a8-4c63-b0aa-52849d5a03bb",
+        "user_id": "3a6889fe-2932-4004-9bfb-65a4b34a93ea",
+        "project_id": "0663bb42-52de-458e-9ee8-28da7331e01e",
+        "role": "admin",
+        "created_at": "2026-02-22T20:21:33.904723+00:00",
+        "role_name": "Project Admin",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-22T20:21:33.904723+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-22T20:21:33.904723+00:00"
+      },
+      {
+        "id": "6751a518-9eec-4867-9179-a5868bd91986",
+        "user_id": "3a6889fe-2932-4004-9bfb-65a4b34a93ea",
+        "project_id": "e9a1d48f-01d2-40fa-99eb-ee09932c7cfd",
+        "role": "admin",
+        "created_at": "2026-02-22T20:21:34.070095+00:00",
+        "role_name": "Project Admin",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-22T20:21:34.070095+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-22T20:21:34.070095+00:00"
+      },
+      {
+        "id": "a5e81d62-a73b-49cc-9461-58ba42243888",
+        "user_id": "3a6889fe-2932-4004-9bfb-65a4b34a93ea",
+        "project_id": "c76d595a-8be1-4890-9eec-59b4be318faa",
+        "role": "admin",
+        "created_at": "2026-02-22T20:21:34.223963+00:00",
+        "role_name": "Project Admin",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-22T20:21:34.223963+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-22T20:21:34.223963+00:00"
+      },
+      {
+        "id": "7d22c3ae-13d1-4f00-8a91-03e7fcc5d784",
+        "user_id": "3a6889fe-2932-4004-9bfb-65a4b34a93ea",
+        "project_id": "e5d78174-f651-4bc9-8921-3b744e111879",
+        "role": "admin",
+        "created_at": "2026-02-22T20:21:34.423784+00:00",
+        "role_name": "Project Admin",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-22T20:21:34.423784+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-22T20:21:34.423784+00:00"
+      },
+      {
+        "id": "9d8ceceb-0311-494c-a3a6-6e79fc82bb0d",
+        "user_id": "3a6889fe-2932-4004-9bfb-65a4b34a93ea",
+        "project_id": "650acee4-aa88-4bda-bc14-b265f8cc96a6",
+        "role": "admin",
+        "created_at": "2026-02-22T20:21:34.743844+00:00",
+        "role_name": "Project Admin",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-22T20:21:34.743844+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-22T20:21:34.743844+00:00"
+      },
+      {
+        "id": "f5a8044c-3719-4944-a444-04c7b3c4aafc",
+        "user_id": "3a6889fe-2932-4004-9bfb-65a4b34a93ea",
+        "project_id": "c2e943a3-c7f1-4516-9276-092036e45066",
+        "role": "admin",
+        "created_at": "2026-02-22T20:21:35.053663+00:00",
+        "role_name": "Project Admin",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-22T20:21:35.053663+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-22T20:21:35.053663+00:00"
+      },
+      {
+        "id": "f45b72e3-0d72-4df5-824f-cd4664cb4caa",
+        "user_id": "3a6889fe-2932-4004-9bfb-65a4b34a93ea",
+        "project_id": "51a6601b-4331-4db3-ba2d-1b0ba0c0274b",
+        "role": "admin",
+        "created_at": "2026-02-22T20:21:35.189252+00:00",
+        "role_name": "Project Admin",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-22T20:21:35.189252+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-22T20:21:35.189252+00:00"
+      },
+      {
+        "id": "499ba169-c5a5-43b9-b695-3562bb7bcf9f",
+        "user_id": "3a6889fe-2932-4004-9bfb-65a4b34a93ea",
+        "project_id": "c1b39fd0-7561-465d-8251-75346d92dddd",
+        "role": "admin",
+        "created_at": "2026-02-22T20:21:35.269681+00:00",
+        "role_name": "Project Admin",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-22T20:21:35.269681+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-22T20:21:35.269681+00:00"
+      },
+      {
+        "id": "cf989ec1-979f-46e0-8e41-db59c0ae1214",
+        "user_id": "3a6889fe-2932-4004-9bfb-65a4b34a93ea",
+        "project_id": "05c93034-f63f-4dc4-a854-88bf6ca44cd0",
+        "role": "admin",
+        "created_at": "2026-02-22T20:21:35.334288+00:00",
+        "role_name": "Project Admin",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-22T20:21:35.334288+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-22T20:21:35.334288+00:00"
+      },
+      {
+        "id": "32559e85-0a67-42f2-8dd0-c1282cac41b6",
+        "user_id": "3a6889fe-2932-4004-9bfb-65a4b34a93ea",
+        "project_id": "73ff84b1-447b-4e9c-b438-56522e520b76",
+        "role": "admin",
+        "created_at": "2026-02-22T20:21:35.428968+00:00",
+        "role_name": "Project Admin",
+        "permissions": [],
+        "assigned_by": null,
+        "assigned_at": "2026-02-22T20:21:35.428968+00:00",
+        "expires_at": null,
+        "is_active": true,
+        "updated_at": "2026-02-22T20:21:35.428968+00:00"
+      }
+    ]
+  },
+  "platform_roles": {
+    "data": [
+      {
+        "id": "c4f19d76-7fe6-49cf-9898-fca838af9030",
+        "name": "Super Admin",
+        "description": "Full platform access",
+        "scope": "platform",
+        "tenant_id": null,
+        "is_system_role": true,
+        "created_by": null,
+        "created_at": "2026-02-22T11:59:05.070953+00:00",
+        "updated_at": "2026-02-22T11:59:05.070953+00:00"
+      },
+      {
+        "id": "5dd3517a-a5a8-4f69-8df6-2fd5c54c430d",
+        "name": "Project Manager",
+        "description": "Manage projects and teams",
+        "scope": "platform",
+        "tenant_id": null,
+        "is_system_role": true,
+        "created_by": null,
+        "created_at": "2026-02-22T11:59:05.070953+00:00",
+        "updated_at": "2026-02-22T11:59:05.070953+00:00"
+      },
+      {
+        "id": "fccd2d94-6945-4341-b5c0-7e4d1774046d",
+        "name": "Team Member",
+        "description": "View and contribute to projects",
+        "scope": "platform",
+        "tenant_id": null,
+        "is_system_role": true,
+        "created_by": null,
+        "created_at": "2026-02-22T11:59:05.070953+00:00",
+        "updated_at": "2026-02-22T11:59:05.070953+00:00"
+      },
+      {
+        "id": "f31442dc-9491-4f56-862c-f7df2ee89d01",
+        "name": "Viewer",
+        "description": "Read-only access",
+        "scope": "platform",
+        "tenant_id": null,
+        "is_system_role": true,
+        "created_by": null,
+        "created_at": "2026-02-22T11:59:05.070953+00:00",
+        "updated_at": "2026-02-22T11:59:05.070953+00:00"
+      },
+      {
+        "id": "34779067-ec42-482d-a93f-3bd9fcc2b43f",
+        "name": "Finance Analyst",
+        "description": "Financial data management",
+        "scope": "platform",
+        "tenant_id": null,
+        "is_system_role": true,
+        "created_by": null,
+        "created_at": "2026-02-22T11:59:05.070953+00:00",
+        "updated_at": "2026-02-22T11:59:05.070953+00:00"
+      },
+      {
+        "id": "f394dc27-ba4d-4d3f-adfd-1ebf50c71057",
+        "name": "Risk Officer",
+        "description": "Risk register management",
+        "scope": "platform",
+        "tenant_id": null,
+        "is_system_role": true,
+        "created_by": null,
+        "created_at": "2026-02-22T11:59:05.070953+00:00",
+        "updated_at": "2026-02-22T11:59:05.070953+00:00"
+      }
+    ]
+  },
+  "platform_user_roles": {
+    "data": []
+  },
+  "platform_role_permissions": {
+    "data": [
+      {
+        "id": "ca969792-7cf2-4243-aaf8-abcbfa892605",
+        "role_id": "c4f19d76-7fe6-49cf-9898-fca838af9030",
+        "feature_key": "projects.create",
+        "is_enabled": true
+      }
+    ]
+  },
+  "platform_features": {
+    "data": []
+  },
+  "subscription_plans": {
+    "data": [
+      {
+        "id": "e1204e18-0dcb-4c02-a181-a1752080b1d7",
+        "name": "Free",
+        "tier": "free",
+        "price_monthly": 0,
+        "price_annual": 0,
+        "features": {},
+        "limits": {
+          "users": 1,
+          "projects": 1
+        },
+        "active": true,
+        "stripe_price_id_monthly": null,
+        "stripe_price_id_annual": null,
+        "created_at": "2026-02-19T15:07:12.582+00:00"
+      },
+      {
+        "id": "a1ceb5b9-1841-42b8-a62a-4e6d1c28e3ed",
+        "name": "Pro",
+        "tier": "pro",
+        "price_monthly": 2900,
+        "price_annual": 29000,
+        "features": {},
+        "limits": {
+          "users": 5,
+          "projects": 5
+        },
+        "active": true,
+        "stripe_price_id_monthly": null,
+        "stripe_price_id_annual": null,
+        "created_at": "2026-02-19T15:07:12.787+00:00"
+      },
+      {
+        "id": "c921e2f2-b5f9-4a8a-b528-23f5040bc9c1",
+        "name": "Business",
+        "tier": "business",
+        "price_monthly": 9900,
+        "price_annual": 99000,
+        "features": {},
+        "limits": {
+          "users": 20,
+          "projects": 20
+        },
+        "active": true,
+        "stripe_price_id_monthly": null,
+        "stripe_price_id_annual": null,
+        "created_at": "2026-02-19T15:07:12.95+00:00"
+      },
+      {
+        "id": "9da9b61d-673a-4968-b552-ef063aa9223e",
+        "name": "Agency",
+        "tier": "agency",
+        "price_monthly": 29900,
+        "price_annual": 299000,
+        "features": {},
+        "limits": {
+          "users": -1,
+          "projects": -1
+        },
+        "active": true,
+        "stripe_price_id_monthly": null,
+        "stripe_price_id_annual": null,
+        "created_at": "2026-02-19T15:07:13.138+00:00"
+      }
+    ]
+  },
+  "subscriptions": {
+    "data": [
+      {
+        "id": "fcf134cf-72b9-46dd-ad2b-7333523859db",
+        "user_id": null,
+        "email": "john@example.com",
+        "full_name": "John Doe",
+        "tier": "pro",
+        "status": "active",
+        "mrr": 10,
+        "joined_at": "2026-01-20T13:10:50.425243+00:00",
+        "cancelled_at": null,
+        "trial_ends_at": null,
+        "usage_stats": {
+          "projects_count": 3,
+          "articles_per_month": 12
+        },
+        "metadata": {},
+        "created_at": "2026-02-19T13:10:50.425243+00:00",
+        "updated_at": "2026-02-19T13:10:50.425243+00:00",
+        "stripe_customer_id": null,
+        "stripe_subscription_id": null,
+        "stripe_price_id": null,
+        "billing_cycle": "monthly",
+        "renewal_date": null,
+        "workspace_id": null
+      },
+      {
+        "id": "670a1fa9-09f4-41fa-b079-8e812b40d1d5",
+        "user_id": null,
+        "email": "sarah@company.com",
+        "full_name": "Sarah Smith",
+        "tier": "business",
+        "status": "active",
+        "mrr": 39,
+        "joined_at": "2026-02-04T13:10:50.425243+00:00",
+        "cancelled_at": null,
+        "trial_ends_at": null,
+        "usage_stats": {
+          "projects_count": 8,
+          "articles_per_month": 35
+        },
+        "metadata": {},
+        "created_at": "2026-02-19T13:10:50.425243+00:00",
+        "updated_at": "2026-02-19T13:10:50.425243+00:00",
+        "stripe_customer_id": null,
+        "stripe_subscription_id": null,
+        "stripe_price_id": null,
+        "billing_cycle": "monthly",
+        "renewal_date": null,
+        "workspace_id": null
+      },
+      {
+        "id": "8df5871a-9f5e-4364-b35d-69b1e2c05671",
+        "user_id": null,
+        "email": "mike@agency.com",
+        "full_name": "Mike Agency",
+        "tier": "agency",
+        "status": "active",
+        "mrr": 99,
+        "joined_at": "2026-01-05T13:10:50.425243+00:00",
+        "cancelled_at": null,
+        "trial_ends_at": null,
+        "usage_stats": {
+          "projects_count": 20,
+          "articles_per_month": 95
+        },
+        "metadata": {},
+        "created_at": "2026-02-19T13:10:50.425243+00:00",
+        "updated_at": "2026-02-19T13:10:50.425243+00:00",
+        "stripe_customer_id": null,
+        "stripe_subscription_id": null,
+        "stripe_price_id": null,
+        "billing_cycle": "monthly",
+        "renewal_date": null,
+        "workspace_id": null
+      },
+      {
+        "id": "7916396e-e304-4d7d-ba21-7fbea3c12e6d",
+        "user_id": null,
+        "email": "emma@example.com",
+        "full_name": "Emma Wilson",
+        "tier": "pro",
+        "status": "cancelled",
+        "mrr": 0,
+        "joined_at": "2025-12-21T13:10:50.425243+00:00",
+        "cancelled_at": null,
+        "trial_ends_at": null,
+        "usage_stats": {
+          "projects_count": 0,
+          "articles_per_month": 0
+        },
+        "metadata": {},
+        "created_at": "2026-02-19T13:10:50.425243+00:00",
+        "updated_at": "2026-02-19T13:10:50.425243+00:00",
+        "stripe_customer_id": null,
+        "stripe_subscription_id": null,
+        "stripe_price_id": null,
+        "billing_cycle": "monthly",
+        "renewal_date": null,
+        "workspace_id": null
+      },
+      {
+        "id": "bfea1807-fa28-4301-b3b5-09eef3892945",
+        "user_id": "72d85b3f-b18b-43ec-a1ce-c86e1a8021bf",
+        "email": "user1_1771513624288@example.com",
+        "full_name": "User 1",
+        "tier": "agency",
+        "status": "active",
+        "mrr": 299,
+        "joined_at": "2025-01-09T23:39:09.234+00:00",
+        "cancelled_at": null,
+        "trial_ends_at": null,
+        "usage_stats": {
+          "storage_gb": 0,
+          "team_members": 0,
+          "projects_count": 0,
+          "articles_per_month": 0
+        },
+        "metadata": {},
+        "created_at": "2026-02-19T15:07:16.118+00:00",
+        "updated_at": "2026-02-19T15:07:16.118+00:00",
+        "stripe_customer_id": null,
+        "stripe_subscription_id": null,
+        "stripe_price_id": null,
+        "billing_cycle": "monthly",
+        "renewal_date": null,
+        "workspace_id": null
+      },
+      {
+        "id": "b6b431ea-742b-45e6-967a-fc755d96fe61",
+        "user_id": "b93c7aae-d251-405c-9489-e26bab986bc1",
+        "email": "user2_1771513624762@example.com",
+        "full_name": "User 2",
+        "tier": "agency",
+        "status": "active",
+        "mrr": 299,
+        "joined_at": "2026-02-16T02:49:20.461+00:00",
+        "cancelled_at": null,
+        "trial_ends_at": null,
+        "usage_stats": {
+          "storage_gb": 0,
+          "team_members": 0,
+          "projects_count": 0,
+          "articles_per_month": 0
+        },
+        "metadata": {},
+        "created_at": "2026-02-19T15:07:16.342+00:00",
+        "updated_at": "2026-02-19T15:07:16.342+00:00",
+        "stripe_customer_id": null,
+        "stripe_subscription_id": null,
+        "stripe_price_id": null,
+        "billing_cycle": "monthly",
+        "renewal_date": null,
+        "workspace_id": null
+      },
+      {
+        "id": "b197b485-a769-4846-8f8e-6c589e7707d6",
+        "user_id": "54ade06c-3620-41ca-bb41-6074c0b3ddee",
+        "email": "user4_1771513625568@example.com",
+        "full_name": "User 4",
+        "tier": "free",
+        "status": "active",
+        "mrr": 0,
+        "joined_at": "2025-06-16T11:05:22.95+00:00",
+        "cancelled_at": null,
+        "trial_ends_at": null,
+        "usage_stats": {
+          "storage_gb": 0,
+          "team_members": 0,
+          "projects_count": 0,
+          "articles_per_month": 0
+        },
+        "metadata": {},
+        "created_at": "2026-02-19T15:07:16.546+00:00",
+        "updated_at": "2026-02-19T15:07:16.546+00:00",
+        "stripe_customer_id": null,
+        "stripe_subscription_id": null,
+        "stripe_price_id": null,
+        "billing_cycle": "monthly",
+        "renewal_date": null,
+        "workspace_id": null
+      },
+      {
+        "id": "37ef5864-eb07-4064-bcc1-0576e9369d66",
+        "user_id": "20d898eb-36ba-423c-9fd9-4010d7e15354",
+        "email": "user5_1771513625997@example.com",
+        "full_name": "User 5",
+        "tier": "agency",
+        "status": "active",
+        "mrr": 299,
+        "joined_at": "2025-04-18T21:14:42.271+00:00",
+        "cancelled_at": null,
+        "trial_ends_at": null,
+        "usage_stats": {
+          "storage_gb": 0,
+          "team_members": 0,
+          "projects_count": 0,
+          "articles_per_month": 0
+        },
+        "metadata": {},
+        "created_at": "2026-02-19T15:07:16.702+00:00",
+        "updated_at": "2026-02-19T15:07:16.702+00:00",
+        "stripe_customer_id": null,
+        "stripe_subscription_id": null,
+        "stripe_price_id": null,
+        "billing_cycle": "monthly",
+        "renewal_date": null,
+        "workspace_id": null
+      },
+      {
+        "id": "08c8175c-c0dd-43fe-99df-702d06d3dade",
+        "user_id": "bdc68bea-2367-4cd4-a96b-558bee0e3cff",
+        "email": "user6_1771513626422@example.com",
+        "full_name": "User 6",
+        "tier": "free",
+        "status": "active",
+        "mrr": 0,
+        "joined_at": "2025-11-06T05:30:00.748+00:00",
+        "cancelled_at": null,
+        "trial_ends_at": null,
+        "usage_stats": {
+          "storage_gb": 0,
+          "team_members": 0,
+          "projects_count": 0,
+          "articles_per_month": 0
+        },
+        "metadata": {},
+        "created_at": "2026-02-19T15:07:16.869+00:00",
+        "updated_at": "2026-02-19T15:07:16.869+00:00",
+        "stripe_customer_id": null,
+        "stripe_subscription_id": null,
+        "stripe_price_id": null,
+        "billing_cycle": "monthly",
+        "renewal_date": null,
+        "workspace_id": null
+      },
+      {
+        "id": "6a457bce-dc67-4a6e-9237-fc1b517e71ed",
+        "user_id": "73c0787b-9eeb-4e86-bdb5-e999513100fe",
+        "email": "user7_1771513626820@example.com",
+        "full_name": "User 7",
+        "tier": "business",
+        "status": "active",
+        "mrr": 99,
+        "joined_at": "2025-12-07T00:45:00.381+00:00",
+        "cancelled_at": null,
+        "trial_ends_at": null,
+        "usage_stats": {
+          "storage_gb": 0,
+          "team_members": 0,
+          "projects_count": 0,
+          "articles_per_month": 0
+        },
+        "metadata": {},
+        "created_at": "2026-02-19T15:07:17.041+00:00",
+        "updated_at": "2026-02-19T15:07:17.041+00:00",
+        "stripe_customer_id": null,
+        "stripe_subscription_id": null,
+        "stripe_price_id": null,
+        "billing_cycle": "monthly",
+        "renewal_date": null,
+        "workspace_id": null
+      },
+      {
+        "id": "7ffef85a-37e2-4d98-a25a-0c8b13e0ae81",
+        "user_id": "bc754335-d145-4ef9-a536-1b9bcb33f312",
+        "email": "user9_1771513627802@example.com",
+        "full_name": "User 9",
+        "tier": "pro",
+        "status": "active",
+        "mrr": 29,
+        "joined_at": "2025-12-08T02:34:39.191+00:00",
+        "cancelled_at": null,
+        "trial_ends_at": null,
+        "usage_stats": {
+          "storage_gb": 0,
+          "team_members": 0,
+          "projects_count": 0,
+          "articles_per_month": 0
+        },
+        "metadata": {},
+        "created_at": "2026-02-19T15:07:17.199+00:00",
+        "updated_at": "2026-02-19T15:07:17.199+00:00",
+        "stripe_customer_id": null,
+        "stripe_subscription_id": null,
+        "stripe_price_id": null,
+        "billing_cycle": "monthly",
+        "renewal_date": null,
+        "workspace_id": null
+      },
+      {
+        "id": "45e01a2b-c4d0-4093-8219-766d89e3da9e",
+        "user_id": "c4c034ea-872d-4db4-ba57-8feab3ca9902",
+        "email": "user10_1771513628313@example.com",
+        "full_name": "User 10",
+        "tier": "business",
+        "status": "active",
+        "mrr": 99,
+        "joined_at": "2025-03-25T04:21:32.755+00:00",
+        "cancelled_at": null,
+        "trial_ends_at": null,
+        "usage_stats": {
+          "storage_gb": 0,
+          "team_members": 0,
+          "projects_count": 0,
+          "articles_per_month": 0
+        },
+        "metadata": {},
+        "created_at": "2026-02-19T15:07:17.357+00:00",
+        "updated_at": "2026-02-19T15:07:17.357+00:00",
+        "stripe_customer_id": null,
+        "stripe_subscription_id": null,
+        "stripe_price_id": null,
+        "billing_cycle": "monthly",
+        "renewal_date": null,
+        "workspace_id": null
+      },
+      {
+        "id": "cc94d3e9-e256-4c48-a1df-2e8887666f74",
+        "user_id": "b0373809-82fd-4005-88b2-1e16fb90fc78",
+        "email": "user11_1771513628843@example.com",
+        "full_name": "User 11",
+        "tier": "free",
+        "status": "active",
+        "mrr": 0,
+        "joined_at": "2025-09-25T17:16:20.757+00:00",
+        "cancelled_at": null,
+        "trial_ends_at": null,
+        "usage_stats": {
+          "storage_gb": 0,
+          "team_members": 0,
+          "projects_count": 0,
+          "articles_per_month": 0
+        },
+        "metadata": {},
+        "created_at": "2026-02-19T15:07:17.519+00:00",
+        "updated_at": "2026-02-19T15:07:17.519+00:00",
+        "stripe_customer_id": null,
+        "stripe_subscription_id": null,
+        "stripe_price_id": null,
+        "billing_cycle": "monthly",
+        "renewal_date": null,
+        "workspace_id": null
+      },
+      {
+        "id": "1bdaa9de-d9cb-4051-9ab1-4d5ab309f798",
+        "user_id": "1c7e57e3-b34f-440d-b646-eaa5c48317a9",
+        "email": "user12_1771513629264@example.com",
+        "full_name": "User 12",
+        "tier": "business",
+        "status": "active",
+        "mrr": 99,
+        "joined_at": "2025-11-25T09:38:21.522+00:00",
+        "cancelled_at": null,
+        "trial_ends_at": null,
+        "usage_stats": {
+          "storage_gb": 0,
+          "team_members": 0,
+          "projects_count": 0,
+          "articles_per_month": 0
+        },
+        "metadata": {},
+        "created_at": "2026-02-19T15:07:17.686+00:00",
+        "updated_at": "2026-02-19T15:07:17.686+00:00",
+        "stripe_customer_id": null,
+        "stripe_subscription_id": null,
+        "stripe_price_id": null,
+        "billing_cycle": "monthly",
+        "renewal_date": null,
+        "workspace_id": null
+      },
+      {
+        "id": "bd9aac5d-fb10-4e34-b990-f9a87223cc7e",
+        "user_id": "43f77104-e2ba-483b-be96-0d9a0f804aa5",
+        "email": "user13_1771513629685@example.com",
+        "full_name": "User 13",
+        "tier": "business",
+        "status": "active",
+        "mrr": 99,
+        "joined_at": "2025-12-16T07:33:51.649+00:00",
+        "cancelled_at": null,
+        "trial_ends_at": null,
+        "usage_stats": {
+          "storage_gb": 0,
+          "team_members": 0,
+          "projects_count": 0,
+          "articles_per_month": 0
+        },
+        "metadata": {},
+        "created_at": "2026-02-19T15:07:17.845+00:00",
+        "updated_at": "2026-02-19T15:07:17.845+00:00",
+        "stripe_customer_id": null,
+        "stripe_subscription_id": null,
+        "stripe_price_id": null,
+        "billing_cycle": "monthly",
+        "renewal_date": null,
+        "workspace_id": null
+      },
+      {
+        "id": "d1ad83c7-2bf1-4f8c-9110-5df04c98b406",
+        "user_id": "b30a9b42-4290-4165-8f88-796e619d8690",
+        "email": "user14_1771513630083@example.com",
+        "full_name": "User 14",
+        "tier": "free",
+        "status": "active",
+        "mrr": 0,
+        "joined_at": "2025-09-08T11:12:38.925+00:00",
+        "cancelled_at": null,
+        "trial_ends_at": null,
+        "usage_stats": {
+          "storage_gb": 0,
+          "team_members": 0,
+          "projects_count": 0,
+          "articles_per_month": 0
+        },
+        "metadata": {},
+        "created_at": "2026-02-19T15:07:18.002+00:00",
+        "updated_at": "2026-02-19T15:07:18.002+00:00",
+        "stripe_customer_id": null,
+        "stripe_subscription_id": null,
+        "stripe_price_id": null,
+        "billing_cycle": "monthly",
+        "renewal_date": null,
+        "workspace_id": null
+      },
+      {
+        "id": "462ac101-e4c7-4b44-8dc7-4d1382d4a65f",
+        "user_id": "662c58a3-1d1f-421a-9ae1-1bf2b04b9a48",
+        "email": "user15_1771513630497@example.com",
+        "full_name": "User 15",
+        "tier": "agency",
+        "status": "active",
+        "mrr": 299,
+        "joined_at": "2025-02-02T16:26:26.421+00:00",
+        "cancelled_at": null,
+        "trial_ends_at": null,
+        "usage_stats": {
+          "storage_gb": 0,
+          "team_members": 0,
+          "projects_count": 0,
+          "articles_per_month": 0
+        },
+        "metadata": {},
+        "created_at": "2026-02-19T15:07:18.167+00:00",
+        "updated_at": "2026-02-19T15:07:18.167+00:00",
+        "stripe_customer_id": null,
+        "stripe_subscription_id": null,
+        "stripe_price_id": null,
+        "billing_cycle": "monthly",
+        "renewal_date": null,
+        "workspace_id": null
+      },
+      {
+        "id": "20b81721-697c-4dfa-8a31-b8030d0aee9e",
+        "user_id": "8664b850-c437-4117-9774-0f8940db77f7",
+        "email": "user16_1771513630919@example.com",
+        "full_name": "User 16",
+        "tier": "free",
+        "status": "active",
+        "mrr": 0,
+        "joined_at": "2025-09-23T14:42:51.85+00:00",
+        "cancelled_at": null,
+        "trial_ends_at": null,
+        "usage_stats": {
+          "storage_gb": 0,
+          "team_members": 0,
+          "projects_count": 0,
+          "articles_per_month": 0
+        },
+        "metadata": {},
+        "created_at": "2026-02-19T15:07:18.342+00:00",
+        "updated_at": "2026-02-19T15:07:18.342+00:00",
+        "stripe_customer_id": null,
+        "stripe_subscription_id": null,
+        "stripe_price_id": null,
+        "billing_cycle": "monthly",
+        "renewal_date": null,
+        "workspace_id": null
+      },
+      {
+        "id": "4b010fbb-6836-4b80-b716-ccce6f9ed988",
+        "user_id": "5be26826-719a-459b-8d70-c97aa1dc4cbd",
+        "email": "user17_1771513631330@example.com",
+        "full_name": "User 17",
+        "tier": "business",
+        "status": "active",
+        "mrr": 99,
+        "joined_at": "2025-02-01T21:42:20.617+00:00",
+        "cancelled_at": null,
+        "trial_ends_at": null,
+        "usage_stats": {
+          "storage_gb": 0,
+          "team_members": 0,
+          "projects_count": 0,
+          "articles_per_month": 0
+        },
+        "metadata": {},
+        "created_at": "2026-02-19T15:07:18.5+00:00",
+        "updated_at": "2026-02-19T15:07:18.5+00:00",
+        "stripe_customer_id": null,
+        "stripe_subscription_id": null,
+        "stripe_price_id": null,
+        "billing_cycle": "monthly",
+        "renewal_date": null,
+        "workspace_id": null
+      },
+      {
+        "id": "879d7123-623e-453c-bb63-fabe10585679",
+        "user_id": "55311c66-576b-4f38-8a84-e170ed41b3fd",
+        "email": "user18_1771513631747@example.com",
+        "full_name": "User 18",
+        "tier": "free",
+        "status": "active",
+        "mrr": 0,
+        "joined_at": "2025-03-03T14:17:54.86+00:00",
+        "cancelled_at": null,
+        "trial_ends_at": null,
+        "usage_stats": {
+          "storage_gb": 0,
+          "team_members": 0,
+          "projects_count": 0,
+          "articles_per_month": 0
+        },
+        "metadata": {},
+        "created_at": "2026-02-19T15:07:18.679+00:00",
+        "updated_at": "2026-02-19T15:07:18.679+00:00",
+        "stripe_customer_id": null,
+        "stripe_subscription_id": null,
+        "stripe_price_id": null,
+        "billing_cycle": "monthly",
+        "renewal_date": null,
+        "workspace_id": null
+      },
+      {
+        "id": "d619b8ef-2bca-4012-b0ab-10d0d76026d9",
+        "user_id": "42fd1312-7b18-4dad-a34c-d228d4521b5e",
+        "email": "user19_1771513632147@example.com",
+        "full_name": "User 19",
+        "tier": "pro",
+        "status": "active",
+        "mrr": 29,
+        "joined_at": "2025-08-15T07:40:45.858+00:00",
+        "cancelled_at": null,
+        "trial_ends_at": null,
+        "usage_stats": {
+          "storage_gb": 0,
+          "team_members": 0,
+          "projects_count": 0,
+          "articles_per_month": 0
+        },
+        "metadata": {},
+        "created_at": "2026-02-19T15:07:18.845+00:00",
+        "updated_at": "2026-02-19T15:07:18.845+00:00",
+        "stripe_customer_id": null,
+        "stripe_subscription_id": null,
+        "stripe_price_id": null,
+        "billing_cycle": "monthly",
+        "renewal_date": null,
+        "workspace_id": null
+      }
+    ]
+  },
+  "tenants": {
+    "data": [
+      {
+        "id": "0afbec77-2816-4d7c-87f2-1a3f97d56db8",
+        "name": "Default Company",
+        "slug": "default",
+        "ml_config": {
+          "enabled": true,
+          "auto_learning_enabled": true,
+          "allow_manual_learnings": true,
+          "cross_project_learning": true,
+          "cross_workspace_learning": false,
+          "min_feedbacks_for_pattern": 3,
+          "pattern_approval_required": false
+        },
+        "subscription_tier": "professional",
+        "max_workspaces": 10,
+        "max_projects": 100,
+        "max_users": 50,
+        "created_at": "2026-02-19T13:30:29.858562+00:00",
+        "updated_at": "2026-02-19T13:30:29.858562+00:00",
+        "created_by_user_id": null,
+        "is_active": true
+      },
+      {
+        "id": "1ce6918b-f51d-441a-937f-077b570df7bc",
+        "name": "admin's Organization",
+        "slug": "admin",
+        "ml_config": {
+          "enabled": true,
+          "auto_learning_enabled": true,
+          "allow_manual_learnings": true,
+          "cross_project_learning": true,
+          "cross_workspace_learning": false,
+          "min_feedbacks_for_pattern": 3,
+          "pattern_approval_required": false
+        },
+        "subscription_tier": "professional",
+        "max_workspaces": 10,
+        "max_projects": 100,
+        "max_users": 50,
+        "created_at": "2026-02-20T15:20:38.29174+00:00",
+        "updated_at": "2026-02-20T15:20:38.29174+00:00",
+        "created_by_user_id": null,
+        "is_active": true
+      }
+    ]
+  },
+  "user_tenants": {
+    "data": [
+      {
+        "id": "896150dc-bd65-4a88-8d59-ce82e64bd58e",
+        "user_id": "3a6889fe-2932-4004-9bfb-65a4b34a93ea",
+        "tenant_id": "1ce6918b-f51d-441a-937f-077b570df7bc",
+        "role": "owner",
+        "created_at": "2026-02-20T15:20:39.006928+00:00",
+        "tenant_name": "admin's Organization"
+      }
+    ]
+  },
+  "ai_agents": {
+    "data": [
+      {
+        "id": "65b7f5cd-1aa9-4716-a6fe-9949f737ec90",
+        "agent_type": "scheduler",
+        "label": "Scheduler",
+        "description": "Manages project schedules...",
+        "icon": "Calendar",
+        "color": "text-blue-500",
+        "system_prompt": "You are a project scheduling assistant specializing in timeline planning, dependency management, and critical path analysis. Help users optimize schedules, identify bottlenecks, and maintain realistic project timelines. Provide actionable recommendations for schedule improvements.",
+        "model_provider": "openai",
+        "model_name": "gpt-4",
+        "max_tokens": 2000,
+        "temperature": 0.7,
+        "is_active": true,
+        "version": 1,
+        "created_at": "2026-02-19T13:10:49.98384+00:00",
+        "updated_at": "2026-02-21T03:43:49.553304+00:00"
+      },
+      {
+        "id": "48f43ab0-e350-4f79-b18f-a68921392af2",
+        "agent_type": "risk",
+        "label": "Risk",
+        "description": "Identifies risks...",
+        "icon": "AlertTriangle",
+        "color": "text-orange-500",
+        "system_prompt": "You are a risk management specialist. Identify potential project risks, assess probability and impact, suggest mitigation strategies, and track risk exposure. Help users proactively manage uncertainties and maintain contingency plans.",
+        "model_provider": "openai",
+        "model_name": "gpt-4",
+        "max_tokens": 2000,
+        "temperature": 0.7,
+        "is_active": true,
+        "version": 1,
+        "created_at": "2026-02-19T13:10:49.98384+00:00",
+        "updated_at": "2026-02-21T11:47:07.809858+00:00"
+      },
+      {
+        "id": "291be2b7-fc79-4ef8-8429-9bc04229ec84",
+        "agent_type": "meeting",
+        "label": "Meeting",
+        "description": "Handles meetings...",
+        "icon": "Video",
+        "color": "text-pink-500",
+        "system_prompt": "You are a meeting assistant. Generate agendas, take notes, extract action items, summarize discussions, and track follow-ups. Help make meetings productive and ensure clear outcomes.",
+        "model_provider": "openai",
+        "model_name": "gpt-4",
+        "max_tokens": 2000,
+        "temperature": 0.7,
+        "is_active": true,
+        "version": 1,
+        "created_at": "2026-02-19T13:10:49.98384+00:00",
+        "updated_at": "2026-02-21T03:43:49.553304+00:00"
+      },
+      {
+        "id": "edea9d98-7e04-4613-8268-9b3f5d0023db",
+        "agent_type": "document",
+        "label": "Document",
+        "description": "Generates reports...",
+        "icon": "FileText",
+        "color": "text-indigo-500",
+        "system_prompt": "You are a documentation specialist. Generate project reports, analyze documents, extract key information, summarize content, and maintain documentation quality. Help create clear, professional documentation.",
+        "model_provider": "openai",
+        "model_name": "gpt-4",
+        "max_tokens": 2000,
+        "temperature": 0.7,
+        "is_active": true,
+        "version": 1,
+        "created_at": "2026-02-19T13:10:49.98384+00:00",
+        "updated_at": "2026-02-21T03:43:49.553304+00:00"
+      },
+      {
+        "id": "2c2d5ab8-df08-421c-aef8-db556ce09966",
+        "agent_type": "insight",
+        "label": "Insight",
+        "description": "Data insights...",
+        "icon": "Lightbulb",
+        "color": "text-yellow-500",
+        "system_prompt": "You are an insights analyst. Identify patterns in project data, surface trends, provide data-driven recommendations, and highlight important metrics. Help users make informed decisions based on project analytics.",
+        "model_provider": "anthropic",
+        "model_name": "claude-3-opus",
+        "max_tokens": 2000,
+        "temperature": 0.7,
+        "is_active": true,
+        "version": 1,
+        "created_at": "2026-02-19T13:10:49.98384+00:00",
+        "updated_at": "2026-02-21T03:43:49.553304+00:00"
+      },
+      {
+        "id": "796d67f6-85e1-48ce-8d5d-6a9709b4348a",
+        "agent_type": "strategic",
+        "label": "Strategic",
+        "description": "Portfolio planning...",
+        "icon": "Target",
+        "color": "text-red-500",
+        "system_prompt": "You are a strategic advisor for portfolio and program management. Provide portfolio-level insights, strategic recommendations, alignment analysis, and executive summaries. Help optimize portfolio value and strategic outcomes.",
+        "model_provider": "anthropic",
+        "model_name": "claude-3-opus",
+        "max_tokens": 2000,
+        "temperature": 0.7,
+        "is_active": true,
+        "version": 1,
+        "created_at": "2026-02-19T13:10:49.98384+00:00",
+        "updated_at": "2026-02-21T03:43:49.553304+00:00"
+      },
+      {
+        "id": "87011bc9-fe23-444e-b592-e8a65894ec1b",
+        "agent_type": "communication",
+        "label": "Communication",
+        "description": "Analyzes comms...",
+        "icon": "MessageCircle",
+        "color": "text-cyan-500",
+        "system_prompt": "You are a communication analyst. Analyze team messages, track sentiment, identify collaboration patterns, surface communication issues, and provide recommendations for better team dynamics.",
+        "model_provider": "google",
+        "model_name": "gemini-pro",
+        "max_tokens": 2000,
+        "temperature": 0.7,
+        "is_active": true,
+        "version": 1,
+        "created_at": "2026-02-19T13:10:49.98384+00:00",
+        "updated_at": "2026-02-21T03:43:49.553304+00:00"
+      },
+      {
+        "id": "92ea5eb2-57ce-46b7-81fa-783d35fcf1d0",
+        "agent_type": "system",
+        "label": "System",
+        "description": "General assistant...",
+        "icon": "Bot",
+        "color": "text-muted-foreground",
+        "system_prompt": "You are a general project management assistant. Answer questions, provide helpful information, guide users, and handle miscellaneous queries. Be helpful, clear, and concise.",
+        "model_provider": "openai",
+        "model_name": "gpt-4-turbo",
+        "max_tokens": 2000,
+        "temperature": 0.7,
+        "is_active": true,
+        "version": 1,
+        "created_at": "2026-02-19T13:10:49.98384+00:00",
+        "updated_at": "2026-02-21T03:43:49.553304+00:00"
+      },
+      {
+        "id": "795f541e-23d8-4593-8109-ba4887770dc1",
+        "agent_type": "multi-agent",
+        "label": "Multi-Agent",
+        "description": "Coordinates agents...",
+        "icon": "Network",
+        "color": "text-primary",
+        "system_prompt": "You coordinate multiple specialized AI agents to solve complex, multi-faceted problems. Analyze user requests, determine which agents to involve, orchestrate their collaboration, and synthesize their outputs into cohesive solutions.",
+        "model_provider": "openai",
+        "model_name": "gpt-4",
+        "max_tokens": 2000,
+        "temperature": 0.7,
+        "is_active": true,
+        "version": 1,
+        "created_at": "2026-02-19T13:10:49.98384+00:00",
+        "updated_at": "2026-02-21T09:28:08.058437+00:00"
+      },
+      {
+        "id": "6f5ccc8f-4504-4f91-b476-5f2840fa2ea5",
+        "agent_type": "task-orchestrator",
+        "label": "Task Orchestrator",
+        "description": "Creates, updates, moves, and bulk-manages tasks across sprints and projects. Handles action items from meetings. P0 highest-value agent.",
+        "icon": "ClipboardList",
+        "color": "text-blue-500",
+        "system_prompt": "You are the Task Orchestrator agent for ProjectOye. You have the ability to create, update, move, and bulk-manage tasks. When a user asks you to create tasks, update statuses, move items to sprints, or generate tasks from meeting notes — use the appropriate tool. Always confirm before performing bulk operations. For every tool call that modifies data, use the confirmation gate.",
+        "model_provider": "openai",
+        "model_name": "gpt-4o",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "is_active": true,
+        "version": 1,
+        "created_at": "2026-02-20T01:34:55.221373+00:00",
+        "updated_at": "2026-02-21T03:43:49.553304+00:00"
+      },
+      {
+        "id": "8b823d3f-ded9-45ce-8eea-7f95be14701d",
+        "agent_type": "pdf-report-generator",
+        "label": "PDF Report Generator",
+        "description": "Generates professional PDF status reports and project summaries. Supports custom templates and branding. P0 agent.",
+        "icon": "FileText",
+        "color": "text-indigo-500",
+        "system_prompt": "You are the PDF Report Generator agent. You create professional project status reports, executive summaries, and progress documents. When asked to generate reports, use the generate_pdf_report tool with appropriate parameters. Format output cleanly and professionally.",
+        "model_provider": "openai",
+        "model_name": "gpt-4o",
+        "max_tokens": 4000,
+        "temperature": 0.2,
+        "is_active": true,
+        "version": 1,
+        "created_at": "2026-02-20T01:34:55.331738+00:00",
+        "updated_at": "2026-02-21T03:43:49.553304+00:00"
+      },
+      {
+        "id": "d3b5aa03-73c1-4165-a2f7-112708d6cdf0",
+        "agent_type": "auto-scheduler",
+        "label": "Auto Scheduler",
+        "description": "Automatically optimizes project schedules — rescheduling tasks, resolving conflicts, and balancing workloads. P0 agent.",
+        "icon": "Calendar",
+        "color": "text-cyan-500",
+        "system_prompt": "You are the Auto Scheduler agent. You optimize project schedules by analyzing task dependencies, resource availability, and deadlines. Use auto_schedule_project to reschedule and optimize. Always show before/after comparison and confirm before applying changes.",
+        "model_provider": "openai",
+        "model_name": "gpt-4o",
+        "max_tokens": 4000,
+        "temperature": 0.2,
+        "is_active": true,
+        "version": 1,
+        "created_at": "2026-02-20T01:34:55.436942+00:00",
+        "updated_at": "2026-02-21T03:43:49.553304+00:00"
+      },
+      {
+        "id": "876312ad-9863-41ef-b3c4-e9cd1fc11b3c",
+        "agent_type": "risk-mitigator",
+        "label": "Risk Mitigator",
+        "description": "Identifies, escalates, and mitigates project risks. Creates mitigation plans and tracks risk register. P0 agent.",
+        "icon": "AlertTriangle",
+        "color": "text-orange-500",
+        "system_prompt": "You are the Risk Mitigator agent. You proactively identify risks, create risk register entries, escalate high-severity items, and generate mitigation plans. Use structured risk assessment (probability × impact). Always tag risks with category (technical, schedule, budget, resource).",
+        "model_provider": "openai",
+        "model_name": "gpt-4o",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "is_active": true,
+        "version": 1,
+        "created_at": "2026-02-20T01:34:55.536553+00:00",
+        "updated_at": "2026-02-21T03:43:49.553304+00:00"
+      },
+      {
+        "id": "2d883d66-f674-4053-8c0e-0469925dd79b",
+        "agent_type": "meeting-mom-generator",
+        "label": "Meeting MoM Generator",
+        "description": "Extracts action items from meeting notes and generates formatted Minutes of Meeting documents. P0 agent.",
+        "icon": "Video",
+        "color": "text-pink-500",
+        "system_prompt": "You are the Meeting MoM Generator agent. You analyze meeting transcripts and notes to extract action items, decisions, and follow-ups. Generate structured Minutes of Meeting documents, create tasks, and distribute via email. Format output with clear sections: Attendees, Agenda, Decisions, Action Items, Next Steps.",
+        "model_provider": "openai",
+        "model_name": "gpt-4o",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "is_active": true,
+        "version": 1,
+        "created_at": "2026-02-20T01:34:55.656795+00:00",
+        "updated_at": "2026-02-21T03:43:49.553304+00:00"
+      },
+      {
+        "id": "537bc118-6429-41b8-8bed-4f7affb2f27c",
+        "agent_type": "excel-importer",
+        "label": "Excel / CSV Importer",
+        "description": "Imports project plans, resource schedules, and data from Excel/CSV files. Validates and maps to project structure. P0 agent.",
+        "icon": "FileSpreadsheet",
+        "color": "text-green-500",
+        "system_prompt": "You are the Excel/CSV Importer agent. You help project managers import data from spreadsheets into the system. Validate data structure, map columns to project fields, detect conflicts with existing data, and confirm before committing imports.",
+        "model_provider": "openai",
+        "model_name": "gpt-4o",
+        "max_tokens": 3000,
+        "temperature": 0.1,
+        "is_active": true,
+        "version": 1,
+        "created_at": "2026-02-20T01:34:55.756346+00:00",
+        "updated_at": "2026-02-21T03:43:49.553304+00:00"
+      },
+      {
+        "id": "5179f162-b90a-4ff2-9554-df2973c2c323",
+        "agent_type": "resource-leveler",
+        "label": "Resource Leveler",
+        "description": "Automatically levels resource workloads across the project, resolving over-allocation and bottlenecks. P1 agent.",
+        "icon": "Users",
+        "color": "text-purple-500",
+        "system_prompt": "You are the Resource Leveler agent. You analyze resource assignments and workloads across the project, identify over-allocations, and automatically rebalance task assignments to smooth out peaks. Use level_resources to trigger auto-scheduling with resource constraints.",
+        "model_provider": "openai",
+        "model_name": "gpt-4o",
+        "max_tokens": 4000,
+        "temperature": 0.2,
+        "is_active": true,
+        "version": 1,
+        "created_at": "2026-02-20T01:34:55.857458+00:00",
+        "updated_at": "2026-02-21T03:43:49.553304+00:00"
+      },
+      {
+        "id": "01133655-6203-45f6-91c6-2129d169ade4",
+        "agent_type": "sprint-planner",
+        "label": "Sprint Planner",
+        "description": "Plans sprints intelligently using velocity, team capacity, and backlog priorities. P1 agent.",
+        "icon": "Zap",
+        "color": "text-amber-500",
+        "system_prompt": "You are the Sprint Planner agent. You help teams plan sprints by analyzing team velocity, individual capacities, and backlog item priorities. Suggest optimal sprint composition, identify risks, and automatically assign tasks using plan_sprint.",
+        "model_provider": "openai",
+        "model_name": "gpt-4o",
+        "max_tokens": 4000,
+        "temperature": 0.3,
+        "is_active": true,
+        "version": 1,
+        "created_at": "2026-02-20T01:34:55.956282+00:00",
+        "updated_at": "2026-02-21T03:43:49.553304+00:00"
+      },
+      {
+        "id": "0a28bc7a-d26b-4f48-8a62-2e3df2cd93d4",
+        "agent_type": "approval-router",
+        "label": "Approval Router",
+        "description": "Routes documents, change requests, and deliverables through formal approval workflows. Handles escalations. P1 agent.",
+        "icon": "GitBranch",
+        "color": "text-blue-500",
+        "system_prompt": "You are the Approval Router agent. You manage formal approval workflows — routing change requests, documents, and deliverables to the right approvers. Handle multi-step approvals, escalate stalled items, and track approval status. Use maker-checker pattern for all approvals.",
+        "model_provider": "openai",
+        "model_name": "gpt-4o",
+        "max_tokens": 3000,
+        "temperature": 0.2,
+        "is_active": true,
+        "version": 1,
+        "created_at": "2026-02-20T01:34:56.057098+00:00",
+        "updated_at": "2026-02-21T03:43:49.553304+00:00"
+      },
+      {
+        "id": "79bd031a-f1ac-439c-ac6a-6d7c8ec3d967",
+        "agent_type": "ml-retrain-trigger",
+        "label": "ML Retrain Trigger",
+        "description": "Monitors ML model accuracy and triggers retraining when drift is detected. Manages model lifecycle. P1 agent.",
+        "icon": "Brain",
+        "color": "text-violet-500",
+        "system_prompt": "You are the ML Retrain Trigger agent. You monitor machine learning model performance metrics, detect accuracy drift, and trigger retraining pipelines when needed. Report model health, schedule preventive retraining, and ensure models stay within accuracy thresholds.",
+        "model_provider": "openai",
+        "model_name": "gpt-4o",
+        "max_tokens": 3000,
+        "temperature": 0.1,
+        "is_active": true,
+        "version": 1,
+        "created_at": "2026-02-20T01:34:56.156655+00:00",
+        "updated_at": "2026-02-21T03:43:49.553304+00:00"
+      },
+      {
+        "id": "95fecc37-5136-493b-b422-b75d8f885818",
+        "agent_type": "change-impact-analyzer",
+        "label": "Change Impact Analyzer",
+        "description": "Analyzes the full impact of proposed changes on timeline, budget, resources, and risks before approval. P2 agent.",
+        "icon": "BarChart3",
+        "color": "text-red-500",
+        "system_prompt": "You are the Change Impact Analyzer agent. You perform comprehensive impact assessments for proposed project changes. Analyze effects on timeline (critical path), budget, resource allocation, open risks, and dependent deliverables. Provide structured reports with probability-weighted impact scores and go/no-go recommendations.",
+        "model_provider": "openai",
+        "model_name": "gpt-4o",
+        "max_tokens": 6000,
+        "temperature": 0.2,
+        "is_active": true,
+        "version": 1,
+        "created_at": "2026-02-20T01:34:56.256852+00:00",
+        "updated_at": "2026-02-21T03:43:49.553304+00:00"
+      },
+      {
+        "id": "a275b6bf-ceb7-4fe5-bf47-cf9997aa2ae5",
+        "agent_type": "scenario-write-back",
+        "label": "Scenario Write-Back",
+        "description": "Saves financial scenarios and budget models back to the planning database with version control. P2 agent.",
+        "icon": "Database",
+        "color": "text-teal-500",
+        "system_prompt": "You are the Scenario Write-Back agent. You manage financial planning scenarios — saving budget models, forecasts, and scenario comparisons to the planning database. Ensure version control, locking of approved scenarios, and audit trails for all write-back operations.",
+        "model_provider": "openai",
+        "model_name": "gpt-4o",
+        "max_tokens": 4000,
+        "temperature": 0.1,
+        "is_active": true,
+        "version": 1,
+        "created_at": "2026-02-20T01:34:56.371375+00:00",
+        "updated_at": "2026-02-21T03:43:49.553304+00:00"
+      },
+      {
+        "id": "45a21dec-1176-4397-8c97-401780f5e7f3",
+        "agent_type": "presentation-builder",
+        "label": "Presentation Builder",
+        "description": "Builds executive and stakeholder presentations from project data — auto-generating slides, charts, and summaries. P2 agent.",
+        "icon": "Presentation",
+        "color": "text-rose-500",
+        "system_prompt": "You are the Presentation Builder agent. You create professional executive presentations from live project data. Generate slide decks with status summaries, milestone progress, risk heatmaps, financial overview, and action items. Target executive audiences with clear, visual-first storytelling.",
+        "model_provider": "openai",
+        "model_name": "gpt-4o",
+        "max_tokens": 6000,
+        "temperature": 0.4,
+        "is_active": true,
+        "version": 1,
+        "created_at": "2026-02-20T01:34:56.471111+00:00",
+        "updated_at": "2026-02-21T03:43:49.553304+00:00"
+      },
+      {
+        "id": "ddb01f81-4310-4f5a-8911-5b14fa031445",
+        "agent_type": "sod-checker",
+        "label": "SoD Checker",
+        "description": "Detects Segregation of Duties conflicts in role assignments, ensuring governance and compliance. P2 agent.",
+        "icon": "Shield",
+        "color": "text-emerald-500",
+        "system_prompt": "You are the SoD Checker agent. You enforce Segregation of Duties policies by detecting conflicting role assignments. Analyze user permissions against SoD rules, flag violations, generate compliance reports, and recommend remediation. Operate with zero tolerance for high-risk conflicts.",
+        "model_provider": "openai",
+        "model_name": "gpt-4o",
+        "max_tokens": 3000,
+        "temperature": 0.1,
+        "is_active": true,
+        "version": 1,
+        "created_at": "2026-02-20T01:34:56.57207+00:00",
+        "updated_at": "2026-02-21T03:43:49.553304+00:00"
+      },
+      {
+        "id": "eeb529e3-e0ee-4d61-80c9-3fa3e47bebbc",
+        "agent_type": "compliance-action",
+        "label": "Compliance Action Agent",
+        "description": "Flags compliance violations, creates remediation tasks, and maintains the compliance violation register. P2 agent.",
+        "icon": "ClipboardCheck",
+        "color": "text-orange-500",
+        "system_prompt": "You are the Compliance Action agent. You identify, document, and remediate compliance violations. Flag violations with severity ratings, create structured violation records, generate remediation plans, assign corrective actions, and track resolution. Maintain immutable audit trails for all compliance events.",
+        "model_provider": "openai",
+        "model_name": "gpt-4o",
+        "max_tokens": 3000,
+        "temperature": 0.1,
+        "is_active": true,
+        "version": 1,
+        "created_at": "2026-02-20T01:34:56.6712+00:00",
+        "updated_at": "2026-02-21T03:43:49.553304+00:00"
+      },
+      {
+        "id": "d878f36f-a514-478b-bf45-616541960ead",
+        "agent_type": "general",
+        "label": "General Assistant",
+        "description": "General purpose project assistant for Q&A and guidance",
+        "icon": "Bot",
+        "color": "text-primary",
+        "system_prompt": "You are a helpful AI project management assistant. Help users understand their projects, answer questions, and provide guidance.",
+        "model_provider": "openai",
+        "model_name": "gpt-4",
+        "max_tokens": 2000,
+        "temperature": 0.7,
+        "is_active": true,
+        "version": 1,
+        "created_at": "2026-02-20T20:23:23.013838+00:00",
+        "updated_at": "2026-02-21T03:43:49.553304+00:00"
+      },
+      {
+        "id": "ac5426e9-aac8-47ca-839e-d88fb2be2759",
+        "agent_type": "assignment",
+        "label": "Assignment",
+        "description": "Manages resources...",
+        "icon": "Users",
+        "color": "text-purple-500",
+        "system_prompt": "You are a resource management assistant. Optimize team assignments based on skills, availability, workload, and capacity. Help balance work distribution, identify overallocation, and suggest efficient resource utilization.",
+        "model_provider": "openai",
+        "model_name": "gpt-4",
+        "max_tokens": 2000,
+        "temperature": 0.7,
+        "is_active": true,
+        "version": 1,
+        "created_at": "2026-02-19T13:10:49.98384+00:00",
+        "updated_at": "2026-02-21T03:43:49.553304+00:00"
+      },
+      {
+        "id": "6e10a922-4470-465b-a8a3-f2eaf9092e94",
+        "agent_type": "finance",
+        "label": "Finance",
+        "description": "Handles budget analysis...",
+        "icon": "DollarSign",
+        "color": "text-green-500",
+        "system_prompt": "You are a financial analyst assistant for project management. Analyze budgets, track costs, identify variances, and provide forecasts. Help users understand financial health, optimize spending, and make data-driven budget decisions.",
+        "model_provider": "openai",
+        "model_name": "gpt-4",
+        "max_tokens": 2000,
+        "temperature": 0.7,
+        "is_active": true,
+        "version": 1,
+        "created_at": "2026-02-19T13:10:49.98384+00:00",
+        "updated_at": "2026-02-21T11:46:56.142756+00:00"
+      }
+    ]
+  },
+  "projects": {
+    "data": [
+      {
+        "id": "04eed42d-90c3-4d05-9738-faf5b49508ff",
+        "name": "TP-Alpha Software Delivery - Updated",
+        "status": "active",
+        "created_at": "2026-02-21T03:22:39.637519+00:00"
+      },
+      {
+        "id": "81675c53-554e-4384-8092-212d05b79425",
+        "name": "Monolith Infrastructure Upgrade (E2E)",
+        "status": "active",
+        "created_at": "2026-02-22T03:23:14.633297+00:00"
+      },
+      {
+        "id": "01a92453-58b6-4dee-920c-467a3bd8b21e",
+        "name": "Agile Software Transformation (E2E)",
+        "status": "active",
+        "created_at": "2026-02-22T03:23:17.738896+00:00"
+      },
+      {
+        "id": "eb018624-595e-4059-9a13-234f311aff6a",
+        "name": "Regulatory Compliance Rollout (E2E)",
+        "status": "active",
+        "created_at": "2026-02-22T03:23:20.59331+00:00"
+      },
+      {
+        "id": "898f9d74-89a0-4539-bafd-d705f100d9ce",
+        "name": "React UI Test Project 3",
+        "status": "active",
+        "created_at": "2026-02-22T05:06:42.368629+00:00"
+      },
+      {
+        "id": "c76d595a-8be1-4890-9eec-59b4be318faa",
+        "name": "New AI Project",
+        "status": "active",
+        "created_at": "2026-02-22T15:44:25.080223+00:00"
+      },
+      {
+        "id": "e5d78174-f651-4bc9-8921-3b744e111879",
+        "name": "Ultimate ERP AI Deployment",
+        "status": "active",
+        "created_at": "2026-02-22T13:45:54.790676+00:00"
+      },
+      {
+        "id": "650acee4-aa88-4bda-bc14-b265f8cc96a6",
+        "name": "Ultimate ERP AI Deployment",
+        "status": "active",
+        "created_at": "2026-02-22T13:56:31.973812+00:00"
+      },
+      {
+        "id": "c2e943a3-c7f1-4516-9276-092036e45066",
+        "name": "Master ERP Execution Phase with AI Agent",
+        "status": "active",
+        "created_at": "2026-02-22T13:28:20.411865+00:00"
+      },
+      {
+        "id": "51a6601b-4331-4db3-ba2d-1b0ba0c0274b",
+        "name": "Full-stack ERP system implementation covering finance, procurement, and HR modules.",
+        "status": "active",
+        "created_at": "2026-02-22T14:38:49.320427+00:00"
+      },
+      {
+        "id": "c1b39fd0-7561-465d-8251-75346d92dddd",
+        "name": "Full-stack ERP system implementation covering finance, procurement, and HR modules.",
+        "status": "active",
+        "created_at": "2026-02-22T14:45:00.595984+00:00"
+      },
+      {
+        "id": "05c93034-f63f-4dc4-a854-88bf6ca44cd0",
+        "name": "New AI Project",
+        "status": "active",
+        "created_at": "2026-02-22T14:50:40.689006+00:00"
+      },
+      {
+        "id": "5ad70a5e-7548-4552-a4fd-3c6426a8ecc2",
+        "name": "Compliance UI Test",
+        "status": "active",
+        "created_at": "2026-02-23T05:04:37.313148+00:00"
+      },
+      {
+        "id": "73ff84b1-447b-4e9c-b438-56522e520b76",
+        "name": "Full-stack ERP system implementation covering finance, procurement, and HR modules.",
+        "status": "active",
+        "created_at": "2026-02-22T14:59:14.279967+00:00"
+      },
+      {
+        "id": "1a563f17-2069-4735-9d4f-bbe8bde3be1f",
+        "name": "Bilal Testing",
+        "status": "active",
+        "created_at": "2026-02-22T20:27:02.810575+00:00"
+      },
+      {
+        "id": "8a5abcc6-d567-46cd-9724-7fda2e465ba7",
+        "name": "ERP Implementation with AI Agent",
+        "status": "active",
+        "created_at": "2026-02-22T21:21:33.246246+00:00"
+      },
+      {
+        "id": "e9a1d48f-01d2-40fa-99eb-ee09932c7cfd",
+        "name": "ERP Implementation with AI Agent",
+        "status": "active",
+        "created_at": "2026-02-22T12:36:47.787972+00:00"
+      },
+      {
+        "id": "0663bb42-52de-458e-9ee8-28da7331e01e",
+        "name": "Global Infrastructure Rollout (E2E Manual V3)",
+        "status": "active",
+        "created_at": "2026-02-22T05:08:38.219279+00:00"
+      },
+      {
+        "id": "4de45f87-6dbb-407a-b35e-e6cbf6f4a4fe",
+        "name": "Bilal and Ali",
+        "status": "active",
+        "created_at": "2026-02-23T08:37:01.238602+00:00"
+      }
+    ]
+  }
+}

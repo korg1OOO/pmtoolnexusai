@@ -17,7 +17,7 @@ export const filterPresetService = {
         filters: FilterConfig,
         description?: string
     ): Promise<FilterPreset> {
-        const presetId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        const presetId = crypto.randomUUID();
         const preset: FilterPreset = {
             id: presetId,
             name,

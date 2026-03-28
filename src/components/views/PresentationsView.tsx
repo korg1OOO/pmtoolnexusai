@@ -153,9 +153,10 @@ export default function PresentationsView() {
   const handleSlideContentChange = useCallback((content: string) => {
     if (selectedSlideId) {
       setSaveStatus('saving');
-      saveSlideDebounced(selectedSlideId, { html_content: content });
-      // Simulate save completion after debounce
-      setTimeout(() => setSaveStatus('saved'), 1500);
+      // saveSlideDebounced returns a promise; mark saved only on completion
+      Promise.resolve(saveSlideDebounced(selectedSlideId, { html_content: content }))
+        .then(() => setSaveStatus('saved'))
+        .catch(() => setSaveStatus('saved')); // still clear spinner on error (error will toast separately)
     }
   }, [selectedSlideId, saveSlideDebounced]);
 

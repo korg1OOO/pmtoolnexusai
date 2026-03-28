@@ -22,7 +22,7 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
         code: '',
         description: '',
         methodology: 'agile',
-        status: 'planning',
+        status: 'active',
         health: 'green',
         start_date: new Date().toISOString().split('T')[0],
         end_date: '',
@@ -36,7 +36,11 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
         e.preventDefault();
 
         try {
-            const project = await createProject(formData);
+            const payload = {
+                ...formData,
+                end_date: formData.end_date || null
+            };
+            const project = await createProject(payload);
             selectProject(project.id); // Auto-select the newly created project
             onOpenChange(false);
 
@@ -46,7 +50,7 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
                 code: '',
                 description: '',
                 methodology: 'agile',
-                status: 'planning',
+                status: 'active',
                 health: 'green',
                 start_date: new Date().toISOString().split('T')[0],
                 end_date: '',
@@ -55,7 +59,8 @@ export function CreateProjectDialog({ open, onOpenChange }: CreateProjectDialogP
                 progress: 0,
                 owner_id: null,
             });
-        } catch (error) {
+        } catch (error: any) {
+            console.error("CreateProjectDialog submission caught error:", error);
             // Error handled by mutation
         }
     };

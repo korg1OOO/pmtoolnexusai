@@ -159,16 +159,28 @@ export function useTriggerSync(projectId: string | undefined) {
                 message: 'Synchronization in progress...',
             });
 
-            // Simulate sync operation (replace with actual sync logic)
-            await new Promise(resolve => setTimeout(resolve, 2000));
+            // Call real sync Edge Function
+            const { data: syncResult, error: syncError } = await _supabase.functions.invoke('trigger-sync', {
+                body: { projectId, syncEntryId: entry.id },
+            });
 
-            // Update to success
+            if (syncError) {
+                await updateEntry.mutateAsync({
+                    id: entry.id,
+                    status: 'failed',
+                    message: `Sync failed: ${syncError.message}`,
+                    errors: [syncError.message],
+                });
+                throw syncError;
+            }
+
+            // Update with real counts returned by the Edge Function
             await updateEntry.mutateAsync({
                 id: entry.id,
                 status: 'synced',
-                message: 'Synchronization completed successfully',
-                items_processed: 10,
-                items_total: 10,
+                message: syncResult?.message ?? 'Synchronization completed successfully',
+                items_processed: syncResult?.itemsProcessed ?? 0,
+                items_total: syncResult?.itemsTotal ?? 0,
             });
 
             return entry;

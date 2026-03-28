@@ -342,8 +342,8 @@ export const useGenerateReferralCode = () => {
             userId: string;
             commissionRate: number;
         }) => {
-            // Generate unique code
-            const code = `REF-${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
+            // Generate a collision-resistant referral code using crypto.randomUUID()
+            const code = `REF-${crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase()}`;
 
             const { data, error } = await supabase
                 .from("referral_codes")

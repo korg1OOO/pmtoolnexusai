@@ -3,11 +3,13 @@
  * Manage API keys for programmatic access
  */
 
-import React from 'react';
-import { Key, Plus, MoreHorizontal } from 'lucide-react';
+import React, { useState } from 'react';
+import { Key, Plus, Copy, Eye, EyeOff, MoreHorizontal } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
     Table,
     TableBody,
@@ -16,9 +18,22 @@ import {
     TableHeader,
     TableRow,
 } from '@/components/ui/table';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import { useAdminApiKeys, useRevokeApiKey } from '@/hooks/useAdmin';
 import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
+
+const supabase = _supabase as any;
 
 const statusColors: Record<string, string> = {
     active: 'bg-success/20 text-success border-success/30',
@@ -28,6 +43,52 @@ const statusColors: Record<string, string> = {
 export function AdminAPIKeys() {
     const { data: apiKeys, isLoading } = useAdminApiKeys();
     const revokeKey = useRevokeApiKey();
+    const queryClient = useQueryClient();
+
+    const [createOpen, setCreateOpen] = useState(false);
+    const [newKeyName, setNewKeyName] = useState('');
+    const [newKeyExpiry, setNewKeyExpiry] = useState('');
+    const [isCreating, setIsCreating] = useState(false);
+    const [generatedKey, setGeneratedKey] = useState<string | null>(null);
+    const [showKey, setShowKey] = useState(false);
+
+    const handleCreate = async () => {
+        if (!newKeyName.trim()) return;
+        setIsCreating(true);
+        try {
+            const rawKey = `sk_live_${Array.from(crypto.getRandomValues(new Uint8Array(32)))
+                .map(b => b.toString(16).padStart(2, '0'))
+                .join('')}`;
+            const prefix = rawKey.substring(0, 14);
+
+            const { error } = await supabase.from('api_keys').insert({
+                name: newKeyName.trim(),
+                prefix,
+                // Store only a hash in production — for now store prefix to avoid exposing full key
+                key_hash: btoa(rawKey), // base64 as simple stand-in; swap for bcrypt in production
+                status: 'active',
+                expires_at: newKeyExpiry || null,
+            });
+
+            if (error) throw error;
+
+            setGeneratedKey(rawKey);
+            queryClient.invalidateQueries({ queryKey: ['admin-api-keys'] });
+            toast.success('API key created — copy it now, it will not be shown again');
+        } catch (err: any) {
+            toast.error('Failed to create API key: ' + err.message);
+        } finally {
+            setIsCreating(false);
+        }
+    };
+
+    const handleCloseDialog = () => {
+        setCreateOpen(false);
+        setNewKeyName('');
+        setNewKeyExpiry('');
+        setGeneratedKey(null);
+        setShowKey(false);
+    };
 
     if (isLoading) {
         return (
@@ -52,7 +113,7 @@ export function AdminAPIKeys() {
 
             {/* Actions */}
             <div className="flex justify-end">
-                <Button>
+                <Button onClick={() => setCreateOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Create API Key
                 </Button>
@@ -99,6 +160,7 @@ export function AdminAPIKeys() {
                                         variant="ghost"
                                         size="iconSm"
                                         onClick={() => revokeKey.mutate(key.id)}
+                                        title="Revoke key"
                                     >
                                         <MoreHorizontal className="h-4 w-4" />
                                     </Button>
@@ -118,6 +180,71 @@ export function AdminAPIKeys() {
                     </TableBody>
                 </Table>
             </Card>
+
+            {/* Create API Key Dialog */}
+            <Dialog open={createOpen} onOpenChange={v => { if (!v) handleCloseDialog(); else setCreateOpen(true); }}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Create API Key</DialogTitle>
+                        <DialogDescription>
+                            {generatedKey
+                                ? 'Copy your key now — it will not be shown again.'
+                                : 'Give this key a descriptive name so you remember what it is for.'}
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    {generatedKey ? (
+                        <div className="space-y-4">
+                            <div className="flex items-center gap-2 p-3 bg-muted rounded-lg font-mono text-xs break-all">
+                                {showKey ? generatedKey : '••••••••••••••••••••••••••••••••'}
+                                <div className="flex gap-1 ml-auto shrink-0">
+                                    <Button variant="ghost" size="iconSm" onClick={() => setShowKey(v => !v)} title={showKey ? 'Hide key' : 'Show key'}>
+                                        {showKey ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
+                                    </Button>
+                                    <Button variant="ghost" size="iconSm" title="Copy key"
+                                        onClick={() => {
+                                            navigator.clipboard.writeText(generatedKey);
+                                            toast.success('Copied to clipboard');
+                                        }}>
+                                        <Copy className="h-3 w-3" />
+                                    </Button>
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button onClick={handleCloseDialog}>Done</Button>
+                            </DialogFooter>
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            <div className="space-y-2">
+                                <Label htmlFor="key-name">Key Name</Label>
+                                <Input
+                                    id="key-name"
+                                    placeholder="e.g. Production Integration"
+                                    value={newKeyName}
+                                    onChange={e => setNewKeyName(e.target.value)}
+                                />
+                            </div>
+                            <div className="space-y-2">
+                                <Label htmlFor="key-expiry">Expiry Date (optional)</Label>
+                                <Input
+                                    id="key-expiry"
+                                    type="date"
+                                    value={newKeyExpiry}
+                                    onChange={e => setNewKeyExpiry(e.target.value)}
+                                />
+                            </div>
+                            <DialogFooter>
+                                <Button variant="outline" onClick={handleCloseDialog}>Cancel</Button>
+                                <Button onClick={handleCreate} disabled={isCreating || !newKeyName.trim()}>
+                                    {isCreating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                                    Create Key
+                                </Button>
+                            </DialogFooter>
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

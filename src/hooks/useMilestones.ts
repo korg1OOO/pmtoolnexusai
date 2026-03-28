@@ -12,6 +12,7 @@ export interface Milestone {
     dependencies?: number;
     description?: string;
     created_at?: string;
+    custom_fields?: Record<string, any>;
 }
 
 export const useMilestones = (projectId: string) => {

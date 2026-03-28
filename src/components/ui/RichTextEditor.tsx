@@ -3,7 +3,7 @@
  * WYSIWYG editor powered by TipTap for blog posts and documentation
  */
 
-import React from 'react';
+import React, { useState, useRef } from 'react';
 import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Link from '@tiptap/extension-link';
@@ -24,10 +24,14 @@ import {
     Redo,
     Link as LinkIcon,
     Image as ImageIcon,
-    Type
+    Type,
+    Check,
+    X as XIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Input } from '@/components/ui/input';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 interface RichTextEditorProps {
     content: string;
@@ -59,31 +63,31 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
         },
     });
 
+    const [linkOpen, setLinkOpen] = useState(false);
+    const [linkUrl, setLinkUrl] = useState('');
+    const [imageOpen, setImageOpen] = useState(false);
+    const [imageUrl, setImageUrl] = useState('');
+
     if (!editor) {
         return null;
     }
 
-    const setLink = () => {
-        const previousUrl = editor.getAttributes('link').href;
-        const url = window.prompt('URL', previousUrl);
-
-        if (url === null) {
-            return;
-        }
-
-        if (url === '') {
+    const applyLink = () => {
+        if (linkUrl === '') {
             editor.chain().focus().extendMarkRange('link').unsetLink().run();
-            return;
+        } else {
+            editor.chain().focus().extendMarkRange('link').setLink({ href: linkUrl }).run();
         }
-
-        editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
+        setLinkOpen(false);
+        setLinkUrl('');
     };
 
-    const addImage = () => {
-        const url = window.prompt('Image URL');
-        if (url) {
-            editor.chain().focus().setImage({ src: url }).run();
+    const applyImage = () => {
+        if (imageUrl) {
+            editor.chain().focus().setImage({ src: imageUrl }).run();
         }
+        setImageOpen(false);
+        setImageUrl('');
     };
 
     return (
@@ -205,24 +209,71 @@ export function RichTextEditor({ content, onChange, placeholder = 'Start writing
 
                 <Separator orientation="vertical" className="h-8 mx-1" />
 
-                {/* Media */}
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    onClick={setLink}
-                    data-active={editor.isActive('link')}
-                >
-                    <LinkIcon className="h-4 w-4" />
-                </Button>
-                <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    onClick={addImage}
-                >
-                    <ImageIcon className="h-4 w-4" />
-                </Button>
+                {/* Link */}
+                <Popover open={linkOpen} onOpenChange={setLinkOpen}>
+                    <PopoverTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={() => {
+                                setLinkUrl(editor.getAttributes('link').href || '');
+                                setLinkOpen(true);
+                            }}
+                            data-active={editor.isActive('link')}
+                        >
+                            <LinkIcon className="h-4 w-4" />
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 p-3">
+                        <p className="text-xs font-medium mb-2">Insert link</p>
+                        <div className="flex gap-1">
+                            <Input
+                                placeholder="https://…"
+                                value={linkUrl}
+                                onChange={(e) => setLinkUrl(e.target.value)}
+                                className="h-7 text-sm"
+                                autoFocus
+                                onKeyDown={(e) => { if (e.key === 'Enter') applyLink(); }}
+                            />
+                            <Button size="icon" className="h-7 w-7" onClick={applyLink}><Check className="h-3.5 w-3.5" /></Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => setLinkOpen(false)}><XIcon className="h-3.5 w-3.5" /></Button>
+                        </div>
+                        {linkUrl && (
+                            <button
+                                className="text-xs text-destructive mt-1 hover:underline"
+                                onClick={() => { setLinkUrl(''); applyLink(); }}
+                            >Remove link</button>
+                        )}
+                    </PopoverContent>
+                </Popover>
+                {/* Image */}
+                <Popover open={imageOpen} onOpenChange={setImageOpen}>
+                    <PopoverTrigger asChild>
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0"
+                            onClick={() => setImageOpen(true)}
+                        >
+                            <ImageIcon className="h-4 w-4" />
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-64 p-3">
+                        <p className="text-xs font-medium mb-2">Insert image</p>
+                        <div className="flex gap-1">
+                            <Input
+                                placeholder="https://example.com/image.png"
+                                value={imageUrl}
+                                onChange={(e) => setImageUrl(e.target.value)}
+                                className="h-7 text-sm"
+                                autoFocus
+                                onKeyDown={(e) => { if (e.key === 'Enter') applyImage(); }}
+                            />
+                            <Button size="icon" className="h-7 w-7" onClick={applyImage}><Check className="h-3.5 w-3.5" /></Button>
+                        </div>
+                    </PopoverContent>
+                </Popover>
 
                 <Separator orientation="vertical" className="h-8 mx-1" />
 

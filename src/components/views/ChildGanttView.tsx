@@ -54,25 +54,56 @@ export default function ChildGanttView() {
   const childTasks: ChildTask[] = useMemo(() => {
     if (!tasks) return [];
 
-    // Top level tasks or tasks with no parent (for simplification of this view)
-    // Or we can just map all tasks to level 0 if hierarchy isn't needed for this specific view
-    // But the view expects hierarchy. Let's try to build a simple hierarchy or flat list if parent logic is complex.
+    // We only want to display actual children (level > 0 or parent_id !== null)
+    const taskMap = new Map<string, ChildTask>();
+    const allMapped: ChildTask[] = [];
 
-    // 1. Map to Interface
-    const mapped = tasks.map(t => ({
-      id: t.id,
-      wbs: t.wbs || '1',
-      name: t.name,
-      type: (t.type || 'task') as 'task' | 'milestone' | 'summary',
-      startDate: t.start_date || new Date().toISOString(),
-      endDate: t.end_date || new Date().toISOString(),
-      progress: t.progress || 0,
-      isCritical: false, // Calculate critical path if needed
-      level: (t as any).indentation || 0,
-      // sprintLink - would need join or separate fetch
-    }));
+    // First pass
+    tasks.forEach(t => {
+      const mappedTask: ChildTask = {
+        id: t.id,
+        wbs: t.wbs || '1',
+        name: t.name,
+        type: (t.type || 'task') as 'task' | 'milestone' | 'summary',
+        startDate: t.start_date || new Date().toISOString(),
+        endDate: t.end_date || new Date().toISOString(),
+        progress: t.progress || 0,
+        isCritical: t.is_critical || false,
+        level: (t as any).indentation || 0,
+        sprintLink: undefined,
+        children: []
+      };
+      taskMap.set(t.id, mappedTask);
+      allMapped.push(mappedTask);
+    });
 
-    return mapped;
+    const rootNodes: ChildTask[] = [];
+
+    // Second pass: build tree, but only for tasks we want to show
+    tasks.forEach(t => {
+      const node = taskMap.get(t.id)!;
+      if (t.parent_id && taskMap.has(t.parent_id)) {
+        const parent = taskMap.get(t.parent_id)!;
+        parent.children = parent.children || [];
+        parent.children.push(node);
+      } else if (t.parent_id !== null) {
+        rootNodes.push(node);
+      }
+    });
+
+    // Fallback: If rootNodes is empty but we have children (because they are nested under null parents)
+    if (rootNodes.length === 0) {
+      tasks.forEach(t => {
+        if (t.parent_id === null) {
+          const abstractParent = taskMap.get(t.id);
+          if (abstractParent && abstractParent.children) {
+            rootNodes.push(...abstractParent.children);
+          }
+        }
+      });
+    }
+
+    return rootNodes.sort((a, b) => a.wbs.localeCompare(b.wbs, undefined, { numeric: true }));
   }, [tasks]);
 
   const dateRange = useMemo(() => {
@@ -131,7 +162,10 @@ export default function ChildGanttView() {
     const end = new Date(task.endDate);
     const totalDays = Math.ceil((dateRange.end.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24));
     const startOffset = Math.ceil((start.getTime() - dateRange.start.getTime()) / (1000 * 60 * 60 * 24));
-    const duration = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+
+    // Ensure duration respects at least 1 visual day if start == end
+    let duration = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24);
+    if (duration < 0.5 && task.type !== 'milestone') duration = 1;
 
     const left = (startOffset / totalDays) * 100;
     const width = (duration / totalDays) * 100;

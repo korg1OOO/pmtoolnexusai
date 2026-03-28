@@ -8,8 +8,8 @@ export type BacklogStatus = 'todo' | 'in-progress' | 'review' | 'done';
 export type BacklogPriority = 'critical' | 'high' | 'medium' | 'low';
 export type PriorityLevel = BacklogPriority;
 
-export interface BacklogItem { id: string; project_id: string | null; epic_id: string | null; sprint_id: string | null; key: string | null; title: string; description: string | null; type: ItemType; priority: BacklogPriority; story_points: number | null; assignee_id: string | null; assignee_name: string | null; labels: string[]; status: BacklogStatus; sort_order: number; created_at: string; updated_at: string; }
-export interface BacklogItemInput { title: string; description?: string; type?: ItemType; priority?: BacklogPriority; story_points?: number; assignee_name?: string; labels?: string[]; epic_id?: string; sprint_id?: string; status?: BacklogStatus; }
+export interface BacklogItem { id: string; project_id: string | null; epic_id: string | null; sprint_id: string | null; key: string | null; title: string; description: string | null; type: ItemType; priority: BacklogPriority; story_points: number | null; assignee_id: string | null; assignee_name: string | null; labels: string[]; status: BacklogStatus; sort_order: number; created_at: string; updated_at: string; custom_fields?: Record<string, any>; }
+export interface BacklogItemInput { title: string; description?: string; type?: ItemType; priority?: BacklogPriority; story_points?: number; assignee_name?: string; labels?: string[]; epic_id?: string; sprint_id?: string; status?: BacklogStatus; custom_fields?: Record<string, any>; }
 
 export function useBacklogItems() {
   const { settings } = useProjectContext();
@@ -24,7 +24,7 @@ export function useBacklogItems() {
       setLoading(true);
       const { data, error: e } = await supabase.from('backlog_items').select('*').eq('project_id', projectId).order('sort_order', { ascending: true });
       if (e) throw e;
-      setItems((data || []).map((item: any) => ({ ...item, type: item.type as ItemType, priority: item.priority as BacklogPriority, status: item.status as BacklogStatus, labels: Array.isArray(item.labels) ? item.labels : [] })));
+      setItems((data || []).map((item: any) => ({ ...item, type: item.type as ItemType, priority: item.priority as BacklogPriority, status: item.status as BacklogStatus, labels: Array.isArray(item.labels) ? item.labels : [], custom_fields: item.custom_fields || {} })));
       setError(null);
     } catch (err: any) { setError(err.message); } finally { setLoading(false); }
   }, [projectId]);
@@ -43,9 +43,9 @@ export function useBacklogItems() {
     if (!projectId) { toast.error('No project selected'); return null; }
     try {
       const key = generateKey();
-      const { data, error: e } = await supabase.from('backlog_items').insert({ project_id: projectId, key, title: input.title, description: input.description || null, type: input.type || 'story', priority: input.priority || 'medium', story_points: input.story_points || null, assignee_name: input.assignee_name || null, labels: input.labels || [], epic_id: input.epic_id || null, sprint_id: input.sprint_id || null, status: input.status || 'todo', sort_order: items.length }).select().single();
+      const { data, error: e } = await supabase.from('backlog_items').insert({ project_id: projectId, key, title: input.title, description: input.description || null, type: input.type || 'story', priority: input.priority || 'medium', story_points: input.story_points || null, assignee_name: input.assignee_name || null, labels: input.labels || [], epic_id: input.epic_id || null, sprint_id: input.sprint_id || null, status: input.status || 'todo', sort_order: items.length, custom_fields: input.custom_fields || {} }).select().single();
       if (e) throw e;
-      const item: BacklogItem = { ...data, type: data.type as ItemType, priority: data.priority as BacklogPriority, status: data.status as BacklogStatus, labels: (Array.isArray(data.labels) ? data.labels : []).map(String), sort_order: data.sort_order ?? 0 };
+      const item: BacklogItem = { ...data, type: data.type as ItemType, priority: data.priority as BacklogPriority, status: data.status as BacklogStatus, labels: (Array.isArray(data.labels) ? data.labels : []).map(String), sort_order: data.sort_order ?? 0, custom_fields: data.custom_fields || {} };
       toast.success('Backlog item created'); return item;
     } catch { toast.error('Failed to create backlog item'); return null; }
   };

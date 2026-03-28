@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
@@ -129,6 +129,68 @@ export default function CommunicationIntelligenceView() {
     }
   };
 
+  // Hidden file input ref for Import Communications
+  const importInputRef = useRef<HTMLInputElement>(null);
+
+  const handleImport = () => {
+    importInputRef.current?.click();
+  };
+
+  const handleImportFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      setEmailContent(text?.slice(0, 2000) || '');
+      toast.success(`Imported: ${file.name}`);
+    };
+    reader.readAsText(file);
+    e.target.value = '';
+  };
+
+  const handleExportPDF = () => {
+    const el = document.getElementById('status-report-section');
+    if (!el) { toast.error('Generate a status report first'); return; }
+    // Inject a temporary print stylesheet that hides everything except the
+    // status report section — this preserves React state entirely.
+    const style = document.createElement('style');
+    style.id = '__print_override__';
+    style.textContent = `
+      @media print {
+        body > * { display: none !important; }
+        #status-report-section,
+        #status-report-section * { display: revert !important; }
+      }
+    `;
+    document.head.appendChild(style);
+    window.print();
+    document.head.removeChild(style);
+  };
+
+  // PowerPoint export not yet implemented — button hidden until ready
+  // const handleExportPPT = () => { ... };
+
+  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const handleSendEmail = async () => {
+    if (!executiveStatus) { toast.error('Generate a status report first'); return; }
+    setIsSendingEmail(true);
+    try {
+      const { error } = await supabase.functions.invoke('send-contact-email', {
+        body: {
+          subject: `Status Report — ${project?.name || 'Project'}`,
+          message: JSON.stringify(executiveStatus, null, 2),
+        },
+      });
+      if (error) throw error;
+      toast.success('Status report sent via email');
+    } catch (err: any) {
+      toast.error('Failed to send email: ' + (err?.message || 'Unknown error'));
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'email':
@@ -182,10 +244,19 @@ export default function CommunicationIntelligenceView() {
             <p className="text-muted-foreground">AI-powered analysis of project communications</p>
           </div>
           <div className="flex items-center gap-2">
+            {/* Hidden file input for import */}
+            <input
+              ref={importInputRef}
+              type="file"
+              accept=".eml,.txt,.msg"
+              className="hidden"
+              onChange={handleImportFile}
+              aria-label="Import communications file"
+            />
             <Button
               variant="outline"
               className="gap-2"
-              onClick={() => toast.success('Communications imported from linked sources')}
+              onClick={handleImport}
             >
               <Upload className="h-4 w-4" />
               Import Communications
@@ -745,7 +816,7 @@ export default function CommunicationIntelligenceView() {
                     <Button
                       variant="outline"
                       className="w-full justify-start gap-2"
-                      onClick={() => toast.success('Status Report exported as PDF')}
+                      onClick={handleExportPDF}
                     >
                       <Download className="h-4 w-4" />
                       Download as PDF
@@ -753,17 +824,10 @@ export default function CommunicationIntelligenceView() {
                     <Button
                       variant="outline"
                       className="w-full justify-start gap-2"
-                      onClick={() => toast.success('Status Report exported to PowerPoint')}
+                      onClick={handleSendEmail}
+                      disabled={isSendingEmail}
                     >
-                      <FileText className="h-4 w-4" />
-                      Export to PowerPoint
-                    </Button>
-                    <Button
-                      variant="outline"
-                      className="w-full justify-start gap-2"
-                      onClick={() => toast.success('Status Report sent via Email')}
-                    >
-                      <Send className="h-4 w-4" />
+                      {isSendingEmail ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                       Send via Email
                     </Button>
                   </CardContent>

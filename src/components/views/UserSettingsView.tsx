@@ -104,6 +104,14 @@ export default function UserSettingsView() {
   }, [profile]);
 
   const [mfaEnabled, setMfaEnabled] = useState(false);
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
+  const [mfaDialogOpen, setMfaDialogOpen] = useState(false);
+  const [mfaQrUri, setMfaQrUri] = useState('');
+  const [mfaSecret, setMfaSecret] = useState('');
+  const [mfaEnrollId, setMfaEnrollId] = useState('');
+  const [mfaCode, setMfaCode] = useState('');
+  const [mfaStep, setMfaStep] = useState<'qr' | 'verify' | 'disable'>('qr');
+  const [mfaLoading, setMfaLoading] = useState(false);
   const [activeSessions, setActiveSessions] = useState<Session[]>([]);
 
   useEffect(() => {
@@ -111,22 +119,23 @@ export default function UserSettingsView() {
     const checkMfa = async () => {
       const { data, error } = await supabase.auth.mfa.listFactors();
       if (!error && data.all.length > 0) {
-        setMfaEnabled(data.all.some(f => f.status === 'verified'));
+        const verified = data.all.find(f => f.status === 'verified');
+        setMfaEnabled(!!verified);
+        setMfaFactorId(verified?.id ?? null);
       }
     };
     checkMfa();
 
-    // Fetch active sessions (Mock for now as Supabase doesn't expose session management API easily to client without edge functions)
-    // But we can show current session at least
+    // Fetch current session — displays real auth session info
     const getSession = async () => {
       const { data } = await supabase.auth.getSession();
       if (data.session) {
         setActiveSessions([{
-          id: 'current',
-          created_at: new Date().toISOString(), // approximated
-          updated_at: new Date().toISOString(),
+          id: data.session.access_token.substring(0, 8) + '...', // token prefix as identifier
+          created_at: data.session.user.created_at,
+          updated_at: data.session.user.updated_at ?? data.session.user.created_at,
           user_agent: navigator.userAgent,
-          last_sign_in_at: new Date().toISOString()
+          last_sign_in_at: data.session.user.last_sign_in_at ?? data.session.user.created_at
         }]);
       }
     };
@@ -522,7 +531,143 @@ export default function UserSettingsView() {
                       <div className="text-sm text-muted-foreground">{mfaEnabled ? 'Your account is secured.' : 'Enable 2FA for better security.'}</div>
                     </div>
                   </div>
-                  <Button variant="outline" size="sm" onClick={() => toast.info("MFA configuration coming soon")}>Configure</Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      if (mfaEnabled) {
+                        // Open disable confirmation
+                        setMfaStep('disable');
+                        setMfaCode('');
+                        setMfaDialogOpen(true);
+                      } else {
+                        // Enroll a new TOTP factor
+                        setMfaLoading(true);
+                        try {
+                          const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp' });
+                          if (error) throw error;
+                          setMfaQrUri(data.totp.qr_code);
+                          setMfaSecret(data.totp.secret);
+                          setMfaEnrollId(data.id);
+                          setMfaStep('qr');
+                          setMfaCode('');
+                          setMfaDialogOpen(true);
+                        } catch (err: any) {
+                          toast.error(`Failed to start MFA enrollment: ${err.message}`);
+                        } finally {
+                          setMfaLoading(false);
+                        }
+                      }
+                    }}
+                    disabled={mfaLoading}
+                  >
+                    {mfaLoading ? 'Loading...' : mfaEnabled ? 'Manage 2FA' : 'Configure'}
+                  </Button>
+
+                  {/* MFA Dialog */}
+                  {mfaDialogOpen && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setMfaDialogOpen(false)}>
+                      <div className="bg-background border rounded-lg shadow-xl w-full max-w-md p-6 space-y-4" onClick={e => e.stopPropagation()}>
+                        {mfaStep === 'qr' && (
+                          <>
+                            <h3 className="text-lg font-semibold">Set Up Two-Factor Authentication</h3>
+                            <p className="text-sm text-muted-foreground">Scan this QR code with your authenticator app (e.g. Google Authenticator, Authy).</p>
+                            <div className="flex justify-center bg-white p-4 rounded-lg">
+                              <img src={mfaQrUri} alt="TOTP QR Code" className="w-40 h-40" />
+                            </div>
+                            <p className="text-xs text-muted-foreground text-center">Or enter the secret manually: <code className="bg-muted px-1 rounded">{mfaSecret}</code></p>
+                            <button className="w-full text-sm text-primary underline" onClick={() => setMfaStep('verify')}>I've scanned the code — enter verification code →</button>
+                            <button className="text-xs text-muted-foreground" onClick={() => setMfaDialogOpen(false)}>Cancel</button>
+                          </>
+                        )}
+                        {mfaStep === 'verify' && (
+                          <>
+                            <h3 className="text-lg font-semibold">Verify Your Authenticator</h3>
+                            <p className="text-sm text-muted-foreground">Enter the 6-digit code from your authenticator app to complete setup.</p>
+                            <input
+                              type="text"
+                              maxLength={6}
+                              placeholder="000000"
+                              value={mfaCode}
+                              onChange={e => setMfaCode(e.target.value.replace(/\D/g, ''))}
+                              className="w-full border rounded px-3 py-2 text-center text-xl tracking-widest bg-background"
+                              aria-label="TOTP verification code"
+                            />
+                            <div className="flex gap-2">
+                              <button className="flex-1 border rounded px-3 py-2 text-sm" onClick={() => setMfaStep('qr')}>← Back</button>
+                              <button
+                                className="flex-1 bg-primary text-primary-foreground rounded px-3 py-2 text-sm font-medium disabled:opacity-50"
+                                disabled={mfaCode.length !== 6 || mfaLoading}
+                                onClick={async () => {
+                                  setMfaLoading(true);
+                                  try {
+                                    const { data: challengeData, error: challengeErr } = await supabase.auth.mfa.challenge({ factorId: mfaEnrollId });
+                                    if (challengeErr) throw challengeErr;
+                                    const { error: verifyErr } = await supabase.auth.mfa.verify({ factorId: mfaEnrollId, challengeId: challengeData.id, code: mfaCode });
+                                    if (verifyErr) throw verifyErr;
+                                    setMfaEnabled(true);
+                                    setMfaFactorId(mfaEnrollId);
+                                    setMfaDialogOpen(false);
+                                    toast.success('Two-factor authentication enabled successfully!');
+                                  } catch (err: any) {
+                                    toast.error(`Verification failed: ${err.message}`);
+                                  } finally {
+                                    setMfaLoading(false);
+                                  }
+                                }}
+                              >
+                                {mfaLoading ? 'Verifying...' : 'Enable 2FA'}
+                              </button>
+                            </div>
+                          </>
+                        )}
+                        {mfaStep === 'disable' && (
+                          <>
+                            <h3 className="text-lg font-semibold">Disable Two-Factor Authentication</h3>
+                            <p className="text-sm text-muted-foreground">Enter your current TOTP code to confirm disabling 2FA. This will reduce your account security.</p>
+                            <input
+                              type="text"
+                              maxLength={6}
+                              placeholder="000000"
+                              value={mfaCode}
+                              onChange={e => setMfaCode(e.target.value.replace(/\D/g, ''))}
+                              className="w-full border rounded px-3 py-2 text-center text-xl tracking-widest bg-background"
+                              aria-label="TOTP code to confirm disabling 2FA"
+                            />
+                            <div className="flex gap-2">
+                              <button className="flex-1 border rounded px-3 py-2 text-sm" onClick={() => setMfaDialogOpen(false)}>Cancel</button>
+                              <button
+                                className="flex-1 bg-destructive text-destructive-foreground rounded px-3 py-2 text-sm font-medium disabled:opacity-50"
+                                disabled={mfaCode.length !== 6 || mfaLoading || !mfaFactorId}
+                                onClick={async () => {
+                                  if (!mfaFactorId) return;
+                                  setMfaLoading(true);
+                                  try {
+                                    const { data: challengeData, error: challengeErr } = await supabase.auth.mfa.challenge({ factorId: mfaFactorId });
+                                    if (challengeErr) throw challengeErr;
+                                    const { error: verifyErr } = await supabase.auth.mfa.verify({ factorId: mfaFactorId, challengeId: challengeData.id, code: mfaCode });
+                                    if (verifyErr) throw verifyErr;
+                                    const { error: unenrollErr } = await supabase.auth.mfa.unenroll({ factorId: mfaFactorId });
+                                    if (unenrollErr) throw unenrollErr;
+                                    setMfaEnabled(false);
+                                    setMfaFactorId(null);
+                                    setMfaDialogOpen(false);
+                                    toast.success('Two-factor authentication disabled.');
+                                  } catch (err: any) {
+                                    toast.error(`Failed to disable 2FA: ${err.message}`);
+                                  } finally {
+                                    setMfaLoading(false);
+                                  }
+                                }}
+                              >
+                                {mfaLoading ? 'Processing...' : 'Disable 2FA'}
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-2">
@@ -540,8 +685,8 @@ export default function UserSettingsView() {
 
             <Card>
               <CardHeader>
-                <CardTitle>Active Sessions</CardTitle>
-                <CardDescription>Manage your active login sessions</CardDescription>
+                <CardTitle>Current Session</CardTitle>
+                <CardDescription>Your active login session. To manage sessions across devices, sign out and back in from each device.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-3">
                 {activeSessions.map((session, i) => (

@@ -40,7 +40,7 @@ export function useFinancials(projectId: string | null) {
                     .order('category', { ascending: true });
 
                 if (error) throw error;
-                
+
                 // Map database fields to interface
                 return (data || []).map((item: any) => ({
                     ...item,
@@ -68,7 +68,7 @@ export function useFinancials(projectId: string | null) {
                     .order('created_at', { ascending: false });
 
                 if (error) throw error;
-                
+
                 // Map database fields to interface
                 return (data || []).map((inv: any) => ({
                     ...inv,
@@ -100,10 +100,10 @@ export function useCreateBudgetItem() {
                 name: item.name ?? item.category,
                 category: item.category,
                 budgeted_amount: item.planned ?? 0,
-                actual_amount: item.actual ?? 0,
-                variance: item.variance ?? 0,
+                // actual_amount: item.actual ?? 0,
+                // variance: item.variance ?? 0,
             };
-            
+
             const { data, error } = await supabase
                 .from('project_budget_items')
                 .insert(dbItem)
@@ -132,9 +132,9 @@ export function useCreateInvoice() {
                 invoice_number: invoice.invoice_number,
                 amount: invoice.amount,
                 status: invoice.status,
-                due_date: invoice.date,
+                date: invoice.date,
             };
-            
+
             const { data, error } = await supabase
                 .from('project_invoices')
                 .insert(dbInvoice)

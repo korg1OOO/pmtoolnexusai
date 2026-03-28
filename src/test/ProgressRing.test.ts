@@ -1,0 +1,14 @@
+/**
+ * ProgressRing Component Tests
+ */
+import { describe, it, expect, vi } from 'vitest';
+import { render } from '@testing-library/react';
+import React from 'react';
+
+import { ProgressRing } from '@/components/enterprise/ProgressRing';
+
+describe('ProgressRing', () => {
+    it('exports the component', () => {
+        expect(ProgressRing).toBeDefined();
+    });
+});

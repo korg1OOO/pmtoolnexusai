@@ -7,8 +7,8 @@ import { logPrediction } from '@/services/mlPredictionService';
 export type RiskLevel = 'low' | 'medium' | 'high' | 'critical';
 export type RiskStatus = 'identified' | 'analyzing' | 'mitigating' | 'closed' | 'accepted';
 
-export interface Risk { id: string; project_id: string | null; title: string; description: string | null; category: string | null; probability: RiskLevel; impact: RiskLevel; status: RiskStatus; owner_id: string | null; owner_name: string | null; mitigation_plan: string | null; contingency_plan: string | null; triggers: string | null; linked_items: any[]; due_date: string | null; created_at: string; updated_at: string; closed_at: string | null; ml_prediction_id?: string; }
-export interface RiskInput { title: string; description?: string; category?: string; probability?: RiskLevel; impact?: RiskLevel; status?: RiskStatus; owner_name?: string; mitigation_plan?: string; contingency_plan?: string; triggers?: string; due_date?: string; }
+export interface Risk { id: string; project_id: string | null; title: string; description: string | null; category: string | null; probability: RiskLevel; impact: RiskLevel; status: RiskStatus; owner_id: string | null; owner_name: string | null; mitigation_plan: string | null; contingency_plan: string | null; triggers: string | null; linked_items: any[]; due_date: string | null; created_at: string; updated_at: string; closed_at: string | null; ml_prediction_id?: string; custom_fields?: Record<string, any>; }
+export interface RiskInput { title: string; description?: string; category?: string; probability?: RiskLevel; impact?: RiskLevel; status?: RiskStatus; owner_name?: string; mitigation_plan?: string; contingency_plan?: string; triggers?: string; due_date?: string; custom_fields?: Record<string, any>; }
 
 export function useRisks() {
   const { settings } = useProjectContext();
@@ -35,7 +35,8 @@ export function useRisks() {
         probability: r.probability as RiskLevel,
         impact: r.impact as RiskLevel,
         status: r.status as RiskStatus,
-        linked_items: Array.isArray(r.linked_items) ? r.linked_items : []
+        linked_items: Array.isArray(r.linked_items) ? r.linked_items : [],
+        custom_fields: r.custom_fields || {}
       })));
       setError(null);
     } catch (err: any) { setError(err.message); } finally { setLoading(false); }
@@ -79,9 +80,9 @@ export function useRisks() {
         console.error('Failed to log ML prediction:', mlError);
       }
 
-      const { data, error: e } = await supabase.from('risks').insert({ project_id: projectId, title: input.title, description: input.description || null, category: input.category || null, probability: input.probability || 'medium', impact: input.impact || 'medium', status: input.status || 'identified', owner_name: input.owner_name || null, mitigation_plan: input.mitigation_plan || null, contingency_plan: input.contingency_plan || null, triggers: input.triggers || null, due_date: input.due_date || null }).select().single();
+      const { data, error: e } = await supabase.from('risks').insert({ project_id: projectId, title: input.title, description: input.description || null, category: input.category || null, probability: input.probability || 'medium', impact: input.impact || 'medium', status: input.status || 'identified', owner_name: input.owner_name || null, mitigation_plan: input.mitigation_plan || null, contingency_plan: input.contingency_plan || null, triggers: input.triggers || null, due_date: input.due_date || null, custom_fields: input.custom_fields || {} }).select().single();
       if (e) throw e;
-      const risk: Risk = { ...data, probability: data.probability as RiskLevel, impact: data.impact as RiskLevel, status: data.status as RiskStatus, linked_items: Array.isArray(data.linked_items) ? data.linked_items : [], ml_prediction_id: mlPredictionId };
+      const risk: Risk = { ...data, probability: data.probability as RiskLevel, impact: data.impact as RiskLevel, status: data.status as RiskStatus, linked_items: Array.isArray(data.linked_items) ? data.linked_items : [], ml_prediction_id: mlPredictionId, custom_fields: data.custom_fields || {} };
       toast.success('Risk created'); return risk;
     } catch { toast.error('Failed to create risk'); return null; }
   };

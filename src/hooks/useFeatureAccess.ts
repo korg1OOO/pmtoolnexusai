@@ -18,7 +18,11 @@ export interface FeatureAccess {
 }
 
 /**
- * Get current user's subscription tier
+ * Get current user's subscription tier.
+ *
+ * Reads from the `subscriptions` table (source of truth — matches billing/admin pages).
+ * Falls back to `profiles.subscription_tier` if no subscription record found,
+ * then falls back to 'free'.
  */
 export function useUserTier() {
     return useQuery({
@@ -27,17 +31,30 @@ export function useUserTier() {
             const { data: { user } } = await supabase.auth.getUser();
             if (!user) return 'free';
 
-            const { data, error } = await supabase
+            // Primary: look up the user's active subscription
+            const { data: sub } = await supabase
+                .from('subscriptions')
+                .select('tier')
+                .eq('user_id', user.id)
+                .eq('status', 'active')
+                .order('created_at', { ascending: false })
+                .limit(1)
+                .maybeSingle();
+
+            if (sub?.tier) return sub.tier as SubscriptionTier;
+
+            // Fallback: profiles.subscription_tier (legacy column)
+            const { data: profile } = await supabase
                 .from('profiles')
                 .select('subscription_tier')
                 .eq('id', user.id)
                 .single();
 
-            if (error || !data) return 'free';
-            return (data.subscription_tier as SubscriptionTier) || 'free';
+            return (profile?.subscription_tier as SubscriptionTier) || 'free';
         },
     });
 }
+
 
 /**
  * Get all features available to current user
@@ -144,10 +161,14 @@ export const TIER_LIMITS = {
 
 /**
  * Returns live pricing for all tiers from the plan_configs DB table.
- * Falls back to the hardcoded TIER_PRICING until the query resolves.
+ * Falls back to the hardcoded TIER_PRICING if the query has not resolved yet.
+ * Emits a console.error if the DB query fails so the issue is observable.
  */
 export function useTierPricing() {
-    const { data: configs = [] } = usePlanConfigs();
+    const { data: configs = [], isError } = usePlanConfigs();
+    if (isError) {
+        console.error('[useFeatureAccess] useTierPricing: plan_configs query failed — using hardcoded fallback. Check plan_configs RLS policies.');
+    }
     if (configs.length === 0) return TIER_PRICING as Record<string, { monthly: number; annual: number }>;
     return Object.fromEntries(
         configs.map(c => [c.tier, { monthly: c.price_monthly, annual: c.price_annual }])
@@ -156,10 +177,14 @@ export function useTierPricing() {
 
 /**
  * Returns live limits for a specific tier from the plan_configs DB table.
- * Falls back to the hardcoded TIER_LIMITS until the query resolves.
+ * Falls back to the hardcoded TIER_LIMITS if the query has not resolved yet.
+ * Emits a console.error if the DB query fails so the issue is observable.
  */
 export function useTierLimits(tier: SubscriptionTier) {
-    const { data: configs = [] } = usePlanConfigs();
+    const { data: configs = [], isError } = usePlanConfigs();
+    if (isError) {
+        console.error('[useFeatureAccess] useTierLimits: plan_configs query failed — using hardcoded fallback. Check plan_configs RLS policies.');
+    }
     const cfg = configs.find(c => c.tier === tier);
     if (!cfg) return TIER_LIMITS[tier] as { projects: number; teamMembers: number; fileSize: number; storage: number; aiCredits: number };
     return {

@@ -1,89 +1,41 @@
-import { createClient } from '@supabase/supabase-js';
-import { readFileSync } from 'fs';
-import { join } from 'path';
-import * as dotenv from 'dotenv';
+/**
+ * scripts/run-migration.ts
+ * Applies ai_pending_actions migration to the remote Supabase database.
+ */
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
-// Load environment variables
-dotenv.config();
+const DATABASE_URL = process.env.DATABASE_URL ??
+    "postgresql://postgres.rlnaylyjxjjaqzwpuhar:9kfAknS8q9tCJzo2@aws-1-ap-south-1.pooler.supabase.com:5432/postgres";
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL!;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
+const sqlPath = join(process.cwd(), "supabase/migrations/20260220_ai_pending_actions.sql");
+const sql = readFileSync(sqlPath, "utf-8");
 
-if (!supabaseUrl || !supabaseServiceKey) {
-    console.error('❌ Missing Supabase credentials in .env');
-    process.exit(1);
-}
-
-const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-async function runMigration() {
-    console.log('🚀 Running admin UI migration...\n');
-
+async function run() {
+    // Use pg from node_modules if available, else install inline
+    let Client: any;
     try {
-        // Read migration file
-        const sql = readFileSync(
-            join(process.cwd(), 'supabase/migrations/admin_ui_tables.sql'),
-            'utf8'
-        );
-
-        // Split into statements
-        const statements = sql
-            .split(';')
-            .map(s => s.trim())
-            .filter(s => s.length > 0 && !s.startsWith('--'));
-
-        console.log(`📝 Found ${statements.length} SQL statements\n`);
-
-        let success = 0;
-        let failed = 0;
-
-        for (let i = 0; i < statements.length; i++) {
-            const stmt = statements[i];
-
-            try {
-                // Execute via Supabase REST API
-                const response = await fetch(`${supabaseUrl}/rest/v1/rpc/exec`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'apikey': supabaseServiceKey,
-                        'Authorization': `Bearer ${supabaseServiceKey}`
-                    },
-                    body: JSON.stringify({ query: stmt })
-                });
-
-                if (response.ok) {
-                    success++;
-                    process.stdout.write(`✅ ${i + 1}/${statements.length}\r`);
-                } else {
-                    failed++;
-                    const error = await response.text();
-                    console.log(`\n❌ Statement ${i + 1} failed: ${error}`);
-                }
-            } catch (err: any) {
-                failed++;
-                console.log(`\n❌ Statement ${i + 1} error: ${err.message}`);
-            }
+        ({ Client } = await import("pg"));
+    } catch {
+        console.log("pg not found, running via npx...");
+        process.exit(2);
+    }
+    const client = new Client({ connectionString: DATABASE_URL, ssl: { rejectUnauthorized: false } });
+    await client.connect();
+    console.log("Applying migration: 20260220_ai_pending_actions.sql …");
+    try {
+        await client.query(sql);
+        console.log("✅ Migration applied successfully.");
+    } catch (err: any) {
+        if (err.message?.includes("already exists")) {
+            console.log("ℹ️  Already exists — migration is idempotent, skipping.");
+        } else {
+            console.error("❌ Migration failed:", err.message);
+            process.exitCode = 1;
         }
-
-        console.log(`\n\n📊 Results:`);
-        console.log(`   ✅ Success: ${success}`);
-        console.log(`   ❌ Failed: ${failed}`);
-        console.log(`   📝 Total: ${statements.length}\n`);
-
-        if (failed > 0) {
-            console.log('⚠️  Some statements failed.');
-            console.log('💡 Please run migration via Supabase Dashboard SQL Editor\n');
-            process.exit(1);
-        }
-
-        console.log('✅ Migration completed successfully!\n');
-    } catch (error: any) {
-        console.error('❌ Migration failed:', error.message);
-        console.log('\n💡 Run via Supabase Dashboard:');
-        console.log('   Dashboard → SQL Editor → New Query → Paste SQL\n');
-        process.exit(1);
+    } finally {
+        await client.end();
     }
 }
 
-runMigration();
+run();

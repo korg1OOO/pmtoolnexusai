@@ -1,4 +1,6 @@
 import React, { useState, useRef } from 'react';
+import { usePermissions } from '@/hooks/usePermissions';
+import { useProjectContext } from '@/contexts/ProjectContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import { AlertTriangle, Shield, Plus, Filter, User, MoreHorizontal, X, Loader2, Calendar, Link2, CheckCircle2 } from 'lucide-react';
@@ -33,7 +35,25 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { PDFExporter, PDFExportSection } from '@/components/common/PDFExporter';
 import { useRisks, RiskInput, Risk, RiskLevel, RiskStatus } from '@/hooks/useRisks';
+import { DynamicDataGrid, type DynamicColumnDef } from '@/components/ui/DynamicDataGrid';
+import { DataRegisterPage } from '@/components/ui/DataRegisterPage';
 import { toast } from 'sonner';
+
+// Optional icon imports for table headers
+import { Edit2, Save } from 'lucide-react';
+
+const STANDARD_COLUMNS: DynamicColumnDef<Risk>[] = [
+  { key: 'title', label: 'Title', width: 240, type: 'text', sticky: true },
+  { key: 'description', label: 'Description', width: 300, type: 'text' },
+  { key: 'category', label: 'Category', width: 150, type: 'text' },
+  { key: 'impact', label: 'Impact', width: 120, type: 'select', options: ['low', 'medium', 'high', 'critical'] },
+  { key: 'probability', label: 'Probability', width: 120, type: 'select', options: ['low', 'medium', 'high', 'critical'] },
+  { key: 'owner_name', label: 'Owner', width: 140, type: 'text' },
+  { key: 'due_date', label: 'Due Date', width: 130, type: 'date' },
+  { key: 'status', label: 'Status', width: 130, type: 'select', options: ['identified', 'analyzing', 'mitigating', 'monitoring', 'closed'] },
+  { key: 'mitigation_plan', label: 'Mitigation Plan', width: 250, type: 'text' },
+  { key: 'contingency_plan', label: 'Contingency Plan', width: 250, type: 'text' },
+];
 
 const riskColors: Record<RiskLevel, string> = {
   low: 'bg-success',
@@ -41,6 +61,14 @@ const riskColors: Record<RiskLevel, string> = {
   high: 'bg-orange-500',
   critical: 'bg-destructive',
 };
+
+const pdfSections: PDFExportSection[] = [
+  { id: 'stats', name: 'Risk KPIs', selector: '.grid-cols-5' },
+  { id: 'matrix', name: 'Risk Matrix', selector: '.grid-cols-5' },
+  { id: 'list', name: 'Risk List', selector: '[data-section="list"]' }
+];
+
+
 
 function RiskMatrix({ risks }: { risks: Risk[] }) {
   const matrix: Record<string, Risk[]> = {};
@@ -86,6 +114,7 @@ function RiskMatrix({ risks }: { risks: Risk[] }) {
 }
 
 interface RiskDetailPanelProps {
+
   risk: Risk;
   onClose: () => void;
   onUpdate: (id: string, updates: Partial<RiskInput>) => Promise<boolean>;
@@ -292,9 +321,56 @@ function AddRiskDialog({ open, onOpenChange, onSubmit }: AddRiskDialogProps) {
 
 export default function RisksView() {
   const { risks, loading, createRisk, updateRisk, deleteRisk, criticalRisks, openRisks } = useRisks();
+  const { settings } = useProjectContext();
+  const { can } = usePermissions(settings?.id);
+  const canCreate = can('risk.create');
+  const canEdit = can('risk.edit');
+  const canDelete = can('risk.delete');
   const [selectedRisk, setSelectedRisk] = useState<Risk | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [viewMode, setViewMode] = useState<'list' | 'spreadsheet'>('list');
   const contentRef = useRef<HTMLDivElement>(null);
+
+
+  const [customColumns, setCustomColumns] = useState<DynamicColumnDef<Risk>[]>([]);
+
+  // Table View States
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<Partial<RiskInput>>({});
+
+  const handleEditClick = (risk: Risk) => {
+    setEditingId(risk.id);
+    setEditForm({
+      title: risk.title,
+      description: risk.description || '',
+      category: risk.category || '',
+      probability: risk.probability,
+      impact: risk.impact,
+      status: risk.status,
+      owner_name: risk.owner_name || '',
+      due_date: risk.due_date,
+    });
+  };
+
+  const handleSaveInline = async (id: string) => {
+    if (editingId === id && editForm) {
+      await updateRisk(id, editForm);
+      setEditingId(null);
+    }
+  };
+
+  const handleCellSave = async (rowId: string, key: string, value: string) => {
+    const isCustom = !STANDARD_COLUMNS.find(c => c.key === key);
+    const item = risks.find(i => i.id === rowId);
+    if (!item) return;
+
+    if (isCustom) {
+      const cf = { ...(item.custom_fields ?? {}), [key]: value };
+      await updateRisk(rowId, { custom_fields: cf });
+    } else {
+      await updateRisk(rowId, { [key]: value });
+    }
+  };
 
   const pdfSections: PDFExportSection[] = [
     { id: 'matrix', name: 'Risk Matrix', selector: '[data-section="matrix"]' },
@@ -310,110 +386,270 @@ export default function RisksView() {
     );
   }
 
-  return (
-    <div className="flex h-full">
-      <div className="flex-1 flex flex-col" ref={contentRef}>
-        <div className="flex items-center justify-between p-4 border-b bg-card">
-          <div className="flex items-center gap-3">
-            <AlertTriangle className="h-6 w-6 text-destructive" />
-            <h2 className="text-lg font-semibold">Risk Register</h2>
-            <Badge variant="destructive">{risks.length} Risks</Badge>
-          </div>
-          <div className="flex items-center gap-2">
-            <PDFExporter
-              title="Risk Register"
-              filename="risk-register"
-              contentRef={contentRef}
-              sections={pdfSections}
-              showSectionPicker
-              variant="dropdown"
-            />
-            <Button variant="outline" size="sm"><Filter className="h-4 w-4 mr-1" />Filter</Button>
-            <Button size="sm" onClick={() => setAddDialogOpen(true)}><Plus className="h-4 w-4 mr-1" />Add Risk</Button>
-          </div>
-        </div>
+  const kpiCards = (
+    <>
+      <Card>
+        <CardHeader className="pb-2"><CardTitle className="text-base">Risk Summary</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          <div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Total Risks</span><span className="font-semibold">{risks.length}</span></div>
+          <div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Critical</span><Badge variant="destructive">{criticalRisks.length}</Badge></div>
+          <div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Open</span><span className="font-semibold">{openRisks.length}</span></div>
+          <div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Being Mitigated</span><span className="font-semibold">{risks.filter(r => r.status === 'mitigating').length}</span></div>
+        </CardContent>
+      </Card>
+      <Card className="lg:col-span-3 xl:col-span-4" data-section="matrix">
+        <CardHeader><CardTitle className="text-base flex items-center gap-2"><Shield className="h-5 w-5 text-primary" />Risk Matrix</CardTitle></CardHeader>
+        <CardContent><RiskMatrix risks={risks} /></CardContent>
+      </Card>
+    </>
+  );
 
-        <div className="flex-1 p-6 overflow-auto">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            <div className="lg:col-span-2" data-section="matrix">
-              <Card>
-                <CardHeader><CardTitle className="text-base flex items-center gap-2"><Shield className="h-5 w-5 text-primary" />Risk Matrix</CardTitle></CardHeader>
-                <CardContent><RiskMatrix risks={risks} /></CardContent>
-              </Card>
-            </div>
-            <div className="space-y-4" data-section="summary">
-              <Card>
-                <CardHeader className="pb-2"><CardTitle className="text-base">Risk Summary</CardTitle></CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Total Risks</span><span className="font-semibold">{risks.length}</span></div>
-                  <div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Critical</span><Badge variant="destructive">{criticalRisks.length}</Badge></div>
-                  <div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Open</span><span className="font-semibold">{openRisks.length}</span></div>
-                  <div className="flex items-center justify-between"><span className="text-sm text-muted-foreground">Being Mitigated</span><span className="font-semibold">{risks.filter(r => r.status === 'mitigating').length}</span></div>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
-
-          <h3 className="text-lg font-semibold mt-8 mb-4" data-section="list">All Risks</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {risks.length === 0 ? (
-              <Card className="col-span-full p-8 text-center">
-                <p className="text-muted-foreground">No risks found. Add your first risk to get started.</p>
-              </Card>
-            ) : (
-              risks.map(risk => (
-                <motion.div
-                  key={risk.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  className={cn(
-                    'p-4 rounded-lg border bg-card hover:shadow-md transition-all cursor-pointer',
-                    selectedRisk?.id === risk.id && 'ring-2 ring-primary'
-                  )}
-                  onClick={() => setSelectedRisk(risk)}
-                >
-                  <div className="flex items-start justify-between mb-3">
-                    <div className="flex items-center gap-2"><div className={cn('h-3 w-3 rounded-full', riskColors[risk.impact])} /><Badge variant={risk.impact as any}>{risk.impact} impact</Badge></div>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" size="iconXs"><MoreHorizontal className="h-4 w-4" /></Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => setSelectedRisk(risk)}>View Details</DropdownMenuItem>
-                        <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-destructive" onClick={() => deleteRisk(risk.id)}>Delete</DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </div>
-                  <h3 className="font-medium mb-2">{risk.title}</h3>
-                  <p className="text-sm text-muted-foreground line-clamp-2 mb-3">{risk.description}</p>
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-1 text-muted-foreground"><User className="h-3 w-3" />{risk.owner_name || 'Unassigned'}</div>
-                    <Badge variant={risk.status === 'mitigating' ? 'info' : risk.status === 'closed' ? 'success' : 'secondary'}>{risk.status}</Badge>
-                  </div>
-                </motion.div>
-              ))
-            )}
-          </div>
+  const listContent = (
+    <>
+      <h3 className="text-lg font-semibold mt-4 mb-4" data-section="list">All Risks</h3>
+      <div className="bg-card rounded-lg border overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm text-left">
+            <thead className="bg-muted/50 text-xs uppercase text-muted-foreground border-b">
+              <tr>
+                <th className="px-4 py-3 font-medium">Risk ID</th>
+                <th className="px-4 py-3 font-medium">Title</th>
+                <th className="px-4 py-3 font-medium">Category</th>
+                <th className="px-4 py-3 font-medium">Impact</th>
+                <th className="px-4 py-3 font-medium">Probability</th>
+                <th className="px-4 py-3 font-medium">Owner</th>
+                <th className="px-4 py-3 font-medium">Due Date</th>
+                <th className="px-4 py-3 font-medium">Status</th>
+                <th className="px-4 py-3 font-medium text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {risks.length === 0 ? (
+                <tr>
+                  <td colSpan={9} className="px-4 py-8 text-center text-muted-foreground">
+                    No risks found. Add your first risk to get started.
+                  </td>
+                </tr>
+              ) : (
+                risks.map((risk) => {
+                  const isEditing = editingId === risk.id;
+                  return (
+                    <tr key={risk.id} className="hover:bg-muted/30 transition-colors group">
+                      <td className="px-4 py-3 font-mono text-xs text-muted-foreground whitespace-nowrap">
+                        {risk.id.slice(-6).toUpperCase()}
+                      </td>
+                      <td className="px-4 py-3 font-medium max-w-[200px] truncate">
+                        {isEditing ? (
+                          <Input
+                            value={editForm.title || ''}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, title: e.target.value }))}
+                            className="h-8 text-sm"
+                          />
+                        ) : (
+                          <div
+                            className="cursor-pointer hover:underline truncate"
+                            onClick={() => setSelectedRisk(risk)}
+                          >
+                            {risk.title}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {isEditing ? (
+                          <Input
+                            value={editForm.category || ''}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, category: e.target.value }))}
+                            className="h-8 text-sm"
+                          />
+                        ) : (
+                          <span className="text-muted-foreground">{risk.category || '-'}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {isEditing ? (
+                          <Select value={editForm.impact} onValueChange={(v) => setEditForm(prev => ({ ...prev, impact: v as RiskLevel }))}>
+                            <SelectTrigger className="h-8 w-24"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="low">Low</SelectItem>
+                              <SelectItem value="medium">Medium</SelectItem>
+                              <SelectItem value="high">High</SelectItem>
+                              <SelectItem value="critical">Critical</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <div className="flex items-center gap-1.5">
+                            <div className={cn('h-2 w-2 rounded-full', riskColors[risk.impact])} />
+                            <span className="capitalize">{risk.impact}</span>
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {isEditing ? (
+                          <Select value={editForm.probability} onValueChange={(v) => setEditForm(prev => ({ ...prev, probability: v as RiskLevel }))}>
+                            <SelectTrigger className="h-8 w-24"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="low">Low</SelectItem>
+                              <SelectItem value="medium">Medium</SelectItem>
+                              <SelectItem value="high">High</SelectItem>
+                              <SelectItem value="critical">Critical</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <span className="capitalize">{risk.probability}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {isEditing ? (
+                          <Input
+                            value={editForm.owner_name || ''}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, owner_name: e.target.value }))}
+                            className="h-8 text-sm"
+                          />
+                        ) : (
+                          <div className="flex items-center gap-1.5 text-muted-foreground">
+                            <User className="h-3.5 w-3.5" />
+                            {risk.owner_name || 'Unassigned'}
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {isEditing ? (
+                          <Input
+                            type="date"
+                            value={editForm.due_date ? new Date(editForm.due_date).toISOString().split('T')[0] : ''}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, due_date: e.target.value }))}
+                            className="h-8 text-sm w-36"
+                          />
+                        ) : (
+                          <span className="text-muted-foreground">{risk.due_date ? new Date(risk.due_date).toLocaleDateString() : '-'}</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        {isEditing ? (
+                          <Select value={editForm.status} onValueChange={(v) => setEditForm(prev => ({ ...prev, status: v as RiskStatus }))}>
+                            <SelectTrigger className="h-8 w-28"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="identified">Identified</SelectItem>
+                              <SelectItem value="analyzing">Analyzing</SelectItem>
+                              <SelectItem value="mitigating">Mitigating</SelectItem>
+                              <SelectItem value="monitoring">Monitoring</SelectItem>
+                              <SelectItem value="closed">Closed</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        ) : (
+                          <Badge variant={risk.status === 'mitigating' ? 'info' : risk.status === 'closed' ? 'success' : 'secondary'}>
+                            {risk.status}
+                          </Badge>
+                        )}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-right">
+                        {isEditing ? (
+                          <div className="flex items-center justify-end gap-1">
+                            <Button size="iconXs" variant="ghost" onClick={() => setEditingId(null)}><X className="h-4 w-4" /></Button>
+                            <Button size="iconXs" variant="default" onClick={() => handleSaveInline(risk.id)}><Save className="h-3.5 w-3.5" /></Button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            {canEdit && <Button size="iconXs" variant="ghost" onClick={() => handleEditClick(risk)}><Edit2 className="h-3.5 w-3.5" /></Button>}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="iconXs"><MoreHorizontal className="h-4 w-4" /></Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => setSelectedRisk(risk)}>View Details</DropdownMenuItem>
+                                {canDelete && <><DropdownMenuSeparator />
+                                  <DropdownMenuItem className="text-destructive" onClick={() => deleteRisk(risk.id)}>Delete</DropdownMenuItem></>}
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
+            </tbody>
+          </table>
         </div>
       </div>
 
       <AnimatePresence>
         {selectedRisk && (
-          <RiskDetailPanel
-            risk={selectedRisk}
-            onClose={() => setSelectedRisk(null)}
-            onUpdate={updateRisk}
-            onDelete={async (id) => {
-              const result = await deleteRisk(id);
-              if (result) setSelectedRisk(null);
-              return result;
-            }}
-          />
+          <div className="fixed inset-y-0 right-0 z-50 shadow-2xl">
+            <RiskDetailPanel
+              risk={selectedRisk}
+              onClose={() => setSelectedRisk(null)}
+              onUpdate={updateRisk}
+              onDelete={async (id) => {
+                const result = await deleteRisk(id);
+                if (result) setSelectedRisk(null);
+                return result;
+              }}
+            />
+          </div>
         )}
       </AnimatePresence>
 
       <AddRiskDialog open={addDialogOpen} onOpenChange={setAddDialogOpen} onSubmit={createRisk} />
-    </div>
+    </>
+  );
+
+  return (
+    <DataRegisterPage
+      title="Risk Register"
+      description="Identify and track project risks"
+      icon={AlertTriangle}
+      iconBgClass="bg-destructive/20"
+      iconColorClass="text-destructive"
+      listModeControls={
+        <div className="flex bg-muted/50 p-1 rounded-md mb-4 md:mb-0">
+          <Button
+            variant={viewMode === 'list' ? 'secondary' : 'ghost'}
+            size="sm"
+            className="h-7 text-xs px-3 rounded-sm shadow-sm"
+            onClick={() => setViewMode('list')}
+          >
+            Dashboard
+          </Button>
+          <Button
+            variant={viewMode === 'spreadsheet' ? 'secondary' : 'ghost'}
+            size="sm"
+            className="h-7 text-xs px-3 rounded-sm shadow-sm"
+            onClick={() => setViewMode('spreadsheet')}
+          >
+            Spreadsheet
+          </Button>
+        </div>
+      }
+      toolbarFilters={
+        <Button variant="outline" size="sm" className="h-8 text-xs border-border/60">
+          <Filter className="h-3.5 w-3.5 mr-1.5" />
+          Filter
+        </Button>
+      }
+      onAddRow={canCreate ? () => setAddDialogOpen(true) : undefined}
+      addLabel="Add Risk"
+      pdfFilename="risk-register"
+      pdfSections={pdfSections}
+      data={risks}
+      baseColumns={STANDARD_COLUMNS}
+      customColumns={customColumns}
+      idExtractor={(item) => item.id}
+      customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
+      onCellSave={canEdit ? handleCellSave : undefined}
+      onAddColumn={(col) => {
+        if (customColumns.find(c => c.key === col.key)) {
+          toast.error('Column already exists');
+          return;
+        }
+        setCustomColumns(prev => [...prev, col]);
+        toast.success(`Column "${col.label}" added`);
+      }}
+      onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
+      onDeleteRows={canDelete ? (ids) => Array.from(ids).forEach(id => deleteRisk(id)) : undefined}
+      emptyStateMessage={risks.length === 0 ? 'No risks added yet.' : 'No risks match.'}
+      kpiCards={kpiCards}
+      listContent={listContent}
+    />
   );
 }

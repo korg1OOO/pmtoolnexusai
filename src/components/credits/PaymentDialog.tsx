@@ -11,7 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Loader2, CreditCard, Check, AlertTriangle } from 'lucide-react';
 import { aiCreditsService } from '@/services/aiCreditsService';
-import { stripePaymentService } from '@/services/stripePaymentService';
+import { createCreditPaymentIntent, confirmCreditPurchase } from '@/services/stripeService';
 import { loadStripe } from '@stripe/stripe-js';
 import {
     Elements,
@@ -78,7 +78,7 @@ function CheckoutForm({
 
         if (paymentIntent?.status === 'succeeded') {
             // Record purchase + credit balance on the server
-            const result = await stripePaymentService.confirmPurchase(
+            const result = await confirmCreditPurchase(
                 paymentIntent.id,
                 pricingTierId
             );
@@ -184,7 +184,7 @@ export function PaymentDialog({
     const { isError: intentError, error: intentErr } = useQuery({
         queryKey: ['payment-intent', pricingTierId],
         queryFn: async () => {
-            const intent = await stripePaymentService.createPaymentIntent(pricingTierId);
+            const intent = await createCreditPaymentIntent(pricingTierId);
             setClientSecret(intent.client_secret);
             return intent;
         },

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Plus,
@@ -41,6 +42,8 @@ import { TemplatePreview } from '@/components/project-creation/TemplatePreview';
 import { templateCategories, methodologyOptions } from '@/data/templateData';
 import type { Methodology, GovernanceLevel, ProjectCreationData } from '@/types/templates';
 import { useTemplates, useCreateProjectFromTemplate, type ProjectTemplate } from '@/hooks/useTemplates';
+import { useSubscriptionLimits } from '@/hooks/useSubscriptionLimits';
+import { Crown, TrendingUp } from 'lucide-react';
 
 type CreationPath = 'template' | 'custom' | null;
 type Step = 'path' | 'template-select' | 'methodology' | 'details' | 'team' | 'review';
@@ -65,8 +68,10 @@ const priorityOptions = [
 ];
 
 export default function ProjectCreationView() {
+  const navigate = useNavigate();
   const { data: templates, isLoading: isLoadingTemplates } = useTemplates();
   const createProjectMutation = useCreateProjectFromTemplate();
+  const { canCreateProject, requireLimit, usage, limits, tier } = useSubscriptionLimits();
 
   const [creationPath, setCreationPath] = useState<CreationPath>(null);
   const [currentStep, setCurrentStep] = useState<Step>('path');
@@ -166,17 +171,39 @@ export default function ProjectCreationView() {
   };
 
   const handleCreateProject = async () => {
+    // Subscription limit check — blocks with toast + upgrade link if over limit
+    if (!requireLimit('projects')) return;
+
     try {
+      // Get the real current user ID to use as owner_id
+      const { data: { session } } = await supabase.auth.getSession();
+      const currentUserId = session?.user?.id;
+
+      const isUUID = (str: string) => /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(str);
+      const validOwnerId = (formData.owner && isUUID(formData.owner)) ? formData.owner : currentUserId;
+
+      if (!validOwnerId) {
+        throw new Error('You must be logged in to create a project');
+      }
+
       if (creationPath === 'template' && selectedTemplate) {
         // Use RPC for template-based creation
         const data = await createProjectMutation.mutateAsync({
           templateId: selectedTemplate.id,
           name: formData.name || 'New Project',
           description: formData.description || '',
-          ownerId: formData.owner || '', // Should ideally get current user ID
+          ownerId: validOwnerId,
           organizationId: formData.organizationId,
           startDate: new Date(formData.startDate || Date.now()),
         });
+
+        // BUG-006 fix: Auto-assign creator as admin
+        if (data?.id && currentUserId) {
+          await supabase.rpc('assign_project_creator_role' as any, {
+            p_user_id: currentUserId,
+            p_project_id: data.id,
+          }).then(({ error: roleErr }) => { if (roleErr) console.error('Role assign failed:', roleErr); });
+        }
 
         toast.success('Project Created Successfully!', {
           description: `${data.name} has been created from template.`,
@@ -184,7 +211,7 @@ export default function ProjectCreationView() {
 
         if (data) {
           localStorage.setItem('projectoye_selected_project', data.id);
-          setTimeout(() => window.location.href = '/', 1000);
+          navigate('/');
         }
 
       } else {
@@ -194,21 +221,29 @@ export default function ProjectCreationView() {
           code: formData.code,
           description: formData.description,
           methodology: formData.methodology || 'hybrid',
-          status: 'planning', // Default to planning
-          start_date: formData.startDate,
-          end_date: formData.targetEndDate || null,
-          owner_id: formData.owner || null, // Ensure owner is handled if exists in formData
+          status: 'active', // Must be one of: 'active', 'on-hold', 'completed', 'cancelled'
+          start_date: formData.startDate || new Date().toISOString().split('T')[0],
+          end_date: formData.targetEndDate ? formData.targetEndDate : null,
+          owner_id: validOwnerId,
         }).select().single();
 
         if (error) throw error;
+
+        // BUG-006 fix: Auto-assign creator as admin
+        if ((data as any)?.id && currentUserId) {
+          await supabase.rpc('assign_project_creator_role' as any, {
+            p_user_id: currentUserId,
+            p_project_id: (data as any).id,
+          }).then(({ error: roleErr }) => { if (roleErr) console.error('Role assign failed:', roleErr); });
+        }
 
         toast.success('Project Created Successfully!', {
           description: `${formData.name} has been created.`,
         });
 
         if (data) {
-          localStorage.setItem('projectoye_selected_project', data.id);
-          setTimeout(() => window.location.href = '/', 1000);
+          localStorage.setItem('projectoye_selected_project', (data as any).id);
+          navigate('/');
         }
       }
     } catch (error: any) {
@@ -240,6 +275,26 @@ export default function ProjectCreationView() {
 
   const renderPathSelection = () => (
     <div className="max-w-4xl mx-auto">
+      {/* Subscription limit banner */}
+      {!canCreateProject && (
+        <div className="mb-6 p-4 rounded-lg border-2 border-destructive/50 bg-destructive/10 flex items-center gap-4">
+          <div className="p-2 rounded-full bg-destructive/20">
+            <Crown className="h-6 w-6 text-destructive" />
+          </div>
+          <div className="flex-1">
+            <p className="font-semibold text-destructive">Project limit reached</p>
+            <p className="text-sm text-muted-foreground">
+              You have {usage.projects} / {limits.projects} projects on the {tier} plan.
+              Upgrade to create more.
+            </p>
+          </div>
+          <Button variant="destructive" size="sm" onClick={() => navigate('/pricing')}>
+            <TrendingUp className="h-4 w-4 mr-1" />
+            Upgrade
+          </Button>
+        </div>
+      )}
+
       <div className="text-center mb-8">
         <h1 className="text-3xl font-bold mb-2">Create New Project</h1>
         <p className="text-muted-foreground">
@@ -977,9 +1032,9 @@ export default function ProjectCreationView() {
             </Button>
 
             {currentStep === 'review' ? (
-              <Button onClick={handleCreateProject} disabled={!canProceed()}>
+              <Button onClick={handleCreateProject} disabled={!canProceed() || !canCreateProject}>
                 <Sparkles className="mr-2 h-4 w-4" />
-                Create Project
+                {canCreateProject ? 'Create Project' : 'Upgrade to Create'}
               </Button>
             ) : (
               <Button onClick={handleNext} disabled={!canProceed()}>

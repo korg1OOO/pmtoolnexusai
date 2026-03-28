@@ -4,14 +4,34 @@
  */
 
 import React, { useState } from 'react';
-import { Building2, Users, Plus, Search } from 'lucide-react';
+import { Building2, Users, Plus, Search, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from '@/components/ui/select';
 import { useAdminOrganizations } from '@/hooks/useAdmin';
-import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+import { supabase as _supabase } from '@/integrations/supabase/client';
+import { useQueryClient } from '@tanstack/react-query';
+
+const supabase = _supabase as any;
 
 const statusColors: Record<string, string> = {
     active: 'bg-success/20 text-success border-success/30',
@@ -21,11 +41,41 @@ const statusColors: Record<string, string> = {
 
 export function AdminOrganizations() {
     const [searchQuery, setSearchQuery] = useState('');
+    const [createOpen, setCreateOpen] = useState(false);
+    const [orgName, setOrgName] = useState('');
+    const [orgPlan, setOrgPlan] = useState('free');
+    const [adminEmail, setAdminEmail] = useState('');
+    const [isCreating, setIsCreating] = useState(false);
+
     const { data: organizations, isLoading, refetch } = useAdminOrganizations();
+    const queryClient = useQueryClient();
 
     const filteredOrgs = organizations?.filter(org =>
         org.name.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+    const handleCreate = async () => {
+        if (!orgName.trim()) return;
+        setIsCreating(true);
+        try {
+            const { error } = await supabase.from('tenants').insert({
+                name: orgName.trim(),
+                plan: orgPlan,
+                status: 'active',
+            });
+            if (error) throw error;
+            toast.success(`Organization "${orgName}" created`);
+            setCreateOpen(false);
+            setOrgName('');
+            setOrgPlan('free');
+            setAdminEmail('');
+            queryClient.invalidateQueries({ queryKey: ['admin-organizations'] });
+        } catch (err: any) {
+            toast.error('Failed to create organization: ' + (err?.message ?? 'Unknown error'));
+        } finally {
+            setIsCreating(false);
+        }
+    };
 
     if (isLoading) {
         return (
@@ -56,7 +106,7 @@ export function AdminOrganizations() {
                         className="pl-9"
                     />
                 </div>
-                <Button>
+                <Button onClick={() => setCreateOpen(true)}>
                     <Plus className="h-4 w-4 mr-2" />
                     Add Organization
                 </Button>
@@ -110,6 +160,57 @@ export function AdminOrganizations() {
                     </div>
                 )}
             </div>
+
+            {/* Create Organization Dialog */}
+            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Add Organization</DialogTitle>
+                        <DialogDescription>
+                            Create a new tenant organization on the platform.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4">
+                        <div className="space-y-2">
+                            <Label htmlFor="org-name">Organization Name</Label>
+                            <Input
+                                id="org-name"
+                                placeholder="Acme Corporation"
+                                value={orgName}
+                                onChange={e => setOrgName(e.target.value)}
+                            />
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="org-plan">Plan</Label>
+                            <Select value={orgPlan} onValueChange={setOrgPlan}>
+                                <SelectTrigger id="org-plan"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="free">Free</SelectItem>
+                                    <SelectItem value="pro">Pro</SelectItem>
+                                    <SelectItem value="enterprise">Enterprise</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-2">
+                            <Label htmlFor="org-admin-email">Admin Email (optional)</Label>
+                            <Input
+                                id="org-admin-email"
+                                type="email"
+                                placeholder="admin@acme.com"
+                                value={adminEmail}
+                                onChange={e => setAdminEmail(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                    <DialogFooter>
+                        <Button variant="outline" onClick={() => setCreateOpen(false)}>Cancel</Button>
+                        <Button onClick={handleCreate} disabled={isCreating || !orgName.trim()}>
+                            {isCreating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                            Create Organization
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

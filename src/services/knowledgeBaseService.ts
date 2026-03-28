@@ -42,9 +42,42 @@ export async function getKnowledgeArticles(scope: string, scopeId: string): Prom
 }
 
 export async function createKnowledgeArticle(article: Partial<KnowledgeArticle>): Promise<KnowledgeArticle> {
+    const { data: { user } } = await supabase.auth.getUser();
+    let tenantId = article.tenant_id || user?.user_metadata?.tenant_id;
+
+    if (!tenantId && article.program_id) {
+        let { data } = await supabase.from('programs').select('tenant_id').eq('id', article.program_id).maybeSingle();
+        if (data?.tenant_id) {
+            tenantId = data.tenant_id;
+        } else {
+            // UI might pass project_id as scopeId when scope="program"
+            const { data: projectData } = await supabase.from('projects').select('tenant_id').eq('id', article.program_id).maybeSingle();
+            if (projectData?.tenant_id) tenantId = projectData.tenant_id;
+        }
+    }
+
+    if (!tenantId && article.workspace_id) {
+        const { data } = await supabase.from('workspaces').select('tenant_id').eq('id', article.workspace_id).maybeSingle();
+        if (data?.tenant_id) tenantId = data.tenant_id;
+    }
+
+    if (!tenantId) {
+        // Final fallback for mock environments: use the user's own ID as a dummy tenant_id
+        // to satisfy the NOT NULL constraint on the DB.
+        tenantId = user?.id;
+    }
+
+    if (!tenantId) {
+        throw new Error("tenant_id not found for the current scope, cannot create article.");
+    }
+
     const { data, error } = await supabase
         .from('knowledge_articles')
-        .insert(article)
+        .insert({
+            ...article,
+            tenant_id: tenantId,
+            created_by_user_id: user?.id
+        })
         .select()
         .single();
 

@@ -50,6 +50,7 @@ import {
 } from '@/hooks/useContentManagement';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 export function AdminMedia() {
     const [searchQuery, setSearchQuery] = useState('');
@@ -62,6 +63,13 @@ export function AdminMedia() {
     const uploadMedia = useUploadMedia();
     const updateMedia = useUpdateMedia();
     const deleteMedia = useDeleteMedia();
+    const { confirm, ConfirmDialog } = useConfirmDialog();
+
+    const handleDeleteMedia = async (id: string) => {
+        if (await confirm('Permanently delete this file?', { confirmLabel: 'Delete', variant: 'destructive' })) {
+            deleteMedia.mutate(id);
+        }
+    };
 
     // Filter media
     const filteredMedia = media.filter(file => {
@@ -165,11 +173,7 @@ export function AdminMedia() {
                             file={file}
                             onSelect={setSelectedFile}
                             onCopy={copyUrl}
-                            onDelete={(id) => {
-                                if (confirm('Permanently delete this file?')) {
-                                    deleteMedia.mutate(id);
-                                }
-                            }}
+                            onDelete={handleDeleteMedia}
                         />
                     ))}
                 </div>
@@ -217,6 +221,7 @@ export function AdminMedia() {
                     }}
                 />
             )}
+            <ConfirmDialog />
         </div>
     );
 }

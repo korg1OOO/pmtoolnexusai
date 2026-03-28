@@ -80,10 +80,10 @@ export function useAddTeamMember() {
                 .from('profiles')
                 .select('id')
                 .eq('email', email)
-                .single();
+                .maybeSingle();
 
             if (profileError || !profiles) {
-                throw new Error('User not found. They must sign up first.');
+                throw new Error(`User with email ${email} not found. They must sign up first.`);
             }
 
             // 2. Add role

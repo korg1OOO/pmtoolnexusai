@@ -30,11 +30,16 @@ import {
   MessageSquare,
   Calendar,
   Folder,
+  TrendingUp,
+  Brain,
+  ClipboardCheck,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { useProjectContext, ModuleVisibility } from '@/contexts/ProjectContext';
 import { preloadRoute } from '@/utils/routePreloader';
+import { useSidebarBadges } from '@/hooks/useSidebarBadges';
+import { CreditBalanceWidget } from '@/components/credits/CreditBalanceWidget';
 
 interface NavItem {
   id: string;
@@ -54,6 +59,8 @@ const navItems: NavItem[] = [
     children: [
       { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, moduleKey: 'dashboard' },
       { id: 'morning-briefing', label: 'Morning Briefing', icon: Sparkles, alwaysShow: true },
+      { id: 'executive-dashboard', label: 'Executive Dashboard', icon: TrendingUp, moduleKey: 'dashboard' },
+      { id: 'strategic-dashboard', label: 'Strategic Dashboard', icon: Brain, moduleKey: 'dashboard' },
       { id: 'portfolio', label: 'Portfolio', icon: FolderKanban, moduleKey: 'portfolio' },
       { id: 'program-timeline', label: 'Project Timeline', icon: Clock, moduleKey: 'programTimeline' },
       { id: 'reports', label: 'Reports', icon: BarChart3, moduleKey: 'reports' },
@@ -67,7 +74,6 @@ const navItems: NavItem[] = [
       { id: 'project-charter', label: 'Project Charter', icon: BookOpen, alwaysShow: true },
       { id: 'stakeholders', label: 'Stakeholder Register', icon: Users, alwaysShow: true },
       { id: 'timeline-planner', label: 'Timeline Planner', icon: Clock, alwaysShow: true },
-      { id: 'create-project', label: 'Create Project', icon: FolderKanban, alwaysShow: true },
     ]
   },
   {
@@ -91,7 +97,7 @@ const navItems: NavItem[] = [
     children: [
       { id: 'sprints', label: 'Sprints', icon: Clock, moduleKey: 'sprints' },
       { id: 'backlog', label: 'Backlog', icon: ListTodo, moduleKey: 'backlog' },
-      { id: 'actions', label: 'Actions', icon: Target, badge: 6, moduleKey: 'actions' },
+      { id: 'actions', label: 'Actions', icon: Target, moduleKey: 'actions' },
     ]
   },
   {
@@ -99,11 +105,13 @@ const navItems: NavItem[] = [
     label: 'Monitoring & Control',
     icon: AlertTriangle,
     children: [
-      { id: 'risks', label: 'Risks', icon: AlertTriangle, badge: 5, moduleKey: 'risks' },
-      { id: 'issues', label: 'Issues', icon: AlertTriangle, badge: 3, moduleKey: 'issues' },
+      { id: 'risks', label: 'Risks', icon: AlertTriangle, moduleKey: 'risks' },
+      { id: 'issues', label: 'Issues', icon: AlertTriangle, moduleKey: 'issues' },
       { id: 'decisions', label: 'Decisions', icon: Target, moduleKey: 'decisions' },
       { id: 'change-requests', label: 'Change Requests', icon: Target, alwaysShow: true },
       { id: 'traceability', label: 'Traceability Matrix', icon: GitBranch, moduleKey: 'traceability' },
+      { id: 'requirements', label: 'Requirements Matrix', icon: GitBranch, alwaysShow: true },
+      { id: 'quality', label: 'Quality Register', icon: ClipboardCheck, alwaysShow: true },
     ]
   },
   {
@@ -113,7 +121,17 @@ const navItems: NavItem[] = [
     children: [
       { id: 'financials', label: 'Budget & Billing', icon: DollarSign, moduleKey: 'financials' },
       { id: 'evm', label: 'Earned Value (EVM)', icon: BarChart3, alwaysShow: true },
+      { id: 'timeline-slippage', label: 'Timeline Slippage', icon: TrendingUp, alwaysShow: true },
       { id: 'tracking', label: 'Baseline & Tracking', icon: Target, alwaysShow: true },
+    ]
+  },
+  {
+    id: 'closing',
+    label: 'Closing',
+    icon: CheckCircle2,
+    children: [
+      { id: 'final-report', label: 'Final Report', icon: FileText, alwaysShow: true },
+      { id: 'lessons-learned', label: 'Lessons Learned', icon: Lightbulb, alwaysShow: true },
     ]
   },
   {
@@ -121,7 +139,9 @@ const navItems: NavItem[] = [
     label: 'Collaboration',
     icon: Users,
     children: [
-      { id: 'meetings', label: 'AI Meetings', icon: Users, badge: 2, moduleKey: 'meetings' },
+      { id: 'collaboration-dashboard', label: 'Collab Dashboard', icon: LayoutDashboard, alwaysShow: true },
+      { id: 'meetings', label: 'AI Meetings', icon: Users, moduleKey: 'meetings' },
+      { id: 'meeting-analytics', label: 'Meeting Analytics', icon: BarChart3, moduleKey: 'meetings' },
       { id: 'calendar', label: 'Calendar', icon: Calendar, alwaysShow: true },
       { id: 'collaboration-spaces', label: 'Collaboration Spaces', icon: Users, alwaysShow: true },
       { id: 'team-chat', label: 'Team Chat', icon: MessageSquare, alwaysShow: true },
@@ -134,25 +154,6 @@ const navItems: NavItem[] = [
       { id: 'team-management', label: 'Team Management', icon: Users, alwaysShow: true },
       { id: 'presentations', label: 'Presentations', icon: Presentation, moduleKey: 'presentations' },
       { id: 'communication-intelligence', label: 'AI Intelligence', icon: BarChart3, alwaysShow: true },
-    ]
-  },
-  {
-    id: 'ai-credits',
-    label: 'AI Credits',
-    icon: Sparkles,
-    children: [
-      { id: 'purchase-credits', label: 'Purchase Credits', icon: DollarSign, alwaysShow: true },
-      { id: 'usage-dashboard', label: 'Usage Dashboard', icon: BarChart3, alwaysShow: true },
-      { id: 'auto-recharge', label: 'Auto-Recharge', icon: Target, alwaysShow: true },
-    ]
-  },
-  {
-    id: 'closing',
-    label: 'Closing',
-    icon: CheckCircle2,
-    children: [
-      { id: 'final-report', label: 'Final Report', icon: FileText, alwaysShow: true },
-      { id: 'lessons-learned', label: 'Lessons Learned', icon: Lightbulb, alwaysShow: true },
     ]
   },
 ];
@@ -206,6 +207,16 @@ const adminItems: NavItem[] = [
       { id: 'program-select', label: 'Select Program', icon: GitBranch, alwaysShow: true },
     ]
   },
+  {
+    id: 'ai-credits',
+    label: 'AI Credits',
+    icon: Sparkles,
+    children: [
+      { id: 'purchase-credits', label: 'Purchase Credits', icon: DollarSign, alwaysShow: true },
+      { id: 'usage-dashboard', label: 'Usage Dashboard', icon: BarChart3, alwaysShow: true },
+      { id: 'auto-recharge', label: 'Auto-Recharge', icon: Target, alwaysShow: true },
+    ]
+  },
   { id: 'settings', label: 'Settings', icon: User, alwaysShow: true },
 ];
 
@@ -223,8 +234,9 @@ const isRouteBasedItem = (id: string): boolean => {
 
 export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(true);
-  const { isModuleVisible } = useProjectContext();
+  const { isModuleVisible, settings } = useProjectContext();
   const navigate = useNavigate();
+  const { data: badges } = useSidebarBadges(settings?.id);
 
   // Find which group contains the active item
   const findParentGroup = useMemo(() => {
@@ -279,6 +291,15 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
     const isExpanded = expandedGroups.includes(item.id);
     const Icon = item.icon;
 
+    // Resolve dynamic badge count for live items
+    const liveBadge = badges
+      ? item.id === 'actions' ? (badges.actions > 0 ? badges.actions : undefined)
+        : item.id === 'risks' ? (badges.risks > 0 ? badges.risks : undefined)
+          : item.id === 'issues' ? (badges.issues > 0 ? badges.issues : undefined)
+            : item.id === 'meetings' ? (badges.meetings > 0 ? badges.meetings : undefined)
+              : item.badge
+      : item.badge;
+
     const itemContent = (
       <motion.button
         whileHover={{ x: 2 }}
@@ -287,8 +308,12 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
           // Preload route on hover
           if (item.id === 'admin-redirect') {
             preloadRoute('/admin');
-          } else if (item.id === 'workspace-select' || item.id === 'portfolio-select' || item.id === 'program-select') {
+          } else if (item.id === 'workspace-select') {
             preloadRoute('/tenant/workspaces');
+          } else if (item.id === 'portfolio-select') {
+            preloadRoute('/portfolio');
+          } else if (item.id === 'program-select') {
+            preloadRoute('/program');
           } else if (isRouteBasedItem(item.id)) {
             preloadRoute('/' + item.id);
           } else {
@@ -299,8 +324,12 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
           // Preload route on focus (keyboard navigation)
           if (item.id === 'admin-redirect') {
             preloadRoute('/admin');
-          } else if (item.id === 'workspace-select' || item.id === 'portfolio-select' || item.id === 'program-select') {
+          } else if (item.id === 'workspace-select') {
             preloadRoute('/tenant/workspaces');
+          } else if (item.id === 'portfolio-select') {
+            preloadRoute('/portfolio');
+          } else if (item.id === 'program-select') {
+            preloadRoute('/program');
           } else if (isRouteBasedItem(item.id)) {
             preloadRoute('/' + item.id);
           } else {
@@ -309,11 +338,22 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
         }}
         onClick={() => {
           if (hasVisibleChildren) {
-            toggleGroup(item.id);
+            if (collapsed) {
+              setCollapsed(false);
+              if (!expandedGroups.includes(item.id)) {
+                setExpandedGroups((prev) => [...prev, item.id]);
+              }
+            } else {
+              toggleGroup(item.id);
+            }
           } else if (item.id === 'admin-redirect') {
             navigate('/admin');
-          } else if (item.id === 'workspace-select' || item.id === 'portfolio-select' || item.id === 'program-select') {
+          } else if (item.id === 'workspace-select') {
             navigate('/tenant/workspaces');
+          } else if (item.id === 'portfolio-select') {
+            navigate('/portfolio');
+          } else if (item.id === 'program-select') {
+            navigate('/program');
           } else if (isRouteBasedItem(item.id)) {
             navigate('/' + item.id);
           } else {
@@ -333,9 +373,9 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
         {!collapsed && (
           <>
             <span className="flex-1 text-left truncate">{item.label}</span>
-            {item.badge && (
+            {liveBadge !== undefined && liveBadge !== null && (
               <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-primary/20 px-1.5 text-xs font-medium text-primary">
-                {item.badge}
+                {liveBadge}
               </span>
             )}
             {hasVisibleChildren && (
@@ -357,9 +397,9 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
           <TooltipTrigger asChild>{itemContent}</TooltipTrigger>
           <TooltipContent side="right" className="flex items-center gap-2">
             {item.label}
-            {item.badge && (
+            {liveBadge !== undefined && liveBadge !== null && (
               <span className="rounded-full bg-primary/20 px-1.5 py-0.5 text-xs text-primary">
-                {item.badge}
+                {liveBadge}
               </span>
             )}
           </TooltipContent>
@@ -390,7 +430,7 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
       animate={{ width: collapsed ? 64 : 256 }}
       transition={{ duration: 0.2, ease: 'easeInOut' }}
       className={cn(
-        'flex flex-col h-full bg-sidebar border-r border-sidebar-border',
+        'flex flex-col h-full bg-sidebar border-r border-sidebar-border z-20 relative',
         className
       )}
     >
@@ -424,6 +464,23 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
 
       {/* Navigation */}
       <nav className="flex-1 overflow-y-auto p-3 space-y-1">
+        {/* Projects Button */}
+        <div className="mb-4">
+          <Button
+            className={cn(
+              "w-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all",
+              collapsed ? "justify-center px-0 h-10" : "justify-start gap-2 h-10 px-3"
+            )}
+            onClick={() => {
+              if (collapsed) setCollapsed(false);
+              navigate('/projects');
+            }}
+          >
+            <FolderKanban className={cn("shrink-0", collapsed ? "h-5 w-5" : "h-4 w-4")} />
+            {!collapsed && <span className="font-semibold">Projects</span>}
+          </Button>
+        </div>
+
         {navItems.map((item) => renderNavItem(item))}
 
         {/* Separator */}
@@ -432,6 +489,11 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
         {/* Admin Items */}
         {adminItems.map((item) => renderNavItem(item))}
       </nav>
+
+      {/* Low Credits widget — pinned to sidebar bottom */}
+      <div className={`border-t border-sidebar-border p-3 ${collapsed ? 'flex justify-center' : ''}`}>
+        <CreditBalanceWidget compact showPurchaseButton={!collapsed} />
+      </div>
     </motion.aside>
   );
 }

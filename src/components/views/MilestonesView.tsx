@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { usePermissions } from '@/hooks/usePermissions';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Target,
@@ -25,11 +26,15 @@ import {
   Edit2,
   Link2,
   Loader2,
-  Trash2
+  Trash2,
+  Table,
+  List,
 } from 'lucide-react';
+import { DataRegisterPage } from '@/components/ui/DataRegisterPage';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { DynamicDataGrid, type DynamicColumnDef } from '@/components/ui/DynamicDataGrid';
 import { Progress } from '@/components/ui/progress';
 import { KPICard } from '@/components/enterprise/KPICard';
 import { StatusIndicator } from '@/components/enterprise/StatusIndicator';
@@ -58,6 +63,13 @@ import { useProjectContext } from '@/contexts/ProjectContext';
 import { useMilestones, Milestone } from '@/hooks/useMilestones';
 import { useStageGates, StageGate, GateCriteria } from '@/hooks/useStageGates';
 import { toast } from 'sonner';
+
+const STANDARD_COLUMNS: DynamicColumnDef<Milestone>[] = [
+  { key: 'name', label: 'Milestone Name', width: 300, type: 'text', sticky: true },
+  { key: 'status', label: 'Status', width: 140, type: 'select', options: ['on-track', 'at-risk', 'overdue', 'completed'] },
+  { key: 'due_date', label: 'Due Date', width: 140, type: 'date' },
+  { key: 'progress', label: 'Progress (%)', width: 120, type: 'text' },
+];
 
 // Removed local interfaces in favor of hook types
 
@@ -106,10 +118,15 @@ export default function MilestonesView() {
   const { settings } = useProjectContext();
   const { data: milestones, isLoading: milestonesLoading, createMilestone, updateMilestone, deleteMilestone } = useMilestones(settings.id);
   const { gates, isLoading: gatesLoading, approveGate } = useStageGates(settings.id);
+  const { can } = usePermissions(settings?.id);
+  const canCreate = can('milestone.create');
+  const canEdit = can('milestone.edit');
+  const canDelete = can('milestone.delete');
   const isLoading = milestonesLoading || gatesLoading;
 
-  const [viewMode, setViewMode] = useState<'timeline' | 'list' | 'gates'>('timeline');
+  const [subViewMode, setSubViewMode] = useState<'timeline' | 'list' | 'gates'>('timeline');
   const [filterStatus, setFilterStatus] = useState<string | null>(null);
+  const [customColumns, setCustomColumns] = useState<DynamicColumnDef<Milestone>[]>([]);
   const [selectedGate, setSelectedGate] = useState<StageGate | null>(null);
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false);
   const [approvalComment, setApprovalComment] = useState('');
@@ -136,9 +153,27 @@ export default function MilestonesView() {
     overdue: milestones?.filter(m => m.status === 'overdue').length || 0,
   };
 
+  const handleCellSave = async (rowId: string, key: string, value: string) => {
+    const isCustom = !STANDARD_COLUMNS.find(c => c.key === key);
+    const item = milestones?.find(i => i.id === rowId);
+    if (!item) return;
+
+    if (isCustom) {
+      const cf = { ...(item.custom_fields ?? {}), [key]: value };
+      await updateMilestone.mutateAsync({ id: rowId, updates: { custom_fields: cf } });
+    } else {
+      if (key === 'progress') {
+        const numVal = parseInt(value, 10);
+        await updateMilestone.mutateAsync({ id: rowId, updates: { [key]: isNaN(numVal) ? undefined : numVal } });
+      } else {
+        await updateMilestone.mutateAsync({ id: rowId, updates: { [key]: value } });
+      }
+    }
+  };
+
   const handleCreate = async () => {
     try {
-      await createMilestone.mutateAsync({ ...newMilestone, project_id: settings.id });
+      await createMilestone.mutateAsync({ ...newMilestone, project_id: settings.id } as any);
       setIsCreateOpen(false);
       setNewMilestone({
         name: '',
@@ -196,152 +231,96 @@ export default function MilestonesView() {
     );
   }
 
-  return (
-    <div className="space-y-6 p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-foreground">Milestones & Stage Gates</h1>
-          <p className="text-sm text-muted-foreground mt-1">Track key deliverables and approval checkpoints</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm">
-            <Filter className="h-4 w-4 mr-2" />
-            Filter
-          </Button>
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
-            <DialogTrigger asChild>
-              <Button size="sm">
-                <Plus className="h-4 w-4 mr-2" />
-                Add Milestone
-              </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>New Milestone</DialogTitle>
-                <DialogDescription>Create a new key project milestone.</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4 py-2">
-                <div className="space-y-2">
-                  <Label>Name</Label>
-                  <Input
-                    value={newMilestone.name || ''}
-                    onChange={(e) => setNewMilestone({ ...newMilestone, name: e.target.value })}
-                    placeholder="e.g. Phase 1 Completion"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label>Due Date</Label>
-                  <Input
-                    type="date"
-                    value={newMilestone.due_date || ''}
-                    onChange={(e) => setNewMilestone({ ...newMilestone, due_date: e.target.value })}
-                  />
-                </div>
-                {/* Add more fields as needed */}
-              </div>
-              <DialogFooter>
-                <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
-                <Button onClick={handleCreate} disabled={!newMilestone.name || createMilestone.isPending}>
-                  {createMilestone.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                  Create
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
+  const toolbarFilters = (
+    <div className="flex items-center gap-2 h-8">
+      <Badge
+        variant={filterStatus === null ? 'default' : 'outline'}
+        className="cursor-pointer text-[10px] h-full flex items-center"
+        onClick={() => setFilterStatus(null)}
+      >
+        All ({milestones?.length || 0})
+      </Badge>
+      <Badge
+        variant={filterStatus === 'completed' ? 'completed' : 'outline'}
+        className="cursor-pointer text-[10px] h-full flex items-center"
+        onClick={() => setFilterStatus('completed')}
+      >
+        Completed ({statusCounts.completed})
+      </Badge>
+      <Badge
+        variant={filterStatus === 'on-track' ? 'active' : 'outline'}
+        className="cursor-pointer text-[10px] h-full flex items-center"
+        onClick={() => setFilterStatus('on-track')}
+      >
+        On Track ({statusCounts.onTrack})
+      </Badge>
+      <Badge
+        variant={filterStatus === 'at-risk' ? 'warning' : 'outline'}
+        className="cursor-pointer text-[10px] h-full flex items-center"
+        onClick={() => setFilterStatus('at-risk')}
+      >
+        At Risk ({statusCounts.atRisk})
+      </Badge>
+      <Badge
+        variant={filterStatus === 'overdue' ? 'critical' : 'outline'}
+        className="cursor-pointer text-[10px] h-full flex items-center"
+        onClick={() => setFilterStatus('overdue')}
+      >
+        Overdue ({statusCounts.overdue})
+      </Badge>
+    </div>
+  );
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-4 gap-4">
-        <KPICard
-          title="Total Milestones"
-          value={(milestones?.length || 0).toString()}
-          subtitle="Project milestones"
-          icon={Target}
-          status="neutral"
-        />
-        <KPICard
-          title="Completed"
-          value={statusCounts.completed.toString()}
-          subtitle={`${milestones?.length ? Math.round((statusCounts.completed / (milestones.length || 1)) * 100) : 0}% completion`}
-          icon={CheckCircle2}
-          status="success"
-        />
-        <KPICard
-          title="Stage Gates"
-          value={(gates?.length || 0).toString()}
-          subtitle={`${gates?.filter(g => g.status === 'in-review').length || 0} awaiting approval`}
-          icon={Shield}
-          status="neutral"
-        />
-        <KPICard
-          title="At Risk / Overdue"
-          value={(statusCounts.atRisk + statusCounts.overdue).toString()}
-          subtitle={`${statusCounts.overdue} overdue`}
-          icon={AlertTriangle}
-          status={statusCounts.overdue > 0 ? 'error' : 'warning'}
-        />
-      </div>
+  const listModeControls = (
+    <div className="flex gap-1 p-1 bg-muted rounded-lg h-8 items-center border">
+      {(['timeline', 'list', 'gates'] as const).map((mode) => (
+        <button
+          key={mode}
+          onClick={() => setSubViewMode(mode)}
+          className={cn('px-3 py-1 rounded text-[10px] font-medium transition-all capitalize', subViewMode === mode ? 'bg-background shadow-sm' : 'text-muted-foreground hover:text-foreground')}
+        >
+          {mode === 'gates' ? 'Stage Gates' : mode}
+        </button>
+      ))}
+    </div>
+  );
 
-      {/* View Toggle */}
-      <div className="flex gap-1 p-1 bg-muted rounded-lg w-fit">
-        {(['timeline', 'list', 'gates'] as const).map((mode) => (
-          <button
-            key={mode}
-            onClick={() => setViewMode(mode)}
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-all capitalize ${viewMode === mode
-              ? 'bg-background text-foreground shadow-sm'
-              : 'text-muted-foreground hover:text-foreground'
-              }`}
-          >
-            {mode === 'gates' ? 'Stage Gates' : mode}
-          </button>
-        ))}
-      </div>
+  const kpiCards = (
+    <div className="grid grid-cols-4 gap-4">
+      <KPICard
+        title="Total Milestones"
+        value={(milestones?.length || 0).toString()}
+        subtitle="Project milestones"
+        icon={Target}
+        status="neutral"
+      />
+      <KPICard
+        title="Completed"
+        value={statusCounts.completed.toString()}
+        subtitle={`${milestones?.length ? Math.round((statusCounts.completed / (milestones.length || 1)) * 100) : 0}% completion`}
+        icon={CheckCircle2}
+        status="success"
+      />
+      <KPICard
+        title="Stage Gates"
+        value={(gates?.length || 0).toString()}
+        subtitle={`${gates?.filter(g => g.status === 'in-review').length || 0} awaiting approval`}
+        icon={Shield}
+        status="neutral"
+      />
+      <KPICard
+        title="At Risk / Overdue"
+        value={(statusCounts.atRisk + statusCounts.overdue).toString()}
+        subtitle={`${statusCounts.overdue} overdue`}
+        icon={AlertTriangle}
+        status={statusCounts.overdue > 0 ? 'error' : 'warning'}
+      />
+    </div>
+  );
 
-      {/* Status Filters */}
-      {viewMode !== 'gates' && (
-        <div className="flex gap-2">
-          <Badge
-            variant={filterStatus === null ? 'default' : 'outline'}
-            className="cursor-pointer"
-            onClick={() => setFilterStatus(null)}
-          >
-            All ({milestones?.length || 0})
-          </Badge>
-          <Badge
-            variant={filterStatus === 'completed' ? 'completed' : 'outline'}
-            className="cursor-pointer"
-            onClick={() => setFilterStatus('completed')}
-          >
-            Completed ({statusCounts.completed})
-          </Badge>
-          <Badge
-            variant={filterStatus === 'on-track' ? 'active' : 'outline'}
-            className="cursor-pointer"
-            onClick={() => setFilterStatus('on-track')}
-          >
-            On Track ({statusCounts.onTrack})
-          </Badge>
-          <Badge
-            variant={filterStatus === 'at-risk' ? 'warning' : 'outline'}
-            className="cursor-pointer"
-            onClick={() => setFilterStatus('at-risk')}
-          >
-            At Risk ({statusCounts.atRisk})
-          </Badge>
-          <Badge
-            variant={filterStatus === 'overdue' ? 'critical' : 'outline'}
-            className="cursor-pointer"
-            onClick={() => setFilterStatus('overdue')}
-          >
-            Overdue ({statusCounts.overdue})
-          </Badge>
-        </div>
-      )}
-
-      {viewMode === 'gates' && (
+  const listContent = (
+    <div className="flex flex-col h-full space-y-6">
+      {subViewMode === 'gates' && (
         <div className="space-y-6">
           {(gates || []).map((gate, index) => {
             const gateStatus = getGateStatusBadge(gate.status);
@@ -409,8 +388,8 @@ export default function MilestonesView() {
                         <div className="flex flex-wrap gap-2">
                           {gate.approvers.map((a, i) => (
                             <span key={i} className={`text-xs px-2 py-1 rounded-full border ${a.status === 'approved' ? 'bg-green-50 border-green-200 text-green-700' :
-                                a.status === 'rejected' ? 'bg-red-50 border-red-200 text-red-700' :
-                                  'bg-muted border-muted-foreground/20'
+                              a.status === 'rejected' ? 'bg-red-50 border-red-200 text-red-700' :
+                                'bg-muted border-muted-foreground/20'
                               }`}>
                               {a.user?.full_name || a.user?.email || a.role || 'Approver'} · {a.status}
                             </span>
@@ -430,61 +409,68 @@ export default function MilestonesView() {
       )}
 
       {/* Milestones List */}
-      {viewMode === 'list' && (
-        <Card>
+      {subViewMode === 'list' && (
+        <Card className="overflow-hidden">
           <CardContent className="p-0">
             <table className="w-full">
-              <thead className="border-b border-border">
+              <thead className="border-b border-border bg-muted/50">
                 <tr className="text-left text-xs text-muted-foreground uppercase">
-                  <th className="p-4 font-medium">Milestone</th>
-                  <th className="p-4 font-medium">Status</th>
-                  <th className="p-4 font-medium">Progress</th>
-                  <th className="p-4 font-medium">Due Date</th>
-                  <th className="p-4"></th>
+                  <th className="p-3 font-medium">Milestone</th>
+                  <th className="p-3 font-medium">Status</th>
+                  <th className="p-3 font-medium">Progress</th>
+                  <th className="p-3 font-medium">Due Date</th>
+                  <th className="p-3"></th>
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-border">
                 {filteredMilestones.map((milestone) => (
                   <motion.tr
                     key={milestone.id}
-                    className="border-b border-border/50 hover:bg-muted/30 transition-colors cursor-pointer"
+                    className="hover:bg-muted/30 transition-colors cursor-pointer"
                     whileHover={{ backgroundColor: 'hsl(var(--muted) / 0.5)' }}
                   >
-                    <td className="p-4">
+                    <td className="p-3">
                       <div className="flex items-center gap-3">
                         <Flag className="h-4 w-4 text-primary" />
-                        <span className="font-medium">{milestone.name}</span>
+                        <span className="font-medium text-sm">{milestone.name}</span>
                       </div>
                     </td>
-                    <td className="p-4">
-                      <Badge variant={getStatusBadgeVariant(milestone.status)}>
+                    <td className="p-3">
+                      <Badge variant={getStatusBadgeVariant(milestone.status)} className="capitalize">
                         {milestone.status.replace('-', ' ')}
                       </Badge>
                     </td>
-                    <td className="p-4">
+                    <td className="p-3">
                       <div className="flex items-center gap-2">
-                        <Progress value={milestone.progress} className="h-2 w-20" />
-                        <span className="text-sm">{milestone.progress}%</span>
+                        <Progress value={milestone.progress} className="h-1.5 w-20" />
+                        <span className="text-xs font-mono">{milestone.progress}%</span>
                       </div>
                     </td>
-                    <td className="p-4 text-sm">{milestone.due_date ? new Date(milestone.due_date).toLocaleDateString() : 'No date'}</td>
-                    <td className="p-4">
+                    <td className="p-3 text-xs font-mono text-muted-foreground">{milestone.due_date ? new Date(milestone.due_date).toLocaleDateString() : '—'}</td>
+                    <td className="p-3 text-right">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm">
+                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
                             <MoreHorizontal className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
-                          <DropdownMenuItem onClick={() => handleDelete(milestone.id)} className="text-destructive">
+                          {canDelete && <DropdownMenuItem onClick={() => handleDelete(milestone.id)} className="text-destructive">
                             <Trash2 className="h-4 w-4 mr-2" />
                             Delete
-                          </DropdownMenuItem>
+                          </DropdownMenuItem>}
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </td>
                   </motion.tr>
                 ))}
+                {filteredMilestones.length === 0 && (
+                  <tr>
+                    <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                      No milestones found.
+                    </td>
+                  </tr>
+                )}
               </tbody>
             </table>
           </CardContent>
@@ -492,10 +478,10 @@ export default function MilestonesView() {
       )}
 
       {/* Timeline View */}
-      {viewMode === 'timeline' && (
+      {subViewMode === 'timeline' && (
         <div className="space-y-4">
           {filteredMilestones.length === 0 && (
-            <div className="text-center p-8 text-muted-foreground">
+            <div className="text-center p-8 text-muted-foreground border rounded-lg bg-muted/10 border-dashed">
               No milestones found. Create one to visualize not just a list, but a timeline.
             </div>
           )}
@@ -509,7 +495,7 @@ export default function MilestonesView() {
             >
               {/* Timeline line */}
               {index < filteredMilestones.length - 1 && (
-                <div className="absolute left-3 top-8 bottom-0 w-0.5 bg-border" />
+                <div className="absolute left-3 top-8 bottom-0 w-px bg-border -ml-px" />
               )}
 
               {/* Timeline dot */}
@@ -519,33 +505,27 @@ export default function MilestonesView() {
 
               <Card variant="interactive" className="hover:shadow-md transition-shadow">
                 <CardContent className="p-4">
-                  <div className="flex items-start justify-between">
+                  <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                     <div className="space-y-2">
                       <div className="flex items-center gap-3">
-                        <h3 className="font-semibold text-foreground">{milestone.name}</h3>
-                        <Badge variant={getStatusBadgeVariant(milestone.status)}>
+                        <h3 className="font-semibold text-foreground text-sm">{milestone.name}</h3>
+                        <Badge variant={getStatusBadgeVariant(milestone.status)} className="capitalize text-[10px]">
                           {milestone.status.replace('-', ' ')}
                         </Badge>
                       </div>
-
-                      {/* Deliverables - If we add them to backend later
-                      <div className="flex flex-wrap gap-2 mt-3">
-                         ...
-                      </div>
-                      */}
                     </div>
 
-                    <div className="text-right space-y-2">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        <Calendar className="h-4 w-4" />
-                        <span>{milestone.due_date}</span>
+                    <div className="text-right space-y-2 shrink-0">
+                      <div className="flex items-center justify-end gap-2 text-xs text-muted-foreground font-mono">
+                        <Calendar className="h-3.5 w-3.5" />
+                        <span>{milestone.due_date ? new Date(milestone.due_date).toLocaleDateString() : '—'}</span>
                       </div>
                       <div className="mt-3">
-                        <div className="flex items-center justify-end gap-2 mb-1">
-                          <span className="text-xs text-muted-foreground">Progress</span>
-                          <span className="text-sm font-medium">{milestone.progress}%</span>
+                        <div className="flex items-center justify-end gap-2 mb-1.5">
+                          <span className="text-[10px] text-muted-foreground uppercase">Progress</span>
+                          <span className="text-xs font-mono font-medium">{milestone.progress}%</span>
                         </div>
-                        <Progress value={milestone.progress} className="h-2 w-32" />
+                        <Progress value={milestone.progress} className="h-1.5 w-32" />
                       </div>
                     </div>
                   </div>
@@ -582,6 +562,7 @@ export default function MilestonesView() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
       {/* Delete Confirmation Dialog */}
       <Dialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
         <DialogContent className="max-w-sm">
@@ -600,6 +581,76 @@ export default function MilestonesView() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>New Milestone</DialogTitle>
+            <DialogDescription>Create a new key project milestone.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <div className="space-y-2">
+              <Label>Name</Label>
+              <Input
+                value={newMilestone.name || ''}
+                onChange={(e) => setNewMilestone({ ...newMilestone, name: e.target.value })}
+                placeholder="e.g. Phase 1 Completion"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Due Date</Label>
+              <Input
+                type="date"
+                value={newMilestone.due_date || ''}
+                onChange={(e) => setNewMilestone({ ...newMilestone, due_date: e.target.value })}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+            <Button onClick={handleCreate} disabled={!newMilestone.name || createMilestone.isPending}>
+              {createMilestone.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Create
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
+  );
+
+  return (
+    <DataRegisterPage
+      title="Milestones & Stage Gates"
+      description="Track key deliverables and approval checkpoints"
+      icon={Target}
+      iconBgClass="bg-primary/20"
+      iconColorClass="text-primary"
+      toolbarFilters={toolbarFilters}
+      listModeControls={listModeControls}
+      onAddRow={canCreate ? () => setIsCreateOpen(true) : undefined}
+      addLabel="Add Milestone"
+      pdfFilename="milestones"
+      data={filteredMilestones}
+      baseColumns={STANDARD_COLUMNS}
+      customColumns={customColumns}
+      idExtractor={(item) => item.id}
+      customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
+      onCellSave={canEdit ? handleCellSave : undefined}
+      onAddColumn={(col) => {
+        if (customColumns.find(c => c.key === col.key)) {
+          toast.error('Column already exists');
+          return;
+        }
+        setCustomColumns(prev => [...prev, col]);
+        toast.success(`Column "${col.label}" added`);
+      }}
+      onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
+      onDeleteRows={canDelete ? (ids) => {
+        ids.forEach(id => deleteMilestone.mutateAsync(id));
+      } : undefined}
+      emptyStateMessage={filteredMilestones.length === 0 ? 'No milestones found.' : 'No milestones match filters.'}
+      kpiCards={kpiCards}
+      listContent={listContent}
+    />
   );
 }

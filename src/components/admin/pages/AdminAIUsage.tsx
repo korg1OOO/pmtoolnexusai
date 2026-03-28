@@ -183,8 +183,8 @@ export function AdminAIUsage() {
                                                 </div>
                                                 <div className="space-y-2">
                                                     <div className="flex justify-between text-sm">
-                                                        <span className="text-muted-foreground">Tokens</span>
-                                                        <span className="font-medium">{provider.total_tokens.toLocaleString()}</span>
+                                                        <span className="text-muted-foreground">Credits Used</span>
+                                                        <span className="font-medium">{(provider.total_tokens * 2).toLocaleString()}</span>
                                                     </div>
                                                     <Progress
                                                         value={(provider.total_cost_usd / totalCost) * 100}
@@ -219,7 +219,7 @@ export function AdminAIUsage() {
                                         <TableRow>
                                             <TableHead>User</TableHead>
                                             <TableHead>Requests</TableHead>
-                                            <TableHead>Tokens</TableHead>
+                                            <TableHead>Credits Used</TableHead>
                                             <TableHead>Cost</TableHead>
                                             <TableHead>Providers</TableHead>
                                         </TableRow>
@@ -234,7 +234,7 @@ export function AdminAIUsage() {
                                                     </div>
                                                 </TableCell>
                                                 <TableCell>{user.request_count.toLocaleString()}</TableCell>
-                                                <TableCell>{user.total_tokens.toLocaleString()}</TableCell>
+                                                <TableCell>{(user.total_tokens * 2).toLocaleString()}</TableCell>
                                                 <TableCell className="font-medium">${user.total_cost_usd.toFixed(2)}</TableCell>
                                                 <TableCell>
                                                     <div className="flex gap-1">

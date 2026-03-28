@@ -31,6 +31,7 @@ import { useTasks, DbTask } from '@/hooks/useTasks';
 import { useScenarios } from '@/hooks/useScenarios';
 import { useProfile } from '@/hooks/useProfile';
 import { TrackedAIService } from '@/services/trackedAIService';
+import { useConfirmDialog } from '@/hooks/useConfirmDialog';
 
 interface Adjustment {
   id: string;
@@ -65,6 +66,7 @@ interface Scenario {
 
 export default function ScenariosView() {
   const { settings } = useProjectContext();
+  const { confirm, ConfirmDialog } = useConfirmDialog();
   const {
     data: fetchedScenarios = [],
     isLoading,
@@ -384,8 +386,8 @@ export default function ScenariosView() {
                           variant="outline"
                           size="sm"
                           className="text-destructive hover:bg-destructive/10 gap-2 border-destructive/20"
-                          onClick={() => {
-                            if (confirm(`Delete scenario "${selectedScenario.name}"?`)) {
+                          onClick={async () => {
+                            if (await confirm(`Delete scenario "${selectedScenario.name}"?`, { confirmText: 'Delete', destructive: true })) {
                               setScenarios(scenarios.filter(s => s.id !== selectedScenario.id));
                               setSelectedScenario(scenarios.find(s => s.id !== selectedScenario.id) || null);
                               toast.success('Scenario deleted');
@@ -398,8 +400,8 @@ export default function ScenariosView() {
                           variant="outline"
                           size="sm"
                           className="gap-2 border-primary/20 hover:bg-primary/5 text-primary"
-                          onClick={() => {
-                            if (confirm(`Promote "${selectedScenario.name}" to Live Plan? This will replace current actuals.`)) {
+                          onClick={async () => {
+                            if (await confirm(`Promote "${selectedScenario.name}" to Live Plan? This will replace current actuals.`, { confirmText: 'Promote', title: 'Promote Scenario' })) {
                               promoteScenario(selectedScenario.id);
                             }
                           }}
@@ -679,6 +681,7 @@ export default function ScenariosView() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      <ConfirmDialog />
     </div >
   );
 }

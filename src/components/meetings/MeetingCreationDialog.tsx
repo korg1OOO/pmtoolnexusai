@@ -205,15 +205,14 @@ export function MeetingCreationDialog({
     }
   };
 
+  // DB CHECK constraint: purpose_type IN ('decision','status-update','planning','review','escalation','kickoff')
   const purposeTypes = [
     { value: 'status-update', label: 'Status Update' },
     { value: 'decision', label: 'Decision Making' },
     { value: 'review', label: 'Review' },
     { value: 'planning', label: 'Planning' },
-    { value: 'brainstorming', label: 'Brainstorming' },
     { value: 'kickoff', label: 'Kickoff' },
-    { value: 'retrospective', label: 'Retrospective' },
-    { value: 'other', label: 'Other' },
+    { value: 'escalation', label: 'Escalation' },
   ];
 
   const roleOptions = [
@@ -234,7 +233,7 @@ export function MeetingCreationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+      <DialogContent className="max-w-2xl max-h-[90vh] flex flex-col">
         <DialogHeader>
           <DialogTitle>Create New Meeting</DialogTitle>
           <DialogDescription>
@@ -242,7 +241,7 @@ export function MeetingCreationDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <ScrollArea className="flex-1 pr-4">
+        <ScrollArea className="flex-1 min-h-0 max-h-[60vh] overflow-y-auto pr-4">
           <form id="meeting-form" onSubmit={handleSubmit(onSubmit)} className="space-y-6">
             {/* Basic Info */}
             <div className="space-y-4">

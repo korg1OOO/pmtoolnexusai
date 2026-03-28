@@ -20,10 +20,13 @@ import {
   Check,
   X,
   Share2,
-  Loader2,
+  TableIcon,
+  Loader2
 } from 'lucide-react';
+import { DataRegisterPage } from '@/components/ui/DataRegisterPage';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { DynamicDataGrid, type DynamicColumnDef } from '@/components/ui/DynamicDataGrid';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -55,10 +58,17 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
-
 import { useProjectContext } from '@/contexts/ProjectContext';
-import { useStakeholders, Stakeholder } from '@/hooks/useStakeholders';
+import { useStakeholders, useCreateStakeholder, useUpdateStakeholder, Stakeholder } from '@/hooks/useStakeholders';
 import { useApprovals, useApproveApproval, useRejectApproval, useMarkApprovalDelegated } from '@/hooks/useApprovals';
 import {
   useRACIAssignments,
@@ -71,6 +81,15 @@ import { ApprovalWorkflows } from '@/components/analytics/governance/ApprovalWor
 import { useAuth } from '@/hooks/useAuth';
 import { usePermissions } from '@/hooks/usePermissions';
 import { useRealtimeTable } from '@/hooks/useRealtimeTable';
+
+const STANDARD_COLUMNS: DynamicColumnDef<Stakeholder>[] = [
+  { key: 'name', label: 'Name', width: 200, type: 'text', sticky: true },
+  { key: 'role', label: 'Role', width: 180, type: 'text' },
+  { key: 'organization', label: 'Organization', width: 180, type: 'text' },
+  { key: 'influence', label: 'Influence', width: 120, type: 'select', options: ['high', 'medium', 'low'] },
+  { key: 'interest', label: 'Interest', width: 120, type: 'select', options: ['high', 'medium', 'low'] },
+  { key: 'engagement', label: 'Engagement', width: 140, type: 'select', options: ['supportive', 'resistant', 'neutral'] },
+];
 
 // ─── RACI Badge ──────────────────────────────────────────────
 const RACI_COLORS: Record<string, string> = {
@@ -138,6 +157,30 @@ export default function StakeholderRegisterView() {
   // RBAC permission checks
   const { can } = usePermissions(projectId);
 
+  const createStakeholder = useCreateStakeholder();
+  const updateStakeholder = useUpdateStakeholder();
+  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const [newStakeholder, setNewStakeholder] = useState<Partial<Stakeholder>>({
+    name: '',
+    role: '',
+    organization: '',
+    influence: 'low',
+    interest: 'low',
+    category: 'internal'
+  });
+
+  const handleCreateStakeholder = async () => {
+    if (!projectId || !newStakeholder.name) return;
+    try {
+      await createStakeholder.mutateAsync({
+        project_id: projectId,
+        ...newStakeholder
+      } as any);
+      setIsCreateOpen(false);
+      setNewStakeholder({ name: '', role: '', organization: '', influence: 'low', interest: 'low', category: 'internal' });
+    } catch (e) { }
+  };
+
   // Realtime subscription — invalidates stakeholders + approvals on any DB change
   useRealtimeTable({
     table: 'project_members',
@@ -145,11 +188,24 @@ export default function StakeholderRegisterView() {
     queryKeys: [['stakeholders', projectId], ['approvals', projectId]],
     enabled: !!projectId,
   });
-
   const [searchQuery, setSearchQuery] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [activeTab, setActiveTab] = useState('register');
+  const [customColumns, setCustomColumns] = useState<DynamicColumnDef<Stakeholder>[]>([]);
   const [editingRACIActivity, setEditingRACIActivity] = useState<string | null>(null);
   const [newActivity, setNewActivity] = useState('');
+
+  const handleCellSave = async (rowId: string, key: string, value: string) => {
+    const isCustom = !STANDARD_COLUMNS.find(c => c.key === key);
+    const item = stakeholders.find(i => i.id === rowId);
+    if (!item) return;
+
+    if (isCustom) {
+      const cf = { ...(item.custom_fields ?? {}), [key]: value };
+      await updateStakeholder.mutateAsync({ id: rowId, custom_fields: cf });
+    } else {
+      await updateStakeholder.mutateAsync({ id: rowId, [key]: value } as any);
+    }
+  };
 
   // Delegation dialog state
   const [delegationOpen, setDelegationOpen] = useState(false);
@@ -238,417 +294,366 @@ export default function StakeholderRegisterView() {
     );
   }
 
-  return (
-    <TooltipProvider>
-      <div className="flex flex-col h-full overflow-auto">
-        {/* Header */}
-        <div className="p-6 border-b bg-card">
-          <div className="flex items-start justify-between">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-primary/20">
-                <Users className="h-8 w-8 text-primary" />
-              </div>
-              <div>
-                <h1 className="text-2xl font-bold">Stakeholder Register</h1>
-                <p className="text-muted-foreground">Manage stakeholder engagement and communication</p>
-              </div>
+  const toolbarFilters = (
+    <TabsList className="h-8 bg-background border">
+      <TabsTrigger value="register" className="h-6 px-2.5 text-xs">Register</TabsTrigger>
+      <TabsTrigger value="matrix" className="h-6 px-2.5 text-xs">Power/Interest Matrix</TabsTrigger>
+      <TabsTrigger value="raci" className="h-6 px-2.5 text-xs">RACI Matrix</TabsTrigger>
+      <TabsTrigger value="approvals" className="h-6 px-2.5 text-xs">
+        Approvals
+        {approvals.filter(a => a.status === 'pending').length > 0 && (
+          <Badge variant="destructive" className="ml-1.5 h-4 w-4 p-0 flex items-center justify-center text-[9px] rounded-full">
+            {approvals.filter(a => a.status === 'pending').length}
+          </Badge>
+        )}
+      </TabsTrigger>
+    </TabsList>
+  );
+
+  const listContent = (
+    <>
+      <TabsContent value="register" className="m-0 border-0 p-0">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {filteredStakeholders.map((stakeholder) => (
+            <StakeholderCard
+              key={stakeholder.id}
+              stakeholder={stakeholder}
+              getInfluenceInterestQuadrant={getInfluenceInterestQuadrant}
+              getQuadrantColor={getQuadrantColor}
+            />
+          ))}
+          {filteredStakeholders.length === 0 && (
+            <div className="col-span-3 py-12 text-center text-muted-foreground border rounded-lg border-dashed">
+              No stakeholders found
             </div>
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Stakeholder
-            </Button>
-          </div>
+          )}
         </div>
+      </TabsContent>
 
-        <div className="flex-1 p-6">
-          <Tabs defaultValue="register" className="space-y-6">
-            <div className="flex items-center justify-between">
-              <TabsList>
-                <TabsTrigger value="register">Register</TabsTrigger>
-                <TabsTrigger value="matrix">Power/Interest Matrix</TabsTrigger>
-                <TabsTrigger value="raci">RACI Matrix</TabsTrigger>
-                <TabsTrigger value="approvals">
-                  Approvals
-                  {approvals.filter(a => a.status === 'pending').length > 0 && (
-                    <Badge variant="destructive" className="ml-2 h-5 w-5 p-0 flex items-center justify-center text-[10px]">
-                      {approvals.filter(a => a.status === 'pending').length}
-                    </Badge>
+      <TabsContent value="matrix" className="m-0 border-0 p-0">
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base">Power/Interest Matrix</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-2 gap-4 max-w-3xl mx-auto">
+              {[
+                { label: 'Keep Satisfied', influence: 'high', interest: 'not-high', direction: 'up', color: 'warning' },
+                { label: 'Manage Closely', influence: 'high', interest: 'high', direction: 'up', color: 'destructive' },
+                { label: 'Monitor', influence: 'not-high', interest: 'not-high', direction: 'down', color: 'muted' },
+                { label: 'Keep Informed', influence: 'not-high', interest: 'high', direction: 'right', color: 'info' },
+              ].map(({ label, influence, interest, direction, color }) => (
+                <div
+                  key={label}
+                  className={cn(
+                    'p-4 rounded-lg border',
+                    color === 'warning' && 'bg-warning/10 border-warning/30',
+                    color === 'destructive' && 'bg-destructive/10 border-destructive/30',
+                    color === 'info' && 'bg-info/10 border-info/30',
+                    color === 'muted' && 'bg-muted/50 border',
                   )}
-                </TabsTrigger>
-              </TabsList>
-
-              <div className="flex items-center gap-2">
-                <div className="relative w-64">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search stakeholders..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-                <Button variant="outline" size="icon" onClick={() => setViewMode('grid')}>
-                  <Grid3X3 className={cn('h-4 w-4', viewMode === 'grid' && 'text-primary')} />
-                </Button>
-                <Button variant="outline" size="icon" onClick={() => setViewMode('list')}>
-                  <List className={cn('h-4 w-4', viewMode === 'list' && 'text-primary')} />
-                </Button>
-                <Button variant="outline">
-                  <Filter className="h-4 w-4 mr-2" />
-                  Filter
-                </Button>
-              </div>
-            </div>
-
-            {/* ── Register Tab ── */}
-            <TabsContent value="register">
-              {viewMode === 'grid' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredStakeholders.map((stakeholder) => (
-                    <StakeholderCard
-                      key={stakeholder.id}
-                      stakeholder={stakeholder}
-                      getInfluenceInterestQuadrant={getInfluenceInterestQuadrant}
-                      getQuadrantColor={getQuadrantColor}
-                    />
-                  ))}
-                  {filteredStakeholders.length === 0 && (
-                    <div className="col-span-3 py-12 text-center text-muted-foreground">
-                      No stakeholders found
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <Card>
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>Stakeholder</TableHead>
-                        <TableHead>Role</TableHead>
-                        <TableHead>Organization</TableHead>
-                        <TableHead>Influence</TableHead>
-                        <TableHead>Interest</TableHead>
-                        <TableHead>Engagement</TableHead>
-                        <TableHead>Strategy</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {filteredStakeholders.map((stakeholder) => (
-                        <TableRow key={stakeholder.id} className="cursor-pointer hover:bg-muted/50">
-                          <TableCell>
-                            <div className="flex items-center gap-2">
-                              <Avatar className="h-8 w-8">
-                                <AvatarFallback className="text-xs">
-                                  {stakeholder.name.split(' ').map((n) => n[0]).join('')}
-                                </AvatarFallback>
-                              </Avatar>
-                              <div className="flex items-center gap-1">
-                                <span className="font-medium">{stakeholder.name}</span>
-                                {stakeholder.is_key_stakeholder && (
-                                  <Star className="h-3 w-3 text-warning fill-warning" />
-                                )}
-                              </div>
-                            </div>
-                          </TableCell>
-                          <TableCell>{stakeholder.role}</TableCell>
-                          <TableCell>{stakeholder.organization}</TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={
-                                (stakeholder.influence || 'low') === 'high'
-                                  ? 'destructive'
-                                  : (stakeholder.influence || 'low') === 'medium'
-                                    ? 'warning'
-                                    : 'secondary'
-                              }
-                            >
-                              {stakeholder.influence}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={
-                                (stakeholder.interest || 'low') === 'high'
-                                  ? 'info'
-                                  : (stakeholder.interest || 'low') === 'medium'
-                                    ? 'warning'
-                                    : 'secondary'
-                              }
-                            >
-                              {stakeholder.interest}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge
-                              variant={
-                                stakeholder.engagement === 'supportive'
-                                  ? 'success'
-                                  : stakeholder.engagement === 'resistant'
-                                    ? 'destructive'
-                                    : 'warning'
-                              }
-                            >
-                              {stakeholder.engagement}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <span
-                              className={cn(
-                                'text-xs px-2 py-1 rounded',
-                                getQuadrantColor(
-                                  getInfluenceInterestQuadrant(
-                                    stakeholder.influence || 'low',
-                                    stakeholder.interest || 'low',
-                                  ),
-                                ),
-                              )}
-                            >
-                              {getInfluenceInterestQuadrant(
-                                stakeholder.influence || 'low',
-                                stakeholder.interest || 'low',
-                              )}
-                            </span>
-                          </TableCell>
-                        </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </Card>
-              )}
-            </TabsContent>
-
-            {/* ── Power/Interest Matrix Tab ── */}
-            <TabsContent value="matrix">
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-base">Power/Interest Matrix</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 gap-4 max-w-3xl mx-auto">
-                    {[
-                      { label: 'Keep Satisfied', influence: 'high', interest: 'not-high', direction: 'up', color: 'warning' },
-                      { label: 'Manage Closely', influence: 'high', interest: 'high', direction: 'up', color: 'destructive' },
-                      { label: 'Monitor', influence: 'not-high', interest: 'not-high', direction: 'down', color: 'muted' },
-                      { label: 'Keep Informed', influence: 'not-high', interest: 'high', direction: 'right', color: 'info' },
-                    ].map(({ label, influence, interest, direction, color }) => (
-                      <div
-                        key={label}
-                        className={cn(
-                          'p-4 rounded-lg border',
-                          color === 'warning' && 'bg-warning/10 border-warning/30',
-                          color === 'destructive' && 'bg-destructive/10 border-destructive/30',
-                          color === 'info' && 'bg-info/10 border-info/30',
-                          color === 'muted' && 'bg-muted/50 border',
-                        )}
-                      >
-                        <div className="flex items-center gap-2 mb-3">
-                          {direction === 'up' && <ArrowUp className={`h-4 w-4 text-${color}`} />}
-                          {direction === 'down' && <ArrowDown className="h-4 w-4 text-muted-foreground" />}
-                          {direction === 'right' && <ArrowRight className={`h-4 w-4 text-${color}`} />}
-                          <span className={cn('font-medium', color !== 'muted' && `text-${color}`)}>
-                            {label}
-                          </span>
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    {direction === 'up' && <ArrowUp className={`h-4 w-4 text-${color}`} />}
+                    {direction === 'down' && <ArrowDown className="h-4 w-4 text-muted-foreground" />}
+                    {direction === 'right' && <ArrowRight className={`h-4 w-4 text-${color}`} />}
+                    <span className={cn('font-medium', color !== 'muted' && `text-${color}`)}>
+                      {label}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    {influence === 'high' ? 'High' : 'Low'} Influence,{' '}
+                    {interest === 'high' ? 'High' : 'Low'} Interest
+                  </p>
+                  <div className="space-y-2">
+                    {filteredStakeholders
+                      .filter((s) => {
+                        const inf = influence === 'high' ? s.influence === 'high' : s.influence !== 'high';
+                        const int_ = interest === 'high' ? s.interest === 'high' : s.interest !== 'high';
+                        return inf && int_;
+                      })
+                      .map((s) => (
+                        <div key={s.id} className="flex items-center gap-2 p-2 rounded bg-background">
+                          <Avatar className="h-6 w-6">
+                            <AvatarFallback className="text-xs">
+                              {s.name.split(' ').map((n) => n[0]).join('')}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span className="text-sm">{s.name}</span>
                         </div>
-                        <p className="text-xs text-muted-foreground mb-3">
-                          {influence === 'high' ? 'High' : 'Low'} Influence,{' '}
-                          {interest === 'high' ? 'High' : 'Low'} Interest
-                        </p>
-                        <div className="space-y-2">
-                          {filteredStakeholders
-                            .filter((s) => {
-                              const inf = influence === 'high' ? s.influence === 'high' : s.influence !== 'high';
-                              const int_ = interest === 'high' ? s.interest === 'high' : s.interest !== 'high';
-                              return inf && int_;
-                            })
-                            .map((s) => (
-                              <div key={s.id} className="flex items-center gap-2 p-2 rounded bg-background">
+                      ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </TabsContent>
+
+      <TabsContent value="raci" className="m-0 border-0 p-0">
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base">RACI Matrix</CardTitle>
+                <p className="text-sm text-muted-foreground mt-1">
+                  R=Responsible · A=Accountable · C=Consulted · I=Informed
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setEditingRACIActivity(editingRACIActivity ? null : '__editing__')
+                }
+              >
+                {editingRACIActivity ? (
+                  <>
+                    <Check className="h-4 w-4 mr-2" /> Done
+                  </>
+                ) : (
+                  <>
+                    <Pencil className="h-4 w-4 mr-2" /> Edit RACI
+                  </>
+                )}
+              </Button>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {raciLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="w-[220px]">Activity</TableHead>
+                      {raciStakeholders.map((s) => (
+                        <TableHead key={s.id} className="text-center min-w-[100px]">
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <div className="flex flex-col items-center gap-1 cursor-default">
                                 <Avatar className="h-6 w-6">
-                                  <AvatarFallback className="text-xs">
+                                  <AvatarFallback className="text-[10px]">
                                     {s.name.split(' ').map((n) => n[0]).join('')}
                                   </AvatarFallback>
                                 </Avatar>
-                                <span className="text-sm">{s.name}</span>
+                                <span className="text-xs truncate max-w-[90px]">{s.name.split(' ')[0]}</span>
                               </div>
-                            ))}
-                        </div>
-                      </div>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p className="font-medium">{s.name}</p>
+                              <p className="text-xs text-muted-foreground">{s.role}</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TableHead>
+                      ))}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {raciActivities.map((activity) => (
+                      <TableRow key={activity}>
+                        <TableCell className="font-medium">{activity}</TableCell>
+                        {raciStakeholders.map((s) => {
+                          const role = (raciPivot[activity]?.[s.id] ?? '') as RACIRole;
+                          return (
+                            <TableCell key={s.id} className="text-center">
+                              {editingRACIActivity ? (
+                                <RACIEditCell
+                                  value={role}
+                                  onChange={(newRole) =>
+                                    handleRACIChange(s.id, activity, newRole)
+                                  }
+                                />
+                              ) : (
+                                <RACIBadge role={role} />
+                              )}
+                            </TableCell>
+                          );
+                        })}
+                      </TableRow>
                     ))}
-                  </div>
-                </CardContent>
-              </Card>
-            </TabsContent>
 
-            {/* ── RACI Tab ── */}
-            <TabsContent value="raci">
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <CardTitle className="text-base">RACI Matrix</CardTitle>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        R=Responsible · A=Accountable · C=Consulted · I=Informed
-                      </p>
-                    </div>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() =>
-                        setEditingRACIActivity(editingRACIActivity ? null : '__editing__')
-                      }
-                    >
-                      {editingRACIActivity ? (
-                        <>
-                          <Check className="h-4 w-4 mr-2" /> Done
-                        </>
-                      ) : (
-                        <>
-                          <Pencil className="h-4 w-4 mr-2" /> Edit RACI
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  {raciLoading ? (
-                    <div className="flex justify-center py-8">
-                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                    </div>
-                  ) : (
-                    <>
-                      <div className="overflow-x-auto">
-                        <Table>
-                          <TableHeader>
-                            <TableRow>
-                              <TableHead className="w-[220px]">Activity</TableHead>
-                              {raciStakeholders.map((s) => (
-                                <TableHead key={s.id} className="text-center min-w-[100px]">
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <div className="flex flex-col items-center gap-1 cursor-default">
-                                        <Avatar className="h-6 w-6">
-                                          <AvatarFallback className="text-[10px]">
-                                            {s.name.split(' ').map((n) => n[0]).join('')}
-                                          </AvatarFallback>
-                                        </Avatar>
-                                        <span className="text-xs truncate max-w-[90px]">{s.name.split(' ')[0]}</span>
-                                      </div>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p className="font-medium">{s.name}</p>
-                                      <p className="text-xs text-muted-foreground">{s.role}</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                </TableHead>
-                              ))}
-                            </TableRow>
-                          </TableHeader>
-                          <TableBody>
-                            {raciActivities.map((activity) => (
-                              <TableRow key={activity}>
-                                <TableCell className="font-medium">{activity}</TableCell>
-                                {raciStakeholders.map((s) => {
-                                  const role = (raciPivot[activity]?.[s.id] ?? '') as RACIRole;
-                                  return (
-                                    <TableCell key={s.id} className="text-center">
-                                      {editingRACIActivity ? (
-                                        <RACIEditCell
-                                          value={role}
-                                          onChange={(newRole) =>
-                                            handleRACIChange(s.id, activity, newRole)
-                                          }
-                                        />
-                                      ) : (
-                                        <RACIBadge role={role} />
-                                      )}
-                                    </TableCell>
-                                  );
-                                })}
-                              </TableRow>
-                            ))}
+                    {/* Add Activity Row */}
+                    {editingRACIActivity && (
+                      <TableRow>
+                        <TableCell colSpan={raciStakeholders.length + 1}>
+                          <div className="flex items-center gap-2 max-w-sm">
+                            <Input
+                              placeholder="New RACI activity..."
+                              value={newActivity}
+                              onChange={(e) => setNewActivity(e.target.value)}
+                              className="h-8 text-xs"
+                              onKeyDown={(e) => {
+                                if (e.key === 'Enter') handleAddActivity();
+                              }}
+                            />
+                            <Button size="sm" className="h-8" onClick={handleAddActivity}>
+                              Add
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </TabsContent>
 
-                            {/* Add Activity Row */}
-                            {editingRACIActivity && (
-                              <TableRow>
-                                <TableCell colSpan={raciStakeholders.length + 1}>
-                                  <div className="flex items-center gap-2">
-                                    <Input
-                                      value={newActivity}
-                                      onChange={(e) => setNewActivity(e.target.value)}
-                                      placeholder="New activity name…"
-                                      className="h-8 text-sm"
-                                      onKeyDown={(e) => e.key === 'Enter' && handleAddActivity()}
-                                    />
-                                    <Button size="sm" onClick={handleAddActivity}>
-                                      <Plus className="h-3 w-3 mr-1" /> Add
-                                    </Button>
-                                  </div>
-                                </TableCell>
-                              </TableRow>
-                            )}
-                          </TableBody>
-                        </Table>
-                      </div>
+      <TabsContent value="approvals" className="m-0 border-0 p-0">
+        {approvalsLoading ? (
+          <div className="flex justify-center py-12">
+            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+          </div>
+        ) : (
+          <>
+            <ApprovalWorkflows
+              approvals={approvals}
+              currentUserId={user?.id}
+              onApprove={(id) => approveApproval.mutate(id)}
+              onReject={(id) => rejectApproval.mutate({ approvalId: id })}
+              onAdminOverride={(id) => openDelegationDialog(id)}
+              loading={approveApproval.isPending || rejectApproval.isPending}
+            />
+            {approvals.length === 0 && (
+              <div className="py-12 text-center text-muted-foreground">
+                <Share2 className="h-10 w-10 mx-auto mb-3 opacity-30" />
+                <p className="text-sm">No approvals for this project</p>
+              </div>
+            )}
+          </>
+        )}
+      </TabsContent>
+    </>
+  );
 
-                      {raciActivities.length === 0 && !editingRACIActivity && (
-                        <div className="py-12 text-center text-muted-foreground">
-                          <p className="text-sm">No RACI assignments yet.</p>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="mt-3"
-                            onClick={() => setEditingRACIActivity('__editing__')}
-                          >
-                            <Pencil className="h-4 w-4 mr-2" /> Start Editing
-                          </Button>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            </TabsContent>
+  return (
+    <TooltipProvider>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="flex flex-col h-full overflow-hidden">
+        <DataRegisterPage
+          title="Stakeholder Register"
+          description="Manage stakeholder engagement and communication"
+          icon={Users}
+          iconBgClass="bg-primary/20"
+          iconColorClass="text-primary"
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          toolbarFilters={toolbarFilters}
+          onAddRow={() => setIsCreateOpen(true)}
+          addLabel="Add Stakeholder"
+          pdfFilename="stakeholders"
+          data={filteredStakeholders}
+          baseColumns={STANDARD_COLUMNS}
+          customColumns={customColumns}
+          idExtractor={(item) => item.id}
+          customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
+          onCellSave={handleCellSave}
+          onAddColumn={(col) => {
+            if (customColumns.find(c => c.key === col.key)) {
+              toast.error('Column already exists');
+              return;
+            }
+            setCustomColumns(prev => [...prev, col]);
+            toast.success(`Column "${col.label}" added`);
+          }}
+          onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
+          onDeleteRows={() => { }}
+          emptyStateMessage={filteredStakeholders.length === 0 ? 'No stakeholders found.' : 'No stakeholders match filters.'}
+          listContent={listContent}
+        />
 
-            {/* ── Approvals Tab ── */}
-            <TabsContent value="approvals">
-              {approvalsLoading ? (
-                <div className="flex justify-center py-12">
-                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
-                </div>
-              ) : (
-                <>
-                  <ApprovalWorkflows
-                    approvals={approvals}
-                    currentUserId={user?.id}
-                    onApprove={(id) => approveApproval.mutate(id)}
-                    onReject={(id) => rejectApproval.mutate({ approvalId: id })}
-                    onAdminOverride={(id) => openDelegationDialog(id)}
-                    loading={approveApproval.isPending || rejectApproval.isPending}
+        {/* Create Dialog handled manually since DataRegisterPage triggers `onAddRow` */}
+        <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          <DialogContent className="sm:max-w-[425px]">
+            <DialogHeader>
+              <DialogTitle>Add New Stakeholder</DialogTitle>
+            </DialogHeader>
+            <div className="grid py-4 gap-4">
+              <div className="grid gap-2">
+                <Label>Name *</Label>
+                <Input
+                  value={newStakeholder.name}
+                  onChange={(e) => setNewStakeholder({ ...newStakeholder, name: e.target.value })}
+                  placeholder="Jane Doe"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label>Role</Label>
+                  <Input
+                    value={newStakeholder.role || ''}
+                    onChange={(e) => setNewStakeholder({ ...newStakeholder, role: e.target.value })}
+                    placeholder="Project Sponsor"
                   />
-                  {approvals.length === 0 && (
-                    <div className="py-12 text-center text-muted-foreground">
-                      <Share2 className="h-10 w-10 mx-auto mb-3 opacity-30" />
-                      <p className="text-sm">No approvals for this project</p>
-                    </div>
-                  )}
-                </>
-              )}
+                </div>
+                <div className="grid gap-2">
+                  <Label>Organization</Label>
+                  <Input
+                    value={newStakeholder.organization || ''}
+                    onChange={(e) => setNewStakeholder({ ...newStakeholder, organization: e.target.value })}
+                    placeholder="Acme Corp"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label>Influence</Label>
+                  <Select
+                    value={newStakeholder.influence || 'low'}
+                    onValueChange={(val) => setNewStakeholder({ ...newStakeholder, influence: val })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="low">Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid gap-2">
+                  <Label>Interest</Label>
+                  <Select
+                    value={newStakeholder.interest || 'low'}
+                    onValueChange={(val) => setNewStakeholder({ ...newStakeholder, interest: val })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="high">High</SelectItem>
+                      <SelectItem value="medium">Medium</SelectItem>
+                      <SelectItem value="low">Low</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="flex justify-end gap-2 mt-4">
+                <Button variant="outline" onClick={() => setIsCreateOpen(false)}>Cancel</Button>
+                <Button onClick={handleCreateStakeholder} disabled={!newStakeholder.name || createStakeholder.isPending}>
+                  {createStakeholder.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+                  Save
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
 
-              {/* Delegation Dialog */}
-              <DelegationDialog
-                open={delegationOpen}
-                onOpenChange={setDelegationOpen}
-                approvalIds={delegationApprovalIds}
-                delegatorId={user?.id ?? ''}
-                onSuccess={() => {
-                  if (delegationApprovalIds.length > 0) {
-                    markDelegated.mutate(delegationApprovalIds[0]);
-                  }
-                }}
-              />
-            </TabsContent>
-          </Tabs>
-        </div>
-      </div>
+        {/* Delegation Dialog */}
+        <DelegationDialog
+          open={delegationOpen}
+          onOpenChange={setDelegationOpen}
+          approvalIds={delegationApprovalIds}
+          delegatorId={user?.id ?? ''}
+          onSuccess={() => {
+            if (delegationApprovalIds.length > 0) {
+              markDelegated.mutate(delegationApprovalIds[0]);
+            }
+          }}
+        />
+      </Tabs>
     </TooltipProvider>
   );
 }

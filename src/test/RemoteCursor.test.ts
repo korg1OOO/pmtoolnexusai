@@ -1,0 +1,14 @@
+/**
+ * RemoteCursor Component Tests
+ */
+import { describe, it, expect, vi } from 'vitest';
+import { render } from '@testing-library/react';
+import React from 'react';
+
+import { RemoteCursor } from '@/components/collaboration/RemoteCursor';
+
+describe('RemoteCursor', () => {
+    it('exports the component', () => {
+        expect(RemoteCursor).toBeDefined();
+    });
+});

@@ -10,6 +10,8 @@
 
 import { Route, Navigate } from 'react-router-dom';
 import { ProtectedProjectRoute } from '@/components/routing';
+import { RequirePermission } from '@/components/auth/RequirePermission';
+import { RequireTier } from '@/components/subscription/RequireTier';
 import { lazy } from 'react';
 
 // ─── Lazy-loaded view components ──────────────────────────────────────────────
@@ -87,14 +89,14 @@ export function ProjectRoutes() {
             <Route path="/projects" element={<ProtectedProjectRoute><ProjectsListView /></ProtectedProjectRoute>} />
             <Route path="/dashboard" element={<ProtectedProjectRoute><DashboardHub /></ProtectedProjectRoute>} />
             <Route path="/morning-briefing" element={<ProtectedProjectRoute><MorningBriefingView /></ProtectedProjectRoute>} />
-            <Route path="/executive-dashboard" element={<ProtectedProjectRoute><ExecutiveDashboardView /></ProtectedProjectRoute>} />
-            <Route path="/strategic-dashboard" element={<ProtectedProjectRoute><StrategicDashboardView /></ProtectedProjectRoute>} />
+            <Route path="/executive-dashboard" element={<ProtectedProjectRoute><RequireTier minTier="business"><ExecutiveDashboardView /></RequireTier></ProtectedProjectRoute>} />
+            <Route path="/strategic-dashboard" element={<ProtectedProjectRoute><RequireTier minTier="business"><StrategicDashboardView /></RequireTier></ProtectedProjectRoute>} />
 
             {/* ── Portfolio & Program ───────────────────────────────────────── */}
-            <Route path="/portfolio" element={<ProtectedProjectRoute><PortfolioView /></ProtectedProjectRoute>} />
-            <Route path="/program" element={<ProtectedProjectRoute><ProgramManagementView /></ProtectedProjectRoute>} />
-            <Route path="/program-timeline" element={<ProtectedProjectRoute><ProgramTimelineView /></ProtectedProjectRoute>} />
-            <Route path="/program-documents" element={<ProtectedProjectRoute><ProgramDocumentsView /></ProtectedProjectRoute>} />
+            <Route path="/portfolio" element={<ProtectedProjectRoute><RequireTier minTier="business"><PortfolioView /></RequireTier></ProtectedProjectRoute>} />
+            <Route path="/program" element={<ProtectedProjectRoute><RequireTier minTier="business"><ProgramManagementView /></RequireTier></ProtectedProjectRoute>} />
+            <Route path="/program-timeline" element={<ProtectedProjectRoute><RequireTier minTier="business"><ProgramTimelineView /></RequireTier></ProtectedProjectRoute>} />
+            <Route path="/program-documents" element={<ProtectedProjectRoute><RequireTier minTier="business"><ProgramDocumentsView /></RequireTier></ProtectedProjectRoute>} />
 
             {/* ── Planning & Tracking ─────────────────────────────────────────── */}
             <Route path="/project-plan" element={<ProtectedProjectRoute><PlanningView /></ProtectedProjectRoute>} />
@@ -106,7 +108,7 @@ export function ProjectRoutes() {
             <Route path="/milestones" element={<ProtectedProjectRoute><MilestonesView /></ProtectedProjectRoute>} />
             {/* PMCC Milestones + Penalty Tracker */}
             <Route path="/milestones-pmcc" element={<ProtectedProjectRoute><MilestonesWithPenaltyView /></ProtectedProjectRoute>} />
-            <Route path="/scenarios" element={<ProtectedProjectRoute><ScenariosView /></ProtectedProjectRoute>} />
+            <Route path="/scenarios" element={<ProtectedProjectRoute><RequireTier minTier="pro"><ScenariosView /></RequireTier></ProtectedProjectRoute>} />
             <Route path="/tracking" element={<ProtectedProjectRoute><TrackingView /></ProtectedProjectRoute>} />
             <Route path="/project-charter" element={<ProtectedProjectRoute><ProjectCharterView /></ProtectedProjectRoute>} />
 
@@ -120,9 +122,9 @@ export function ProjectRoutes() {
 
             {/* ── Governance & Compliance ───────────────────────────────────── */}
             <Route path="/stakeholders" element={<ProtectedProjectRoute><StakeholderRegisterView /></ProtectedProjectRoute>} />
-            <Route path="/traceability" element={<ProtectedProjectRoute><TraceabilityMatrixView /></ProtectedProjectRoute>} />
-            <Route path="/requirements" element={<ProtectedProjectRoute><RequirementsMatrixView /></ProtectedProjectRoute>} />
-            <Route path="/quality" element={<ProtectedProjectRoute><QualityRegisterView /></ProtectedProjectRoute>} />
+            <Route path="/traceability" element={<ProtectedProjectRoute><RequireTier minTier="business"><TraceabilityMatrixView /></RequireTier></ProtectedProjectRoute>} />
+            <Route path="/requirements" element={<ProtectedProjectRoute><RequireTier minTier="business"><RequirementsMatrixView /></RequireTier></ProtectedProjectRoute>} />
+            <Route path="/quality" element={<ProtectedProjectRoute><RequireTier minTier="business"><QualityRegisterView /></RequireTier></ProtectedProjectRoute>} />
 
             {/* ── Issues & Risks ────────────────────────────────────────────── */}
             <Route path="/actions" element={<ProtectedProjectRoute><ActionsView /></ProtectedProjectRoute>} />
@@ -134,9 +136,9 @@ export function ProjectRoutes() {
             {/* PMCC Governance container — wraps Decisions + Actions + Escalations */}
             <Route path="/governance" element={<ProtectedProjectRoute><GovernanceView /></ProtectedProjectRoute>} />
 
-            {/* ── Financial ────────────────────────────────────────────────── */}
-            <Route path="/financials" element={<ProtectedProjectRoute><FinancialsView /></ProtectedProjectRoute>} />
-            <Route path="/evm" element={<ProtectedProjectRoute><EVMView /></ProtectedProjectRoute>} />
+            {/* ── Financial (requires budget.view) ────────────────────────── */}
+            <Route path="/financials" element={<ProtectedProjectRoute><RequireTier minTier="pro"><RequirePermission permission="budget.view"><FinancialsView /></RequirePermission></RequireTier></ProtectedProjectRoute>} />
+            <Route path="/evm" element={<ProtectedProjectRoute><RequireTier minTier="pro"><RequirePermission permission="budget.view"><EVMView /></RequirePermission></RequireTier></ProtectedProjectRoute>} />
             <Route path="/timeline-slippage" element={<ProtectedProjectRoute><TimelineSlippageView /></ProtectedProjectRoute>} />
 
             {/* ── Collaboration ─────────────────────────────────────────────── */}
@@ -145,9 +147,9 @@ export function ProjectRoutes() {
             <Route path="/calendar" element={<ProtectedProjectRoute><CalendarView /></ProtectedProjectRoute>} />
             <Route path="/team-chat" element={<ProtectedProjectRoute><TeamChatView /></ProtectedProjectRoute>} />
             <Route path="/communications" element={<ProtectedProjectRoute><CommunicationsView /></ProtectedProjectRoute>} />
-            <Route path="/communication-intelligence" element={<ProtectedProjectRoute><CommunicationIntelligenceView /></ProtectedProjectRoute>} />
-            <Route path="/collaboration-spaces" element={<ProtectedProjectRoute><CollaborationSpacesView /></ProtectedProjectRoute>} />
-            <Route path="/collaboration-dashboard" element={<ProtectedProjectRoute><CollaborationDashboardView /></ProtectedProjectRoute>} />
+            <Route path="/communication-intelligence" element={<ProtectedProjectRoute><RequireTier minTier="pro"><CommunicationIntelligenceView /></RequireTier></ProtectedProjectRoute>} />
+            <Route path="/collaboration-spaces" element={<ProtectedProjectRoute><RequireTier minTier="pro"><CollaborationSpacesView /></RequireTier></ProtectedProjectRoute>} />
+            <Route path="/collaboration-dashboard" element={<ProtectedProjectRoute><RequireTier minTier="pro"><CollaborationDashboardView /></RequireTier></ProtectedProjectRoute>} />
 
             {/* ── Documents & Knowledge ─────────────────────────────────────── */}
             <Route path="/notes" element={<ProtectedProjectRoute><NotesView /></ProtectedProjectRoute>} />
@@ -155,11 +157,11 @@ export function ProjectRoutes() {
             <Route path="/knowledge-base" element={<ProtectedProjectRoute><KnowledgeBaseView /></ProtectedProjectRoute>} />
             <Route path="/presentations" element={<ProtectedProjectRoute><PresentationsView /></ProtectedProjectRoute>} />
 
-            {/* ── Resources & Team ─────────────────────────────────────────── */}
+            {/* ── Resources & Team (team mgmt requires project.members.manage) ── */}
             <Route path="/resources" element={<ProtectedProjectRoute><ResourcesView /></ProtectedProjectRoute>} />
             {/* PMCC Resources + Key Personnel */}
             <Route path="/resources-pmcc" element={<ProtectedProjectRoute><ResourcesWithPersonnelView /></ProtectedProjectRoute>} />
-            <Route path="/team-management" element={<ProtectedProjectRoute><TeamManagementView /></ProtectedProjectRoute>} />
+            <Route path="/team-management" element={<ProtectedProjectRoute><RequirePermission permission="project.members.manage"><TeamManagementView /></RequirePermission></ProtectedProjectRoute>} />
 
             {/* PMCC Phase 1: Standalone new views */}
             <Route path="/testing" element={<ProtectedProjectRoute><TestingCommandCentreView /></ProtectedProjectRoute>} />
@@ -174,8 +176,8 @@ export function ProjectRoutes() {
             <Route path="/final-report" element={<ProtectedProjectRoute><FinalReportView /></ProtectedProjectRoute>} />
             <Route path="/lessons-learned" element={<ProtectedProjectRoute><LessonsLearnedView /></ProtectedProjectRoute>} />
 
-            {/* ── Project-scoped Admin & Settings ───────────────────────────── */}
-            <Route path="/admin/project" element={<ProtectedProjectRoute><ProjectAdminView /></ProtectedProjectRoute>} />
+            {/* ── Project-scoped Admin & Settings (requires project.settings) ── */}
+            <Route path="/admin/project" element={<ProtectedProjectRoute><RequirePermission permission="project.settings"><ProjectAdminView /></RequirePermission></ProtectedProjectRoute>} />
             {/* Legacy admin stubs — redirect to the real admin panel */}
             <Route path="/admin/platform" element={<Navigate to="/admin" replace />} />
             <Route path="/admin/templates" element={<Navigate to="/admin" replace />} />

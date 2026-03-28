@@ -7,6 +7,7 @@ import { LandingHeader } from '@/components/layout/LandingHeader';
 import { LandingFooter } from '@/components/layout/LandingFooter';
 import { FeaturesSection } from '@/components/landing/FeaturesSection';
 import { useNavigate } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 
 import { supabase } from '@/integrations/supabase/client';
 
@@ -159,7 +160,10 @@ export default function LandingPage() {
 
             <div
                 ref={containerRef}
-                className="h-full w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth"
+                className={cn(
+                    "h-full w-full overflow-y-scroll snap-y snap-mandatory scroll-smooth transition-all duration-300",
+                    showAISidebar && "mr-96"
+                )}
             >
                 {/* 0. Hero */}
                 <HeroSection onStartClick={() => navigate('/product-tour')} />

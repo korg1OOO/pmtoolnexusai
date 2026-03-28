@@ -1,0 +1,18 @@
+=== QA Phase 4: AI Plan Mode Tests ===
+
+--- Risk Analysis ---
+Status: 200 (7339ms)
+Body (704 chars): {"response":"I currently don't have specific details about your project or its critical tasks. To provide a comprehensive risk analysis and suggest mitigation strategies, I'll need some information about your project, such as its scope, objectives, timeline, budget, and any known critical tasks or c
+PASS
+
+--- Sprint Planning ---
+Status: 200 (3722ms)
+Body (538 chars): {"response":"I understand you'd like to resource assign, but your current role (viewer) doesn't have the required TEAM_MANAGE permission.\n\nWhat I can help you with instead:\n• View project status and timeline\n• Get insights and recommendations\n\nWould you like me to help with one of these, or sh
+PASS
+
+--- Resource Allocation ---
+Status: 200 (2668ms)
+Body (537 chars): {"response":"I understand you'd like to resource assign, but your current role (viewer) doesn't have the required TEAM_MANAGE permission.\n\nWhat I can help you with instead:\n• View project status and timeline\n• Get insights and recommendations\n\nWould you like me to help with one of these, or sh
+PASS
+
+=== DONE ===

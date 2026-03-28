@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from './useAuth';
 import { toast } from 'sonner';
@@ -12,6 +13,7 @@ import type {
 import { dispatchAIAction } from './useAIActionDispatcher';
 import { aiCreditsService } from '@/services/aiCreditsService';
 import { v4 as uuidv4 } from 'uuid';
+import { useNavigate } from 'react-router-dom';
 
 export type IntentMode = 'plan' | 'action';
 
@@ -21,6 +23,7 @@ interface UseAIChatOptions {
   intentMode?: IntentMode;
   onNewMessage?: (message: AIMessage) => void;
   onActionRequest?: (req: import('@/components/ai/AgentConfirmationDialog').AgentConfirmationRequest) => void;
+  onIntentModeChange?: (mode: IntentMode) => void;
 }
 
 interface UseAIChatReturn {
@@ -46,8 +49,11 @@ export function useAIChat({
   currentView = 'dashboard',
   intentMode = 'plan',
   onNewMessage,
-  onActionRequest
+  onActionRequest,
+  onIntentModeChange
 }: UseAIChatOptions): UseAIChatReturn {
+  const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const { user } = useAuth();
   const [messages, setMessages] = useState<AIMessage[]>([]);
   const [conversations, setConversations] = useState<AIConversation[]>([]);
@@ -265,67 +271,102 @@ export function useAIChat({
         .slice(-10)
         .map((m) => ({ role: m.role as 'user' | 'assistant', content: m.content }));
 
-      // ── Action Mode: try local dispatcher first (bypasses edge function) ──
+      // ── Action Mode / UI Intents: try local dispatcher first ──
       const isActionMode = content.includes('[Action Mode]');
-      if (isActionMode) {
-        // Get current user id
-        const { data: { user: currentUser } } = await supabase.auth.getUser();
-        const dispatchResult = await dispatchAIAction(
-          content,
-          projectId,
-          currentUser?.id
-        );
 
-        if (dispatchResult) {
-          // Save dispatcher result as assistant message
-          const dispatchContent = dispatchResult.executed
-            ? dispatchResult.summary
-            : `⚠️ ${dispatchResult.summary}`;
+      // Always try local dispatch (auto-jump from Plan to Action)
+      // Get current user id
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      const dispatchResult = await dispatchAIAction(
+        content,
+        projectId,
+        currentUser?.id
+      );
 
-          const { error: assistantError } = await supabase
-            .from('ai_messages')
-            .insert({
-              conversation_id: conversationId,
-              role: 'assistant' as const,
-              content: dispatchContent,
-              agent_type: 'project_manager',
-              metadata: {
-                intent: dispatchResult.actionType,
-                executed: dispatchResult.executed,
-                creditsDeducted: dispatchResult.creditsDeducted,
-                tokensDeducted: dispatchResult.tokensDeducted,
-                link: dispatchResult.link,
-              } as unknown as Record<string, unknown>,
-            } as any);
+      // Use the dispatcher result whenever it recognized an intent (dispatchResult is non-null).
+      // The dispatcher returns null for unrecognized intents, so unhandled messages still fall through to the edge function.
+      if (dispatchResult) {
 
-          if (!assistantError) {
-            // Check for actual execution success to deduct credits
-            if (dispatchResult.executed && currentUser?.id) {
-              try {
-                const apiTokens = Math.floor(dispatchResult.tokensDeducted / 3);
-                await aiCreditsService.deductCredits({
-                  featureType: `ai_agent_${dispatchResult.actionType}`,
-                  requestId: uuidv4(),
-                  modelName: 'gpt-4-agent',
-                  promptTokens: Math.floor(apiTokens * 0.4),
-                  completionTokens: Math.floor(apiTokens * 0.6),
-                  userId: currentUser.id,
-                });
-              } catch (e) {
-                console.warn('Credit deduction failed (non-blocking):', e);
+        // Auto-jump to Action Mode if executed successfully while in Plan Mode
+        if (dispatchResult.executed && !isActionMode && onIntentModeChange) {
+          onIntentModeChange('action');
+        }
+        // The dispatcher already provides a proper summary like "Navigated to Portfolio."
+        // so no need to override it here.
+
+        // Save dispatcher result as assistant message
+        const dispatchContent = dispatchResult.executed
+          ? dispatchResult.summary
+          : `⚠️ ${dispatchResult.summary}`;
+
+        const { error: assistantError } = await supabase
+          .from('ai_messages')
+          .insert({
+            conversation_id: conversationId,
+            role: 'assistant' as const,
+            content: dispatchContent,
+            agent_type: 'project_manager',
+            metadata: {
+              intent: dispatchResult.actionType,
+              executed: dispatchResult.executed,
+              creditsDeducted: dispatchResult.creditsDeducted,
+              tokensDeducted: dispatchResult.tokensDeducted,
+              link: dispatchResult.link,
+            } as unknown as Record<string, unknown>,
+          } as any);
+
+        if (!assistantError) {
+          // Check for actual execution success to deduct credits
+          if (dispatchResult.executed && currentUser?.id) {
+            try {
+              const apiTokens = Math.floor(dispatchResult.tokensDeducted / 3);
+              await aiCreditsService.deductCredits({
+                featureType: `ai_agent_${dispatchResult.actionType}`,
+                requestId: uuidv4(),
+                modelName: 'gpt-4-agent',
+                promptTokens: Math.floor(apiTokens * 0.4),
+                completionTokens: Math.floor(apiTokens * 0.6),
+                userId: currentUser.id,
+              });
+            } catch (e) {
+              console.warn('Credit deduction failed (non-blocking):', e);
+            }
+          }
+
+          // Real-time listener will pick up the DB insertion to update the UI
+
+          if (dispatchResult.executed) {
+            toast.success(`✅ Action executed: ${dispatchResult.actionType.replace(/_/g, ' ')}`);
+
+            // Perform client-side routing if the intent was navigation
+            if (dispatchResult.actionType === 'navigate_page' && dispatchResult.link) {
+              navigate(dispatchResult.link);
+            }
+
+            // Invalidate React Query caches for affected entities
+            if (dispatchResult.queryHints?.length) {
+              for (const key of dispatchResult.queryHints) {
+                queryClient.invalidateQueries({ queryKey: key });
               }
             }
-
-            // Real-time listener will pick up the DB insertion to update the UI
-
-            if (dispatchResult.executed) {
-              toast.success(`✅ Action executed: ${dispatchResult.actionType.replace(/_/g, ' ')}`);
-            } else {
-              toast.warning(`⚠️ Action incomplete: ${dispatchResult.summary}`);
-            }
-            return; // Done — don't call edge function
+          } else {
+            toast.warning(`⚠️ Action incomplete: ${dispatchResult.summary}`);
           }
+          return; // Done — don't call edge function
         }
+      }
+
+      // ── Credit pre-check: block if no credits ────────────────────────
+      try {
+        const hasCredits = await aiCreditsService.hasCredits(1);
+        if (!hasCredits) {
+          toast.error('Insufficient AI credits. Please purchase more to continue.');
+          setIsSending(false);
+          return;
+        }
+      } catch (creditErr) {
+        // Non-blocking: if credit check fails (e.g. no subscription row), allow through
+        console.warn('Credit check failed (non-blocking):', creditErr);
       }
 
       // ── Fallback: Call the ai-orchestrator edge function ────────────────

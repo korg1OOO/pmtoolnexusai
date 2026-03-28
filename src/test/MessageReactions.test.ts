@@ -1,0 +1,14 @@
+/**
+ * MessageReactions Component Tests
+ */
+import { describe, it, expect, vi } from 'vitest';
+import { render } from '@testing-library/react';
+import React from 'react';
+
+import { MessageReactions } from '@/components/chat/MessageReactions';
+
+describe('MessageReactions', () => {
+    it('exports the component', () => {
+        expect(MessageReactions).toBeDefined();
+    });
+});

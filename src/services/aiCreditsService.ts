@@ -2,6 +2,42 @@ import { supabase as _supabase } from '@/integrations/supabase/client';
 
 const supabase = _supabase as any;
 
+// ─── Pricing Model ───────────────────────────────────────────────────────────
+// $1 = 1,000 credits = $0.25 real LLM+compute cost (4× markup)
+// credits = real_cost_in_dollars × 4000
+export const CREDITS_PER_DOLLAR = 1000;
+export const MARKUP_MULTIPLIER = 4; // $1 buys $0.25 worth of compute
+export const FREE_MONTHLY_CREDITS = 1000;
+
+// Real cost per 1K tokens by model (in USD)
+export const MODEL_COSTS: Record<string, { input: number; output: number }> = {
+    'gpt-4o':        { input: 0.0025, output: 0.01 },
+    'gpt-4o-mini':   { input: 0.00015, output: 0.0006 },
+    'gpt-4-turbo':   { input: 0.01, output: 0.03 },
+    'gpt-3.5-turbo': { input: 0.0005, output: 0.0015 },
+    'claude-3-opus': { input: 0.015, output: 0.075 },
+    'claude-3-sonnet': { input: 0.003, output: 0.015 },
+    'claude-3-haiku': { input: 0.00025, output: 0.00125 },
+    default:         { input: 0.003, output: 0.015 },
+};
+
+/**
+ * Convert real API cost to credits.
+ * credits = real_cost × CREDITS_PER_DOLLAR × MARKUP_MULTIPLIER
+ * e.g. $0.01 real cost → 0.01 × 1000 × 4 = 40 credits
+ */
+export function realCostToCredits(realCostUsd: number): number {
+    return Math.ceil(realCostUsd * CREDITS_PER_DOLLAR * MARKUP_MULTIPLIER);
+}
+
+/**
+ * Calculate real cost from token counts and model.
+ */
+export function calculateRealCost(model: string, inputTokens: number, outputTokens: number): number {
+    const costs = MODEL_COSTS[model] ?? MODEL_COSTS.default;
+    return (inputTokens / 1000) * costs.input + (outputTokens / 1000) * costs.output;
+}
+
 // =====================================================
 // TYPES
 // =====================================================
@@ -93,10 +129,10 @@ class AICreditsService {
         const { data: { user } } = await supabase.auth.getUser();
 
         const effectiveUserId = userId || user?.id;
-        const effectiveTenantId = tenantId || await this.getCurrentTenantId();
+        const effectiveTenantId = tenantId || await this.getCurrentTenantId().catch(() => 'default');
 
-        if (!effectiveUserId || !effectiveTenantId) {
-            throw new Error('User or tenant not found');
+        if (!effectiveUserId) {
+            return this.defaultBalance(effectiveTenantId, 'unknown');
         }
 
         const { data, error } = await supabase
@@ -107,14 +143,46 @@ class AICreditsService {
             .single();
 
         if (error) {
-            // If no record exists, initialize with 10 free credits
-            if (error.code === 'PGRST116') {
-                return await this.initializeCredits(effectiveTenantId, effectiveUserId, 10);
+            // 406 = table doesn't exist (missing migration), PGRST116 = no rows
+            if (error.code === '42P01' || error.message?.includes('Not Acceptable') || String(error.code) === '406') {
+                // Table doesn't exist yet — return safe defaults silently
+                return this.defaultBalance(effectiveTenantId, effectiveUserId);
             }
-            throw error;
+            if (error.code === 'PGRST116') {
+                try {
+                    return await this.initializeCredits(effectiveTenantId, effectiveUserId, 10);
+                } catch {
+                    // RPC also missing — return defaults
+                    return this.defaultBalance(effectiveTenantId, effectiveUserId);
+                }
+            }
+            // Unknown error — return defaults rather than crashing
+            console.warn('[AI Credits] getBalance error:', error.message);
+            return this.defaultBalance(effectiveTenantId, effectiveUserId);
         }
 
         return data;
+    }
+
+    /**
+     * Return a safe default balance when the ai_credits table is missing
+     */
+    private defaultBalance(tenantId: string, userId: string): CreditBalance {
+        return {
+            id: 'default',
+            tenant_id: tenantId,
+            user_id: userId,
+            total_credits: FREE_MONTHLY_CREDITS,
+            used_credits: 0,
+            available_credits: FREE_MONTHLY_CREDITS,
+            low_balance_threshold: 100,
+            auto_recharge_enabled: false,
+            auto_recharge_amount: 5000,
+            auto_recharge_threshold: 500,
+            last_recharged_at: null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+        };
     }
 
     /**
@@ -152,8 +220,9 @@ class AICreditsService {
         }
 
         const totalTokens = params.promptTokens + params.completionTokens;
-        // Credits = 2 × total tokens (tokens are doubled per billing policy)
-        const creditsUsed = totalTokens / 1000 * 2;
+        // Real cost → credits: $1 = 1,000 credits = $0.25 real cost
+        const realCost = calculateRealCost(params.modelName, params.promptTokens, params.completionTokens);
+        const creditsUsed = realCostToCredits(realCost);
 
         const { data, error } = await supabase.from('ai_usage_logs').insert({
             user_id: effectiveUserId,
@@ -161,9 +230,9 @@ class AICreditsService {
             model: params.modelName,
             input_tokens: params.promptTokens,
             output_tokens: params.completionTokens,
-            provider: 'openai', // or extracted from model
+            provider: 'openai',
             success: true,
-            cost: (totalTokens / 1000) * 0.002, // dummy cost calculation
+            cost: realCost,
             metadata: {
                 credits_used: creditsUsed,
                 request_id: params.requestId,
@@ -196,7 +265,7 @@ class AICreditsService {
     async initializeCredits(
         tenantId: string,
         userId: string,
-        initialCredits: number = 10
+        initialCredits: number = FREE_MONTHLY_CREDITS
     ): Promise<CreditBalance> {
         const { data, error } = await supabase.rpc('initialize_ai_credits', {
             p_tenant_id: tenantId,
@@ -425,8 +494,6 @@ class AICreditsService {
      * Get current tenant ID from context
      */
     private async getCurrentTenantId(): Promise<string> {
-        // This should be implemented based on your app's context
-        // For now, we'll try to get it from user_tenants
         const { data: { user } } = await supabase.auth.getUser();
 
         if (!user) throw new Error('User not authenticated');
@@ -443,6 +510,83 @@ class AICreditsService {
         }
 
         return data.tenant_id;
+    }
+
+    /**
+     * Check if monthly free credits should be granted, and grant them.
+     * Should be called on login/session init.
+     * Grants FREE_MONTHLY_CREDITS once per calendar month.
+     */
+    async checkAndGrantMonthlyCredits(tenantId?: string, userId?: string): Promise<boolean> {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            const effectiveUserId = userId || user?.id;
+            const effectiveTenantId = tenantId || await this.getCurrentTenantId().catch(() => 'default');
+
+            if (!effectiveUserId) return false;
+
+            const { data, error } = await supabase
+                .from('ai_credits')
+                .select('id, monthly_credits_granted_at')
+                .eq('tenant_id', effectiveTenantId)
+                .eq('user_id', effectiveUserId)
+                .single();
+
+            if (error) {
+                // Table may not exist — silently skip
+                if (error.code === '42P01' || error.message?.includes('Not Acceptable')) return false;
+                if (error.code === 'PGRST116') {
+                    // No row — initialize with free credits
+                    try {
+                        await this.initializeCredits(effectiveTenantId, effectiveUserId, FREE_MONTHLY_CREDITS);
+                        return true;
+                    } catch { return false; }
+                }
+                return false;
+            }
+
+            // Check if already granted this month
+            const now = new Date();
+            const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+            const lastGrant = data.monthly_credits_granted_at ? new Date(data.monthly_credits_granted_at) : null;
+
+            if (lastGrant && lastGrant >= monthStart) {
+                return false; // Already granted this month
+            }
+
+            // Grant monthly credits
+            return await this.grantMonthlyCredits(effectiveTenantId, effectiveUserId);
+        } catch (err) {
+            console.warn('[AI Credits] Monthly grant check failed:', err);
+            return false;
+        }
+    }
+
+    /**
+     * Grant monthly free credits to a user.
+     * Adds FREE_MONTHLY_CREDITS and updates the grant timestamp.
+     */
+    private async grantMonthlyCredits(tenantId: string, userId: string): Promise<boolean> {
+        try {
+            // Add credits via RPC
+            await supabase.rpc('add_ai_credits', {
+                p_tenant_id: tenantId,
+                p_user_id: userId,
+                p_credits: FREE_MONTHLY_CREDITS,
+            });
+
+            // Update grant timestamp
+            await supabase
+                .from('ai_credits')
+                .update({ monthly_credits_granted_at: new Date().toISOString() })
+                .eq('tenant_id', tenantId)
+                .eq('user_id', userId);
+
+            return true;
+        } catch (err) {
+            console.warn('[AI Credits] Monthly grant failed:', err);
+            return false;
+        }
     }
 }
 

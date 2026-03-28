@@ -61,6 +61,8 @@ import {
 import { useActions, Action, ActionInput, ActionPriority, ActionStatus } from '@/hooks/useActions';
 import { toast } from 'sonner';
 import { DynamicDataGrid, type DynamicColumnDef } from '@/components/ui/DynamicDataGrid';
+import { usePermissions } from '@/hooks/usePermissions';
+import { useProjectContext } from '@/contexts/ProjectContext';
 
 const STANDARD_COLUMNS: DynamicColumnDef<Action>[] = [
   { key: 'title', label: 'Title', width: 240, type: 'text', sticky: true },
@@ -244,9 +246,11 @@ interface ActionDetailPanelProps {
   onClose: () => void;
   onUpdate: (id: string, updates: Partial<ActionInput & { blocked_by?: string }>) => Promise<boolean>;
   onDelete: (id: string) => Promise<boolean>;
+  canEdit: boolean;
+  canDelete: boolean;
 }
 
-function ActionDetailPanel({ action, onClose, onUpdate, onDelete }: ActionDetailPanelProps) {
+function ActionDetailPanel({ action, onClose, onUpdate, onDelete, canEdit, canDelete }: ActionDetailPanelProps) {
   const StatusIcon = getStatusIcon(action.status);
   const isOverdue = action.due_date && new Date(action.due_date) < new Date() && action.status !== 'completed' && action.status !== 'cancelled';
 
@@ -343,36 +347,40 @@ function ActionDetailPanel({ action, onClose, onUpdate, onDelete }: ActionDetail
               <Progress value={action.progress} className="flex-1" />
               <span className="text-sm font-medium">{action.progress}%</span>
             </div>
-            <div className="flex gap-2">
-              {[0, 25, 50, 75, 100].map(p => (
-                <Button
-                  key={p}
-                  variant={action.progress === p ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => handleProgressChange(p)}
-                >
-                  {p}%
-                </Button>
-              ))}
-            </div>
+            {canEdit && (
+              <div className="flex gap-2">
+                {[0, 25, 50, 75, 100].map(p => (
+                  <Button
+                    key={p}
+                    variant={action.progress === p ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleProgressChange(p)}
+                  >
+                    {p}%
+                  </Button>
+                ))}
+              </div>
+            )}
           </div>
 
-          <div className="space-y-2">
-            <span className="text-xs font-medium text-muted-foreground">Status Actions</span>
-            <div className="flex flex-wrap gap-2">
-              {(['pending', 'in-progress', 'completed', 'deferred', 'cancelled'] as ActionStatus[]).map(status => (
-                <Button
-                  key={status}
-                  variant={action.status === status ? 'default' : 'outline'}
-                  size="sm"
-                  onClick={() => handleStatusChange(status)}
-                  className="capitalize"
-                >
-                  {status}
-                </Button>
-              ))}
+          {canEdit && (
+            <div className="space-y-2">
+              <span className="text-xs font-medium text-muted-foreground">Status Actions</span>
+              <div className="flex flex-wrap gap-2">
+                {(['pending', 'in-progress', 'completed', 'deferred', 'cancelled'] as ActionStatus[]).map(status => (
+                  <Button
+                    key={status}
+                    variant={action.status === status ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => handleStatusChange(status)}
+                    className="capitalize"
+                  >
+                    {status}
+                  </Button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {action.notes && (
             <div>
@@ -381,11 +389,13 @@ function ActionDetailPanel({ action, onClose, onUpdate, onDelete }: ActionDetail
             </div>
           )}
 
-          <div className="pt-4 border-t">
-            <Button variant="destructive" size="sm" onClick={() => onDelete(action.id)}>
-              Delete Action
-            </Button>
-          </div>
+          {canDelete && (
+            <div className="pt-4 border-t">
+              <Button variant="destructive" size="sm" onClick={() => onDelete(action.id)}>
+                Delete Action
+              </Button>
+            </div>
+          )}
         </div>
       </ScrollArea>
     </motion.div>
@@ -484,6 +494,8 @@ function AddActionDialog({ open, onOpenChange, onSubmit }: AddActionDialogProps)
 
 export default function ActionsView() {
   const { actions, loading, createAction, updateAction, deleteAction, pendingActions, inProgressActions, completedActions, slaBreachedActions, overdueActions } = useActions();
+  const { settings } = useProjectContext();
+  const { can } = usePermissions(settings.id);
   const [selectedAction, setSelectedAction] = useState<Action | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -620,6 +632,8 @@ export default function ActionsView() {
                 if (result) setSelectedAction(null);
                 return result;
               }}
+              canEdit={can('task.edit')}
+              canDelete={can('task.delete')}
             />
           </div>
         )}
@@ -640,7 +654,7 @@ export default function ActionsView() {
       onSearchChange={setSearchQuery}
       toolbarFilters={toolbarFilters}
       listModeControls={listModeControls}
-      onAddRow={() => setAddDialogOpen(true)}
+      onAddRow={can('task.create') ? () => setAddDialogOpen(true) : undefined}
       addLabel="New Action"
       pdfFilename="actions-tracker"
       pdfSections={pdfSections}
@@ -659,7 +673,7 @@ export default function ActionsView() {
         toast.success(`Column "${col.label}" added`);
       }}
       onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
-      onDeleteRows={(ids) => Array.from(ids).forEach(id => deleteAction(id))}
+      onDeleteRows={can('task.delete') ? (ids) => Array.from(ids).forEach(id => deleteAction(id)) : undefined}
       emptyStateMessage={actions.length === 0 ? 'No actions added yet.' : 'No actions match filters.'}
       kpiCards={kpiCards}
       listContent={listContent}

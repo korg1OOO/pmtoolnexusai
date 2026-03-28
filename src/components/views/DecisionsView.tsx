@@ -1,4 +1,6 @@
 import React, { useState } from 'react';
+import { usePermissions } from '@/hooks/usePermissions';
+import { useProjectContext } from '@/contexts/ProjectContext';
 import { motion } from 'framer-motion';
 import { cn, formatDate, exportToCSV } from '@/lib/utils';
 import { Target, Plus, Filter, User, Calendar, Link2, Search, Loader2, Download } from 'lucide-react';
@@ -396,6 +398,10 @@ function CreateDecisionDialog({ open, onOpenChange, onCreate }: CreateDecisionDi
 
 export default function DecisionsView() {
   const { decisions, loading, createDecision, updateDecision, activeDecisions, pendingDecisions, supersededDecisions } = useDecisions();
+  const { settings } = useProjectContext();
+  const { can } = usePermissions(settings?.id);
+  const canCreate = can('task.create');
+  const canEdit = can('task.edit');
   const [selectedDecision, setSelectedDecision] = useState<Decision | null>(null);
   const [linkDialogOpen, setLinkDialogOpen] = useState(false);
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
@@ -523,7 +529,7 @@ export default function DecisionsView() {
         <div className="text-center py-12 text-muted-foreground w-full">
           <Target className="h-12 w-12 mx-auto mb-4 opacity-30" />
           <p>No decisions found</p>
-          <Button size="sm" className="mt-4" onClick={() => setCreateDialogOpen(true)}>
+          <Button size="sm" className="mt-4" onClick={() => canCreate && setCreateDialogOpen(true)} disabled={!canCreate}>
             <Plus className="h-4 w-4 mr-1" />
             Add First Decision
           </Button>
@@ -575,7 +581,7 @@ export default function DecisionsView() {
       searchQuery={searchQuery}
       onSearchChange={setSearchQuery}
       toolbarFilters={toolbarFilters}
-      onAddRow={() => setCreateDialogOpen(true)}
+      onAddRow={canCreate ? () => setCreateDialogOpen(true) : undefined}
       addLabel="Add Decision"
       pdfFilename="decision-register"
       data={filteredDecisions}
@@ -583,7 +589,7 @@ export default function DecisionsView() {
       customColumns={customColumns}
       idExtractor={(item) => item.id}
       customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
-      onCellSave={handleCellSave}
+      onCellSave={canEdit ? handleCellSave : undefined}
       onAddColumn={(col) => {
         if (customColumns.find(c => c.key === col.key)) {
           toast.error('Column already exists');

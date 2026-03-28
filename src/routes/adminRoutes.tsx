@@ -5,7 +5,7 @@
  */
 
 import { Route } from 'react-router-dom';
-import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
+import { AdminRoute } from '@/components/auth/AdminRoute';
 import { AdminPanel } from '@/components/admin/AdminPanel';
 import { DatabaseMigrationPanel } from '@/components/admin/DatabaseMigrationPanel';
 import { AIProviderAdminPage } from '@/components/admin/AIProviderAdminPage';
@@ -61,9 +61,9 @@ import {
 export function AdminRoutes() {
     return (
         <Route path="/admin" element={
-            <ProtectedRoute>
+            <AdminRoute>
                 <AdminPanel />
-            </ProtectedRoute>
+            </AdminRoute>
         }>
             <Route index element={<AdminDashboard />} />
             <Route path="health" element={<AdminHealthCheck />} />

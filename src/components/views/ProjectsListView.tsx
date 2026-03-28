@@ -11,6 +11,7 @@ import { Edit, Trash2, Plus, Search, FolderKanban, MoreVertical, Loader2, Archiv
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from '@/components/ui/dropdown-menu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useProjectContext } from '@/contexts/ProjectContext';
+import { usePermissions } from '@/hooks/usePermissions';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -42,6 +43,10 @@ export default function ProjectsListView() {
   const [projectToDelete, setProjectToDelete] = useState<{ id: string, name: string } | null>(null);
   const [projectToArchive, setProjectToArchive] = useState<{ id: string, name: string, isArchiving: boolean } | null>(null);
   const { selectProject, clearProject, settings } = useProjectContext();
+  const { can, isOwnerOrAdmin, isAtLeastManager } = usePermissions(settings?.id);
+  const canCreate = can('task.create');  // reuse task.create as proxy for project creation
+  const canEdit = can('project.settings');
+  const canDelete = can('project.delete');
 
   const fetchProjects = async () => {
     setLoading(true);
@@ -113,10 +118,12 @@ export default function ProjectsListView() {
           <h1 className="text-3xl font-bold tracking-tight">Projects</h1>
           <p className="text-muted-foreground mt-1">Manage and monitor all your projects in one place.</p>
         </div>
-        <Button onClick={() => navigate('/create-project')} className="bg-blue-600 hover:bg-blue-700 text-white shadow-md">
-          <Plus className="h-4 w-4 mr-2" />
-          Create Project
-        </Button>
+        {canCreate && (
+          <Button onClick={() => navigate('/create-project')} className="bg-blue-600 hover:bg-blue-700 text-white shadow-md">
+            <Plus className="h-4 w-4 mr-2" />
+            Create Project
+          </Button>
+        )}
       </div>
 
       <Tabs defaultValue="active" value={activeTab} onValueChange={setActiveTab} className="w-full">
@@ -154,7 +161,7 @@ export default function ProjectsListView() {
                       ? 'Get started by creating your first project, or try adjusting your search terms.'
                       : 'You have no archived projects matching your search.'}
                   </p>
-                  {activeTab === 'active' && (
+                  {activeTab === 'active' && canCreate && (
                     <Button onClick={() => navigate('/create-project')} className="mt-4" variant="outline">
                       <Plus className="h-4 w-4 mr-2" />
                       Create New Project
@@ -229,36 +236,44 @@ export default function ProjectsListView() {
                                   <FolderKanban className="h-4 w-4 mr-2" />
                                   Open Dashboard
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => {
-                                  localStorage.setItem('projectoye_selected_project', project.id);
-                                  navigate('/admin/project');
-                                }}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Edit Settings
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                {project.status !== 'archived' ? (
-                                  <DropdownMenuItem
-                                    onClick={() => setProjectToArchive({ id: project.id, name: project.name, isArchiving: true })}
-                                  >
-                                    <Archive className="h-4 w-4 mr-2" />
-                                    Archive Project
-                                  </DropdownMenuItem>
-                                ) : (
-                                  <DropdownMenuItem
-                                    onClick={() => setProjectToArchive({ id: project.id, name: project.name, isArchiving: false })}
-                                  >
-                                    <ArchiveRestore className="h-4 w-4 mr-2" />
-                                    Restore Project
+                                {canEdit && (
+                                  <DropdownMenuItem onClick={() => {
+                                    localStorage.setItem('projectoye_selected_project', project.id);
+                                    navigate('/admin/project');
+                                  }}>
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Edit Settings
                                   </DropdownMenuItem>
                                 )}
-                                <DropdownMenuItem
-                                  className="text-destructive focus:text-destructive"
-                                  onClick={() => setProjectToDelete({ id: project.id, name: project.name })}
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete Project
-                                </DropdownMenuItem>
+                                {isAtLeastManager && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    {project.status !== 'archived' ? (
+                                      <DropdownMenuItem
+                                        onClick={() => setProjectToArchive({ id: project.id, name: project.name, isArchiving: true })}
+                                      >
+                                        <Archive className="h-4 w-4 mr-2" />
+                                        Archive Project
+                                      </DropdownMenuItem>
+                                    ) : (
+                                      <DropdownMenuItem
+                                        onClick={() => setProjectToArchive({ id: project.id, name: project.name, isArchiving: false })}
+                                      >
+                                        <ArchiveRestore className="h-4 w-4 mr-2" />
+                                        Restore Project
+                                      </DropdownMenuItem>
+                                    )}
+                                  </>
+                                )}
+                                {canDelete && (
+                                  <DropdownMenuItem
+                                    className="text-destructive focus:text-destructive"
+                                    onClick={() => setProjectToDelete({ id: project.id, name: project.name })}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete Project
+                                  </DropdownMenuItem>
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>
@@ -352,27 +367,35 @@ export default function ProjectsListView() {
                                   <FolderKanban className="h-4 w-4 mr-2" />
                                   Open Dashboard
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => {
-                                  localStorage.setItem('projectoye_selected_project', project.id);
-                                  navigate('/admin/project');
-                                }}>
-                                  <Edit className="h-4 w-4 mr-2" />
-                                  Edit Settings
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() => setProjectToArchive({ id: project.id, name: project.name, isArchiving: false })}
-                                >
-                                  <ArchiveRestore className="h-4 w-4 mr-2" />
-                                  Restore Project
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  className="text-destructive focus:text-destructive"
-                                  onClick={() => setProjectToDelete({ id: project.id, name: project.name })}
-                                >
-                                  <Trash2 className="h-4 w-4 mr-2" />
-                                  Delete Project
-                                </DropdownMenuItem>
+                                {canEdit && (
+                                  <DropdownMenuItem onClick={() => {
+                                    localStorage.setItem('projectoye_selected_project', project.id);
+                                    navigate('/admin/project');
+                                  }}>
+                                    <Edit className="h-4 w-4 mr-2" />
+                                    Edit Settings
+                                  </DropdownMenuItem>
+                                )}
+                                {isAtLeastManager && (
+                                  <>
+                                    <DropdownMenuSeparator />
+                                    <DropdownMenuItem
+                                      onClick={() => setProjectToArchive({ id: project.id, name: project.name, isArchiving: false })}
+                                    >
+                                      <ArchiveRestore className="h-4 w-4 mr-2" />
+                                      Restore Project
+                                    </DropdownMenuItem>
+                                  </>
+                                )}
+                                {canDelete && (
+                                  <DropdownMenuItem
+                                    className="text-destructive focus:text-destructive"
+                                    onClick={() => setProjectToDelete({ id: project.id, name: project.name })}
+                                  >
+                                    <Trash2 className="h-4 w-4 mr-2" />
+                                    Delete Project
+                                  </DropdownMenuItem>
+                                )}
                               </DropdownMenuContent>
                             </DropdownMenu>
                           </TableCell>

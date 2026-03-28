@@ -500,85 +500,102 @@ export default function DashboardView({ onViewChange }: DashboardViewProps) {
       </div>
 
       {/* Grid Layout */}
-      <ResponsiveGridLayout
-        className="layout"
-        layouts={{ lg: layout }}
-        breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
-        cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
-        rowHeight={30}
-        margin={[16, 16]} // 16px margin between widgets
-        containerPadding={[0, 0]}
-        compactType="vertical" // Stack widgets vertically instead of absolute positioning to prevent overlaps
-        preventCollision={false} // Allow collision so widgets flow naturally
-        useCSSTransforms={true} // Strict GPU-accelerated absolute transforms for precise rendering
-        measureBeforeMount={false}
-        isDraggable={isEditMode}
-        isResizable={isEditMode}
-        onLayoutChange={(currentLayout, allLayouts) => handleLayoutChange(currentLayout)}
-        draggableHandle=".drag-handle"
-        resizeHandles={['se', 'sw', 'ne', 'nw', 's', 'e', 'w', 'n']} // All 8 resize handles
-        // Min/Max constraints per widget type
-        onResizeStop={(layout, oldItem, newItem) => {
-          // Optional: Add custom logic on resize complete
-          console.log('Resized:', newItem);
-        }}
-      >
-        {layout.map(widget => {
-          // Define min/max sizes per widget type
-          const widgetType = WIDGET_TYPES.find(t => t.id === widget.type);
-          const minW = widget.type.startsWith('kpi-') ? 2 : 3; // KPIs minimum 2 cols, others 3
-          const minH = widget.type.startsWith('kpi-') ? 2 : 4; // KPIs minimum 2 rows, others 4
-          const maxW = 12; // Full width
-          const maxH = 20; // Reasonable max height
-
-          return (
-            <div
-              key={widget.i}
-              className={cn(
-                "bg-background/50 rounded-lg",
-                isEditMode && "ring-2 ring-primary/20 border-dashed hover:ring-primary/40",
-                "relative" // Ensure proper positioning context
-              )}
-              style={{
-                zIndex: 1 // All widgets at same level to prevent overlaps
-              }}
-              data-grid={{
-                ...widget,
-                minW,
-                minH,
-                maxW,
-                maxH,
-                // Enable resize handles to show on all corners and edges
-                resizeHandles: isEditMode ? ['se', 'sw', 'ne', 'nw', 's', 'e', 'w', 'n'] : [],
-                static: !isEditMode // Lock widgets when not in edit mode
-              }}
-            >
-              <div className="h-full relative group">
-                {isEditMode && (
-                  <>
-                    <div className="drag-handle absolute top-2 left-2 z-20 cursor-move p-1.5 bg-background/90 rounded-md hover:bg-background border shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-200">
-                      <GripVertical className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <Button
-                      variant="destructive"
-                      size="icon"
-                      className="absolute top-2 right-2 z-20 h-7 w-7 opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-sm"
-                      onClick={() => handleRemoveWidget(widget.i)}
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </Button>
-                    {/* Resize indicator */}
-                    <div className="absolute bottom-2 right-2 z-10 text-xs text-muted-foreground/50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
-                      {widget.w}×{widget.h}
-                    </div>
-                  </>
-                )}
-                {renderWidget(widget)}
+      {isEditMode ? (
+        /* ── Edit Mode: react-grid-layout for drag & resize ── */
+        <ResponsiveGridLayout
+          className="layout"
+          layouts={{ lg: layout }}
+          breakpoints={{ lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 }}
+          cols={{ lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 }}
+          rowHeight={30}
+          margin={[16, 16]}
+          containerPadding={[0, 0]}
+          compactType="vertical"
+          preventCollision={false}
+          useCSSTransforms={true}
+          measureBeforeMount={false}
+          isDraggable={true}
+          isResizable={true}
+          onLayoutChange={(currentLayout) => handleLayoutChange(currentLayout)}
+          draggableHandle=".drag-handle"
+          resizeHandles={['se', 'sw', 'ne', 'nw', 's', 'e', 'w', 'n']}
+        >
+          {layout.map(widget => {
+            const minW = widget.type.startsWith('kpi-') ? 2 : 3;
+            const minH = widget.type.startsWith('kpi-') ? 2 : 4;
+            return (
+              <div
+                key={widget.i}
+                className={cn("bg-background/50 rounded-lg ring-2 ring-primary/20 border-dashed hover:ring-primary/40 relative")}
+                style={{ zIndex: 1 }}
+                data-grid={{ ...widget, minW, minH, maxW: 12, maxH: 20,
+                  resizeHandles: ['se', 'sw', 'ne', 'nw', 's', 'e', 'w', 'n'],
+                  static: false
+                }}
+              >
+                <div className="h-full relative group">
+                  <div className="drag-handle absolute top-2 left-2 z-20 cursor-move p-1.5 bg-background/90 rounded-md hover:bg-background border shadow-sm opacity-0 group-hover:opacity-100 transition-all duration-200">
+                    <GripVertical className="h-4 w-4 text-muted-foreground" />
+                  </div>
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="absolute top-2 right-2 z-20 h-7 w-7 opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-sm"
+                    onClick={() => handleRemoveWidget(widget.i)}
+                  >
+                    <X className="h-3.5 w-3.5" />
+                  </Button>
+                  <div className="absolute bottom-2 right-2 z-10 text-xs text-muted-foreground/50 pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity">
+                    {widget.w}×{widget.h}
+                  </div>
+                  {renderWidget(widget)}
+                </div>
               </div>
-            </div>
-          );
-        })}
-      </ResponsiveGridLayout>
+            );
+          })}
+        </ResponsiveGridLayout>
+      ) : (
+        /* ── Normal Mode: CSS grid for auto-sizing & responsiveness ── */
+        <>
+          <style>{`
+            .dash-grid {
+              display: grid;
+              grid-template-columns: repeat(6, 1fr);
+              gap: 16px;
+              width: 100%;
+            }
+            .dash-grid .dash-kpi { grid-column: span 1; }
+            .dash-grid .dash-medium { grid-column: span 2; }
+            .dash-grid .dash-wide { grid-column: span 3; }
+
+            @media (max-width: 1024px) {
+              .dash-grid { grid-template-columns: repeat(3, 1fr); }
+              .dash-grid .dash-kpi { grid-column: span 1; }
+              .dash-grid .dash-medium { grid-column: span 3; }
+              .dash-grid .dash-wide { grid-column: span 3; }
+            }
+
+            @media (max-width: 768px) {
+              .dash-grid { grid-template-columns: 1fr; }
+              .dash-grid .dash-kpi,
+              .dash-grid .dash-medium,
+              .dash-grid .dash-wide { grid-column: span 1; }
+            }
+          `}</style>
+          <div className="dash-grid">
+            {layout.map(widget => {
+              const isKPI = widget.type.startsWith('kpi-');
+              const isWide = widget.w >= 6;
+              const sizeClass = isKPI ? 'dash-kpi' : isWide ? 'dash-wide' : 'dash-medium';
+              return (
+                <div key={widget.i} className={sizeClass}>
+                  {renderWidget(widget)}
+                </div>
+              );
+            })}
+          </div>
+        </>
+      )}
     </div>
   );
 }

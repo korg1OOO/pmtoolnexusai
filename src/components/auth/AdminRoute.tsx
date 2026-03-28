@@ -37,7 +37,8 @@ export const AdminRoute = ({ children }: { children: React.ReactNode }) => {
                 .maybeSingle();
 
             if (!cancelled) {
-                setState(data?.role === 'admin'
+                const role = data?.role;
+                setState(role === 'admin' || role === 'super_admin'
                     ? { status: 'authorized' }
                     : { status: 'unauthorized' });
             }

@@ -19,8 +19,8 @@ interface CriticalAlertsSectionProps {
 export function CriticalAlertsSection({ alerts }: CriticalAlertsSectionProps) {
   if (alerts.length === 0) {
     return (
-      <div className="text-center py-4 text-muted-foreground">
-        <AlertCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+      <div className="flex items-center gap-2 py-2 px-1 text-muted-foreground">
+        <AlertCircle className="h-4 w-4 opacity-40 shrink-0" />
         <p className="text-sm">No critical alerts at this time</p>
       </div>
     );

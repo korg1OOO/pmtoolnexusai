@@ -1,4 +1,5 @@
 import { useState, useRef, useMemo } from 'react';
+import { usePermissions } from '@/hooks/usePermissions';
 import { motion } from 'framer-motion';
 import {
   BarChart3,
@@ -64,6 +65,9 @@ export default function ReportsView({ demo = false }: ReportsViewProps) {
   const { settings } = useProjectContext();
   const { confirm, ConfirmDialog } = useConfirmDialog();
   const { data: reports, isLoading, createReport, deleteReport, generateReport } = useReports(settings.id);
+  const { can } = usePermissions(settings?.id);
+  const canCreate = can('report.create');
+  const canDelete = can('report.delete');
 
   const [selectedReport, setSelectedReport] = useState<Report | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<ReportCategory | 'all'>('all');
@@ -172,7 +176,7 @@ export default function ReportsView({ demo = false }: ReportsViewProps) {
 
   const handleDelete = async (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    if (await confirm('Are you sure you want to delete this report configuration?', { confirmText: 'Delete', destructive: true })) {
+    if (await confirm('Are you sure you want to delete this report configuration?', { confirmLabel: 'Delete', variant: 'destructive' })) {
       await deleteReport.mutateAsync(id);
       if (selectedReport?.id === id) setSelectedReport(null);
     }
@@ -233,7 +237,7 @@ export default function ReportsView({ demo = false }: ReportsViewProps) {
             <Settings className="h-4 w-4 mr-2" />
             Settings
           </Button>
-          <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
+          {canCreate && <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
             <DialogTrigger asChild>
               <Button size="sm">
                 <Plus className="h-4 w-4 mr-2" />
@@ -312,7 +316,7 @@ export default function ReportsView({ demo = false }: ReportsViewProps) {
                 </Button>
               </DialogFooter>
             </DialogContent>
-          </Dialog>
+          </Dialog>}
         </div>
       </div>
 
@@ -399,14 +403,14 @@ export default function ReportsView({ demo = false }: ReportsViewProps) {
                   onGenerate={() => handleGenerate(report)}
                   onExport={() => handleExport(report)}
                 />
-                <Button
+                {canDelete && <Button
                   variant="ghost"
                   size="iconSm"
                   className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
                   onClick={(e) => handleDelete(report.id, e)}
                 >
                   <Trash2 className="h-4 w-4" />
-                </Button>
+                </Button>}
               </div>
             ))}
             {filteredReports.length === 0 && (

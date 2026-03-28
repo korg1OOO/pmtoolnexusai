@@ -28,6 +28,7 @@ import { cn } from '@/lib/utils';
 import { useAIChat } from '@/hooks/useAIChat';
 import { useAIAgent } from '@/hooks/useAIAgents';
 import { useUserRole } from '@/hooks/useUserRole';
+import { usePermissions } from '@/hooks/usePermissions';
 import { ChatMessage } from './ChatMessage';
 import { AgentIndicator } from './AgentIndicator';
 import { ActionConfirmDialog } from './ActionConfirmDialog';
@@ -61,6 +62,7 @@ export function GlobalAISidebar({
   const [pendingAction, setPendingAction] = useState<AIAction | null>(null);
   const [isActionLoading, setIsActionLoading] = useState(false);
   const [intentMode, setIntentMode] = useState<IntentMode>('plan');
+  const { can } = usePermissions(projectId);
   const [showContext, setShowContext] = useState(true);
   const [selectedContexts, setSelectedContexts] = useState<ContextItem[]>([]);
   const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
@@ -101,7 +103,8 @@ export function GlobalAISidebar({
     projectId,
     currentView,
     intentMode,
-    onActionRequest: triggerConfirmation
+    onActionRequest: triggerConfirmation,
+    onIntentModeChange: setIntentMode
   });
 
   // Fetch active agent config from DB when currentAgent is set

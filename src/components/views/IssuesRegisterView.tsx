@@ -1,4 +1,6 @@
 import React, { useState, useCallback } from 'react';
+import { usePermissions } from '@/hooks/usePermissions';
+import { useProjectContext } from '@/contexts/ProjectContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn, formatDate, exportToCSV } from '@/lib/utils';
 import {
@@ -331,6 +333,11 @@ function AddIssueDialog({ open, onOpenChange, onSubmit }: AddIssueDialogProps) {
 
 export default function IssuesRegisterView() {
   const { issues, loading, createIssue, updateIssue, deleteIssue, openIssues, criticalIssues, slaBreachedIssues } = useIssues();
+  const { settings } = useProjectContext();
+  const { can } = usePermissions(settings?.id);
+  const canCreate = can('risk.create');
+  const canEdit = can('risk.edit');
+  const canDelete = can('risk.delete');
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -569,15 +576,15 @@ export default function IssuesRegisterView() {
                         </div>
                       ) : (
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                          <Button size="iconXs" variant="ghost" onClick={() => handleEditClick(issue)}><Edit2 className="h-3.5 w-3.5" /></Button>
+                          {canEdit && <Button size="iconXs" variant="ghost" onClick={() => handleEditClick(issue)}><Edit2 className="h-3.5 w-3.5" /></Button>}
                           <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" size="iconXs"><MoreHorizontal className="h-4 w-4" /></Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={() => setSelectedIssue(issue)}>View Details</DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem className="text-destructive" onClick={() => deleteIssue(issue.id)}>Delete</DropdownMenuItem>
+                              {canDelete && <><DropdownMenuSeparator />
+                                <DropdownMenuItem className="text-destructive" onClick={() => deleteIssue(issue.id)}>Delete</DropdownMenuItem></>}
                             </DropdownMenuContent>
                           </DropdownMenu>
                         </div>
@@ -605,7 +612,7 @@ export default function IssuesRegisterView() {
           searchQuery={searchQuery}
           onSearchChange={setSearchQuery}
           toolbarFilters={toolbarFilters}
-          onAddRow={() => setAddDialogOpen(true)}
+          onAddRow={canCreate ? () => setAddDialogOpen(true) : undefined}
           addLabel="Log Issue"
           pdfFilename="issues_register"
           data={filteredIssues}
@@ -613,7 +620,7 @@ export default function IssuesRegisterView() {
           customColumns={customColumns}
           idExtractor={(issue) => issue.id}
           customFieldExtractor={(issue, key) => String(issue.custom_fields?.[key] ?? '')}
-          onCellSave={handleCellSave}
+          onCellSave={canEdit ? handleCellSave : undefined}
           onAddColumn={(col) => {
             if (customColumns.find(c => c.key === col.key)) {
               toast.error('Column already exists');
@@ -623,7 +630,7 @@ export default function IssuesRegisterView() {
             toast.success(`Column "${col.label}" added`);
           }}
           onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
-          onDeleteRows={(ids) => ids.forEach(id => deleteIssue(id))}
+          onDeleteRows={canDelete ? (ids) => ids.forEach(id => deleteIssue(id)) : undefined}
           emptyStateMessage={searchQuery || activeTab !== 'all' ? 'No issues match your filters.' : 'No issues yet. Click "Log Issue" to start.'}
           kpiCards={kpiCards}
           listContent={listContent}

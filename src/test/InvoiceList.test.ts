@@ -1,0 +1,14 @@
+/**
+ * InvoiceList Component Tests
+ */
+import { describe, it, expect, vi } from 'vitest';
+import { render } from '@testing-library/react';
+import React from 'react';
+
+import { InvoiceList } from '@/components/subscription/InvoiceList';
+
+describe('InvoiceList', () => {
+    it('exports the component', () => {
+        expect(InvoiceList).toBeDefined();
+    });
+});

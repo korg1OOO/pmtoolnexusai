@@ -1,0 +1,62 @@
+=== QA Gap Closure: Comprehensive Seeding ===
+
+Profiles: 81
+Subscriptions: 21
+Projects: 10
+Project Members: 8
+
+--- Step 1: Link subscriptions.user_id to profiles ---
+  No profile for john@example.com - skipped
+  No profile for sarah@company.com - skipped
+  No profile for mike@agency.com - skipped
+  No profile for emma@example.com - skipped
+  Total linked: 0
+
+--- Step 2: Tier-User Mapping ---
+  agency: user1_1771513624288@example.com (uid: 72d85b3f)
+  free: user4_1771513625568@example.com (uid: 54ade06c)
+  business: user7_1771513626820@example.com (uid: 73c0787b)
+  pro: user9_1771513627802@example.com (uid: bc754335)
+
+--- Step 3: Seed project_members (5 roles) ---
+  Target project: TP-Alpha Software Delivery - Updated (04eed42d)
+  Existing roles: none
+  owner: Added user0_1771513165671@example.com (d85baa06)
+  admin: Added user1_1771513168019@example.com (028ce0a2)
+  manager: Added user2_1771513168650@example.com (be816e1b)
+  member: Added user4_1771513169590@example.com (240d53c7)
+  viewer: Added user3_1771513169166@example.com (78f245cc)
+
+--- Step 4: Sync profiles.subscription_tier ---
+  Updated user1_1771513624288@example.com: free -> agency
+  Updated user2_1771513624762@example.com: free -> agency
+  Updated user5_1771513625997@example.com: free -> agency
+  Updated user7_1771513626820@example.com: free -> business
+  Updated user9_1771513627802@example.com: free -> pro
+  Updated user10_1771513628313@example.com: free -> business
+  Updated user12_1771513629264@example.com: free -> business
+  Updated user13_1771513629685@example.com: free -> business
+  Updated user15_1771513630497@example.com: free -> agency
+  Updated user17_1771513631330@example.com: free -> business
+  Updated user19_1771513632147@example.com: free -> pro
+
+--- Step 5: Seed subscription_features ---
+  project_limit: Could not find the 'agency_value' column of 'subscription_features' in the schema cache
+  team_members: Could not find the 'agency_value' column of 'subscription_features' in the schema cache
+  ai_chat: Could not find the 'agency_value' column of 'subscription_features' in the schema cache
+  advanced_analytics: Could not find the 'agency_value' column of 'subscription_features' in the schema cache
+  portfolio_management: Could not find the 'agency_value' column of 'subscription_features' in the schema cache
+  program_management: Could not find the 'agency_value' column of 'subscription_features' in the schema cache
+  financials: Could not find the 'agency_value' column of 'subscription_features' in the schema cache
+  evm: Could not find the 'agency_value' column of 'subscription_features' in the schema cache
+
+--- Step 6: Final Test User Reference ---
+  owner: user0_1771513165671@example.com (tier: none)
+  admin: user1_1771513168019@example.com (tier: none)
+  manager: user2_1771513168650@example.com (tier: none)
+  member: user4_1771513169590@example.com (tier: none)
+  viewer: user3_1771513169166@example.com (tier: none)
+
+  Reference saved to scripts/qa-test-ref.json
+
+=== SEEDING COMPLETE ===

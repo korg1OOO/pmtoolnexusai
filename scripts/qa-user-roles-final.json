@@ -1,0 +1,38 @@
+[
+  {
+    "role": "admin",
+    "email": "user1_1771513624288@example.com",
+    "uid": "72d85b3f-b18b-43ec-a1ce-c86e1a8021bf",
+    "status": "OK"
+  },
+  {
+    "role": "pm",
+    "email": "user2_1771513624762@example.com",
+    "uid": "b93c7aae-d251-405c-9489-e26bab986bc1",
+    "status": "OK"
+  },
+  {
+    "role": "lead",
+    "email": "user3_1771513625164@example.com",
+    "uid": "3d21016c-e060-4e82-b713-6c3c94c4f3d1",
+    "status": "OK"
+  },
+  {
+    "role": "developer",
+    "email": "user5_1771513625997@example.com",
+    "uid": "20d898eb-36ba-423c-9fd9-4010d7e15354",
+    "status": "OK"
+  },
+  {
+    "role": "analyst",
+    "email": "user6_1771513626422@example.com",
+    "uid": "bdc68bea-2367-4cd4-a96b-558bee0e3cff",
+    "status": "OK"
+  },
+  {
+    "role": "viewer",
+    "email": "user4_1771513625568@example.com",
+    "uid": "54ade06c-3620-41ca-bb41-6074c0b3ddee",
+    "status": "OK"
+  }
+]

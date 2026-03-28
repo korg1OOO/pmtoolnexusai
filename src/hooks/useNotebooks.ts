@@ -102,6 +102,13 @@ export function useNotebooks() {
 
       if (error) throw error;
 
+      // Optimistic update: immediately add to state
+      if (data) {
+        setNotebooks(prev => [...prev, data as Notebook]);
+      }
+      // Background refetch for consistency
+      fetchNotebooks();
+
       toast({ title: 'Notebook created', description: `"${name}" has been created.` });
       return data;
     } catch (error) {

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { formatDate, exportToCSV } from '@/lib/utils';
+import { usePermissions } from '@/hooks/usePermissions';
 import { motion } from 'framer-motion';
 import { cn } from '@/lib/utils';
 import {
@@ -70,6 +71,10 @@ export default function DeliverablesView() {
   const { confirm, ConfirmDialog } = useConfirmDialog();
   const { data: deliverables, isLoading, createDeliverable, updateDeliverable, deleteDeliverable } = useDeliverables(settings.id);
   const { data: teamMembers } = useTeamMembers(settings.id);
+  const { can } = usePermissions(settings?.id);
+  const canCreate = can('deliverable.create');
+  const canEdit = can('deliverable.edit');
+  const canDelete = can('deliverable.delete');
 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedDeliverable, setSelectedDeliverable] = useState<Deliverable | null>(null);
@@ -274,14 +279,14 @@ export default function DeliverablesView() {
                       <p className="text-sm text-muted-foreground mt-1 line-clamp-2">{deliverable.description}</p>
                     </div>
                   </div>
-                  <Button
+                  {canDelete && <Button
                     variant="ghost"
                     size="iconSm"
                     className="opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive hover:bg-destructive/10"
                     onClick={(e) => handleDelete(deliverable.id, e)}
                   >
                     <Trash2 className="h-4 w-4" />
-                  </Button>
+                  </Button>}
                 </div>
 
                 <div className="flex items-center gap-6 text-sm">
@@ -500,7 +505,7 @@ export default function DeliverablesView() {
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
         toolbarFilters={toolbarFilters}
-        onAddRow={() => setIsCreateOpen(true)}
+        onAddRow={canCreate ? () => setIsCreateOpen(true) : undefined}
         addLabel="Add Deliverable"
         pdfFilename="deliverables"
         data={filteredDeliverables}
@@ -508,7 +513,7 @@ export default function DeliverablesView() {
         customColumns={customColumns}
         idExtractor={(item) => item.id}
         customFieldExtractor={(item, key) => String(item.custom_fields?.[key] ?? '')}
-        onCellSave={handleCellSave}
+        onCellSave={canEdit ? handleCellSave : undefined}
         onAddColumn={(col) => {
           if (customColumns.find(c => c.key === col.key)) {
             toast.error('Column already exists');
@@ -518,9 +523,9 @@ export default function DeliverablesView() {
           toast.success(`Column "${col.label}" added`);
         }}
         onRemoveColumn={(key) => setCustomColumns(prev => prev.filter(c => c.key !== key))}
-        onDeleteRows={(ids) => {
+        onDeleteRows={canDelete ? (ids) => {
           ids.forEach(id => deleteDeliverable.mutateAsync(id));
-        }}
+        } : undefined}
         emptyStateMessage={filteredDeliverables.length === 0 ? 'No deliverables found.' : 'No deliverables match filters.'}
         kpiCards={kpiCards}
         listContent={listContent}

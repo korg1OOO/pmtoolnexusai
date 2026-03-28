@@ -47,6 +47,7 @@ import {
 } from 'recharts';
 import { PortfolioManagement } from './PortfolioManagement';
 import { usePermissions } from '@/hooks/usePermissions';
+import { useProjectContext } from '@/contexts/ProjectContext';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -55,7 +56,8 @@ import { supabase } from '@/integrations/supabase/client';
 
 export function PortfolioView() {
   const { data: portfoliosData, isLoading: isLoadingPortfolios } = usePortfolios();
-  const permissions = usePermissions();
+  const { settings } = useProjectContext();
+  const permissions = usePermissions(settings?.id);
   const queryClient = useQueryClient();
   const [selectedPortfolioId, setSelectedPortfolioId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'overview' | 'programs' | 'projects' | 'management'>('overview');

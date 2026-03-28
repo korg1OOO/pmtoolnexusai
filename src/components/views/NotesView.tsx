@@ -64,23 +64,20 @@ export default function NotesView({ demo = false }: NotesViewProps) {
   const [pageListCollapsed, setPageListCollapsed] = useState(savedState.pageListCollapsed || false);
   const [backlinksSidebarCollapsed, setBacklinksSidebarCollapsed] = useState(savedState.backlinksSidebarCollapsed || false);
 
-  const { notebooks: realNotebooks, loading: notebooksLoading } = useNotebooks();
+  const {
+    notebooks: realNotebooks,
+    loading: notebooksLoading,
+    createNotebook,
+    updateNotebook,
+    deleteNotebook,
+  } = useNotebooks();
   const { sections: realSections, loading: sectionsLoading } = useSections(selectedNotebookId);
   const { pages: realPages, loading: pagesLoading } = usePages(selectedSectionId);
-  //  Use mocks if demo is true
-  // Use mocks if demo is true
   // Demo mode disabled - always use real data
   const notebooks = realNotebooks;
   const sections = realSections;
   const pages = realPages;
   const allPages: any[] = [];
-
-  // Wire up real mutation functions from proper hooks
-  const {
-    createNotebook,
-    updateNotebook,
-    deleteNotebook
-  } = useNotebooks();
 
   const {
     createSection,
@@ -205,12 +202,39 @@ export default function NotesView({ demo = false }: NotesViewProps) {
   }, []);
 
   const handleCreatePage = useCallback(async () => {
-    const newPage = await createPage('Untitled');
-    if (newPage) {
-      setSelectedPage(newPage as NotebookPage);
-      setSelectedPageId(newPage.id);
+    // If there's no section yet, auto-create one first
+    let targetSectionId = selectedSectionId;
+    if (!targetSectionId && selectedNotebookId) {
+      const newSection = await createSection('General');
+      if (newSection) {
+        targetSectionId = newSection.id;
+        setSelectedSectionId(newSection.id);
+        setViewMode('pages');
+      }
     }
-  }, [createPage]);
+    if (!targetSectionId) return;
+
+    // createPage uses the hook's sectionId which may not have updated yet,
+    // so we do a direct insert if the section was just created
+    if (targetSectionId !== selectedSectionId) {
+      // Direct insert since the hook's sectionId hasn't updated yet
+      const { data, error } = await (await import('@/integrations/supabase/client')).supabase
+        .from('notebook_pages')
+        .insert({ section_id: targetSectionId, title: 'Untitled', content: '', sort_order: 0 })
+        .select()
+        .single();
+      if (!error && data) {
+        setSelectedPage(data as NotebookPage);
+        setSelectedPageId(data.id);
+      }
+    } else {
+      const newPage = await createPage('Untitled');
+      if (newPage) {
+        setSelectedPage(newPage as NotebookPage);
+        setSelectedPageId(newPage.id);
+      }
+    }
+  }, [createPage, createSection, selectedSectionId, selectedNotebookId]);
 
   const handleCreateSpreadsheet = useCallback(async () => {
     const newSpreadsheet = await createSpreadsheet('Untitled Spreadsheet');

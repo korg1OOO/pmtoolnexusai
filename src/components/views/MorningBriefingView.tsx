@@ -519,17 +519,17 @@ export default function MorningBriefingView({ demo = false }: MorningBriefingVie
     <div className="flex flex-col h-full overflow-auto">
       {/* Header */}
       <div className="p-6 border-b bg-gradient-to-r from-primary/10 via-primary/5 to-transparent">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-primary/20">
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="flex items-center gap-4 min-w-0">
+            <div className="p-3 rounded-xl bg-primary/20 shrink-0 hidden sm:block">
               <Sun className="h-8 w-8 text-primary" />
             </div>
-            <div>
+            <div className="min-w-0">
               <h1 className="text-2xl font-bold flex items-center gap-2">
                 Morning Briefing
-                <Sparkles className="h-5 w-5 text-primary animate-pulse" />
+                <Sparkles className="h-5 w-5 text-primary animate-pulse shrink-0" />
               </h1>
-              <p className="text-muted-foreground">
+              <p className="text-muted-foreground truncate">
                 Good morning! Here's your daily briefing for {settings.name}
               </p>
               <p className="text-xs text-muted-foreground mt-1">
@@ -537,7 +537,7 @@ export default function MorningBriefingView({ demo = false }: MorningBriefingVie
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 shrink-0">
             <BriefingSettingsPanel
               enabledSections={effectiveEnabledSections}
               sectionOrder={effectiveSectionOrder}
@@ -578,6 +578,7 @@ export default function MorningBriefingView({ demo = false }: MorningBriefingVie
                   lastUpdated={lastUpdated}
                   onRefresh={handleRefresh}
                   isCustomizing={isCustomizing}
+                  emptySections={criticalAlerts.length === 0 ? ['critical-alerts'] : []}
                 />
               )}
             </Suspense>

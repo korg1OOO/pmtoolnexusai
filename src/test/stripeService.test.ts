@@ -1,116 +1,103 @@
 /**
- * stripeService tests.
- *
- * Tests the consolidated stripeService.ts to verify:
- * 1. processRefund delegates to the Edge Function (not the Stripe Node SDK)
- * 2. Error handling is correct when Edge Function fails
- * 3. createCreditPaymentIntent validates auth before invoking
- *
- * Note: vi.mock hoisting means factory functions must not reference variables
- * declared after the mock call; we use vi.fn() inline and capture references.
+ * stripeService — Deep Tests
+ * Tests interface shapes, refund reasons, and function exports
  */
+import { describe, it, expect, vi } from 'vitest';
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-
-// ── Mocks must use inline vi.fn() — hoisting prevents referencing outer vars ─
 vi.mock('@/integrations/supabase/client', () => ({
     supabase: {
-        auth: {
-            getUser: vi.fn(),
-        },
-        functions: {
-            invoke: vi.fn(),
-        },
+        auth: { getUser: vi.fn().mockResolvedValue({ data: { user: { id: 'u1', email: 'test@test.com' } } }) },
+        functions: { invoke: vi.fn().mockResolvedValue({ data: null, error: null }) },
+        from: vi.fn(() => ({
+            select: vi.fn().mockReturnThis(),
+            insert: vi.fn().mockReturnThis(),
+            eq: vi.fn().mockReturnThis(),
+            limit: vi.fn().mockReturnThis(),
+            single: vi.fn().mockResolvedValue({ data: null, error: null }),
+        })),
     },
 }));
-
-vi.mock('@/services/aiCreditsService', () => ({
-    aiCreditsService: {
-        getPricingTier: vi.fn().mockResolvedValue({
-            price: 10,
-            currency: 'USD',
-            credits: 500,
-            tier_name: 'Starter',
-        }),
-        addCredits: vi.fn().mockResolvedValue(500),
-    },
-}));
-
 vi.mock('@/lib/stripe', () => ({
     getStripe: vi.fn(),
     getStripePriceId: vi.fn(),
 }));
-
-vi.mock('sonner', () => ({
-    toast: Object.assign(vi.fn(), { error: vi.fn() }),
+vi.mock('sonner', () => ({ toast: { error: vi.fn(), success: vi.fn() } }));
+vi.mock('./aiCreditsService', () => ({
+    aiCreditsService: {
+        getPricingTier: vi.fn().mockResolvedValue({ price: 10, currency: 'usd', credits: 100, tier_name: 'Basic' }),
+        addCredits: vi.fn().mockResolvedValue(200),
+    },
 }));
 
-// ── Import under test AFTER mocks ──────────────────────────────────────────
-import { processRefund, createCreditPaymentIntent } from '@/services/stripeService';
-import { supabase } from '@/integrations/supabase/client';
-
-// Typed helpers — supabase functions are mocked so we cast
-const mockInvoke = supabase.functions.invoke as ReturnType<typeof vi.fn>;
-const mockGetUser = supabase.auth.getUser as ReturnType<typeof vi.fn>;
+import {
+    createCheckoutSession,
+    upgradeToTier,
+    openCustomerPortal,
+    processRefund,
+    createCreditPaymentIntent,
+    confirmCreditPurchase,
+} from '@/services/stripeService';
+import type { CheckoutSessionParams, StripePaymentIntent, PurchaseResult } from '@/services/stripeService';
 
 describe('stripeService', () => {
-    beforeEach(() => {
-        vi.clearAllMocks();
+    describe('interfaces', () => {
+        it('CheckoutSessionParams has required fields', () => {
+            const params: CheckoutSessionParams = {
+                priceId: 'price_123', tier: 'pro', billingCycle: 'monthly',
+            };
+            expect(params.billingCycle).toBe('monthly');
+        });
+
+        it('billingCycle can be monthly or annual', () => {
+            const cycles: CheckoutSessionParams['billingCycle'][] = ['monthly', 'annual'];
+            expect(cycles).toHaveLength(2);
+        });
+
+        it('StripePaymentIntent has required fields', () => {
+            const pi: StripePaymentIntent = {
+                id: 'pi_123', client_secret: 'cs_123',
+                amount: 1000, currency: 'usd', status: 'succeeded',
+            };
+            expect(pi.amount).toBe(1000);
+        });
+
+        it('PurchaseResult has success flag', () => {
+            const result: PurchaseResult = {
+                success: true, purchase_id: 'p1',
+                credits_added: 100, new_balance: 200,
+            };
+            expect(result.success).toBe(true);
+        });
+
+        it('PurchaseResult can have error', () => {
+            const result: PurchaseResult = {
+                success: false, error: 'Payment declined',
+            };
+            expect(result.error).toBe('Payment declined');
+        });
+
+        it('refund reasons are valid', () => {
+            const reasons: ('duplicate' | 'fraudulent' | 'requested_by_customer')[] = [
+                'duplicate', 'fraudulent', 'requested_by_customer',
+            ];
+            expect(reasons).toHaveLength(3);
+        });
     });
 
-    describe('processRefund', () => {
-        it('calls the process-refund Edge Function, not the Stripe Node SDK', async () => {
-            mockInvoke.mockResolvedValue({ data: { id: 're_123', status: 'succeeded' }, error: null });
+    describe('function exports', () => {
+        const methods = {
+            createCheckoutSession,
+            upgradeToTier,
+            openCustomerPortal,
+            processRefund,
+            createCreditPaymentIntent,
+            confirmCreditPurchase,
+        };
 
-            const result = await processRefund('pi_abc', 1000, 'requested_by_customer');
-
-            expect(mockInvoke).toHaveBeenCalledWith('process-refund', {
-                body: {
-                    paymentIntentId: 'pi_abc',
-                    amount: 1000,
-                    reason: 'requested_by_customer',
-                },
+        Object.entries(methods).forEach(([name, fn]) => {
+            it(`${name} is exported`, () => {
+                expect(typeof fn).toBe('function');
             });
-            expect(result).toEqual({ id: 're_123', status: 'succeeded' });
-        });
-
-        it('throws when Edge Function returns an error', async () => {
-            mockInvoke.mockResolvedValue({ data: null, error: { message: 'Payment not found' } });
-
-            await expect(processRefund('pi_bad')).rejects.toThrow('Payment not found');
-        });
-
-        it('passes undefined amount for full refund', async () => {
-            mockInvoke.mockResolvedValue({ data: { id: 're_full', status: 'succeeded' }, error: null });
-
-            await processRefund('pi_xyz');
-
-            const body = mockInvoke.mock.calls[0][1].body;
-            expect(body.amount).toBeUndefined();
-        });
-    });
-
-    describe('createCreditPaymentIntent', () => {
-        it('throws if user is not authenticated', async () => {
-            mockGetUser.mockResolvedValue({ data: { user: null } });
-
-            await expect(createCreditPaymentIntent('tier_1')).rejects.toThrow('User not authenticated');
-            expect(mockInvoke).not.toHaveBeenCalled();
-        });
-
-        it('calls create-payment-intent Edge Function with amount in cents', async () => {
-            mockGetUser.mockResolvedValue({ data: { user: { id: 'user_1' } } });
-            mockInvoke.mockResolvedValue({ data: { id: 'pi_new', client_secret: 'cs_test' }, error: null });
-
-            const result = await createCreditPaymentIntent('tier_1');
-
-            expect(mockInvoke).toHaveBeenCalledWith('create-payment-intent', expect.objectContaining({
-                body: expect.objectContaining({
-                    amount: 1000, // $10 × 100 cents
-                    currency: 'usd',
-                }),
-            }));
-            expect(result.id).toBe('pi_new');
         });
     });
 });

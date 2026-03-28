@@ -21,7 +21,8 @@ export function CreditBalanceWidget({
     const { data: balance, isLoading } = useQuery({
         queryKey: ['ai-credits-balance'],
         queryFn: () => aiCreditsService.getBalance(),
-        refetchInterval: 60000 // Refresh every minute
+        refetchInterval: 60000, // Refresh every minute
+        retry: false // Table may not exist yet (pending migration)
     });
 
     if (isLoading) {

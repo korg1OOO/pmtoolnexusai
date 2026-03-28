@@ -1,0 +1,9 @@
+{
+  "data": null,
+  "error": {
+    "code": "23502",
+    "details": "Failing row contains (20f2569d-e942-4865-aa82-88ec02e815c8, be816e1b-bfa8-4e36-ac7e-7a3bd8b21e86, 04eed42d-90c3-4d05-9738-faf5b49508ff, pm, 2026-02-24 20:54:59.744802+00, null, [], null, 2026-02-24 20:54:59.744802+00, null, t, 2026-02-24 20:54:59.744802+00).",
+    "hint": null,
+    "message": "null value in column \"role_name\" of relation \"user_roles\" violates not-null constraint"
+  }
+}

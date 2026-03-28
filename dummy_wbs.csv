@@ -1,9 +1,9 @@
 Task Name,Start Date,Duration,Assignee,Dependencies
-Project Kickoff,2026-03-01,1,admin@projectoye.com,
-Requirements Gathering,2026-03-02,5,admin@projectoye.com,Project Kickoff
-System Design,2026-03-09,10,admin@projectoye.com,Requirements Gathering
-Frontend Development,2026-03-23,15,admin@projectoye.com,System Design
-Backend API Development,2026-03-23,15,admin@projectoye.com,System Design
-Integration Testing,2026-04-13,7,admin@projectoye.com,Frontend Development;Backend API Development
-User Acceptance Testing,2026-04-22,5,admin@projectoye.com,Integration Testing
-Go-Live,2026-04-29,1,admin@projectoye.com,User Acceptance Testing
+Project Kickoff,2026-03-01,1,admin@kiroxys.com,
+Requirements Gathering,2026-03-02,5,admin@kiroxys.com,Project Kickoff
+System Design,2026-03-09,10,admin@kiroxys.com,Requirements Gathering
+Frontend Development,2026-03-23,15,admin@kiroxys.com,System Design
+Backend API Development,2026-03-23,15,admin@kiroxys.com,System Design
+Integration Testing,2026-04-13,7,admin@kiroxys.com,Frontend Development;Backend API Development
+User Acceptance Testing,2026-04-22,5,admin@kiroxys.com,Integration Testing
+Go-Live,2026-04-29,1,admin@kiroxys.com,User Acceptance Testing

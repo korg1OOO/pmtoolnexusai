@@ -434,7 +434,7 @@ export async function sendTestSlackMessage(webhookUrl: string): Promise<SlackRes
                 type: 'section',
                 text: {
                     type: 'mrkdwn',
-                    text: 'Your ProjectOye Slack integration is configured correctly! You will receive governance notifications in this channel.',
+                    text: 'Your Kiroxys Slack integration is configured correctly! You will receive governance notifications in this channel.',
                 },
             },
             {
@@ -452,7 +452,7 @@ export async function sendTestSlackMessage(webhookUrl: string): Promise<SlackRes
                 elements: [
                     {
                         type: 'mrkdwn',
-                        text: 'Sent from ProjectOye Governance System',
+                        text: 'Sent from Kiroxys Governance System',
                     },
                 ],
             },

@@ -10,7 +10,7 @@ const supabase = createClient(supabaseUrl, serviceKey, {
     auth: { autoRefreshToken: false, persistSession: false },
 });
 
-const email = 'qa-test@projectoye.com';
+const email = 'qa-test@kiroxys.com';
 const password = 'TestPassword123!';
 
 async function main() {

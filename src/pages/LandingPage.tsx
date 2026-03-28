@@ -154,7 +154,7 @@ export default function LandingPage() {
                 isOpen={showAISidebar}
                 onToggle={() => setShowAISidebar(!showAISidebar)}
                 projectId={null}
-                projectName="Project Oye"
+                projectName="Kiroxys"
                 currentView="landing"
             />
 

@@ -347,8 +347,8 @@ export interface LearningRecommendation {
 // Tool Translation Layer
 export interface ToolTranslation {
   sourceField: string;
-  sourceTool: 'projectoye' | 'ms-project' | 'jira' | 'primavera' | 'excel';
-  targetTool: 'projectoye' | 'ms-project' | 'jira' | 'primavera' | 'excel';
+  sourceTool: 'kiroxys' | 'ms-project' | 'jira' | 'primavera' | 'excel';
+  targetTool: 'kiroxys' | 'ms-project' | 'jira' | 'primavera' | 'excel';
   targetField: string;
   transformationNotes: string;
   potentialIssues: string[];

@@ -64,7 +64,7 @@ async function main() {
         if (error) {
             console.error(`  ❌ Super Admin → owner: ${error.message}`);
         } else {
-            console.log(`  ✅ admin@projectoye.com → owner (Super Admin)`);
+            console.log(`  ✅ admin@kiroxys.com → owner (Super Admin)`);
         }
     }
 

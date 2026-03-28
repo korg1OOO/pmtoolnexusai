@@ -49,7 +49,7 @@ export async function sendEmail(
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                from: 'ProjectOye <notifications@projectoye.com>',
+                from: 'Kiroxys <notifications@kiroxys.com>',
                 to: [to],
                 subject,
                 html: formatEmailBody(body),
@@ -188,15 +188,15 @@ function formatEmailBody(body: string): string {
 </head>
 <body>
     <div class="header">
-        <h1 style="margin: 0; font-size: 24px;">ProjectOye</h1>
+        <h1 style="margin: 0; font-size: 24px;">Kiroxys</h1>
         <p style="margin: 10px 0 0 0; opacity: 0.9;">Governance Notification</p>
     </div>
     <div class="content">
         ${htmlBody}
     </div>
     <div class="footer">
-        <p style="margin: 0 0 10px 0;">This is an automated notification from ProjectOye Governance System.</p>
-        <p style="margin: 0;">© ${new Date().getFullYear()} ProjectOye. All rights reserved.</p>
+        <p style="margin: 0 0 10px 0;">This is an automated notification from Kiroxys Governance System.</p>
+        <p style="margin: 0;">© ${new Date().getFullYear()} Kiroxys. All rights reserved.</p>
     </div>
 </body>
 </html>
@@ -245,11 +245,11 @@ export function renderEmailTemplate(
 export async function sendTestEmail(to: string): Promise<EmailResult> {
     return sendEmail(
         to,
-        'ProjectOye - Email Configuration Test',
+        'Kiroxys - Email Configuration Test',
         `
 <h2>Email Configuration Successful!</h2>
 
-<p>This is a test email to confirm that your ProjectOye email notifications are configured correctly.</p>
+<p>This is a test email to confirm that your Kiroxys email notifications are configured correctly.</p>
 
 <p>You will receive governance notifications at this email address for:</p>
 <ul>

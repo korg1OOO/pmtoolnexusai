@@ -87,7 +87,7 @@
 
 ####  5. Onboarding Drip Campaign
 **Day 0 (Welcome):** ✅ Built
-- Subject: "Welcome to ProjectOye!"
+- Subject: "Welcome to Kiroxys!"
 - Content: Get started checklist
 
 **Day 2 (First Value):**
@@ -122,7 +122,7 @@
 #### 6. Re-engagement Campaign (Inactive Users)
 
 **30 Days Inactive:**
-- Subject: "We miss you at ProjectOye!"
+- Subject: "We miss you at Kiroxys!"
 - What's new since you left
 - Special offer (1 month free)
 
@@ -192,7 +192,7 @@
 - "Most productive week ever!"
 
 **System-wide:**
-- "Join 10,000+ teams using ProjectOye"
+- "Join 10,000+ teams using Kiroxys"
 - "New case study: How [Company] saved 30%"
 
 **Why:** Gamification increases engagement

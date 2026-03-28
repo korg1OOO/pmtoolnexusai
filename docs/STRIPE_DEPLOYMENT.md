@@ -328,5 +328,5 @@ supabase functions logs stripe-webhook --since 1h
 ---
 
 **For support, see:**
-- [STRIPE_SETUP.md](file:///Users/mbjunaid/My%20Projects/ProjectOye/ProjectOye-UI/projectoyeui/docs/STRIPE_SETUP.md)
+- [STRIPE_SETUP.md](file:///Users/mbjunaid/My%20Projects/Kiroxys/Kiroxys-UI/kiroxysui/docs/STRIPE_SETUP.md)
 - [walkthrough.md](file:///Users/mbjunaid/.gemini/antigravity/brain/6de4c1fd-47e9-49b2-923f-9b3b2aa420fd/walkthrough.md)

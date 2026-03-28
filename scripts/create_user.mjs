@@ -30,7 +30,7 @@ const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY, {
 });
 
 const args = process.argv.slice(2);
-const email = args[0] || 'admin@projectoye.com';
+const email = args[0] || 'admin@kiroxys.com';
 const password = args[1] || 'password123';
 
 console.log(`🔌  Connecting to ${SUPABASE_URL}...`);

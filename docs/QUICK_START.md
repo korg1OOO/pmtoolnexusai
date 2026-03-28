@@ -19,7 +19,7 @@ STRIPE_SECRET_KEY=sk_test_xxxxx
 STRIPE_WEBHOOK_SECRET=whsec_xxxxx
 EMAIL_PROVIDER=resend (or sendgrid/postmark)
 EMAIL_API_KEY=re_xxxxx
-FROM_EMAIL=noreply@projectoye.com
+FROM_EMAIL=noreply@kiroxys.com
 ```
 
 ---

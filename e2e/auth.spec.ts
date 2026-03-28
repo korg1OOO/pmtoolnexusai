@@ -12,7 +12,7 @@ const TEST_PASSWORD = process.env.E2E_TEST_PASSWORD || 'TestPass123!';
 test.describe('Authentication', () => {
     test('login page loads correctly', async ({ page }) => {
         await page.goto('/auth');
-        await expect(page).toHaveTitle(/ProjectOye|Login/i);
+        await expect(page).toHaveTitle(/Kiroxys|Login/i);
         await expect(page.locator('input[type="email"]')).toBeVisible();
         await expect(page.locator('input[type="password"]')).toBeVisible();
     });

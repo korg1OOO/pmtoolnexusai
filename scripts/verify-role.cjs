@@ -48,7 +48,7 @@ const OUT = process.argv[3] || '.';
 
     // Login
     try {
-        await page.fill('#email', 'admin@projectoye.com', { timeout: 5000 });
+        await page.fill('#email', 'admin@kiroxys.com', { timeout: 5000 });
         await page.fill('#password', 'TestPassword123!', { timeout: 5000 });
         await page.click('button[type="submit"]', { timeout: 5000 });
         await page.waitForTimeout(5000);

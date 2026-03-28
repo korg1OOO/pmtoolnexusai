@@ -17,7 +17,7 @@ function log(area, test, status, detail = '') {
 async function login(page) {
     await page.goto(`${BASE}/login`, { timeout: 15000, waitUntil: 'domcontentloaded' });
     await page.waitForTimeout(2000);
-    await page.fill('#email', 'admin@projectoye.com');
+    await page.fill('#email', 'admin@kiroxys.com');
     await page.fill('#password', 'TestPassword123!');
     await page.click('button[type="submit"]');
     await page.waitForURL('**/dashboard**', { timeout: 15000 }).catch(() => { });

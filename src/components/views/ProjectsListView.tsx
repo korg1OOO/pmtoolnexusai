@@ -238,7 +238,7 @@ export default function ProjectsListView() {
                                 </DropdownMenuItem>
                                 {canEdit && (
                                   <DropdownMenuItem onClick={() => {
-                                    localStorage.setItem('projectoye_selected_project', project.id);
+                                    localStorage.setItem('kiroxys_selected_project', project.id);
                                     navigate('/admin/project');
                                   }}>
                                     <Edit className="h-4 w-4 mr-2" />
@@ -369,7 +369,7 @@ export default function ProjectsListView() {
                                 </DropdownMenuItem>
                                 {canEdit && (
                                   <DropdownMenuItem onClick={() => {
-                                    localStorage.setItem('projectoye_selected_project', project.id);
+                                    localStorage.setItem('kiroxys_selected_project', project.id);
                                     navigate('/admin/project');
                                   }}>
                                     <Edit className="h-4 w-4 mr-2" />

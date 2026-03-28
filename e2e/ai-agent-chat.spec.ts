@@ -12,7 +12,7 @@ test.describe('AI Agent UI E2E Tests', () => {
             console.log('Not authenticated! Logging in manually...');
             const emailInput = page.locator('#email');
             await expect(emailInput).toBeVisible({ timeout: 15000 });
-            await emailInput.fill('admin@projectoye.com');
+            await emailInput.fill('admin@kiroxys.com');
             await page.locator('#password').fill('TestPassword123!');
             await page.locator('form button[type="submit"]').first().click();
             await page.waitForURL(/\/(projects|dashboard)/, { timeout: 15000 });

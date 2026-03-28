@@ -47,7 +47,7 @@ export function ContactFormModal({ children, defaultSubject = "General Inquiry",
             if (error) throw error;
 
             toast.success("Message sent successfully!", {
-                description: "We've received your message at admin@projectoye.com and will get back to you shortly."
+                description: "We've received your message at admin@kiroxys.com and will get back to you shortly."
             });
 
             if (finalSetOpen) finalSetOpen(false);

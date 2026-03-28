@@ -139,8 +139,8 @@ const defaultSettings: ProjectSettings = {
 
 const ProjectContext = createContext<ProjectContextType | undefined>(undefined);
 
-const STORAGE_KEY = 'projectoye-settings';
-const SELECTED_PROJECT_KEY = 'projectoye-selected-project';
+const STORAGE_KEY = 'kiroxys-settings';
+const SELECTED_PROJECT_KEY = 'kiroxys-selected-project';
 
 export function ProjectProvider({ children }: { children: ReactNode }) {
   // Synchronously restore project ID from localStorage to prevent "No Project Selected" flash

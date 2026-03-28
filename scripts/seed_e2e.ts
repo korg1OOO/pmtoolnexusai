@@ -13,9 +13,9 @@ async function seed() {
 
     try {
         // 1. Get the admin user
-        const adminUsers = await sql`SELECT id FROM auth.users WHERE email = 'admin@projectoye.com' LIMIT 1`;
+        const adminUsers = await sql`SELECT id FROM auth.users WHERE email = 'admin@kiroxys.com' LIMIT 1`;
         if (adminUsers.length === 0) {
-            throw new Error("admin@projectoye.com not found in auth.users");
+            throw new Error("admin@kiroxys.com not found in auth.users");
         }
         const adminId = adminUsers[0].id;
         console.log("Admin ID:", adminId);

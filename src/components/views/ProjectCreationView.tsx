@@ -210,7 +210,7 @@ export default function ProjectCreationView() {
         });
 
         if (data) {
-          localStorage.setItem('projectoye_selected_project', data.id);
+          localStorage.setItem('kiroxys_selected_project', data.id);
           navigate('/');
         }
 
@@ -242,7 +242,7 @@ export default function ProjectCreationView() {
         });
 
         if (data) {
-          localStorage.setItem('projectoye_selected_project', (data as any).id);
+          localStorage.setItem('kiroxys_selected_project', (data as any).id);
           navigate('/');
         }
       }

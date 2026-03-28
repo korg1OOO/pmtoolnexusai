@@ -25,7 +25,7 @@ admin (25):
   user11_1771513628843@example.com | User 11 Name | b0373809
   user14_1771513630083@example.com | User 14 Name | b30a9b42
   user18_1771513631747@example.com | User 18 Name | 55311c66
-  admin@projectoye.com | Super Admin | 3a6889fe
+  admin@kiroxys.com | Super Admin | 3a6889fe
 
 manager (20):
   user2_1771513168650@example.com | User 2 Name | be816e1b

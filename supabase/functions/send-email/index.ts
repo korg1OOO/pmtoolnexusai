@@ -7,7 +7,7 @@ import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY') || '';
-const FROM_EMAIL = Deno.env.get('FROM_EMAIL') || 'notifications@projectoye.com';
+const FROM_EMAIL = Deno.env.get('FROM_EMAIL') || 'notifications@kiroxys.com';
 
 const supabase = createClient(
     Deno.env.get('SUPABASE_URL') || '',
@@ -80,7 +80,7 @@ async function sendSubscriptionCreatedEmail(data: {
       <body>
         <div class="container">
           <div class="header">
-            <h1>🎉 Welcome to ProjectOye ${data.tier.toUpperCase()}!</h1>
+            <h1>🎉 Welcome to Kiroxys ${data.tier.toUpperCase()}!</h1>
           </div>
           <div class="content">
             <p>Hi ${data.name},</p>
@@ -92,11 +92,11 @@ async function sendSubscriptionCreatedEmail(data: {
               <li>Status: Active</li>
             </ul>
             <p>You now have access to all premium features!</p>
-            <a href="https://projectoye.com/dashboard" class="button">Go to Dashboard</a>
+            <a href="https://kiroxys.com/dashboard" class="button">Go to Dashboard</a>
             <p>If you have any questions, feel free to reach out to our support team.</p>
           </div>
           <div class="footer">
-            <p>ProjectOye | Building the future of AI content</p>
+            <p>Kiroxys | Building the future of AI content</p>
           </div>
         </div>
       </body>
@@ -105,7 +105,7 @@ async function sendSubscriptionCreatedEmail(data: {
 
     return await sendEmail({
         to: data.email,
-        subject: `Welcome to ProjectOye ${data.tier.toUpperCase()}! 🎉`,
+        subject: `Welcome to Kiroxys ${data.tier.toUpperCase()}! 🎉`,
         html,
     });
 }
@@ -152,11 +152,11 @@ async function sendPaymentFailedEmail(data: {
               <li>Ensure your card has sufficient funds</li>
               <li>Contact your bank if the issue persists</li>
             </ol>
-            <a href="https://projectoye.com/billing" class="button">Update Payment Method</a>
+            <a href="https://kiroxys.com/billing" class="button">Update Payment Method</a>
             <p>If you believe this is an error, please contact our support team immediately.</p>
           </div>
           <div class="footer">
-            <p>ProjectOye | Building the future of AI content</p>
+            <p>Kiroxys | Building the future of AI content</p>
           </div>
         </div>
       </body>
@@ -211,10 +211,10 @@ async function sendLicenseActivatedEmail(data: {
               </ul>
             </div>
             <p><strong>Important:</strong> If you did not activate this license, please contact support immediately.</p>
-            <p>Thank you for using ProjectOye!</p>
+            <p>Thank you for using Kiroxys!</p>
           </div>
           <div class="footer">
-            <p>ProjectOye | Building the future of AI content</p>
+            <p>Kiroxys | Building the future of AI content</p>
           </div>
         </div>
       </body>

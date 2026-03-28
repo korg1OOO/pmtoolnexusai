@@ -205,7 +205,7 @@ export const ExtendedNotificationTriggers = {
                 p_user_id: userId,
                 p_template: 'monthly_summary',
                 p_recipients: [{ email: user.email, name: user.full_name || 'User' }],
-                p_subject: 'Your Monthly ProjectOye Summary',
+                p_subject: 'Your Monthly Kiroxys Summary',
                 p_data: {
                     user_name: user.full_name || 'User',
                     month: new Date().toLocaleDateString('en-US', { month: 'long' }),
@@ -250,7 +250,7 @@ export const ExtendedNotificationTriggers = {
                 p_user_id: userId,
                 p_template: 'inactive_reminder',
                 p_recipients: [{ email: user.email, name: user.full_name || 'User' }],
-                p_subject: 'We Miss You at ProjectOye!',
+                p_subject: 'We Miss You at Kiroxys!',
                 p_data: {
                     user_name: user.full_name || 'User',
                     last_active: lastActiveDate,

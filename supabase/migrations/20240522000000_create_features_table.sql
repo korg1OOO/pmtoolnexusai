@@ -48,7 +48,7 @@ begin
 end
 $$;
 
--- Seed Data (ProjectOye Features)
+-- Seed Data (Kiroxys Features)
 insert into public.features (key, name, category, min_plan_tier, sort_order) values
 ('tube_map', 'Tube Map', 'CORE', 'free', 10),
 ('process_mapper', 'Process Workbench', 'CORE', 'free', 20),

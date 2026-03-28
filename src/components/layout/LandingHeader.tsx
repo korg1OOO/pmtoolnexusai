@@ -17,7 +17,7 @@ export const LandingHeader = ({ onLogoClick, isAuthenticated }: { onLogoClick?: 
                 <div className="h-8 w-8 bg-primary rounded-lg flex items-center justify-center shadow-lg shadow-primary/20">
                     <LayoutGrid className="text-primary-foreground h-5 w-5" />
                 </div>
-                <span className="text-lg font-bold tracking-tight text-foreground">ProjectOye</span>
+                <span className="text-lg font-bold tracking-tight text-foreground">Kiroxys</span>
             </div>
             <nav className="flex items-center gap-6 text-sm font-medium text-muted-foreground hidden md:flex">
                 <a href="/" className="hover:text-foreground transition-colors">Home</a>

@@ -45,7 +45,7 @@ async function createSampleProject() {
             .insert({
                 name: 'Sample Project',
                 code: 'SAMPLE-001',
-                description: 'A sample project to get you started with ProjectOye',
+                description: 'A sample project to get you started with Kiroxys',
                 methodology: 'hybrid',
                 status: 'active',
                 health: 'green',
@@ -130,7 +130,7 @@ async function createSampleProject() {
 }
 
 async function main() {
-    console.log('🚀 ProjectOye Database Setup\n');
+    console.log('🚀 Kiroxys Database Setup\n');
     console.log('═══════════════════════════════\n');
 
     const migrationsApplied = await checkIfMigrationsApplied();

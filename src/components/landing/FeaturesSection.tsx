@@ -93,7 +93,7 @@ export const FeaturesSection = () => {
                         transition={{ delay: 0.2, duration: 0.6 }}
                         className="text-xl text-muted-foreground font-medium"
                     >
-                        ProjectOye combines traditional project management rigor with cutting-edge AI to help you build faster and better.
+                        Kiroxys combines traditional project management rigor with cutting-edge AI to help you build faster and better.
                     </motion.p>
                 </div>
 

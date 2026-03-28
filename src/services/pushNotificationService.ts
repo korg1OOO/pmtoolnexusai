@@ -208,7 +208,7 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
  */
 export async function sendTestPushNotification(): Promise<PushResult> {
     return sendPushNotification(
-        'ProjectOye - Push Notification Test',
+        'Kiroxys - Push Notification Test',
         'Your push notifications are configured correctly!',
         { eventType: 'test', eventId: 'test' }
     );

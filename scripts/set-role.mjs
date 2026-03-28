@@ -11,8 +11,8 @@ const role = process.argv[2]; // e.g. 'admin', 'pm', 'lead', 'developer', 'analy
 async function main() {
     // 1. Find the test user
     const { data: users } = await s.auth.admin.listUsers({ perPage: 5 });
-    const testUser = users?.users?.find(u => u.email === 'admin@projectoye.com');
-    if (!testUser) { console.log('ERROR: admin@projectoye.com not found'); process.exit(1); }
+    const testUser = users?.users?.find(u => u.email === 'admin@kiroxys.com');
+    if (!testUser) { console.log('ERROR: admin@kiroxys.com not found'); process.exit(1); }
     console.log('User ID:', testUser.id);
 
     // 2. Find the active project

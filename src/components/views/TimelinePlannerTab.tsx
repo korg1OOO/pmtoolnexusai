@@ -977,7 +977,7 @@ export default function TimelinePlannerTab({ demo = false }: TimelinePlannerTabP
     const handleExportJSON = () => {
         const dataStr = JSON.stringify(state, null, 2);
         const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr);
-        const exportFileDefaultName = `ProjectOye_Scenario_${new Date().toISOString().split('T')[0]}.json`;
+        const exportFileDefaultName = `Kiroxys_Scenario_${new Date().toISOString().split('T')[0]}.json`;
         const linkElement = document.createElement('a');
         linkElement.setAttribute('href', dataUri);
         linkElement.setAttribute('download', exportFileDefaultName);

@@ -448,6 +448,7 @@ export default function ChangeRequestsView() {
     </div>
   );
 
+  return (
   <>
     <DataRegisterPage
       title="Change Requests"
@@ -471,7 +472,8 @@ export default function ChangeRequestsView() {
             <Filter className="h-3.5 w-3.5 mr-1.5" />
             Filter
           </Button>
-        }
+        </div>
+      }
         onAddRow={canCreate ? () => setAddDialogOpen(true) : undefined}
         addLabel="New Change Request"
         pdfFilename="change-requests"

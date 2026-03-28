@@ -134,7 +134,7 @@ async function handlePaymentFailed(invoice: Stripe.Invoice) {
 ### Medium Priority
 
 **5. Monthly Usage Summary**
-- Subject: "Your Monthly ProjectOye Summary"
+- Subject: "Your Monthly Kiroxys Summary"
 - Content: Projects created, tasks completed, team activity
 - Charts/stats visualization
 
@@ -285,7 +285,7 @@ Purpose: Re-engagement emails
 ```
 EMAIL_PROVIDER=resend
 EMAIL_API_KEY=re_xxxxx
-FROM_EMAIL=noreply@projectoye.com
+FROM_EMAIL=noreply@kiroxys.com
 ```
 
 ### Step 3: Schedule Cron

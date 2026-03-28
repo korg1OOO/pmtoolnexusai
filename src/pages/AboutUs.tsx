@@ -9,7 +9,7 @@ const AboutUs = () => {
             <header className="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 z-[100] flex items-center justify-between px-8">
                 <div className="flex items-center gap-2">
                     <a href="/" className="hover:opacity-80 transition-opacity">
-                        <span className="text-lg font-bold tracking-tight text-slate-900">ProjectOye</span>
+                        <span className="text-lg font-bold tracking-tight text-slate-900">Kiroxys</span>
                     </a>
                 </div>
                 <a href="/">
@@ -30,7 +30,7 @@ const AboutUs = () => {
                         We orchestrate the future.
                     </h1>
                     <p className="text-xl text-slate-600 max-w-2xl mx-auto leading-relaxed">
-                        ProjectOye was born from a simple belief: Complex programs shouldn't be chaotic. We build intelligence layers for the world's most ambitious teams.
+                        Kiroxys was born from a simple belief: Complex programs shouldn't be chaotic. We build intelligence layers for the world's most ambitious teams.
                     </p>
                 </section>
 
@@ -70,7 +70,7 @@ const AboutUs = () => {
                             The "intelligence gap" was widening. Decisions were made on stale data, and risks were identified only after they became issues.
                         </p>
                         <p>
-                            We built ProjectOye to close that gap. By combining rigorous project management standards with cutting-edge Generative AI, we've created a platform that doesn't just track work—it helps you understand it.
+                            We built Kiroxys to close that gap. By combining rigorous project management standards with cutting-edge Generative AI, we've created a platform that doesn't just track work—it helps you understand it.
                         </p>
                     </div>
                 </section>
@@ -79,7 +79,7 @@ const AboutUs = () => {
 
             {/* Footer */}
             <footer className="py-12 border-t border-slate-200 text-center text-slate-500 bg-slate-50">
-                <p>© 2026 ProjectOye Inc. Building the future of work.</p>
+                <p>© 2026 Kiroxys Inc. Building the future of work.</p>
             </footer>
         </div>
     );

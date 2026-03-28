@@ -80,7 +80,7 @@ export default function PublicDocs() {
                         <h1 className="text-4xl font-bold">Documentation</h1>
                     </div>
                     <p className="text-xl text-indigo-100">
-                        Comprehensive guides and API references for ProjectOye
+                        Comprehensive guides and API references for Kiroxys
                     </p>
                 </div>
             </div>

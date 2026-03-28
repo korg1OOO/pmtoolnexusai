@@ -22,7 +22,7 @@ const SCENARIOS = [
 (async () => {
     const s = createClient(url, pk);
     const { data: login, error: loginErr } = await s.auth.signInWithPassword({
-        email: 'admin@projectoye.com',
+        email: 'admin@kiroxys.com',
         password: 'TestPassword123!',
     });
 

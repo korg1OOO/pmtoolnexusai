@@ -1,6 +1,6 @@
 /**
  * License Key Generator Utility
- * Generates and validates license keys for ProjectOye
+ * Generates and validates license keys for Kiroxys
  * Uses Web Crypto API for browser compatibility
  */
 

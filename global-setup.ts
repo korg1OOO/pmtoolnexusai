@@ -17,7 +17,7 @@ const __dirname = path.dirname(__filename);
 const SUPABASE_URL = 'https://rlnaylyjxjjaqzwpuhar.supabase.co';
 const SERVICE_ROLE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsbmF5bHlqeGpqYXF6d3B1aGFyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MDExODU1MiwiZXhwIjoyMDg1Njk0NTUyfQ.im1bABzrl7a4rvIwUM99jhvZs1fW77EpBx9Cx8Qs8Iw';
 const ANON_KEY = 'sb_publishable_WVoGDML7fIAAsQvlkYKdQg_jfLftC3r';
-const TEST_EMAIL = 'e2e-test@projectoye.com';
+const TEST_EMAIL = 'e2e-test@kiroxys.com';
 const TEST_PASSWORD = 'E2eTestPass!2024';
 
 async function supabaseAdmin(method: string, path: string, body?: any) {

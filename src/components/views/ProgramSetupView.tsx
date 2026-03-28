@@ -82,7 +82,7 @@ const BRAND_DEFAULTS = {
   primaryColor: '217 91% 60%',
   accentColor: '280 87% 65%',
   sidebarColor: '222 47% 5%',
-  appName: 'ProjectOye',
+  appName: 'Kiroxys',
   logoUrl: '',
   borderRadius: '0.5rem',
 };
@@ -787,7 +787,7 @@ The AI will extract:
                     </div>
                     <div className="space-y-1.5">
                       <Label>Application Name</Label>
-                      <Input value={brandForm.appName} onChange={e => setBrandForm(f => ({ ...f, appName: e.target.value }))} placeholder="ProjectOye" />
+                      <Input value={brandForm.appName} onChange={e => setBrandForm(f => ({ ...f, appName: e.target.value }))} placeholder="Kiroxys" />
                     </div>
                     <div className="space-y-1.5">
                       <Label>Border Radius</Label>
@@ -818,7 +818,7 @@ The AI will extract:
                       <Building2 className="h-5 w-5 text-white" />
                     </div>
                     <div>
-                      <div className="font-bold" style={{ color: `hsl(${brandForm.primaryColor})` }}>{brandForm.appName || 'ProjectOye'}</div>
+                      <div className="font-bold" style={{ color: `hsl(${brandForm.primaryColor})` }}>{brandForm.appName || 'Kiroxys'}</div>
                       <div className="text-xs text-muted-foreground">Program Management Command Centre</div>
                     </div>
                   </div>

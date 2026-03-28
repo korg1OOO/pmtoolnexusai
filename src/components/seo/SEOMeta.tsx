@@ -32,10 +32,10 @@ export function SEOMeta({
     section,
     tags = []
 }: SEOMetaProps) {
-    const siteTitle = 'ProjectOye';
+    const siteTitle = 'Kiroxys';
     const fullTitle = title ? `${title} | ${siteTitle}` : siteTitle;
     const canonicalUrl = url || window.location.href;
-    const defaultImage = image || 'https://projectoye.com/og-image.png';
+    const defaultImage = image || 'https://kiroxys.com/og-image.png';
 
     return (
         <Helmet>

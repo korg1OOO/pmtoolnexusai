@@ -7,7 +7,7 @@ test.describe('Scenario 1 - Full Project Lifecycle via AI Agents', () => {
         await page.goto('http://localhost:8080/');
 
         // Fill credentials
-        await page.fill('input[type="email"]', 'admin@projectoye.com');
+        await page.fill('input[type="email"]', 'admin@kiroxys.com');
         await page.fill('input[type="password"]', 'admin123');
         await page.click('button[type="submit"]');
 

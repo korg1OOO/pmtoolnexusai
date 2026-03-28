@@ -40,10 +40,10 @@ export function generateBlogPostSchema(data: BlogPostStructuredData) {
         },
         publisher: {
             '@type': 'Organization',
-            name: 'ProjectOye',
+            name: 'Kiroxys',
             logo: {
                 '@type': 'ImageObject',
-                url: 'https://projectoye.com/logo.png',
+                url: 'https://kiroxys.com/logo.png',
             },
         },
         datePublished: data.publishedDate,

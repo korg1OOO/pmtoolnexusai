@@ -1,7 +1,7 @@
 /**
  * Application Knowledge Base
  * 
- * Comprehensive catalog of every feature, page, and capability in the Project Oye platform.
+ * Comprehensive catalog of every feature, page, and capability in the Kiroxys platform.
  * Used by the AI assistant to:
  * 1. Map user problems to solutions without requiring exact commands
  * 2. Guide new users through onboarding
@@ -335,7 +335,7 @@ export const APP_KNOWLEDGE: FeatureCategory[] = [
 export function getKnowledgeForSystemPrompt(): string {
     const lines: string[] = [
         'APPLICATION CAPABILITIES:',
-        'The Project Oye platform provides the following features. Use this knowledge to help users find the right feature for their needs.',
+        'The Kiroxys platform provides the following features. Use this knowledge to help users find the right feature for their needs.',
         '',
     ];
 
@@ -407,7 +407,7 @@ function calculateRelevanceScore(query: string, feature: FeatureEntry): number {
  * Generates a full onboarding guide for new users.
  */
 export function getOnboardingGuide(): string {
-    return `# 🚀 Welcome to Project Oye!
+    return `# 🚀 Welcome to Kiroxys!
 
 Here's how to get started with your project management journey:
 

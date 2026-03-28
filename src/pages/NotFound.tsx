@@ -66,7 +66,7 @@ const NotFound = () => {
 
         <div className="mt-8 text-sm text-muted-foreground">
           <p>
-            Need help? <a href="mailto:support@projectoye.com" className="text-primary hover:underline">Contact Support</a>
+            Need help? <a href="mailto:support@kiroxys.com" className="text-primary hover:underline">Contact Support</a>
           </p>
         </div>
       </Card>

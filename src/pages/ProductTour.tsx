@@ -98,7 +98,7 @@ export default function ProductTour() {
                     <ArrowLeft size={16} />
                     <span className="text-sm font-medium">Back to Home</span>
                 </a>
-                <span className="text-lg font-bold tracking-tight text-foreground">ProjectOye Product Tour</span>
+                <span className="text-lg font-bold tracking-tight text-foreground">Kiroxys Product Tour</span>
                 <div className="w-20" /> {/* Spacer for centering */}
             </header>
 

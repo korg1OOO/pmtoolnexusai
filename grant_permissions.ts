@@ -6,7 +6,7 @@ const client = new Client({ connectionString: process.env.DATABASE_URL });
 
 async function grantPermissions() {
     await client.connect();
-    const email = 'admin@projectoye.com';
+    const email = 'admin@kiroxys.com';
 
     console.log(`Looking up user ${email}...`);
     const { rows: users } = await client.query('SELECT id FROM auth.users WHERE email = $1', [email]);

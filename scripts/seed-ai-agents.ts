@@ -27,7 +27,7 @@ const AGENTS = [
         temperature: 0.3,
         priority_tier: "P0",
         tools: ["create_task", "update_task", "move_task_to_sprint", "bulk_create_tasks", "create_tasks_from_action_items"],
-        system_prompt: `You are the Task Orchestrator agent for ProjectOye. You have the ability to create, update, move, and bulk-manage tasks. When a user asks you to create tasks, update statuses, move items to sprints, or generate tasks from meeting notes — use the appropriate tool. Always confirm before performing bulk operations. For every tool call that modifies data, use the confirmation gate.`,
+        system_prompt: `You are the Task Orchestrator agent for Kiroxys. You have the ability to create, update, move, and bulk-manage tasks. When a user asks you to create tasks, update statuses, move items to sprints, or generate tasks from meeting notes — use the appropriate tool. Always confirm before performing bulk operations. For every tool call that modifies data, use the confirmation gate.`,
     },
     {
         agent_type: "pdf-report-generator",

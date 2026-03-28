@@ -24,7 +24,7 @@ const OUT = process.argv[2] || '.';
     // Login
     await page.goto('http://localhost:8080/login', { timeout: 15000 });
     await page.waitForTimeout(3000);
-    await page.fill('#email', 'admin@projectoye.com');
+    await page.fill('#email', 'admin@kiroxys.com');
     await page.fill('#password', 'TestPassword123!');
     await page.click('button[type="submit"]');
     await page.waitForURL('**/dashboard**', { timeout: 15000 }).catch(() => { });

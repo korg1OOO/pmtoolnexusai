@@ -1,8 +1,8 @@
 // vitest.config.ts
-import { defineConfig } from "file:///C:/Users/Admin/bilal-project-oyeui-ag-local/projectoyeui/node_modules/vitest/dist/config.js";
-import react from "file:///C:/Users/Admin/bilal-project-oyeui-ag-local/projectoyeui/node_modules/@vitejs/plugin-react-swc/index.js";
+import { defineConfig } from "file:///C:/Users/Admin/bilal-project-oyeui-ag-local/kiroxysui/node_modules/vitest/dist/config.js";
+import react from "file:///C:/Users/Admin/bilal-project-oyeui-ag-local/kiroxysui/node_modules/@vitejs/plugin-react-swc/index.js";
 import path from "path";
-var __vite_injected_original_dirname = "C:\\Users\\Admin\\bilal-project-oyeui-ag-local\\projectoyeui";
+var __vite_injected_original_dirname = "C:\\Users\\Admin\\bilal-project-oyeui-ag-local\\kiroxysui";
 var vitest_config_default = defineConfig({
   plugins: [react()],
   test: {

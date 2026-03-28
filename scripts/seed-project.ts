@@ -31,7 +31,7 @@ if (!SUPABASE_URL || !SUPABASE_KEY) {
 const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
 
 async function main() {
-    console.log('🚀 ProjectOye Database Seeder\n');
+    console.log('🚀 Kiroxys Database Seeder\n');
     console.log('═══════════════════════════════\n');
 
     // Check if tables exist

@@ -132,7 +132,7 @@ export const exportService = {
     ): Promise<Blob> {
         const workbook = new ExcelJS.Workbook();
 
-        workbook.creator = 'ProjectOye Analytics';
+        workbook.creator = 'Kiroxys Analytics';
         workbook.created = new Date();
 
         for (const sheet of sheets) {

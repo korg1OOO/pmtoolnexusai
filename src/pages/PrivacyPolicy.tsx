@@ -36,7 +36,7 @@ const PrivacyPolicy = () => {
             {/* Header */}
             <header className="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 z-[100] flex items-center justify-between px-8">
                 <a href="/" className="hover:opacity-80 transition-opacity">
-                    <span className="text-lg font-bold tracking-tight text-slate-900">ProjectOye</span>
+                    <span className="text-lg font-bold tracking-tight text-slate-900">Kiroxys</span>
                 </a>
                 <a href="/">
                     <Button variant="ghost" size="sm" className="gap-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100">
@@ -54,7 +54,7 @@ const PrivacyPolicy = () => {
                     </div>
                     <h1 className="text-4xl md:text-5xl font-black tracking-tight mb-5 text-slate-900">Privacy Policy</h1>
                     <p className="text-xl text-slate-600 leading-relaxed max-w-3xl">
-                        At ProjectOye, your trust is not taken for granted. This policy explains exactly what data we
+                        At Kiroxys, your trust is not taken for granted. This policy explains exactly what data we
                         collect, why we collect it, how we protect it, and your rights as a user.
                     </p>
                 </div>
@@ -144,7 +144,7 @@ const PrivacyPolicy = () => {
                             <li><strong>Incident response:</strong> 24-hour breach notification for affected users in line with GDPR Article 33</li>
                         </ul>
                         <p className="text-sm bg-amber-50 border border-amber-200 rounded-xl p-4 text-amber-800">
-                            Despite best efforts, no system is 100% secure. If you discover a vulnerability, please responsibly disclose it to <strong>security@projectoye.com</strong>.
+                            Despite best efforts, no system is 100% secure. If you discover a vulnerability, please responsibly disclose it to <strong>security@kiroxys.com</strong>.
                         </p>
                     </Section>
 
@@ -175,8 +175,8 @@ const PrivacyPolicy = () => {
                                 <tbody className="divide-y divide-slate-100">
                                     {[
                                         ['sb-auth-token', 'Supabase authentication session', '7 days'],
-                                        ['projectoye-theme', 'Dark/light mode preference', '1 year'],
-                                        ['projectoye-sidebar', 'Sidebar state preference', 'Session'],
+                                        ['kiroxys-theme', 'Dark/light mode preference', '1 year'],
+                                        ['kiroxys-sidebar', 'Sidebar state preference', 'Session'],
                                     ].map(([name, purpose, duration]) => (
                                         <tr key={name} className="hover:bg-slate-50">
                                             <td className="p-3 font-mono text-xs text-indigo-700">{name}</td>
@@ -213,7 +213,7 @@ const PrivacyPolicy = () => {
                             <li><strong>Objection:</strong> Object to processing based on legitimate interest</li>
                             <li><strong>Non-discrimination:</strong> Exercise your rights without receiving a degraded service (CCPA)</li>
                         </ul>
-                        <p>To exercise any of these rights, contact <strong>privacy@projectoye.com</strong> or use the button below. We respond within 30 days.</p>
+                        <p>To exercise any of these rights, contact <strong>privacy@kiroxys.com</strong> or use the button below. We respond within 30 days.</p>
                         <ContactFormModal defaultSubject="Privacy Rights Request">
                             <Button variant="outline" className="border-indigo-200 text-indigo-700 hover:bg-indigo-50">
                                 Submit a Privacy Request →
@@ -224,7 +224,7 @@ const PrivacyPolicy = () => {
                     {/* 8 */}
                     <Section icon={Globe} iconColor="text-cyan-600" iconBg="bg-cyan-100" title="8. International Data Transfers">
                         <p>
-                            ProjectOye is incorporated in the United States. If you are accessing the service from the
+                            Kiroxys is incorporated in the United States. If you are accessing the service from the
                             European Economic Area (EEA), UK, or other regions with data transfer restrictions, your data
                             may be transferred to the US.
                         </p>
@@ -237,7 +237,7 @@ const PrivacyPolicy = () => {
                     {/* 9 */}
                     <Section icon={UserCheck} iconColor="text-pink-600" iconBg="bg-pink-100" title="9. Children's Privacy">
                         <p>
-                            ProjectOye is not directed at children under 16 years of age. We do not knowingly collect
+                            Kiroxys is not directed at children under 16 years of age. We do not knowingly collect
                             personal information from children. If you believe we have inadvertently collected data from
                             a child, please contact us immediately and we will delete it.
                         </p>
@@ -251,7 +251,7 @@ const PrivacyPolicy = () => {
                             Continued use of the service after the effective date constitutes acceptance of the updated policy.
                         </p>
                         <p>
-                            You can always find the latest version at <strong>projectoye.com/privacy</strong>.
+                            You can always find the latest version at <strong>kiroxys.com/privacy</strong>.
                             Previous versions are available on request.
                         </p>
                     </Section>
@@ -262,11 +262,11 @@ const PrivacyPolicy = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
                             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
                                 <p className="font-semibold text-slate-800 mb-1">Privacy Team</p>
-                                <p className="text-sm">privacy@projectoye.com</p>
+                                <p className="text-sm">privacy@kiroxys.com</p>
                             </div>
                             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
                                 <p className="font-semibold text-slate-800 mb-1">Data Protection Officer</p>
-                                <p className="text-sm">dpo@projectoye.com</p>
+                                <p className="text-sm">dpo@kiroxys.com</p>
                             </div>
                         </div>
                         <div className="mt-2">

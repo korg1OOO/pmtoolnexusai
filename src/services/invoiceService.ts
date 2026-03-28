@@ -269,7 +269,7 @@ export async function exportRevenueReportPDF(metrics: RevenueReportMetrics): Pro
     const lastY = 122 + metrics.planBreakdown.length * 10 + 10;
     doc.setFontSize(8);
     doc.setTextColor(150, 150, 150);
-    doc.text('This report is confidential and generated automatically by ProjectOye.', 20, lastY);
+    doc.text('This report is confidential and generated automatically by Kiroxys.', 20, lastY);
 
     doc.save(`revenue-report-${new Date().toISOString().slice(0, 10)}.pdf`);
 }

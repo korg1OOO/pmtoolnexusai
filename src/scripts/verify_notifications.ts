@@ -23,7 +23,7 @@ async function testApprovalAssigned(): Promise<void> {
             entityType: 'project',
             dueDate: '2026-02-20',
             requesterName: 'Jane Smith',
-            approvalUrl: 'https://app.projectoye.com/approvals/123',
+            approvalUrl: 'https://app.kiroxys.com/approvals/123',
         } as any);
         results.push({ test: 'Approval Assigned', passed: true });
         console.log('✅ Approval Assigned notification sent successfully');
@@ -78,7 +78,7 @@ async function testDelegationReceived(): Promise<void> {
             delegatorName: 'John Doe',
             delegationType: 'temporary',
             delegationReason: 'Out of office',
-            approvalUrl: 'https://app.projectoye.com/approvals/123',
+            approvalUrl: 'https://app.kiroxys.com/approvals/123',
         } as any);
         results.push({ test: 'Delegation Received', passed: true });
         console.log('✅ Delegation Received notification sent successfully');

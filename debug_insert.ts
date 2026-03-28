@@ -6,7 +6,7 @@ const client = new Client({ connectionString: process.env.DATABASE_URL });
 async function run() {
     await client.connect();
 
-    const { rows: users } = await client.query(`SELECT id FROM auth.users WHERE email = 'admin@projectoye.com' LIMIT 1`);
+    const { rows: users } = await client.query(`SELECT id FROM auth.users WHERE email = 'admin@kiroxys.com' LIMIT 1`);
     if (!users[0]) return;
     const adminId = users[0].id;
 

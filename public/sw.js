@@ -26,7 +26,7 @@ self.addEventListener('push', (event) => {
 
     try {
         const data = event.data.json();
-        const title = data.title || 'ProjectOye Notification';
+        const title = data.title || 'Kiroxys Notification';
         const options = {
             body: data.body || '',
             icon: data.icon || '/icon-192.png',

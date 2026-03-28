@@ -42,7 +42,7 @@ export default function PublicBlog() {
             <div className="bg-gradient-to-r from-purple-600 to-indigo-700 text-white py-16">
                 <div className="container mx-auto px-4 max-w-5xl">
                     <div className="text-center mb-8">
-                        <h1 className="text-5xl font-bold mb-4">ProjectOye Blog</h1>
+                        <h1 className="text-5xl font-bold mb-4">Kiroxys Blog</h1>
                         <p className="text-xl text-purple-100">
                             Insights, tutorials, and updates from the team
                         </p>

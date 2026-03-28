@@ -62,7 +62,7 @@ export default function PublicFAQs() {
                         <h1 className="text-4xl font-bold">Help Center</h1>
                     </div>
                     <p className="text-xl text-center text-blue-100 mb-8">
-                        Find answers to common questions about ProjectOye
+                        Find answers to common questions about Kiroxys
                     </p>
 
                     {/* Search Bar */}

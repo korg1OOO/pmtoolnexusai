@@ -8,7 +8,7 @@ test.describe('Scenario 4 - Tenant Administration via AI Agents', () => {
 
         // Fill credentials
         // Note: Adjust the selectors based on the actual login page implementation
-        await page.fill('input[type="email"]', 'admin@projectoye.com');
+        await page.fill('input[type="email"]', 'admin@kiroxys.com');
         await page.fill('input[type="password"]', 'admin123');
         await page.click('button[type="submit"]');
 

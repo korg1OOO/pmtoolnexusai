@@ -11,7 +11,7 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 // Email service configuration (choose one)
 const EMAIL_PROVIDER = Deno.env.get('EMAIL_PROVIDER') || 'resend'; // resend, sendgrid, postmark
 const EMAIL_API_KEY = Deno.env.get('EMAIL_API_KEY');
-const FROM_EMAIL = Deno.env.get('FROM_EMAIL') || 'noreply@projectoye.com';
+const FROM_EMAIL = Deno.env.get('FROM_EMAIL') || 'noreply@kiroxys.com';
 
 serve(async (req) => {
     try {

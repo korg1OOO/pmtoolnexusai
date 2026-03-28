@@ -167,7 +167,7 @@ export function AdminSidebar({ collapsed, onCollapse, onBackToApp }: AdminSideba
               </Avatar>
               <div className="flex-1 min-w-0">
                 <div className="text-sm font-medium truncate">Admin User</div>
-                <div className="text-xs text-slate-400 truncate">admin@projectoye.com</div>
+                <div className="text-xs text-slate-400 truncate">admin@kiroxys.com</div>
               </div>
             </div>
           </div>

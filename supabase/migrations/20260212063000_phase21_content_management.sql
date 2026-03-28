@@ -452,8 +452,8 @@ INSERT INTO content_categories (name, slug, type, description, icon, display_ord
 INSERT INTO faqs (category_id, question, answer, keywords, display_order, is_published, created_by, updated_by) VALUES
   (
     (SELECT id FROM content_categories WHERE slug = 'general' AND type = 'faq'),
-    'What is ProjectOye?',
-    'ProjectOye is a comprehensive project management platform designed to help teams collaborate, track progress, and deliver projects successfully. It combines task management, resource allocation, budget tracking, and AI-powered analytics in one unified platform.',
+    'What is Kiroxys?',
+    'Kiroxys is a comprehensive project management platform designed to help teams collaborate, track progress, and deliver projects successfully. It combines task management, resource allocation, budget tracking, and AI-powered analytics in one unified platform.',
     ARRAY['about', 'platform', 'features'],
     1,
     true,
@@ -463,7 +463,7 @@ INSERT INTO faqs (category_id, question, answer, keywords, display_order, is_pub
   (
     (SELECT id FROM content_categories WHERE slug = 'general' AND type = 'faq'),
     'How do I get started?',
-    'Getting started with ProjectOye is easy! Simply sign up for an account, create your first project, invite your team members, and start adding tasks. Our onboarding guide will walk you through the process step by step.',
+    'Getting started with Kiroxys is easy! Simply sign up for an account, create your first project, invite your team members, and start adding tasks. Our onboarding guide will walk you through the process step by step.',
     ARRAY['onboarding', 'setup', 'beginner'],
     2,
     true,

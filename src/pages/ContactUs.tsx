@@ -54,7 +54,7 @@ const ContactUs = () => {
             <header className="fixed top-0 left-0 right-0 h-16 bg-white/80 backdrop-blur-md border-b border-slate-200 z-[100] flex items-center justify-between px-8">
                 <div className="flex items-center gap-2">
                     <a href="/" className="hover:opacity-80 transition-opacity">
-                        <span className="text-lg font-bold tracking-tight text-slate-900">ProjectOye</span>
+                        <span className="text-lg font-bold tracking-tight text-slate-900">Kiroxys</span>
                     </a>
                 </div>
                 <a href="/">

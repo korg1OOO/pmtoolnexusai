@@ -48,7 +48,7 @@ function executeCommand(command: string, description: string): boolean {
 }
 
 async function main() {
-    console.log('\n🚀 ProjectOye Database Setup\n');
+    console.log('\n🚀 Kiroxys Database Setup\n');
     console.log('═══════════════════════════════════════\n');
 
     // Check if Supabase CLI exists

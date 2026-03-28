@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useProjectContext } from '@/contexts/ProjectContext';
+import type { ExtractedContractData } from './useContractExtractor';
 
 interface BrandConfig {
   primaryColor: string;   // HSL string e.g. "217 91% 60%"
@@ -105,6 +106,90 @@ export function useProgramSetup() {
     return saved ? JSON.parse(saved) : null;
   };
 
+  const bulkImportFromContract = useMutation({
+    mutationFn: async (data: ExtractedContractData) => {
+      const results = await Promise.allSettled([
+        // 1. Contract config
+        supabase.from('program_contract_config').upsert(
+          { ...data.contract_terms, project_id: projectId },
+          { onConflict: 'project_id' }
+        ),
+        // 2. Key personnel (bulk)
+        data.key_personnel.length > 0
+          ? supabase.from('key_personnel').insert(
+              data.key_personnel.map(p => ({ ...p, project_id: projectId }))
+            )
+          : Promise.resolve({ error: null }),
+        // 3. Milestones (bulk)
+        data.milestones.length > 0
+          ? supabase.from('project_milestones').insert(
+              data.milestones.map(m => ({
+                project_id: projectId,
+                name: m.name,
+                description: m.description,
+                due_date: m.due_date,
+                status: 'on-track',
+                progress: 0,
+              }))
+            )
+          : Promise.resolve({ error: null }),
+        // 4. Assumptions (bulk)
+        data.assumptions.length > 0
+          ? supabase.from('assumptions').insert(
+              data.assumptions.map(a => ({
+                project_id: projectId,
+                title: a.title,
+                category: a.category,
+                owner_name: a.owner_name,
+                impact_if_wrong: a.impact_if_wrong,
+                status: 'open',
+              }))
+            )
+          : Promise.resolve({ error: null }),
+        // 5. Dependencies (bulk)
+        data.dependencies.length > 0
+          ? supabase.from('dependencies').insert(
+              data.dependencies.map(d => ({
+                project_id: projectId,
+                title: d.title,
+                dependent_on: d.dependent_on,
+                provider: d.provider,
+                owner_name: d.owner_name,
+                notes: d.notes,
+                status: 'pending',
+              }))
+            )
+          : Promise.resolve({ error: null }),
+        // 6. Risks (bulk)
+        data.risks.length > 0
+          ? supabase.from('risks').insert(
+              data.risks.map(r => ({
+                project_id: projectId,
+                title: r.title,
+                description: r.description,
+                probability: r.probability,
+                impact: r.impact,
+                owner_name: r.owner_name,
+                mitigation_plan: r.mitigation_plan,
+                status: 'identified',
+              }))
+            )
+          : Promise.resolve({ error: null }),
+      ]);
+
+      // Collect errors (don't throw — partial success is fine)
+      const errors = results
+        .filter(r => r.status === 'rejected' || (r.status === 'fulfilled' && (r.value as { error: unknown }).error))
+        .map(r => r.status === 'rejected' ? r.reason : (r.status === 'fulfilled' ? (r.value as { error: { message: string } }).error?.message : ''));
+
+      return { errors, inserted: results.filter(r => r.status === 'fulfilled').length };
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['program_contract_config', projectId] });
+      qc.invalidateQueries({ queryKey: ['key_personnel', projectId] });
+    },
+  });
+
   return {
     projectId,
     contractConfig,
@@ -116,5 +201,6 @@ export function useProgramSetup() {
     removeKeyPerson,
     applyBranding,
     loadSavedBranding,
+    bulkImportFromContract,
   };
 }

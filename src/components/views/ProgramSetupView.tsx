@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,14 +10,17 @@ import { Slider } from '@/components/ui/slider';
 import {
   ScrollText, Users, Palette, GraduationCap, Bot,
   ChevronRight, ChevronLeft, Check, Plus, Trash2,
-  Sparkles, Building2, AlertCircle,
+  Sparkles, Building2, AlertCircle, FileText, Upload,
+  Loader2, ChevronDown, ChevronUp, ShieldCheck,
 } from 'lucide-react';
 import { useProgramSetup } from '@/hooks/useProgramSetup';
+import { useContractExtractor, type ExtractedContractData } from '@/hooks/useContractExtractor';
 import { toast } from 'sonner';
 import { formatCurrency } from '@/lib/utils';
 
 // ─── Step definitions ─────────────────────────────────────────────────────────
 const STEPS = [
+  { id: 0, label: 'Import Contract', icon: FileText, description: 'AI-parse a contract document to auto-populate all fields' },
   { id: 1, label: 'Contract Terms', icon: ScrollText, description: 'Financial, penalty and governance parameters' },
   { id: 2, label: 'Key Personnel', icon: Users, description: 'Register contractual key personnel obligations' },
   { id: 3, label: 'Training', icon: GraduationCap, description: 'Training targets and stream configuration' },
@@ -90,16 +93,24 @@ const AI_DEFAULTS = {
 };
 
 export default function ProgramSetupView() {
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0);
   const [completed, setCompleted] = useState<Set<number>>(new Set());
   const [contractForm, setContractForm] = useState(CONTRACT_DEFAULTS);
   const [brandForm, setBrandForm] = useState(BRAND_DEFAULTS);
   const [aiConfig, setAiConfig] = useState(AI_DEFAULTS);
   const [newPerson, setNewPerson] = useState({ name: '', role: '', organisation: 'client', contract_start_date: '' });
 
+  // ── Contract Import state ──────────────────────────────────────────────────
+  const [contractText, setContractText] = useState('');
+  const [importResult, setImportResult] = useState<ExtractedContractData | null>(null);
+  const [reviewOpen, setReviewOpen] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const { extract, isExtracting, error: extractError } = useContractExtractor();
+
   const {
     contractConfig, keyPersonnel, loadingContract, loadingKP,
     upsertContractConfig, addKeyPerson, removeKeyPerson, applyBranding, loadSavedBranding,
+    bulkImportFromContract,
   } = useProgramSetup();
 
   // Pre-fill from DB / localStorage on mount
@@ -246,6 +257,239 @@ export default function ProgramSetupView() {
             transition={{ duration: 0.2 }}
             className="max-w-2xl space-y-6"
           >
+            {/* ── STEP 0: Import Contract ───────────────────────────── */}
+            {step === 0 && (
+              <>
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h2 className="text-xl font-bold">Import Contract</h2>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Paste your contract text and let AI extract all project data automatically.
+                    </p>
+                  </div>
+                  <Badge variant="outline" className="text-xs gap-1.5 shrink-0">
+                    <Sparkles className="h-3 w-3" />
+                    AI-Powered
+                  </Badge>
+                </div>
+
+                {/* Input area */}
+                <div className="rounded-lg border p-4 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Contract Text</Label>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center gap-1.5 text-xs text-primary hover:underline"
+                    >
+                      <Upload className="h-3 w-3" /> Upload .txt file
+                    </button>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept=".txt,.text"
+                      className="hidden"
+                      onChange={e => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = ev => setContractText((ev.target?.result as string) || '');
+                        reader.readAsText(file);
+                      }}
+                    />
+                  </div>
+                  <Textarea
+                    value={contractText}
+                    onChange={e => setContractText(e.target.value)}
+                    rows={10}
+                    placeholder="Paste your contract, Statement of Work, or ordering document here...
+
+The AI will extract:
+  • Contract terms (payment, penalties, hypercare)
+  • Key personnel (SI + client teams)
+  • Milestones & critical dates
+  • Assumptions, dependencies & risks"
+                    className="font-mono text-xs resize-none"
+                  />
+                  {extractError && (
+                    <div className="flex items-start gap-2 rounded-lg bg-destructive/10 border border-destructive/20 p-3 text-xs text-destructive">
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0 mt-0.5" />
+                      {extractError}
+                    </div>
+                  )}
+                  <Button
+                    className="w-full"
+                    disabled={isExtracting || !contractText.trim()}
+                    onClick={async () => {
+                      const result = await extract(contractText);
+                      if (result) {
+                        setImportResult(result);
+                        setReviewOpen(true);
+                        toast.success('Contract extracted! Review the data below before loading.');
+                      }
+                    }}
+                  >
+                    {isExtracting ? (
+                      <><Loader2 className="h-4 w-4 mr-2 animate-spin" />Extracting with AI...</>
+                    ) : (
+                      <><Sparkles className="h-4 w-4 mr-2" />Extract with AI</>
+                    )}
+                  </Button>
+                </div>
+
+                {/* Review panel */}
+                {importResult && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="rounded-lg border border-primary/30 bg-primary/5 overflow-hidden"
+                  >
+                    {/* Header */}
+                    <button
+                      onClick={() => setReviewOpen(r => !r)}
+                      className="w-full flex items-center justify-between p-4 hover:bg-primary/10 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <ShieldCheck className="h-4 w-4 text-primary" />
+                        <span className="font-semibold text-sm">Review Extracted Data</span>
+                        <Badge className="text-xs" variant="secondary">
+                          {importResult.si_name} → {importResult.client_name}
+                        </Badge>
+                      </div>
+                      {reviewOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                    </button>
+
+                    {reviewOpen && (
+                      <div className="px-4 pb-4 space-y-4">
+                        {/* Summary */}
+                        <p className="text-xs text-muted-foreground italic">{importResult.summary}</p>
+
+                        {/* Stats row */}
+                        <div className="grid grid-cols-3 gap-2 text-center">
+                          {[
+                            { label: 'Personnel', value: importResult.key_personnel.length },
+                            { label: 'Milestones', value: importResult.milestones.length },
+                            { label: 'Assumptions', value: importResult.assumptions.length },
+                            { label: 'Dependencies', value: importResult.dependencies.length },
+                            { label: 'Risks', value: importResult.risks.length },
+                            { label: 'Critical', value: importResult.milestones.filter(m => m.is_critical).length },
+                          ].map(s => (
+                            <div key={s.label} className="rounded-lg bg-background border p-2">
+                              <div className="text-lg font-bold text-primary">{s.value}</div>
+                              <div className="text-xs text-muted-foreground">{s.label}</div>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Contract Terms preview */}
+                        <div className="rounded-lg bg-background border p-3 space-y-1.5">
+                          <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Contract Terms</div>
+                          {[
+                            { label: 'Governing Ref', value: importResult.contract_terms.governing_reference || '—' },
+                            { label: 'Currency', value: importResult.contract_terms.currency },
+                            { label: 'Payment Terms', value: `${importResult.contract_terms.payment_terms_days} days` },
+                            { label: 'Penalty Rate', value: `${importResult.contract_terms.penalty_rate_pct}% / week` },
+                            { label: 'Penalty Cap', value: `${importResult.contract_terms.penalty_cap_pct}% of milestone` },
+                            { label: 'Hypercare', value: `${importResult.contract_terms.hypercare_weeks} weeks` },
+                            { label: 'Training Sessions', value: `${importResult.contract_terms.training_sessions_target}` },
+                          ].map(t => (
+                            <div key={t.label} className="flex justify-between text-xs">
+                              <span className="text-muted-foreground">{t.label}</span>
+                              <span className="font-medium">{t.value}</span>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Personnel preview */}
+                        {importResult.key_personnel.length > 0 && (
+                          <div className="rounded-lg bg-background border overflow-hidden">
+                            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide p-3 pb-2">Key Personnel</div>
+                            <table className="w-full text-xs">
+                              <tbody>
+                                {importResult.key_personnel.slice(0, 6).map((p, i) => (
+                                  <tr key={i} className={i % 2 === 0 ? 'bg-background' : 'bg-muted/20'}>
+                                    <td className="px-3 py-1.5 font-medium">{p.name}</td>
+                                    <td className="px-3 py-1.5 text-muted-foreground">{p.role}</td>
+                                    <td className="px-3 py-1.5">
+                                      <Badge variant="outline" className="text-xs capitalize">{p.organisation}</Badge>
+                                    </td>
+                                  </tr>
+                                ))}
+                                {importResult.key_personnel.length > 6 && (
+                                  <tr><td colSpan={3} className="px-3 py-1.5 text-muted-foreground text-center">+ {importResult.key_personnel.length - 6} more</td></tr>
+                                )}
+                              </tbody>
+                            </table>
+                          </div>
+                        )}
+
+                        {/* Milestones preview */}
+                        {importResult.milestones.length > 0 && (
+                          <div className="rounded-lg bg-background border p-3 space-y-1">
+                            <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Milestones</div>
+                            {importResult.milestones.slice(0, 5).map((m, i) => (
+                              <div key={i} className="flex items-center gap-2 text-xs">
+                                {m.is_critical
+                                  ? <span className="text-amber-500 font-bold">⭐</span>
+                                  : <span className="text-muted-foreground">·</span>
+                                }
+                                <span className="flex-1 truncate">{m.name}</span>
+                                {m.due_date && <span className="text-muted-foreground shrink-0">{m.due_date}</span>}
+                              </div>
+                            ))}
+                            {importResult.milestones.length > 5 && (
+                              <div className="text-xs text-muted-foreground">+ {importResult.milestones.length - 5} more milestones</div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Load button */}
+                    <div className="border-t px-4 py-3 flex items-center justify-between bg-background">
+                      <p className="text-xs text-muted-foreground">Ready to load {[
+                        importResult.key_personnel.length && `${importResult.key_personnel.length} personnel`,
+                        importResult.milestones.length && `${importResult.milestones.length} milestones`,
+                        importResult.risks.length && `${importResult.risks.length} risks`,
+                      ].filter(Boolean).join(', ')} into this project.</p>
+                      <Button
+                        size="sm"
+                        disabled={bulkImportFromContract.isPending}
+                        onClick={async () => {
+                          const result = await bulkImportFromContract.mutateAsync(importResult);
+                          const errCount = result.errors.filter(Boolean).length;
+                          if (errCount === 0) {
+                            toast.success('All contract data loaded successfully!');
+                            // Pre-fill contract form from extracted terms
+                            setContractForm(f => ({ ...f, ...importResult.contract_terms }));
+                            markComplete(0);
+                            setStep(1);
+                          } else {
+                            toast.warning(`Loaded with ${errCount} partial error(s). Some data may not have saved.`);
+                            setContractForm(f => ({ ...f, ...importResult.contract_terms }));
+                            markComplete(0);
+                            setStep(1);
+                          }
+                        }}
+                      >
+                        {bulkImportFromContract.isPending ? (
+                          <><Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />Loading...</>
+                        ) : (
+                          <><Check className="h-3.5 w-3.5 mr-1.5" />Load into Project</>
+                        )}
+                      </Button>
+                    </div>
+                  </motion.div>
+                )}
+
+                <div className="flex justify-between">
+                  <div />
+                  <Button variant="ghost" onClick={() => { markComplete(0); setStep(1); }}>
+                    Skip — enter manually <ChevronRight className="h-4 w-4 ml-1" />
+                  </Button>
+                </div>
+              </>
+            )}
+
             {/* ── STEP 1: Contract Terms ─────────────────────────────── */}
             {step === 1 && (
               <>

@@ -99,7 +99,7 @@ supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_xxxxx
 
 1. Go to **Stripe Dashboard → Developers → Webhooks**
 2. Click **Add endpoint**
-3. Endpoint URL: `https://your-project.supabase.co/functions/v1/stripe-webhook`
+3. Endpoint URL: `https://rlnaylyjxjjaqzwpuhar.supabase.co/functions/v1/stripe-webhook`
 4. Select events:
    - `checkout.session.completed`
    - `customer.subscription.updated`
@@ -131,7 +131,7 @@ supabase secrets set STRIPE_WEBHOOK_SECRET=whsec_xxxxx
 
 3. Forward webhooks to local:
    ```bash
-   stripe listen --forward-to https://your-project.supabase.co/functions/v1/stripe-webhook
+   stripe listen --forward-to https://rlnaylyjxjjaqzwpuhar.supabase.co/functions/v1/stripe-webhook
    ```
 
 4. Use test cards:

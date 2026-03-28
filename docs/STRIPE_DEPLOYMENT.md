@@ -91,7 +91,7 @@ supabase functions invoke create-checkout-session --data '{}'
 #### B. Webhook Endpoint
 1. Go to **Developers → Webhooks**
 2. Click **Add endpoint**
-3. URL: `https://your-project.supabase.co/functions/v1/stripe-webhook`
+3. URL: `https://rlnaylyjxjjaqzwpuhar.supabase.co/functions/v1/stripe-webhook`
 4. Select events:
    ```
    ✅ checkout.session.completed

@@ -7,7 +7,7 @@ import * as dotenv from 'dotenv';
 // Load environment variables
 dotenv.config();
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL!;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL!;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY!;
 
 console.log('🚀 Running advanced delegation features migration...\n');

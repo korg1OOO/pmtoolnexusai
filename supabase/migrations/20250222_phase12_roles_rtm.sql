@@ -99,20 +99,20 @@ ALTER TABLE requirement_traceability_items ENABLE ROW LEVEL SECURITY;
 
 -- ─── RLS Policies ────────────────────────────────────────────────────────────
 -- Read (all authenticated users)
-CREATE POLICY IF NOT EXISTS "roles_read_all"        ON platform_roles           FOR SELECT TO authenticated USING (true);
-CREATE POLICY IF NOT EXISTS "perms_read_all"         ON platform_role_permissions FOR SELECT TO authenticated USING (true);
-CREATE POLICY IF NOT EXISTS "user_roles_read_all"    ON platform_user_roles      FOR SELECT TO authenticated USING (true);
-CREATE POLICY IF NOT EXISTS "features_read_all"      ON platform_features        FOR SELECT TO authenticated USING (true);
-CREATE POLICY IF NOT EXISTS "audit_read_all"         ON platform_role_audit_log  FOR SELECT TO authenticated USING (true);
-CREATE POLICY IF NOT EXISTS "rtm_read_all"           ON requirement_traceability_items FOR SELECT TO authenticated USING (true);
+CREATE POLICY "roles_read_all"        ON platform_roles           FOR SELECT TO authenticated USING (true);
+CREATE POLICY "perms_read_all"         ON platform_role_permissions FOR SELECT TO authenticated USING (true);
+CREATE POLICY "user_roles_read_all"    ON platform_user_roles      FOR SELECT TO authenticated USING (true);
+CREATE POLICY "features_read_all"      ON platform_features        FOR SELECT TO authenticated USING (true);
+CREATE POLICY "audit_read_all"         ON platform_role_audit_log  FOR SELECT TO authenticated USING (true);
+CREATE POLICY "rtm_read_all"           ON requirement_traceability_items FOR SELECT TO authenticated USING (true);
 
 -- Write (authenticated users — further gated in app via RBAC)
-CREATE POLICY IF NOT EXISTS "roles_write_auth"       ON platform_roles           FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "perms_write_auth"       ON platform_role_permissions FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "user_roles_write_auth"  ON platform_user_roles      FOR ALL TO authenticated USING (true) WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "features_write_service" ON platform_features        FOR ALL TO service_role USING (true);
-CREATE POLICY IF NOT EXISTS "audit_insert_auth"      ON platform_role_audit_log  FOR INSERT TO authenticated WITH CHECK (true);
-CREATE POLICY IF NOT EXISTS "rtm_write_auth"         ON requirement_traceability_items FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "roles_write_auth"       ON platform_roles           FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "perms_write_auth"       ON platform_role_permissions FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "user_roles_write_auth"  ON platform_user_roles      FOR ALL TO authenticated USING (true) WITH CHECK (true);
+CREATE POLICY "features_write_service" ON platform_features        FOR ALL TO service_role USING (true);
+CREATE POLICY "audit_insert_auth"      ON platform_role_audit_log  FOR INSERT TO authenticated WITH CHECK (true);
+CREATE POLICY "rtm_write_auth"         ON requirement_traceability_items FOR ALL TO authenticated USING (true) WITH CHECK (true);
 
 -- ─── Seed System Roles ────────────────────────────────────────────────────────
 INSERT INTO platform_roles (name, description, scope, is_system_role)

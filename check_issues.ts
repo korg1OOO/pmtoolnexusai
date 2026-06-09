@@ -1,8 +1,8 @@
 import { createClient } from "@supabase/supabase-js";
 
 async function main() {
-    const supabaseUrl = process.env.VITE_SUPABASE_URL || "https://rlnaylyjxjjaqzwpuhar.supabase.co";
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || "https://rlnaylyjxjjaqzwpuhar.supabase.co";
+    const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
     if (!supabaseKey) {
         console.error("Missing SUPABASE_SERVICE_ROLE_KEY");

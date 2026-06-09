@@ -11,7 +11,7 @@ import * as path from 'path';
 // Load environment variables
 dotenv.config();
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL!;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL!;
 const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY!;
 
 if (!supabaseUrl || !supabaseKey) {

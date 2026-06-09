@@ -1,7 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
 require('dotenv').config({ path: '.env' });
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 console.log('Testing Supabase Connection...\n');

@@ -3,7 +3,7 @@ import fs from 'fs';
 
 dotenv.config({ path: '.env.local' });
 
-const supabaseUrl = process.env.VITE_SUPABASE_URL!;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL!;
 const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY!;
 
 async function check() {

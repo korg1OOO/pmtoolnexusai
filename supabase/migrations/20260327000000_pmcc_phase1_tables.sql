@@ -371,6 +371,5 @@ GRANT ALL ON public.triage_sessions TO authenticated;
 
 -- ─── MILESTONES: add optional columns for Penalty Tracker ────────────────────
 -- Only add if not already present — safe to re-run
-ALTER TABLE public.milestones ADD COLUMN IF NOT EXISTS milestone_value NUMERIC(18,2);
-ALTER TABLE public.milestones ADD COLUMN IF NOT EXISTS actual_date DATE;
-ALTER TABLE public.milestones ADD COLUMN IF NOT EXISTS is_critical BOOLEAN DEFAULT false;
+-- ALTER TABLE public.milestones ADD COLUMN IF NOT EXISTS milestone_value NUMERIC(18,2);
+-- ALTER TABLE public.milestones ADD COLUMN IF NOT EXISTS actual_date DATE;

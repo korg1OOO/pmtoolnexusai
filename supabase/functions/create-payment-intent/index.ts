@@ -1,4 +1,4 @@
-import Stripe from 'stripe';
+import Stripe from "npm:stripe";
 
 const stripe = new Stripe(Deno.env.get('STRIPE_SECRET_KEY') || '', {
     apiVersion: '2026-01-28.clover' as any,

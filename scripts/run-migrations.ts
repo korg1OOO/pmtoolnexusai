@@ -3,8 +3,8 @@ import { createClient } from '@supabase/supabase-js';
 import * as fs from 'fs';
 import * as path from 'path';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL!;
-const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY!;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const dbUrl = process.env.DATABASE_URL!;
 
 console.log('🚀 Running database migrations...\n');

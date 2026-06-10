@@ -11,9 +11,8 @@ import * as path from 'path';
 // Load environment variables
 dotenv.config();
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL!;
-const supabaseKey = process.env.VITE_SUPABASE_PUBLISHABLE_KEY!;
-
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 if (!supabaseUrl || !supabaseKey) {
     console.error('❌ Missing Supabase credentials in .env');
     console.error('Required: VITE_SUPABASE_URL and VITE_SUPABASE_PUBLISHABLE_KEY');

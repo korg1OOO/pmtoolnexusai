@@ -3,8 +3,8 @@ import fs from 'fs';
 
 dotenv.config({ path: '.env.local' });
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL!;
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY!;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 async function check() {
     const projectId = 'afc82abc-0044-46bb-8664-9be11ff10629';

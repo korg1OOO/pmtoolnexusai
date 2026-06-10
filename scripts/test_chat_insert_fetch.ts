@@ -1,7 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://rlnaylyjxjjaqzwpuhar.supabase.co';
-const supabaseKey = process.env.VITE_SUPABASE_ANON_KEY || 'dummy'; // We need a real token ideally to test RLS, but let's try just getting the schema error first if possible.
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY; // We need a real token ideally to test RLS, but let's try just getting the schema error first if possible.
 // Actually, let's just query the database directly to verify if there's any trigger or RLS policy that specifically blocks this shape.
 import pg from 'pg';
 

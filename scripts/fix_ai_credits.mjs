@@ -5,9 +5,8 @@
  */
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = 'https://rlnaylyjxjjaqzwpuhar.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlxeXBtd2NzeGF3cGx0c25xYnd0Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MTUxMzYyNCwiZXhwIjoyMDg3MDg5NjI0fQ.1I6fOGJWGajVDlOjXFHSqw4dJcQ14hBIZgXYWCVcVbg';
-
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey, {
     db: { schema: 'public' }
 });

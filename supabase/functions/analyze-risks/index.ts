@@ -16,7 +16,7 @@ serve(async (req) => {
         const { projectId } = await req.json();
         const openAiKey = Deno.env.get("OPENAI_API_KEY");
         const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-        const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+        const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY
         const supabase = createClient(supabaseUrl, supabaseKey);
 
         if (!openAiKey) {

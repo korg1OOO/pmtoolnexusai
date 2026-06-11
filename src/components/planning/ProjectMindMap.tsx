@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, ChevronDown, Plus } from 'lucide-react';
+import { ChevronRight, ChevronDown, Plus, Target, Users } from 'lucide-react';
 import { 
   MegaProject, 
   ProjectNode, 
@@ -86,7 +86,6 @@ const ProjectNodeCard: React.FC<ProjectNodeCardProps> = ({
         whileHover={{ scale: 1.005 }}
         className="group relative mb-3 rounded-2xl border bg-card p-5 shadow-sm transition-all hover:shadow-md"
       >
-        {/* Improved Animated Color Wave */}
         <ColorWave color={waveColor} intensity={progress > 75 ? 'low' : progress < 40 ? 'high' : 'medium'} />
 
         <div className="relative flex items-start justify-between">
@@ -112,7 +111,6 @@ const ProjectNodeCard: React.FC<ProjectNodeCardProps> = ({
               </div>
             </div>
 
-            {/* Progress */}
             <div className="mt-4 flex items-center gap-4">
               <div className="flex-1 max-w-[220px]">
                 <div className="flex justify-between text-xs mb-1.5">
@@ -144,7 +142,6 @@ const ProjectNodeCard: React.FC<ProjectNodeCardProps> = ({
             </div>
           </div>
 
-          {/* Action Buttons */}
           <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
             <Button 
               variant="ghost" 
@@ -201,7 +198,6 @@ export const ProjectMindMap: React.FC = () => {
 
   const overallProgress = calculateMegaProjectProgress(megaProject);
 
-  // Recursive functions to update the tree
   const addNodeToTree = (nodes: ProjectNode[], parentId: string, newNode: ProjectNode): ProjectNode[] => {
     return nodes.map(node => {
       if (node.id === parentId) {
@@ -246,33 +242,21 @@ export const ProjectMindMap: React.FC = () => {
       children: [],
       tasks: [],
     };
-
     setMegaProject(prev => ({
       ...prev,
       children: addNodeToTree(prev.children, selectedParentId, newNode),
     }));
   };
 
-  const handleCreateTask = (taskData: {
-    name: string;
-    description: string;
-    assignee: string;
-    deadline: string | null;
-    priority: 'Low' | 'Medium' | 'High' | 'Critical';
-  }) => {
+  const handleCreateTask = (taskData: any) => {
     const newTask: Task = {
       id: `task-${Date.now()}`,
-      name: taskData.name,
-      description: taskData.description,
-      assignee: taskData.assignee,
-      deadline: taskData.deadline,
+      ...taskData,
       status: 'Not Started',
-      priority: taskData.priority,
       progress: 0,
       createdAt: new Date().toISOString(),
       completedAt: null,
     };
-
     setMegaProject(prev => ({
       ...prev,
       children: addTaskToNode(prev.children, selectedParentId, newTask),
@@ -281,8 +265,7 @@ export const ProjectMindMap: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b px-6 py-4 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+      <div className="flex items-center justify-between border-b px-6 py-4 bg-background/95 backdrop-blur">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{megaProject.name}</h1>
           <p className="text-muted-foreground text-sm mt-0.5">{megaProject.description}</p>
@@ -299,7 +282,6 @@ export const ProjectMindMap: React.FC = () => {
         </div>
       </div>
 
-      {/* Mind Map Content */}
       <div className="flex-1 overflow-auto p-6 bg-muted/30">
         <div className="max-w-[1100px] mx-auto">
           {megaProject.children.map((node) => (
@@ -314,7 +296,6 @@ export const ProjectMindMap: React.FC = () => {
         </div>
       </div>
 
-      {/* Dialogs */}
       <CreateNodeDialog 
         open={nodeDialogOpen} 
         onOpenChange={setNodeDialogOpen} 

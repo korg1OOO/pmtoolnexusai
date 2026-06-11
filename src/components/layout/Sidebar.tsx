@@ -87,6 +87,7 @@ const navItems: NavItem[] = [
     label: 'Planning',
     icon: CalendarDays,
     children: [
+      { id: 'projects', label: 'Projects', icon: GitBranch, alwaysShow: true },
       { id: 'project-plan', label: 'Project Plan', icon: ListTodo, moduleKey: 'projectPlan' },
       { id: 'child-plans', label: 'Child Plans', icon: ListTodo, moduleKey: 'childPlans' },
       { id: 'gantt', label: 'Gantt Chart', icon: GitBranch, moduleKey: 'gantt' },

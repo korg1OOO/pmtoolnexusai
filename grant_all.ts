@@ -7,7 +7,7 @@ const client = new Client({ connectionString: process.env.DATABASE_URL });
 async function run() {
     await client.connect();
     try {
-        const { rows: users } = await client.query(`SELECT id FROM auth.users WHERE email = 'admin@kiroxys.com' LIMIT 1`);
+        const { rows: users } = await client.query(`SELECT id FROM auth.users WHERE email = 'admin@pmtoolnexus.com' LIMIT 1`);
         if (users.length === 0) {
             console.error('User not found');
             return;
@@ -75,7 +75,7 @@ async function run() {
             // Tenants might not be structured this way
         }
 
-        console.log('Successfully applied all sweeping admin permissions for admin@kiroxys.com');
+        console.log('Successfully applied all sweeping admin permissions for admin@pmtoolnexus.com');
     } catch (e) {
         console.error('Fatal error', e);
     } finally {

@@ -25,17 +25,19 @@ interface MindMapCanvasProps {
   onUpdateProject?: (project: MegaProject) => void;
   onAddChild?: (parentId: string, parentName: string) => void;
   onAddTask?: (nodeId: string, nodeName: string) => void;
+  onDelete?: (nodeId: string) => void;
   className?: string;
 }
 
 /**
- * MindMapCanvas with basic drag & drop support for top-level modules
+ * MindMapCanvas with drag & drop and delete support
  */
 export const MindMapCanvas: React.FC<MindMapCanvasProps> = ({
   project,
   onUpdateProject,
   onAddChild,
   onAddTask,
+  onDelete,
   className,
 }) => {
   const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({});
@@ -64,11 +66,14 @@ export const MindMapCanvas: React.FC<MindMapCanvasProps> = ({
     if (onAddTask && nodeName) onAddTask(nodeId, nodeName);
   };
 
+  const handleDeleteInternal = (nodeId: string) => {
+    if (onDelete) onDelete(nodeId);
+  };
+
   const handleEdit = (node: NodeType) => {
     console.log("Edit node:", node);
   };
 
-  // Basic drag & drop for top-level modules only
   const handleDragEnd = (event: any) => {
     const { active, over } = event;
     if (!over || active.id === over.id || !onUpdateProject) return;
@@ -121,9 +126,10 @@ export const MindMapCanvas: React.FC<MindMapCanvasProps> = ({
                 level={0}
                 isExpanded={isNodeExpanded(module.id)}
                 onToggleExpand={toggleExpand}
-                onAddChild={(id) => handleAddChildInternal(id, module.name)}
-                onAddTask={(id) => handleAddTaskInternal(id, module.name)}
+                onAddChild={handleAddChildInternal}
+                onAddTask={handleAddTaskInternal}
                 onEdit={handleEdit}
+                onDelete={handleDeleteInternal}
               />
             ))}
           </div>

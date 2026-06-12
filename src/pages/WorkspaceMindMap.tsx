@@ -61,6 +61,9 @@ export default function WorkspaceMindMap() {
   const [selectedParent, setSelectedParent] = useState<{ id: string; name: string; type: "module" | "submodule" } | null>(null);
   const [selectedTaskNode, setSelectedTaskNode] = useState<{ id: string; name: string } | null>(null);
 
+  // Simple stage system (foundation for progressive disclosure)
+  const [currentStage, setCurrentStage] = useState<1 | 2 | 3>(1);
+
   const updateProject = (newProject: MegaProject) => setProject(recalculateProject(newProject));
 
   const findNode = (nodes: NodeType[], id: string): NodeType | null => {
@@ -96,12 +99,17 @@ export default function WorkspaceMindMap() {
               <div>
                 <div className="flex items-center gap-2">
                   <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 font-medium">NEW SIMPLIFIED VIEW</span>
+                  <span className="text-xs px-2 py-0.5 rounded bg-blue-500/10 text-blue-600 font-medium">Stage {currentStage}/3</span>
                 </div>
                 <h1 className="text-2xl font-semibold tracking-tight">{project.name}</h1>
                 <p className="text-sm text-muted-foreground">{project.description}</p>
               </div>
             </div>
-            <Button onClick={handleAddModule} size="lg"><Plus className="h-4 w-4 mr-2" />New Module</Button>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => setCurrentStage(Math.max(1, currentStage - 1) as 1)}>Previous Stage</Button>
+              <Button size="sm" onClick={() => setCurrentStage(Math.min(3, currentStage + 1) as 1)}>Next Stage</Button>
+              <Button onClick={handleAddModule} size="lg"><Plus className="h-4 w-4 mr-2" />New Module</Button>
+            </div>
           </div>
         </div>
       </div>
@@ -111,7 +119,7 @@ export default function WorkspaceMindMap() {
           <Info className="h-5 w-5 mt-0.5 text-muted-foreground flex-shrink-0" />
           <div className="text-muted-foreground">
             This is the new focused workspace experience. The interactive mind map is now the main interface. 
-            Progress is calculated automatically from tasks and child modules. Use the + buttons on each node to add tasks or submodules.
+            Progress is calculated automatically. Drag modules to reorder. Use + buttons to add content.
           </div>
         </div>
 

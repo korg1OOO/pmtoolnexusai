@@ -61,13 +61,24 @@ export default function WorkspaceMindMap() {
   const [selectedParent, setSelectedParent] = useState<{ id: string; name: string; type: "module" | "submodule" } | null>(null);
   const [selectedTaskNode, setSelectedTaskNode] = useState<{ id: string; name: string } | null>(null);
 
-  // Simple stage system (foundation for progressive disclosure)
+  // Simple stage system
   const [currentStage, setCurrentStage] = useState<1 | 2 | 3>(1);
 
   const updateProject = (newProject: MegaProject) => setProject(recalculateProject(newProject));
 
   const findNode = (nodes: NodeType[], id: string): NodeType | null => {
     for (const n of nodes) { if (n.id === id) return n; const f = findNode(n.children, id); if (f) return f; } return null;
+  };
+
+  const deleteNode = (nodeId: string) => {
+    const removeNode = (nodes: NodeType[]): NodeType[] => {
+      return nodes
+        .filter(n => n.id !== nodeId)
+        .map(n => ({ ...n, children: removeNode(n.children) }));
+    };
+
+    const updated = { ...project, modules: removeNode(project.modules) };
+    updateProject(updated);
   };
 
   const handleAddModule = () => { setSelectedParent(null); setAddNodeOpen(true); };
@@ -119,7 +130,7 @@ export default function WorkspaceMindMap() {
           <Info className="h-5 w-5 mt-0.5 text-muted-foreground flex-shrink-0" />
           <div className="text-muted-foreground">
             This is the new focused workspace experience. The interactive mind map is now the main interface. 
-            Progress is calculated automatically. Drag modules to reorder. Use + buttons to add content.
+            Progress is calculated automatically. Drag modules to reorder. Use + buttons to add content. Use trash to delete nodes.
           </div>
         </div>
 
@@ -128,6 +139,7 @@ export default function WorkspaceMindMap() {
           onUpdateProject={updateProject}
           onAddChild={handleAddSubmodule}
           onAddTask={handleAddTask}
+          onDelete={deleteNode}
         />
       </div>
 

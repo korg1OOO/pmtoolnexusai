@@ -4,6 +4,7 @@ import React, { useState } from "react";
 import { MindMapCanvas } from "@/components/mindmap/MindMapCanvas";
 import { AddNodeModal } from "@/components/mindmap/AddNodeModal";
 import { AddTaskModal } from "@/components/mindmap/AddTaskModal";
+import { EditNodeModal } from "@/components/mindmap/EditNodeModal";
 import { MegaProject, MindMapNode as NodeType, Task } from "@/types/mindmap";
 import { Button } from "@/components/ui/button";
 import { Plus, ArrowLeft, Info } from "lucide-react";
@@ -58,10 +59,12 @@ export default function WorkspaceMindMap() {
   const [project, setProject] = useState<MegaProject>(initialProject);
   const [addNodeOpen, setAddNodeOpen] = useState(false);
   const [addTaskOpen, setAddTaskOpen] = useState(false);
+  const [editNodeOpen, setEditNodeOpen] = useState(false);
   const [selectedParent, setSelectedParent] = useState<{ id: string; name: string; type: "module" | "submodule" } | null>(null);
   const [selectedTaskNode, setSelectedTaskNode] = useState<{ id: string; name: string } | null>(null);
+  const [editingNode, setEditingNode] = useState<NodeType | null>(null);
 
-  // Staged UI - Progressive Disclosure
+  // Staged UI
   const [currentStage, setCurrentStage] = useState<1 | 2 | 3>(1);
 
   const updateProject = (newProject: MegaProject) => setProject(recalculateProject(newProject));
@@ -80,9 +83,27 @@ export default function WorkspaceMindMap() {
     updateProject(updated);
   };
 
+  const updateNode = (nodeId: string, data: { name: string; description?: string }) => {
+    const updateNodeRecursive = (nodes: NodeType[]): NodeType[] => {
+      return nodes.map(n => {
+        if (n.id === nodeId) {
+          return { ...n, name: data.name, description: data.description, updatedAt: new Date().toISOString() };
+        }
+        return { ...n, children: updateNodeRecursive(n.children) };
+      });
+    };
+    const updated = { ...project, modules: updateNodeRecursive(project.modules) };
+    updateProject(updated);
+  };
+
   const handleAddModule = () => { setSelectedParent(null); setAddNodeOpen(true); };
   const handleAddSubmodule = (parentId: string, parentName: string) => { setSelectedParent({ id: parentId, name: parentName, type: "submodule" }); setAddNodeOpen(true); };
   const handleAddTask = (nodeId: string, nodeName: string) => { setSelectedTaskNode({ id: nodeId, name: nodeName }); setAddTaskOpen(true); };
+
+  const handleEditNode = (node: NodeType) => {
+    setEditingNode(node);
+    setEditNodeOpen(true);
+  };
 
   const createNode = (data: { name: string; description?: string }) => {
     const newNode: NodeType = { id: uuidv4(), name: data.name, description: data.description, progress: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), children: [], tasks: [] };
@@ -99,7 +120,14 @@ export default function WorkspaceMindMap() {
     updateProject(updated); setAddTaskOpen(false); setSelectedTaskNode(null);
   };
 
-  // Progressive disclosure based on stage
+  const handleEditSubmit = (data: { name: string; description?: string }) => {
+    if (editingNode) {
+      updateNode(editingNode.id, data);
+    }
+    setEditNodeOpen(false);
+    setEditingNode(null);
+  };
+
   const showDelete = currentStage >= 2;
 
   return (
@@ -132,8 +160,8 @@ export default function WorkspaceMindMap() {
           <Info className="h-5 w-5 mt-0.5 text-muted-foreground flex-shrink-0" />
           <div className="text-muted-foreground">
             {currentStage === 1 && "Stage 1: Basic mind map. Focus on structure and tasks."}
-            {currentStage === 2 && "Stage 2: Added drag & drop and delete for better control."}
-            {currentStage === 3 && "Stage 3: Full features unlocked (advanced options coming soon)."}
+            {currentStage === 2 && "Stage 2: Drag, drop and delete enabled."}
+            {currentStage === 3 && "Stage 3: Full control (edit + advanced features)."}
           </div>
         </div>
 
@@ -143,11 +171,13 @@ export default function WorkspaceMindMap() {
           onAddChild={handleAddSubmodule}
           onAddTask={handleAddTask}
           onDelete={showDelete ? deleteNode : undefined}
+          onEdit={handleEditNode}
         />
       </div>
 
       <AddNodeModal open={addNodeOpen} onOpenChange={setAddNodeOpen} onSubmit={createNode} parentName={selectedParent?.name} type={selectedParent?.type || "module"} />
       <AddTaskModal open={addTaskOpen} onOpenChange={setAddTaskOpen} onSubmit={createTask} nodeName={selectedTaskNode?.name} />
+      <EditNodeModal open={editNodeOpen} onOpenChange={setEditNodeOpen} node={editingNode} onSubmit={handleEditSubmit} />
     </div>
   );
 }

@@ -17,6 +17,7 @@ import BlogPostView from '@/pages/BlogPostView';
 import PublicDocs from '@/pages/PublicDocs';
 import LandingPage from '@/pages/LandingPage';
 import MindMapDemo from '@/pages/MindMapDemo';
+import WorkspaceMindMap from '@/pages/WorkspaceMindMap';
 
 /**
  * Smart root redirect: authenticated users → /dashboard, guests → LandingPage.
@@ -30,7 +31,7 @@ function RootRedirect() {
         });
     }, []);
 
-    if (authed === null) return null; // brief flash-free wait
+    if (authed === null) return null;
     if (authed) return <Navigate to="/dashboard" replace />;
     return <LandingPage />;
 }
@@ -38,21 +39,12 @@ function RootRedirect() {
 export function PublicRoutes() {
     return (
         <>
-            {/* Root — LandingPage for guests, /dashboard for authenticated users */}
             <Route path="/" element={<RootRedirect />} />
+            <Route path="/app" element={<ProtectedRoute><QueryParamRedirect /></ProtectedRoute>} />
 
-            {/* Backward-compat: old ?view= URLs for authenticated users */}
-            <Route path="/app" element={
-                <ProtectedRoute>
-                    <QueryParamRedirect />
-                </ProtectedRoute>
-            } />
-
-            {/* Auth */}
             <Route path="/login" element={<Auth />} />
             <Route path="/oauth/callback" element={<OAuthCallback />} />
 
-            {/* Marketing — fully public, no auth required */}
             <Route path="/about" element={<AboutUs />} />
             <Route path="/contact" element={<ContactUs />} />
             <Route path="/privacy" element={<PrivacyPolicy />} />
@@ -62,17 +54,12 @@ export function PublicRoutes() {
             <Route path="/docs" element={<PublicDocs />} />
             <Route path="/product-tour" element={<ProductTour />} />
 
-            {/* Temporary Mind Map Demo - NEW CLEAN FOUNDATION */}
+            {/* New clean Mind Map experience */}
             <Route path="/mind-map-demo" element={<MindMapDemo />} />
+            <Route path="/workspace-demo" element={<WorkspaceMindMap />} />
 
-            {/* Post-payment landing */}
-            <Route path="/subscription/success" element={
-                <ProtectedRoute>
-                    <SubscriptionSuccessPage />
-                </ProtectedRoute>
-            } />
+            <Route path="/subscription/success" element={<ProtectedRoute><SubscriptionSuccessPage /></ProtectedRoute>} />
 
-            {/* 404 catch-all — MUST be last in the combined <Routes> */}
             <Route path="*" element={<NotFound />} />
         </>
     );

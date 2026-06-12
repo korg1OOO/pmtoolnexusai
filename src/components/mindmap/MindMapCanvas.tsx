@@ -9,6 +9,8 @@ import { Plus } from "lucide-react";
 interface MindMapCanvasProps {
   project: MegaProject;
   onUpdateProject?: (project: MegaProject) => void;
+  onAddChild?: (parentId: string, parentName: string) => void;
+  onAddTask?: (nodeId: string, nodeName: string) => void;
   className?: string;
 }
 
@@ -19,6 +21,8 @@ interface MindMapCanvasProps {
 export const MindMapCanvas: React.FC<MindMapCanvasProps> = ({
   project,
   onUpdateProject,
+  onAddChild,
+  onAddTask,
   className,
 }) => {
   const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({});
@@ -30,17 +34,18 @@ export const MindMapCanvas: React.FC<MindMapCanvasProps> = ({
     }));
   };
 
-  // For now, default expand root level
   const isNodeExpanded = (id: string) => expandedNodes[id] !== false;
 
-  const handleAddChild = (parentId: string) => {
-    // TODO: Open modal / inline creation
-    console.log("Add child to:", parentId);
+  const handleAddChildInternal = (parentId: string, parentName?: string) => {
+    if (onAddChild && parentName) {
+      onAddChild(parentId, parentName);
+    }
   };
 
-  const handleAddTask = (nodeId: string) => {
-    // TODO: Open task creation modal
-    console.log("Add task to:", nodeId);
+  const handleAddTaskInternal = (nodeId: string, nodeName?: string) => {
+    if (onAddTask && nodeName) {
+      onAddTask(nodeId, nodeName);
+    }
   };
 
   const handleEdit = (node: NodeType) => {
@@ -58,7 +63,7 @@ export const MindMapCanvas: React.FC<MindMapCanvasProps> = ({
           )}
         </div>
 
-        <Button onClick={() => console.log("Create new module")}>
+        <Button onClick={() => console.log("Create new module from canvas header")}>
           <Plus className="mr-2 h-4 w-4" />
           New Module
         </Button>
@@ -81,8 +86,8 @@ export const MindMapCanvas: React.FC<MindMapCanvasProps> = ({
             level={0}
             isExpanded={isNodeExpanded(module.id)}
             onToggleExpand={toggleExpand}
-            onAddChild={handleAddChild}
-            onAddTask={handleAddTask}
+            onAddChild={(id) => handleAddChildInternal(id, module.name)}
+            onAddTask={(id) => handleAddTaskInternal(id, module.name)}
             onEdit={handleEdit}
           />
         ))}

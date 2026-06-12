@@ -16,6 +16,7 @@ import PublicBlog from '@/pages/PublicBlog';
 import BlogPostView from '@/pages/BlogPostView';
 import PublicDocs from '@/pages/PublicDocs';
 import LandingPage from '@/pages/LandingPage';
+import MindMapDemo from '@/pages/MindMapDemo';
 
 /**
  * Smart root redirect: authenticated users → /dashboard, guests → LandingPage.
@@ -60,6 +61,9 @@ export function PublicRoutes() {
             <Route path="/blog/:slug" element={<BlogPostView />} />
             <Route path="/docs" element={<PublicDocs />} />
             <Route path="/product-tour" element={<ProductTour />} />
+
+            {/* Temporary Mind Map Demo - NEW CLEAN FOUNDATION */}
+            <Route path="/mind-map-demo" element={<MindMapDemo />} />
 
             {/* Post-payment landing */}
             <Route path="/subscription/success" element={

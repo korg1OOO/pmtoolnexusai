@@ -61,7 +61,7 @@ export default function WorkspaceMindMap() {
   const [selectedParent, setSelectedParent] = useState<{ id: string; name: string; type: "module" | "submodule" } | null>(null);
   const [selectedTaskNode, setSelectedTaskNode] = useState<{ id: string; name: string } | null>(null);
 
-  // Simple stage system
+  // Staged UI - Progressive Disclosure
   const [currentStage, setCurrentStage] = useState<1 | 2 | 3>(1);
 
   const updateProject = (newProject: MegaProject) => setProject(recalculateProject(newProject));
@@ -76,7 +76,6 @@ export default function WorkspaceMindMap() {
         .filter(n => n.id !== nodeId)
         .map(n => ({ ...n, children: removeNode(n.children) }));
     };
-
     const updated = { ...project, modules: removeNode(project.modules) };
     updateProject(updated);
   };
@@ -99,6 +98,9 @@ export default function WorkspaceMindMap() {
     const updated = { ...project }; const n = findNode(updated.modules, selectedTaskNode.id); if (n) n.tasks.push(newTask);
     updateProject(updated); setAddTaskOpen(false); setSelectedTaskNode(null);
   };
+
+  // Progressive disclosure based on stage
+  const showDelete = currentStage >= 2;
 
   return (
     <div className="min-h-screen bg-background">
@@ -129,8 +131,9 @@ export default function WorkspaceMindMap() {
         <div className="mb-6 flex items-start gap-3 rounded-xl border bg-muted/30 p-4 text-sm">
           <Info className="h-5 w-5 mt-0.5 text-muted-foreground flex-shrink-0" />
           <div className="text-muted-foreground">
-            This is the new focused workspace experience. The interactive mind map is now the main interface. 
-            Progress is calculated automatically. Drag modules to reorder. Use + buttons to add content. Use trash to delete nodes.
+            {currentStage === 1 && "Stage 1: Basic mind map. Focus on structure and tasks."}
+            {currentStage === 2 && "Stage 2: Added drag & drop and delete for better control."}
+            {currentStage === 3 && "Stage 3: Full features unlocked (advanced options coming soon)."}
           </div>
         </div>
 
@@ -139,7 +142,7 @@ export default function WorkspaceMindMap() {
           onUpdateProject={updateProject}
           onAddChild={handleAddSubmodule}
           onAddTask={handleAddTask}
-          onDelete={deleteNode}
+          onDelete={showDelete ? deleteNode : undefined}
         />
       </div>
 

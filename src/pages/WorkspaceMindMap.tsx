@@ -6,11 +6,10 @@ import { AddNodeModal } from "@/components/mindmap/AddNodeModal";
 import { AddTaskModal } from "@/components/mindmap/AddTaskModal";
 import { MegaProject, MindMapNode as NodeType, Task } from "@/types/mindmap";
 import { Button } from "@/components/ui/button";
-import { Plus, ArrowLeft } from "lucide-react";
+import { Plus, ArrowLeft, Info } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 
-// Temporary in-memory project for demo purposes
-// Later this will come from Supabase
+// Demo project
 const initialProject: MegaProject = {
   id: "proj-demo-001",
   name: "Website Redesign 2026",
@@ -43,16 +42,10 @@ const initialProject: MegaProject = {
 
 function recalculateProgress(node: NodeType): NodeType {
   if (node.children.length === 0 && node.tasks.length === 0) return { ...node, progress: 0 };
-
   const childProgresses = node.children.map(recalculateProgress);
   const taskAvg = node.tasks.length > 0 ? node.tasks.reduce((s, t) => s + t.progress, 0) / node.tasks.length : 0;
   const childAvg = childProgresses.length > 0 ? childProgresses.reduce((s, c) => s + c.progress, 0) / childProgresses.length : 0;
-
-  return {
-    ...node,
-    progress: Math.round(taskAvg * 0.5 + childAvg * 0.5),
-    children: childProgresses,
-  };
+  return { ...node, progress: Math.round(taskAvg * 0.5 + childAvg * 0.5), children: childProgresses };
 }
 
 function recalculateProject(p: MegaProject): MegaProject {
@@ -68,105 +61,60 @@ export default function WorkspaceMindMap() {
   const [selectedParent, setSelectedParent] = useState<{ id: string; name: string; type: "module" | "submodule" } | null>(null);
   const [selectedTaskNode, setSelectedTaskNode] = useState<{ id: string; name: string } | null>(null);
 
-  const updateProject = (newProject: MegaProject) => {
-    setProject(recalculateProject(newProject));
-  };
+  const updateProject = (newProject: MegaProject) => setProject(recalculateProject(newProject));
 
   const findNode = (nodes: NodeType[], id: string): NodeType | null => {
-    for (const n of nodes) {
-      if (n.id === id) return n;
-      const found = findNode(n.children, id);
-      if (found) return found;
-    }
-    return null;
+    for (const n of nodes) { if (n.id === id) return n; const f = findNode(n.children, id); if (f) return f; } return null;
   };
 
-  const handleAddModule = () => {
-    setSelectedParent(null);
-    setAddNodeOpen(true);
-  };
-
-  const handleAddSubmodule = (parentId: string, parentName: string) => {
-    setSelectedParent({ id: parentId, name: parentName, type: "submodule" });
-    setAddNodeOpen(true);
-  };
-
-  const handleAddTask = (nodeId: string, nodeName: string) => {
-    setSelectedTaskNode({ id: nodeId, name: nodeName });
-    setAddTaskOpen(true);
-  };
+  const handleAddModule = () => { setSelectedParent(null); setAddNodeOpen(true); };
+  const handleAddSubmodule = (parentId: string, parentName: string) => { setSelectedParent({ id: parentId, name: parentName, type: "submodule" }); setAddNodeOpen(true); };
+  const handleAddTask = (nodeId: string, nodeName: string) => { setSelectedTaskNode({ id: nodeId, name: nodeName }); setAddTaskOpen(true); };
 
   const createNode = (data: { name: string; description?: string }) => {
-    const newNode: NodeType = {
-      id: uuidv4(),
-      name: data.name,
-      description: data.description,
-      progress: 0,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      children: [],
-      tasks: [],
-    };
-
+    const newNode: NodeType = { id: uuidv4(), name: data.name, description: data.description, progress: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), children: [], tasks: [] };
     const updated = { ...project };
-
-    if (!selectedParent) {
-      updated.modules.push(newNode);
-    } else {
-      const parent = findNode(updated.modules, selectedParent.id);
-      if (parent) parent.children.push(newNode);
-    }
-
-    updateProject(updated);
-    setAddNodeOpen(false);
-    setSelectedParent(null);
+    if (!selectedParent) updated.modules.push(newNode);
+    else { const p = findNode(updated.modules, selectedParent.id); if (p) p.children.push(newNode); }
+    updateProject(updated); setAddNodeOpen(false); setSelectedParent(null);
   };
 
   const createTask = (data: any) => {
     if (!selectedTaskNode) return;
-
-    const newTask: Task = {
-      id: uuidv4(),
-      name: data.name,
-      description: data.description,
-      assignee: data.assignee,
-      dueDate: data.dueDate,
-      status: data.status,
-      priority: data.priority,
-      progress: data.status === "Completed" ? 100 : data.status === "In Progress" ? 35 : 0,
-      createdAt: new Date().toISOString(),
-    };
-
-    const updated = { ...project };
-    const node = findNode(updated.modules, selectedTaskNode.id);
-    if (node) node.tasks.push(newTask);
-
-    updateProject(updated);
-    setAddTaskOpen(false);
-    setSelectedTaskNode(null);
+    const newTask: Task = { id: uuidv4(), name: data.name, description: data.description, assignee: data.assignee, dueDate: data.dueDate, status: data.status, priority: data.priority, progress: data.status === "Completed" ? 100 : data.status === "In Progress" ? 35 : 0, createdAt: new Date().toISOString() };
+    const updated = { ...project }; const n = findNode(updated.modules, selectedTaskNode.id); if (n) n.tasks.push(newTask);
+    updateProject(updated); setAddTaskOpen(false); setSelectedTaskNode(null);
   };
 
   return (
     <div className="min-h-screen bg-background">
-      <div className="border-b">
-        <div className="max-w-6xl mx-auto px-8 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" size="sm" onClick={() => window.history.back()}>
-              <ArrowLeft className="h-4 w-4 mr-2" /> Back
-            </Button>
-            <div>
-              <div className="text-sm text-muted-foreground">Workspace</div>
-              <h1 className="text-2xl font-semibold tracking-tight">{project.name}</h1>
+      <div className="border-b bg-card/50">
+        <div className="max-w-6xl mx-auto px-8 py-5">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <Button variant="ghost" size="sm" onClick={() => window.history.back()}><ArrowLeft className="h-4 w-4 mr-2" />Back</Button>
+              <div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-600 font-medium">NEW SIMPLIFIED VIEW</span>
+                </div>
+                <h1 className="text-2xl font-semibold tracking-tight">{project.name}</h1>
+                <p className="text-sm text-muted-foreground">{project.description}</p>
+              </div>
             </div>
+            <Button onClick={handleAddModule} size="lg"><Plus className="h-4 w-4 mr-2" />New Module</Button>
           </div>
-
-          <Button onClick={handleAddModule}>
-            <Plus className="h-4 w-4 mr-2" /> New Module
-          </Button>
         </div>
       </div>
 
       <div className="max-w-6xl mx-auto px-8 py-8">
+        <div className="mb-6 flex items-start gap-3 rounded-xl border bg-muted/30 p-4 text-sm">
+          <Info className="h-5 w-5 mt-0.5 text-muted-foreground flex-shrink-0" />
+          <div className="text-muted-foreground">
+            This is the new focused workspace experience. The interactive mind map is now the main interface. 
+            Progress is calculated automatically from tasks and child modules. Use the + buttons on each node to add tasks or submodules.
+          </div>
+        </div>
+
         <MindMapCanvas
           project={project}
           onUpdateProject={updateProject}
@@ -175,20 +123,8 @@ export default function WorkspaceMindMap() {
         />
       </div>
 
-      <AddNodeModal
-        open={addNodeOpen}
-        onOpenChange={setAddNodeOpen}
-        onSubmit={createNode}
-        parentName={selectedParent?.name}
-        type={selectedParent?.type || "module"}
-      />
-
-      <AddTaskModal
-        open={addTaskOpen}
-        onOpenChange={setAddTaskOpen}
-        onSubmit={createTask}
-        nodeName={selectedTaskNode?.name}
-      />
+      <AddNodeModal open={addNodeOpen} onOpenChange={setAddNodeOpen} onSubmit={createNode} parentName={selectedParent?.name} type={selectedParent?.type || "module"} />
+      <AddTaskModal open={addTaskOpen} onOpenChange={setAddTaskOpen} onSubmit={createTask} nodeName={selectedTaskNode?.name} />
     </div>
   );
 }

@@ -3,7 +3,7 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { MindMapNode as NodeType, Task, getProgressColorClasses } from "@/types/mindmap";
-import { ChevronRight, ChevronDown, Plus, MoreHorizontal } from "lucide-react";
+import { ChevronRight, ChevronDown, Plus, MoreHorizontal, Trash2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface MindMapNodeProps {
@@ -14,6 +14,7 @@ interface MindMapNodeProps {
   onAddChild?: (parentId: string, parentName: string) => void;
   onAddTask?: (nodeId: string, nodeName: string) => void;
   onEdit?: (node: NodeType) => void;
+  onDelete?: (nodeId: string) => void;
   className?: string;
 }
 
@@ -28,6 +29,7 @@ export const MindMapNode: React.FC<MindMapNodeProps> = ({
   onAddChild,
   onAddTask,
   onEdit,
+  onDelete,
   className,
 }) => {
   const progress = Math.round(node.progress);
@@ -142,6 +144,15 @@ export const MindMapNode: React.FC<MindMapNodeProps> = ({
               >
                 <MoreHorizontal className="h-4 w-4" />
               </button>
+              {onDelete && (
+                <button
+                  onClick={() => onDelete(node.id)}
+                  className="h-8 w-8 rounded-lg hover:bg-destructive/10 text-destructive flex items-center justify-center"
+                  title="Delete node"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              )}
             </div>
           </div>
 
@@ -195,6 +206,7 @@ export const MindMapNode: React.FC<MindMapNodeProps> = ({
               onAddChild={onAddChild}
               onAddTask={onAddTask}
               onEdit={onEdit}
+              onDelete={onDelete}
             />
           ))}
         </div>

@@ -18,6 +18,7 @@ import PublicDocs from '@/pages/PublicDocs';
 import LandingPage from '@/pages/LandingPage';
 import MindMapDemo from '@/pages/MindMapDemo';
 import WorkspaceMindMap from '@/pages/WorkspaceMindMap';
+import Dashboard from '@/pages/Dashboard';
 
 /**
  * Smart root redirect: authenticated users → /dashboard, guests → LandingPage.
@@ -54,7 +55,10 @@ export function PublicRoutes() {
             <Route path="/docs" element={<PublicDocs />} />
             <Route path="/product-tour" element={<ProductTour />} />
 
-            {/* New clean Mind Map experience */}
+            {/* Main simplified Dashboard (primary experience after login) */}
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+
+            {/* Demo pages */}
             <Route path="/mind-map-demo" element={<MindMapDemo />} />
             <Route path="/workspace-demo" element={<WorkspaceMindMap />} />
 

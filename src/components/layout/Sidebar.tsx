@@ -257,9 +257,20 @@ const isRouteBasedItem = (id: string): boolean => {
 
 export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
   const [collapsed, setCollapsed] = useState(true);
+  const [advancedMode, setAdvancedMode] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('pm_advanced_mode') === 'true';
+    }
+    return false;
+  });
   const { isModuleVisible, settings } = useProjectContext();
   const navigate = useNavigate();
   const { data: badges } = useSidebarBadges(settings?.id);
+
+  // Core groups for simplified mode (normal users start here, not overwhelmed)
+  const CORE_GROUP_IDS = ['overview', 'initiation', 'planning', 'execution', 'monitoring'];
+
+  const displayNavItems = advancedMode ? navItems : navItems.filter(item => CORE_GROUP_IDS.includes(item.id));
 
   // Find which group contains the active item
   const findParentGroup = useMemo(() => {
@@ -272,7 +283,7 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
     return null;
   }, [activeItem]);
 
-  // Only expand the group containing the active page
+  // Only expand the group containing the active item
   const [expandedGroups, setExpandedGroups] = useState<string[]>(() =>
     findParentGroup ? [findParentGroup] : []
   );
@@ -407,7 +418,7 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
                   'h-4 w-4 transition-transform duration-200',
                   isExpanded && 'rotate-90'
                 )}
-              />
+              )}
             )}
           </>
         )}
@@ -445,6 +456,13 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
         )}
       </div>
     );
+  };
+
+  const handleModeToggle = (mode: boolean) => {
+    setAdvancedMode(mode);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('pm_advanced_mode', String(mode));
+    }
   };
 
   return (
@@ -504,13 +522,52 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
           </Button>
         </div>
 
-        {navItems.map((item) => renderNavItem(item))}
+        {/* Simple / Advanced Mode Toggle - Simplifies for normal users, controls complexity in stages */}
+        {!collapsed && (
+          <div className="px-3 mb-3">
+            <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1 px-1">
+              <span className="font-medium">UI Mode</span>
+              <span className="text-[9px] opacity-60">(start simple)</span>
+            </div>
+            <div className="flex rounded-lg bg-muted p-0.5 text-xs">
+              <button
+                onClick={() => handleModeToggle(false)}
+                className={cn(
+                  "flex-1 py-1 rounded-md transition-all font-medium",
+                  !advancedMode 
+                    ? "bg-background shadow-sm text-foreground" 
+                    : "text-muted-foreground hover:text-foreground/80"
+                )}
+              >
+                Simple
+              </button>
+              <button
+                onClick={() => handleModeToggle(true)}
+                className={cn(
+                  "flex-1 py-1 rounded-md transition-all font-medium",
+                  advancedMode 
+                    ? "bg-background shadow-sm text-foreground" 
+                    : "text-muted-foreground hover:text-foreground/80"
+                )}
+              >
+                Advanced
+              </button>
+            </div>
+            {!advancedMode && (
+              <div className="text-[9px] text-center text-muted-foreground/70 mt-1 px-1">
+                Core features only. Toggle Advanced for full PM tools.
+              </div>
+            )}
+          </div>
+        )}
 
-        {/* Separator */}
-        <div className="my-4 border-t border-sidebar-border" />
+        {displayNavItems.map((item) => renderNavItem(item))}
 
-        {/* Admin Items */}
-        {adminItems.map((item) => renderNavItem(item))}
+        {/* Separator - only show admin in advanced or always for admins */}
+        {(advancedMode || true) && <div className="my-4 border-t border-sidebar-border" />}
+
+        {/* Admin Items - shown in advanced mode primarily, but available */}
+        {(advancedMode) && adminItems.map((item) => renderNavItem(item))}
       </nav>
 
       {/* Low Credits widget — pinned to sidebar bottom */}

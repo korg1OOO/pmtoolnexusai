@@ -1,16 +1,18 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { MindMapCanvas } from "@/components/mindmap/MindMapCanvas";
 import { AddNodeModal } from "@/components/mindmap/AddNodeModal";
 import { AddTaskModal } from "@/components/mindmap/AddTaskModal";
 import { EditNodeModal } from "@/components/mindmap/EditNodeModal";
 import { MegaProject, MindMapNode as NodeType, Task } from "@/types/mindmap";
 import { Button } from "@/components/ui/button";
-import { Plus, ArrowLeft, Info } from "lucide-react";
+import { Plus, ArrowLeft, Info, Save, Download } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
+import { mindmapService } from "@/services/mindmapService";
+import { useToast } from "@/hooks/use-toast";
 
-// Demo project
+// Demo project (fallback)
 const initialProject: MegaProject = {
   id: "proj-demo-001",
   name: "Website Redesign 2026",
@@ -24,15 +26,6 @@ const initialProject: MegaProject = {
       name: "Design System",
       description: "Create new design system and component library",
       progress: 65,
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-      children: [],
-      tasks: [],
-    },
-    {
-      id: "mod-frontend",
-      name: "Frontend Development",
-      progress: 25,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       children: [],
@@ -63,11 +56,40 @@ export default function WorkspaceMindMap() {
   const [selectedParent, setSelectedParent] = useState<{ id: string; name: string; type: "module" | "submodule" } | null>(null);
   const [selectedTaskNode, setSelectedTaskNode] = useState<{ id: string; name: string } | null>(null);
   const [editingNode, setEditingNode] = useState<NodeType | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
+
+  const { toast } = useToast();
 
   // Staged UI
   const [currentStage, setCurrentStage] = useState<1 | 2 | 3>(1);
 
-  const updateProject = (newProject: MegaProject) => setProject(recalculateProject(newProject));
+  // Load latest project from Supabase on mount
+  useEffect(() => {
+    const loadLatestProject = async () => {
+      try {
+        const projects = await mindmapService.getUserProjects();
+        if (projects.length > 0) {
+          const latest = projects[0];
+          setProject(latest.data);
+          setCurrentProjectId(latest.id);
+          toast({
+            title: "Loaded from Supabase",
+            description: `Loaded "${latest.name}"`,
+          });
+        }
+      } catch (error) {
+        console.error("Failed to load from Supabase:", error);
+      }
+    };
+
+    loadLatestProject();
+  }, []);
+
+  const updateProject = (newProject: MegaProject) => {
+    const recalculated = recalculateProject(newProject);
+    setProject(recalculated);
+  };
 
   const findNode = (nodes: NodeType[], id: string): NodeType | null => {
     for (const n of nodes) { if (n.id === id) return n; const f = findNode(n.children, id); if (f) return f; } return null;
@@ -128,6 +150,36 @@ export default function WorkspaceMindMap() {
     setEditingNode(null);
   };
 
+  // Save current project to Supabase
+  const handleSaveToSupabase = async () => {
+    setIsSaving(true);
+    try {
+      const saved = await mindmapService.saveDemoProject(project);
+      if (saved) {
+        setCurrentProjectId(saved.id);
+        toast({
+          title: "Saved to Supabase",
+          description: `Project "${project.name}" saved successfully`,
+        });
+      } else {
+        toast({
+          title: "Save failed",
+          description: "Could not save to Supabase. Are you logged in?",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Error",
+        description: "Failed to save project",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const showDelete = currentStage >= 2;
 
   return (
@@ -149,6 +201,10 @@ export default function WorkspaceMindMap() {
             <div className="flex items-center gap-2">
               <Button variant="outline" size="sm" onClick={() => setCurrentStage(Math.max(1, currentStage - 1) as 1)}>Previous Stage</Button>
               <Button size="sm" onClick={() => setCurrentStage(Math.min(3, currentStage + 1) as 1)}>Next Stage</Button>
+              <Button variant="outline" onClick={handleSaveToSupabase} disabled={isSaving}>
+                <Save className="h-4 w-4 mr-2" />
+                {isSaving ? "Saving..." : "Save to Supabase"}
+              </Button>
               <Button onClick={handleAddModule} size="lg"><Plus className="h-4 w-4 mr-2" />New Module</Button>
             </div>
           </div>

@@ -65,6 +65,8 @@ const navItems: NavItem[] = [
     children: [
       { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, moduleKey: 'dashboard' },
       { id: 'morning-briefing', label: 'Morning Briefing', icon: Sparkles, alwaysShow: true },
+      // Mind Map promoted as primary visual tool (especially important in Simple mode)
+      { id: 'planning', label: 'Mind Map', icon: GitBranch, alwaysShow: true },
       { id: 'executive-dashboard', label: 'Executive Dashboard', icon: TrendingUp, moduleKey: 'dashboard' },
       { id: 'strategic-dashboard', label: 'Strategic Dashboard', icon: Brain, moduleKey: 'dashboard' },
       { id: 'portfolio', label: 'Portfolio', icon: FolderKanban, moduleKey: 'portfolio' },
@@ -324,7 +326,6 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
     const isExpanded = expandedGroups.includes(item.id);
     const Icon = item.icon;
 
-    // Cleaner live badge logic (avoids deep nested ternary that caused parse issues)
     let liveBadge: string | number | undefined = item.badge;
     if (badges) {
       if (item.id === 'actions' && badges.actions > 0) liveBadge = badges.actions;

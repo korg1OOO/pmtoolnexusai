@@ -26,11 +26,12 @@ interface MindMapCanvasProps {
   onAddChild?: (parentId: string, parentName: string) => void;
   onAddTask?: (nodeId: string, nodeName: string) => void;
   onDelete?: (nodeId: string) => void;
+  onEdit?: (node: NodeType) => void;
   className?: string;
 }
 
 /**
- * MindMapCanvas with drag & drop and delete support
+ * MindMapCanvas with full CRUD and drag support
  */
 export const MindMapCanvas: React.FC<MindMapCanvasProps> = ({
   project,
@@ -38,6 +39,7 @@ export const MindMapCanvas: React.FC<MindMapCanvasProps> = ({
   onAddChild,
   onAddTask,
   onDelete,
+  onEdit,
   className,
 }) => {
   const [expandedNodes, setExpandedNodes] = useState<Record<string, boolean>>({});
@@ -70,8 +72,8 @@ export const MindMapCanvas: React.FC<MindMapCanvasProps> = ({
     if (onDelete) onDelete(nodeId);
   };
 
-  const handleEdit = (node: NodeType) => {
-    console.log("Edit node:", node);
+  const handleEditInternal = (node: NodeType) => {
+    if (onEdit) onEdit(node);
   };
 
   const handleDragEnd = (event: any) => {
@@ -128,7 +130,7 @@ export const MindMapCanvas: React.FC<MindMapCanvasProps> = ({
                 onToggleExpand={toggleExpand}
                 onAddChild={handleAddChildInternal}
                 onAddTask={handleAddTaskInternal}
-                onEdit={handleEdit}
+                onEdit={handleEditInternal}
                 onDelete={handleDeleteInternal}
               />
             ))}

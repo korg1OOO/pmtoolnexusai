@@ -318,65 +318,46 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
     const visibleChildren = filterVisibleChildren(item.children);
     const hasVisibleChildren = visibleChildren && visibleChildren.length > 0;
 
-    // If this is a group and no children are visible, hide the group
     if (item.children && !hasVisibleChildren) return null;
 
     const isActive = activeItem === item.id;
     const isExpanded = expandedGroups.includes(item.id);
     const Icon = item.icon;
 
-    // Resolve dynamic badge count for live items
-    const liveBadge = badges
-      ? item.id === 'actions' ? (badges.actions > 0 ? badges.actions : undefined)
-        : item.id === 'risks' ? (badges.risks > 0 ? badges.risks : undefined)
-          : item.id === 'issues' ? (badges.issues > 0 ? badges.issues : undefined)
-            : item.id === 'meetings' ? (badges.meetings > 0 ? badges.meetings : undefined)
-              : item.badge
-      : item.badge;
+    // Cleaner live badge logic (avoids deep nested ternary that caused parse issues)
+    let liveBadge: string | number | undefined = item.badge;
+    if (badges) {
+      if (item.id === 'actions' && badges.actions > 0) liveBadge = badges.actions;
+      else if (item.id === 'risks' && badges.risks > 0) liveBadge = badges.risks;
+      else if (item.id === 'issues' && badges.issues > 0) liveBadge = badges.issues;
+      else if (item.id === 'meetings' && badges.meetings > 0) liveBadge = badges.meetings;
+    }
 
     const itemContent = (
       <motion.button
         whileHover={{ x: 2 }}
         whileTap={{ scale: 0.98 }}
         onMouseEnter={() => {
-          // Preload route on hover
-          if (item.id === 'admin-redirect') {
-            preloadRoute('/admin');
-          } else if (item.id === 'workspace-select') {
-            preloadRoute('/tenant/workspaces');
-          } else if (item.id === 'portfolio-select') {
-            preloadRoute('/portfolio');
-          } else if (item.id === 'program-select') {
-            preloadRoute('/program');
-          } else if (isRouteBasedItem(item.id)) {
-            preloadRoute('/' + item.id);
-          } else {
-            preloadRoute('/' + item.id);
-          }
+          if (item.id === 'admin-redirect') preloadRoute('/admin');
+          else if (item.id === 'workspace-select') preloadRoute('/tenant/workspaces');
+          else if (item.id === 'portfolio-select') preloadRoute('/portfolio');
+          else if (item.id === 'program-select') preloadRoute('/program');
+          else if (isRouteBasedItem(item.id)) preloadRoute('/' + item.id);
+          else preloadRoute('/' + item.id);
         }}
         onFocus={() => {
-          // Preload route on focus (keyboard navigation)
-          if (item.id === 'admin-redirect') {
-            preloadRoute('/admin');
-          } else if (item.id === 'workspace-select') {
-            preloadRoute('/tenant/workspaces');
-          } else if (item.id === 'portfolio-select') {
-            preloadRoute('/portfolio');
-          } else if (item.id === 'program-select') {
-            preloadRoute('/program');
-          } else if (isRouteBasedItem(item.id)) {
-            preloadRoute('/' + item.id);
-          } else {
-            preloadRoute('/' + item.id);
-          }
+          if (item.id === 'admin-redirect') preloadRoute('/admin');
+          else if (item.id === 'workspace-select') preloadRoute('/tenant/workspaces');
+          else if (item.id === 'portfolio-select') preloadRoute('/portfolio');
+          else if (item.id === 'program-select') preloadRoute('/program');
+          else if (isRouteBasedItem(item.id)) preloadRoute('/' + item.id);
+          else preloadRoute('/' + item.id);
         }}
         onClick={() => {
           if (hasVisibleChildren) {
             if (collapsed) {
               setCollapsed(false);
-              if (!expandedGroups.includes(item.id)) {
-                setExpandedGroups((prev) => [...prev, item.id]);
-              }
+              if (!expandedGroups.includes(item.id)) setExpandedGroups(prev => [...prev, item.id]);
             } else {
               toggleGroup(item.id);
             }
@@ -397,9 +378,7 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
         className={cn(
           'flex items-center w-full gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150',
           'text-sidebar-foreground hover:text-sidebar-accent-foreground',
-          isActive
-            ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-            : 'hover:bg-sidebar-accent/50',
+          isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground' : 'hover:bg-sidebar-accent/50',
           depth > 0 && 'ml-4 pl-6 border-l border-sidebar-border'
         )}
       >
@@ -414,11 +393,8 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
             )}
             {hasVisibleChildren && (
               <ChevronRight
-                className={cn(
-                  'h-4 w-4 transition-transform duration-200',
-                  isExpanded && 'rotate-90'
-                )}
-              )}
+                className={cn('h-4 w-4 transition-transform duration-200', isExpanded && 'rotate-90')}
+              />
             )}
           </>
         )}
@@ -431,11 +407,7 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
           <TooltipTrigger asChild>{itemContent}</TooltipTrigger>
           <TooltipContent side="right" className="flex items-center gap-2">
             {item.label}
-            {liveBadge !== undefined && liveBadge !== null && (
-              <span className="rounded-full bg-primary/20 px-1.5 py-0.5 text-xs text-primary">
-                {liveBadge}
-              </span>
-            )}
+            {liveBadge !== undefined && liveBadge !== null && <span className="rounded-full bg-primary/20 px-1.5 py-0.5 text-xs text-primary">{liveBadge}</span>}
           </TooltipContent>
         </Tooltip>
       );
@@ -445,12 +417,7 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
       <div key={item.id}>
         {itemContent}
         {hasVisibleChildren && isExpanded && !collapsed && (
-          <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: 'auto' }}
-            exit={{ opacity: 0, height: 0 }}
-            className="mt-1 space-y-1"
-          >
+          <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-1 space-y-1">
             {visibleChildren!.map((child) => renderNavItem(child, depth + 1))}
           </motion.div>
         )}
@@ -460,9 +427,7 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
 
   const handleModeToggle = (mode: boolean) => {
     setAdvancedMode(mode);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('pm_advanced_mode', String(mode));
-    }
+    if (typeof window !== 'undefined') localStorage.setItem('pm_advanced_mode', String(mode));
   };
 
   return (
@@ -470,59 +435,33 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
       initial={false}
       animate={{ width: collapsed ? 64 : 256 }}
       transition={{ duration: 0.2, ease: 'easeInOut' }}
-      className={cn(
-        'flex flex-col h-full bg-sidebar border-r border-sidebar-border z-20 relative',
-        className
-      )}
+      className={cn('flex flex-col h-full bg-sidebar border-r border-sidebar-border z-20 relative', className)}
     >
-      {/* Logo */}
       <div className="flex h-16 items-center justify-between px-4 border-b border-sidebar-border">
         {!collapsed && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="flex items-center gap-2"
-          >
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary">
               <Sparkles className="h-4 w-4 text-primary-foreground" />
             </div>
             <span className="font-semibold text-foreground">Kiroxys</span>
           </motion.div>
         )}
-        <Button
-          variant="ghost"
-          size="iconSm"
-          onClick={() => setCollapsed(!collapsed)}
-          className="shrink-0"
-        >
-          {collapsed ? (
-            <ChevronRight className="h-4 w-4" />
-          ) : (
-            <ChevronLeft className="h-4 w-4" />
-          )}
+        <Button variant="ghost" size="iconSm" onClick={() => setCollapsed(!collapsed)} className="shrink-0">
+          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </Button>
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 overflow-y-auto p-3 space-y-1">
-        {/* Projects Button */}
         <div className="mb-4">
           <Button
-            className={cn(
-              "w-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all",
-              collapsed ? "justify-center px-0 h-10" : "justify-start gap-2 h-10 px-3"
-            )}
-            onClick={() => {
-              if (collapsed) setCollapsed(false);
-              navigate('/projects');
-            }}
+            className={cn("w-full bg-blue-600 hover:bg-blue-700 text-white shadow-sm transition-all", collapsed ? "justify-center px-0 h-10" : "justify-start gap-2 h-10 px-3")}
+            onClick={() => { if (collapsed) setCollapsed(false); navigate('/projects'); }}
           >
             <FolderKanban className={cn("shrink-0", collapsed ? "h-5 w-5" : "h-4 w-4")} />
             {!collapsed && <span className="font-semibold">Projects</span>}
           </Button>
         </div>
 
-        {/* Simple / Advanced Mode Toggle - Simplifies for normal users, controls complexity in stages */}
         {!collapsed && (
           <div className="px-3 mb-3">
             <div className="flex items-center justify-between text-[10px] text-muted-foreground mb-1 px-1">
@@ -530,47 +469,19 @@ export function Sidebar({ activeItem, onItemClick, className }: SidebarProps) {
               <span className="text-[9px] opacity-60">(start simple)</span>
             </div>
             <div className="flex rounded-lg bg-muted p-0.5 text-xs">
-              <button
-                onClick={() => handleModeToggle(false)}
-                className={cn(
-                  "flex-1 py-1 rounded-md transition-all font-medium",
-                  !advancedMode 
-                    ? "bg-background shadow-sm text-foreground" 
-                    : "text-muted-foreground hover:text-foreground/80"
-                )}
-              >
-                Simple
-              </button>
-              <button
-                onClick={() => handleModeToggle(true)}
-                className={cn(
-                  "flex-1 py-1 rounded-md transition-all font-medium",
-                  advancedMode 
-                    ? "bg-background shadow-sm text-foreground" 
-                    : "text-muted-foreground hover:text-foreground/80"
-                )}
-              >
-                Advanced
-              </button>
+              <button onClick={() => handleModeToggle(false)} className={cn("flex-1 py-1 rounded-md transition-all font-medium", !advancedMode ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground/80")}>Simple</button>
+              <button onClick={() => handleModeToggle(true)} className={cn("flex-1 py-1 rounded-md transition-all font-medium", advancedMode ? "bg-background shadow-sm text-foreground" : "text-muted-foreground hover:text-foreground/80")}>Advanced</button>
             </div>
-            {!advancedMode && (
-              <div className="text-[9px] text-center text-muted-foreground/70 mt-1 px-1">
-                Core features only. Toggle Advanced for full PM tools.
-              </div>
-            )}
+            {!advancedMode && <div className="text-[9px] text-center text-muted-foreground/70 mt-1 px-1">Core features only. Toggle Advanced for full PM tools.</div>}
           </div>
         )}
 
         {displayNavItems.map((item) => renderNavItem(item))}
 
-        {/* Separator - only show admin in advanced or always for admins */}
-        {(advancedMode || true) && <div className="my-4 border-t border-sidebar-border" />}
-
-        {/* Admin Items - shown in advanced mode primarily, but available */}
+        {(advancedMode) && <div className="my-4 border-t border-sidebar-border" />}
         {(advancedMode) && adminItems.map((item) => renderNavItem(item))}
       </nav>
 
-      {/* Low Credits widget — pinned to sidebar bottom */}
       <div className={`border-t border-sidebar-border p-3 ${collapsed ? 'flex justify-center' : ''}`}>
         <CreditBalanceWidget compact showPurchaseButton={!collapsed} />
       </div>
